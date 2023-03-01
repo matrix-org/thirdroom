@@ -44,6 +44,7 @@ import { ArrayBufferKTX2Loader, initKTX2Loader, updateImageResources, updateText
 import { updateTileRenderers } from "../tiles-renderer/tiles-renderer.render";
 import { InputModule } from "../input/input.render";
 import { updateDynamicAccessors } from "../accessor/accessor.render";
+import { EditorModule } from "../editor/editor.render";
 
 export interface RenderThreadState extends ConsumerThreadContext {
   canvas?: HTMLCanvasElement;
@@ -275,12 +276,14 @@ export function RendererSystem(ctx: RenderThreadState) {
     rendererModule.prevSceneResource = activeScene?.eid;
   }
 
+  const { editorLoaded } = getModule(ctx, EditorModule);
+
   updateImageResources(ctx);
   updateTextureResources(ctx);
   updateDynamicAccessors(dynamicAccessors);
-  updateWorldVisibility(ctx);
+  updateWorldVisibility(ctx, editorLoaded);
   updateActiveSceneResource(ctx, activeScene);
-  updateLocalNodeResources(ctx, rendererModule);
+  updateLocalNodeResources(ctx, rendererModule, editorLoaded);
   updateTileRenderers(ctx, tileRendererNodes, activeCameraNode);
   updateReflectionProbeTextureArray(ctx, activeScene);
   updateNodeReflections(ctx, activeScene);

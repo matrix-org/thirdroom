@@ -1,4 +1,4 @@
-import { ReactNode, useMemo } from "react";
+import { ReactNode, useMemo, memo, FocusEventHandler, KeyboardEventHandler, useRef } from "react";
 import classNames from "classnames";
 
 import "./PropertiesPanel.css";
@@ -14,7 +14,7 @@ import { setProperty, setRefArrayProperty, setRefProperty } from "../../../../en
 import { setEulerFromQuaternion, setQuaternionFromEuler } from "../../../../engine/component/math";
 import { Icon } from "../../../atoms/icon/Icon";
 import CircleIC from "../../../../../res/ic/circle.svg";
-import { PropTypeType, Schema } from "../../../../engine/resource/ResourceDefinition";
+import { PropTypeType, ResourcePropDef, Schema } from "../../../../engine/resource/ResourceDefinition";
 import { IMainThreadContext } from "../../../../engine/MainThread";
 import { Scroll } from "../../../atoms/scroll/Scroll";
 import { SelectInput } from "../../components/property-panel/SelectInput";
@@ -47,6 +47,13 @@ const resourceToOption = (res: MainNode) => ({
   value: res,
   label: "name" in res ? res.name : "Unnamed",
 });
+const EPSILON = 0.00001;
+const floatApproxEqual = (a: number, b: number): boolean => {
+  return Math.abs(a - b) < EPSILON;
+};
+
+const compareFloat32Array = (a1: Float32Array, a2: Float32Array): boolean =>
+  a1.length === a2.length && a1.every((item, index) => floatApproxEqual(item, a2[index]));
 
 interface PropertyContainerProps {
   className?: string;
@@ -64,6 +71,221 @@ export function PropertyContainer({ className, name, children }: PropertyContain
   );
 }
 
+type SetProp<Value> = (propName: string, value: Value) => void;
+interface BasePropertyProps<T, PropDef> {
+  propName: string;
+  value: T;
+  setProp: SetProp<T>;
+  propDef: PropDef;
+}
+
+const BoolProperty = memo<BasePropertyProps<boolean, ResourcePropDef<"bool", boolean, true, false, unknown, unknown>>>(
+  ({ propName, value, setProp, propDef }) => {
+    return (
+      <PropertyContainer key={propName} name={propName}>
+        <Checkbox
+          checked={value ?? propDef.default}
+          onCheckedChange={(checked) => setProp(propName, checked)}
+          disabled={!propDef.mutable}
+        />
+      </PropertyContainer>
+    );
+  },
+  (prevProps, nextProps) => prevProps.value === nextProps.value
+);
+
+const U32Property = memo<BasePropertyProps<number, ResourcePropDef<"u32", number, true, false, unknown, unknown>>>(
+  ({ propName, value, setProp, propDef }) => {
+    return (
+      <PropertyContainer key={propName} name={propName}>
+        <NumericInput
+          inputSize="sm"
+          type="u32"
+          value={value}
+          onChange={(value) => setProp(propName, value)}
+          disabled={!propDef.mutable}
+          outlined
+        />
+      </PropertyContainer>
+    );
+  },
+  (prevProps, nextProps) => prevProps.value === nextProps.value
+);
+
+const F32Property = memo<BasePropertyProps<number, ResourcePropDef<"f32", number, true, false, unknown, unknown>>>(
+  ({ propName, value, setProp, propDef }) => {
+    return (
+      <PropertyContainer key={propName} name={propName}>
+        <NumericInput
+          inputSize="sm"
+          type="f32"
+          value={value}
+          onChange={(value) => setProp(propName, value)}
+          disabled={!propDef.mutable}
+          outlined
+        />
+      </PropertyContainer>
+    );
+  },
+  (prevProps, nextProps) => prevProps.value === nextProps.value
+);
+
+const Vec2Property = memo<
+  BasePropertyProps<Float32Array, ResourcePropDef<"vec2", ArrayLike<number>, true, false, unknown, unknown>>
+>(
+  ({ propName, value, propDef, setProp }) => {
+    return (
+      <PropertyContainer key={propName} name={propName}>
+        <VectorInput
+          value={value ?? propDef.default}
+          type="vec2"
+          onChange={(value) => setProp(propName, value)}
+          disabled={!propDef.mutable}
+        />
+      </PropertyContainer>
+    );
+  },
+  (prevProps, nextProps) => compareFloat32Array(prevProps.value, nextProps.value)
+);
+
+const Vec3Property = memo<
+  BasePropertyProps<Float32Array, ResourcePropDef<"vec3", ArrayLike<number>, true, false, unknown, unknown>>
+>(
+  ({ propName, value, propDef, setProp }) => {
+    return (
+      <PropertyContainer key={propName} name={propName}>
+        <VectorInput
+          value={value ?? propDef.default}
+          type="vec3"
+          onChange={(value) => setProp(propName, value)}
+          disabled={!propDef.mutable}
+        />
+      </PropertyContainer>
+    );
+  },
+  (prevProps, nextProps) => compareFloat32Array(prevProps.value, nextProps.value)
+);
+
+const QuatProperty = memo<
+  BasePropertyProps<Float32Array, ResourcePropDef<"quat", ArrayLike<number>, true, false, unknown, unknown>>
+>(
+  ({ propName, value, propDef, setProp }) => {
+    return (
+      <PropertyContainer key={propName} name={propName}>
+        <VectorInput
+          value={getEulerRotation(value)}
+          type="vec3"
+          onChange={(value) => {
+            setProp(propName, getQuaternionRotation(value));
+          }}
+          disabled={!propDef.mutable}
+        />
+      </PropertyContainer>
+    );
+  },
+  (prevProps, nextProps) => compareFloat32Array(prevProps.value, nextProps.value)
+);
+
+const RgbProperty = memo<
+  BasePropertyProps<Float32Array, ResourcePropDef<"rgb", ArrayLike<number>, true, false, unknown, unknown>>
+>(
+  ({ propName, value, propDef, setProp }) => {
+    return (
+      <PropertyContainer key={propName} name={propName}>
+        <ColorInput
+          type="rgb"
+          value={convertRGB(value ?? propDef.default, engineToUserChannel)}
+          onChange={(value) => setProp(propName, convertRGB(value, userToEngineChannel))}
+          disabled={!propDef.mutable}
+        />
+      </PropertyContainer>
+    );
+  },
+  (prevProps, nextProps) => compareFloat32Array(prevProps.value, nextProps.value)
+);
+
+const RgbaProperty = memo<
+  BasePropertyProps<Float32Array, ResourcePropDef<"rgba", ArrayLike<number>, true, false, unknown, unknown>>
+>(
+  ({ propName, value, propDef, setProp }) => {
+    return (
+      <PropertyContainer key={propName} name={propName}>
+        <ColorInput
+          type="rgba"
+          value={convertRGBA(value ?? propDef.default, engineToUserChannel, engineToUserAlpha)}
+          onChange={(value) => setProp(propName, convertRGBA(value, userToEngineChannel, userToEngineAlpha))}
+          disabled={!propDef.mutable}
+        />
+      </PropertyContainer>
+    );
+  },
+  (prevProps, nextProps) => compareFloat32Array(prevProps.value, nextProps.value)
+);
+
+const BitmaskProperty = memo<
+  BasePropertyProps<number, ResourcePropDef<"bitmask", number, true, false, unknown, unknown>>
+>(
+  ({ propName, value, setProp, propDef }) => {
+    return (
+      <PropertyContainer key={propName} name={propName}>
+        <NumericInput
+          type="u32"
+          inputSize="sm"
+          min={0}
+          // TODO: what is max={} for bitmask input?
+          value={value}
+          onChange={(value) => setProp(propName, value)}
+          disabled={!propDef.mutable}
+          outlined
+        />
+      </PropertyContainer>
+    );
+  },
+  (prevProps, nextProps) => prevProps.value === nextProps.value
+);
+
+const StringProperty = memo<
+  BasePropertyProps<string, ResourcePropDef<"string", string, true, false, unknown, unknown>>
+>(
+  ({ propName, value, setProp, propDef }) => {
+    const inputRef = useRef<HTMLInputElement>(null);
+    if (inputRef.current && inputRef.current.value !== value) {
+      inputRef.current.value = value;
+    }
+
+    const handleBlur: FocusEventHandler<HTMLInputElement> = (evt) => {
+      const newValue = evt.currentTarget.value.trim();
+      if (newValue !== "" && value !== newValue) {
+        setProp(propName, newValue);
+      }
+    };
+
+    const handleKeyDown: KeyboardEventHandler<HTMLInputElement> = (evt) => {
+      const newValue = evt.currentTarget.value.trim();
+      console.log(newValue, value, evt.key);
+      if (newValue !== "" && value !== newValue) {
+        if (evt.key === "Enter") setProp(propName, newValue);
+        if (evt.key === "Escape") evt.currentTarget.value = value;
+      }
+    };
+
+    return (
+      <PropertyContainer key={propName} name={propName}>
+        <Input
+          ref={inputRef}
+          onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
+          inputSize="sm"
+          defaultValue={value}
+          disabled={!propDef.mutable}
+          outlined
+        />
+      </PropertyContainer>
+    );
+  },
+  (prevProps, nextProps) => prevProps.value === nextProps.value
+);
+
 export function getPropComponents(ctx: IMainThreadContext, resource: MainNode) {
   function setProp<T>(propName: string, value: T) {
     setProperty(ctx, resource.eid, propName, value);
@@ -78,123 +300,55 @@ export function getPropComponents(ctx: IMainThreadContext, resource: MainNode) {
     bool: (propName, propDef) => {
       const value = resource[propName];
       if (typeof value !== "boolean") return null;
-      return (
-        <PropertyContainer key={propName} name={propName}>
-          <Checkbox
-            checked={value ?? propDef.default}
-            onCheckedChange={(checked) => setProp(propName, checked)}
-            disabled={!propDef.mutable}
-          />
-        </PropertyContainer>
-      );
+      return <BoolProperty key={propName} propName={propName} value={value} setProp={setProp} propDef={propDef} />;
     },
     u32: (propName, propDef) => {
       const value = resource[propName];
       if (typeof value !== "number") return null;
-      return (
-        <PropertyContainer key={propName} name={propName}>
-          <Input inputSize="sm" value={value} disabled outlined readOnly />
-        </PropertyContainer>
-      );
+      return <U32Property key={propName} propName={propName} value={value} setProp={setProp} propDef={propDef} />;
     },
     f32: (propName, propDef) => {
       const value = resource[propName];
       if (typeof value !== "number") return null;
-      return (
-        <PropertyContainer key={propName} name={propName}>
-          <Input inputSize="sm" value={value} disabled outlined readOnly />
-        </PropertyContainer>
-      );
+      return <F32Property key={propName} propName={propName} value={value} setProp={setProp} propDef={propDef} />;
     },
     vec2: (propName, propDef) => {
       const value = resource[propName];
       if (!ArrayBuffer.isView(value)) return null;
-      return (
-        <PropertyContainer key={propName} name={propName}>
-          <VectorInput
-            value={value ?? propDef.default}
-            type="vec2"
-            onChange={(value) => setProp(propName, value)}
-            disabled={!propDef.mutable}
-          />
-        </PropertyContainer>
-      );
+      return <Vec2Property key={propName} value={value} propName={propName} setProp={setProp} propDef={propDef} />;
     },
     vec3: (propName, propDef) => {
       const value = resource[propName];
       if (!ArrayBuffer.isView(value)) return null;
-      return (
-        <PropertyContainer key={propName} name={propName}>
-          <VectorInput
-            value={value ?? propDef.default}
-            type="vec3"
-            onChange={(value) => setProp(propName, value)}
-            disabled={!propDef.mutable}
-          />
-        </PropertyContainer>
-      );
+      return <Vec3Property key={propName} value={value} propName={propName} setProp={setProp} propDef={propDef} />;
     },
     quat: (propName, propDef) => {
       const value = resource[propName];
       if (!ArrayBuffer.isView(value)) return null;
       return (
-        <PropertyContainer key={propName} name={propName === "quaternion" ? "Rotation" : propName}>
-          <VectorInput
-            value={getEulerRotation(resource.quaternion ?? propDef.default)}
-            type="vec3"
-            onChange={(value) => {
-              setProp(propName, getQuaternionRotation(value));
-            }}
-            disabled={!propDef.mutable}
-          />
-        </PropertyContainer>
+        <QuatProperty
+          key={propName}
+          value={value}
+          propName={propName === "quaternion" ? "Rotation" : propName}
+          setProp={setProp}
+          propDef={propDef}
+        />
       );
     },
     rgb: (propName, propDef) => {
       const value = resource[propName];
       if (!ArrayBuffer.isView(value)) return null;
-      return (
-        <PropertyContainer key={propName} name={propName}>
-          <ColorInput
-            type="rgb"
-            value={convertRGB(value ?? propDef.default, engineToUserChannel)}
-            onChange={(value) => setProp(propName, convertRGB(value, userToEngineChannel))}
-            disabled={!propDef.mutable}
-          />
-        </PropertyContainer>
-      );
+      return <RgbProperty key={propName} value={value} propName={propName} setProp={setProp} propDef={propDef} />;
     },
     rgba: (propName, propDef) => {
       const value = resource[propName];
       if (!ArrayBuffer.isView(value)) return null;
-      return (
-        <PropertyContainer key={propName} name={propName}>
-          <ColorInput
-            type="rgba"
-            value={convertRGBA(value ?? propDef.default, engineToUserChannel, engineToUserAlpha)}
-            onChange={(value) => setProp(propName, convertRGBA(value, userToEngineChannel, userToEngineAlpha))}
-            disabled={!propDef.mutable}
-          />
-        </PropertyContainer>
-      );
+      return <RgbaProperty key={propName} value={value} propName={propName} setProp={setProp} propDef={propDef} />;
     },
     bitmask: (propName, propDef) => {
       const value = resource[propName];
       if (typeof value !== "number") return null;
-      return (
-        <PropertyContainer key={propName} name={propName}>
-          <NumericInput
-            type="u32"
-            inputSize="sm"
-            min={0}
-            // TODO: what is max={} for bitmask input?
-            value={value}
-            onChange={(value) => setProp(propName, value)}
-            disabled={!propDef.mutable}
-            outlined
-          />
-        </PropertyContainer>
-      );
+      return <BitmaskProperty key={propName} value={value} propName={propName} setProp={setProp} propDef={propDef} />;
     },
     enum: (propName, propDef) => {
       const value = resource[propName];
@@ -221,11 +375,7 @@ export function getPropComponents(ctx: IMainThreadContext, resource: MainNode) {
     string: (propName, propDef) => {
       const value = resource[propName];
       if (typeof value !== "string") return null;
-      return (
-        <PropertyContainer key={propName} name={propName}>
-          <Input inputSize="sm" value={value} disabled outlined readOnly />
-        </PropertyContainer>
-      );
+      return <StringProperty key={propName} value={value} propName={propName} setProp={setProp} propDef={propDef} />;
     },
     arrayBuffer: (propName, propDef) => {
       return (

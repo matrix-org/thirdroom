@@ -49,7 +49,6 @@ export interface EditorModuleState {
   activeEntityChanged: boolean;
   editorStateBufferView: ObjectBufferView<typeof editorStateSchema, ArrayBuffer>;
   editorStateTripleBuffer: EditorStateTripleBuffer;
-  editorLoaded: boolean;
 }
 
 /******************
@@ -71,7 +70,6 @@ export const EditorModule = defineModule<GameState, EditorModuleState>({
       activeEntityChanged: false,
       editorStateBufferView,
       editorStateTripleBuffer,
-      editorLoaded: false,
     };
   },
   init(ctx) {
@@ -107,7 +105,7 @@ const selectedExitQuery = exitQuery(selectedQuery);
 export function onLoadEditor(ctx: GameState) {
   const editor = getModule(ctx, EditorModule);
 
-  editor.editorLoaded = true;
+  ctx.editorLoaded = true;
 
   ctx.sendMessage<EditorLoadedMessage>(Thread.Main, {
     type: EditorMessageType.EditorLoaded,
@@ -117,8 +115,7 @@ export function onLoadEditor(ctx: GameState) {
 }
 
 export function onDisposeEditor(ctx: GameState) {
-  const editor = getModule(ctx, EditorModule);
-  editor.editorLoaded = false;
+  ctx.editorLoaded = false;
 }
 
 export function onSetSelectedEntity(ctx: GameState, message: SetSelectedEntityMessage) {
@@ -218,7 +215,7 @@ function onSetRefArrayProperty(ctx: GameState, message: SetRefArrayPropertyMessa
 export function EditorStateSystem(ctx: GameState) {
   const editor = getModule(ctx, EditorModule);
 
-  if (!editor.editorLoaded) {
+  if (!ctx.editorLoaded) {
     return;
   }
 

@@ -11,6 +11,7 @@
     "dev": "vite",
     "dev:testnet": "VITE_USE_TESTNET=true yarn dev",
     "build": "tsc && vite build",
+    "build:scripting-runtime": "./src/engine/scripting/emscripten/build.sh",
     "build:examples": "./examples/build.sh",
     "preview": "vite-node ./preview-server.ts",
     "preview:testnet": "VITE_USE_TESTNET=true yarn preview",

@@ -68,6 +68,7 @@ async function onInit({
     // HACK: Figure out how to create the context such that these are initially set
     resourceManager: undefined as any,
     worldResource: undefined as any,
+    editorLoaded: false,
   };
 
   const onMessage = ({ data }: MessageEvent) => {

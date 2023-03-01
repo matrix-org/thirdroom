@@ -1,6 +1,8 @@
 #!/bin/bash
 
-QUICKJS_ROOT=include/quickjs
+cd $(dirname $0)
+
+QUICKJS_ROOT=src/js-runtime/quickjs
 QUICKJS_CONFIG_VERSION=$(cat $QUICKJS_ROOT/VERSION)
 
 emcc \
