@@ -14,7 +14,12 @@ import { setProperty, setRefArrayProperty, setRefProperty } from "../../../../en
 import { setEulerFromQuaternion, setQuaternionFromEuler } from "../../../../engine/component/math";
 import { Icon } from "../../../atoms/icon/Icon";
 import CircleIC from "../../../../../res/ic/circle.svg";
-import { PropTypeType, ResourcePropDef, Schema } from "../../../../engine/resource/ResourceDefinition";
+import {
+  PropTypeType,
+  ResourceDefinition,
+  ResourcePropDef,
+  Schema,
+} from "../../../../engine/resource/ResourceDefinition";
 import { IMainThreadContext } from "../../../../engine/MainThread";
 import { Scroll } from "../../../atoms/scroll/Scroll";
 import { SelectInput } from "../../components/property-panel/SelectInput";
@@ -55,6 +60,17 @@ const floatApproxEqual = (a: number, b: number): boolean => {
 const compareFloat32Array = (a1: Float32Array, a2: Float32Array): boolean =>
   a1.length === a2.length && a1.every((item, index) => floatApproxEqual(item, a2[index]));
 
+type Option<T> = {
+  label: string;
+  value: T;
+};
+type OptionsProp<T> = {
+  options: Option<T>[];
+};
+
+const compareOptions: <T>(o1: Option<T>[], o2: Option<T>[]) => boolean = (o1, o2) =>
+  o1.length === o2.length && o1.every((option, index) => option.value === o2[index].value);
+
 interface PropertyContainerProps {
   className?: string;
   name: string;
@@ -71,6 +87,7 @@ export function PropertyContainer({ className, name, children }: PropertyContain
   );
 }
 
+type GoToRefCallback = (resourceId: number) => void;
 type SetProp<Value> = (propName: string, value: Value) => void;
 interface BasePropertyProps<T, PropDef> {
   propName: string;
@@ -244,6 +261,24 @@ const BitmaskProperty = memo<
   (prevProps, nextProps) => prevProps.value === nextProps.value
 );
 
+const EnumProperty = memo<
+  BasePropertyProps<number, ResourcePropDef<"enum", number, true, false, unknown, unknown>> & OptionsProp<number>
+>(
+  ({ propName, value, setProp, propDef, options }) => {
+    return (
+      <PropertyContainer key={propName} name={propName}>
+        <SelectInput
+          value={value}
+          options={options}
+          onChange={(value) => setProp(propName, value)}
+          disabled={!propDef.mutable}
+        />
+      </PropertyContainer>
+    );
+  },
+  (prevProps, nextProps) => prevProps.value === nextProps.value && compareOptions(prevProps.options, nextProps.options)
+);
+
 const StringProperty = memo<
   BasePropertyProps<string, ResourcePropDef<"string", string, true, false, unknown, unknown>>
 >(
@@ -286,6 +321,72 @@ const StringProperty = memo<
   (prevProps, nextProps) => prevProps.value === nextProps.value
 );
 
+const ArrayBufferProperty = memo<{
+  propName: string;
+  propDef: ResourcePropDef<"arrayBuffer", undefined, false, true, unknown, unknown>;
+}>(
+  ({ propName, propDef }) => {
+    return (
+      <PropertyContainer key={propName} name={propName}>
+        <Input inputSize="sm" value={`size: ${propDef.size}`} disabled outlined readOnly />
+      </PropertyContainer>
+    );
+  },
+  (prevProps, nextProps) => prevProps.propDef === nextProps.propDef
+);
+
+const RefProperty = memo<
+  BasePropertyProps<MainNode, ResourcePropDef<"ref", number, true, false, unknown, string | ResourceDefinition>> & {
+    options: Option<MainNode>[];
+    goToRef: GoToRefCallback;
+  }
+>(
+  ({ propName, value, setProp, propDef, options, goToRef }) => {
+    return (
+      <PropertyContainer key={propName} name={propName}>
+        <SelectInput
+          before={
+            <>
+              <IconButton size="sm" iconSrc={CircleIC} label="Select Resource" onClick={() => goToRef(value.eid)} />
+              <div className="PropertiesPanel__input-divider" />
+            </>
+          }
+          value={value}
+          onChange={(changed) => setProp(propName, changed)}
+          options={options}
+          disabled={!propDef.mutable}
+        />
+      </PropertyContainer>
+    );
+  },
+  (prevProps, nextProps) => prevProps.value === nextProps.value && compareOptions(prevProps.options, nextProps.options)
+);
+
+const RefArrayProperty = memo<
+  BasePropertyProps<
+    Option<MainNode>[],
+    ResourcePropDef<"refArray", Uint32Array, true, false, unknown, string | ResourceDefinition>
+  > & {
+    options: Option<MainNode>[];
+    goToRef: GoToRefCallback;
+  }
+>(
+  ({ propName, value, setProp, propDef, options, goToRef }) => {
+    return (
+      <PropertyContainer key={propName} name={propName}>
+        <MultiSelectInput
+          options={options}
+          selected={value}
+          onSelectedChange={(changed) => setProp(propName, changed)}
+          onSelectedOptionClick={(option) => goToRef(option.value.eid)}
+          disabled={!propDef.mutable}
+        />
+      </PropertyContainer>
+    );
+  },
+  (prevProps, nextProps) => prevProps.value === nextProps.value && compareOptions(prevProps.options, nextProps.options)
+);
+
 export function getPropComponents(ctx: IMainThreadContext, resource: MainNode) {
   function setProp<T>(propName: string, value: T) {
     setProperty(ctx, resource.eid, propName, value);
@@ -294,7 +395,7 @@ export function getPropComponents(ctx: IMainThreadContext, resource: MainNode) {
   const schema = resource.resourceDef.schema;
 
   type ComponentSchema<T extends PropTypeType, S extends Schema> = {
-    [K in keyof T]?: (propName: keyof S, propDef: T[K], goToRef: (resourceId: number) => void) => ReactNode;
+    [K in keyof T]?: (propName: keyof S, propDef: T[K], goToRef: GoToRefCallback) => ReactNode;
   };
   const PropComponents: ComponentSchema<PropTypeType, typeof schema> = {
     bool: (propName, propDef) => {
@@ -362,14 +463,14 @@ export function getPropComponents(ctx: IMainThreadContext, resource: MainNode) {
         }));
 
       return (
-        <PropertyContainer key={propName} name={propName}>
-          <SelectInput
-            value={value}
-            options={options}
-            onChange={(value) => setProp(propName, value)}
-            disabled={!propDef.mutable}
-          />
-        </PropertyContainer>
+        <EnumProperty
+          key={propName}
+          value={value}
+          propName={propName}
+          setProp={setProp}
+          propDef={propDef}
+          options={options}
+        />
       );
     },
     string: (propName, propDef) => {
@@ -378,11 +479,7 @@ export function getPropComponents(ctx: IMainThreadContext, resource: MainNode) {
       return <StringProperty key={propName} value={value} propName={propName} setProp={setProp} propDef={propDef} />;
     },
     arrayBuffer: (propName, propDef) => {
-      return (
-        <PropertyContainer key={propName} name={propName}>
-          <Input inputSize="sm" value={`size: ${propDef.size}`} disabled outlined readOnly />
-        </PropertyContainer>
-      );
+      return <ArrayBufferProperty propName={propName} propDef={propDef} />;
     },
     ref: (propName, propDef, goToRef) => {
       const value = resource[propName];
@@ -390,20 +487,15 @@ export function getPropComponents(ctx: IMainThreadContext, resource: MainNode) {
 
       const options = (getLocalResources(ctx, value.resourceDef) as MainNode[]).map(resourceToOption);
       return (
-        <PropertyContainer key={propName} name={propName}>
-          <SelectInput
-            before={
-              <>
-                <IconButton size="sm" iconSrc={CircleIC} label="Select Resource" onClick={() => goToRef(value.eid)} />
-                <div className="PropertiesPanel__input-divider" />
-              </>
-            }
-            value={value}
-            onChange={(changed) => setRefProperty(ctx, resource.eid, propName, changed.eid)}
-            options={options}
-            disabled={!propDef.mutable}
-          />
-        </PropertyContainer>
+        <RefProperty
+          key={propName}
+          value={value as MainNode}
+          propName={propName}
+          setProp={(propName, changed) => setRefProperty(ctx, resource.eid, propName, changed.eid)}
+          goToRef={goToRef}
+          propDef={propDef}
+          options={options}
+        />
       );
     },
     refArray: (propName, propDef, goToRef) => {
@@ -415,22 +507,22 @@ export function getPropComponents(ctx: IMainThreadContext, resource: MainNode) {
       const options = (getLocalResources(ctx, propDef.resourceDef) as MainNode[]).map(resourceToOption);
 
       return (
-        <PropertyContainer key={propName} name={propName}>
-          <MultiSelectInput
-            options={options}
-            selected={selected}
-            onSelectedChange={(changed) =>
-              setRefArrayProperty(
-                ctx,
-                resource.eid,
-                propName,
-                changed.map((op) => op.value.eid)
-              )
-            }
-            onSelectedOptionClick={(option) => goToRef(option.value.eid)}
-            disabled={!propDef.mutable}
-          />
-        </PropertyContainer>
+        <RefArrayProperty
+          key={propName}
+          value={selected}
+          propName={propName}
+          setProp={(propName, changed) =>
+            setRefArrayProperty(
+              ctx,
+              resource.eid,
+              propName,
+              changed.map((op) => op.value.eid)
+            )
+          }
+          goToRef={goToRef}
+          propDef={propDef}
+          options={options}
+        />
       );
     },
   };
