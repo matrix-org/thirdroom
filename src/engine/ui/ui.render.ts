@@ -12,6 +12,7 @@ import { UICanvasInteractionMessage, traverseUIFlex, WebSGUIMessage, UIButtonPre
 import { getLocalResource } from "../resource/resource.render";
 import { RenderImageDataType } from "../utils/textures";
 import { LoadStatus } from "../resource/resource.common";
+import { FlexEdge } from "../resource/schema";
 
 export const WebSGUIModule = defineModule<
   RenderThreadState,
@@ -64,7 +65,7 @@ function onButtonPress(ctx: RenderThreadState, message: UICanvasInteractionMessa
   }
 }
 
-const rgbaToString = ([r, g, b, a]: Float32Array) => `rgba(${r},${g},${b},${a})`;
+const rgbaToString = ([r, g, b, a]: Float32Array) => `rgba(${r * 255},${g * 255},${b * 255},${a})`;
 
 function drawNode(
   ctx2d: CanvasRenderingContext2D,
@@ -79,7 +80,7 @@ function drawNode(
 
   // setup brush
   ctx2d.fillStyle = rgbaToString(node.backgroundColor);
-  ctx2d.strokeStyle = rgbaToString(node.strokeColor);
+  ctx2d.strokeStyle = rgbaToString(node.borderColor);
 
   // draw layout
   const layout = node.yogaNode.getComputedLayout();
@@ -94,7 +95,7 @@ function drawNode(
   }
 
   if (node.backgroundColor) ctx2d.fillRect(layout.left, layout.top, layout.width, layout.height);
-  if (node.strokeColor) ctx2d.strokeRect(layout.left, layout.top, layout.width, layout.height);
+  if (node.borderColor) ctx2d.strokeRect(layout.left, layout.top, layout.width, layout.height);
 
   // draw image
   if (node.image) {
@@ -123,7 +124,11 @@ function drawNode(
         node.text.fontFamily || "sans-serif"
       }`.trim();
       ctx2d.fillStyle = rgbaToString(node.text.color);
-      ctx2d.fillText(node.text.value, layout.left + node.paddingLeft, layout.top + node.paddingTop);
+      ctx2d.fillText(
+        node.text.value,
+        layout.left + node.padding[FlexEdge.LEFT],
+        layout.top + node.padding[FlexEdge.TOP]
+      );
     }
   }
 
@@ -140,15 +145,15 @@ function updateYogaNode(child: RenderUIFlex) {
   child.yogaNode.setWidth(child.width);
   child.yogaNode.setHeight(child.height);
 
-  child.yogaNode.setPadding(Yoga.EDGE_TOP, child.paddingTop);
-  child.yogaNode.setPadding(Yoga.EDGE_BOTTOM, child.paddingBottom);
-  child.yogaNode.setPadding(Yoga.EDGE_LEFT, child.paddingLeft);
-  child.yogaNode.setPadding(Yoga.EDGE_RIGHT, child.paddingRight);
+  child.yogaNode.setPadding(FlexEdge.LEFT, child.padding[FlexEdge.LEFT]);
+  child.yogaNode.setPadding(FlexEdge.TOP, child.padding[FlexEdge.TOP]);
+  child.yogaNode.setPadding(FlexEdge.RIGHT, child.padding[FlexEdge.RIGHT]);
+  child.yogaNode.setPadding(FlexEdge.BOTTOM, child.padding[FlexEdge.BOTTOM]);
 
-  child.yogaNode.setMargin(Yoga.EDGE_TOP, child.marginTop);
-  child.yogaNode.setMargin(Yoga.EDGE_BOTTOM, child.marginBottom);
-  child.yogaNode.setMargin(Yoga.EDGE_LEFT, child.marginLeft);
-  child.yogaNode.setMargin(Yoga.EDGE_RIGHT, child.marginRight);
+  child.yogaNode.setMargin(FlexEdge.LEFT, child.margin[FlexEdge.LEFT]);
+  child.yogaNode.setMargin(FlexEdge.TOP, child.margin[FlexEdge.TOP]);
+  child.yogaNode.setMargin(FlexEdge.RIGHT, child.margin[FlexEdge.RIGHT]);
+  child.yogaNode.setMargin(FlexEdge.BOTTOM, child.margin[FlexEdge.BOTTOM]);
 
   // TODO: add remainder of Yoga.Node API
   child.yogaNode.setPositionType(Yoga.POSITION_TYPE_RELATIVE);

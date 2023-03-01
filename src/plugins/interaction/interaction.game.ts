@@ -586,6 +586,16 @@ function updateGrabThrow(
             interactable.released = false;
             interactable.held = true;
           }
+        } else if (Interactable.type[node.eid] === InteractableType.UI) {
+          playOneShotAudio(ctx, interaction.clickEmitter?.sources[0] as RemoteAudioSource);
+
+          const interactable = node.interactable;
+
+          if (interactable) {
+            interactable.pressed = true;
+            interactable.released = false;
+            interactable.held = true;
+          }
 
           updateNodeCanvasUI(ctx, shapecastHit, node);
         } else {

@@ -411,6 +411,7 @@ export enum InteractableType {
   Grabbable = 2,
   Player = 3,
   Portal = 4,
+  UI = 5,
 }
 
 export const InteractableResource = defineResource("interactable", ResourceType.Interactable, {
@@ -432,17 +433,23 @@ export enum FlexDirection {
   ROW_REVERSE = Yoga.FLEX_DIRECTION_ROW_REVERSE,
 }
 
+export enum FlexEdge {
+  LEFT = Yoga.EDGE_LEFT,
+  TOP = Yoga.EDGE_TOP,
+  RIGHT = Yoga.EDGE_RIGHT,
+  BOTTOM = Yoga.EDGE_BOTTOM,
+}
+
 export const UITextResource = defineResource("ui-text", ResourceType.UIText, {
   value: PropType.string({ script: true }),
   fontFamily: PropType.string({ script: true }),
-  fontSize: PropType.f32({ script: true }),
+  fontSize: PropType.f32({ default: 12, script: true }),
   fontWeight: PropType.string({ script: true }),
   fontStyle: PropType.string({ script: true }),
   color: PropType.rgba({ script: true }),
 });
 
 export const UIButtonResource = defineResource("ui-button", ResourceType.UIButton, {
-  label: PropType.string({ script: true }),
   interactable: PropType.ref(InteractableResource, { script: true }),
 });
 
@@ -462,18 +469,11 @@ export const UIFlexResource = defineResource("ui-flex", ResourceType.UIFlex, {
   height: PropType.f32({ script: true, mutable: true }),
 
   backgroundColor: PropType.rgba({ script: true, mutable: true }),
-  strokeColor: PropType.rgba({ script: true, mutable: true }),
+  borderColor: PropType.rgba({ script: true, mutable: true }),
 
-  opacity: PropType.f32({ default: 1, script: true, mutable: true }),
-
-  paddingTop: PropType.f32({ default: 0, script: true, mutable: true }),
-  paddingBottom: PropType.f32({ default: 0, script: true, mutable: true }),
-  paddingLeft: PropType.f32({ default: 0, script: true, mutable: true }),
-  paddingRight: PropType.f32({ default: 0, script: true, mutable: true }),
-  marginTop: PropType.f32({ default: 0, script: true, mutable: true }),
-  marginBottom: PropType.f32({ default: 0, script: true, mutable: true }),
-  marginLeft: PropType.f32({ default: 0, script: true, mutable: true }),
-  marginRight: PropType.f32({ default: 0, script: true, mutable: true }),
+  // TODO: vec4 alias
+  padding: PropType.rgba({ script: true, mutable: true }),
+  margin: PropType.rgba({ script: true, mutable: true }),
 
   parent: PropType.selfRef({ backRef: true }),
   firstChild: PropType.selfRef(),

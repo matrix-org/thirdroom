@@ -6,6 +6,7 @@
 #include "../websg.h"
 #include "./websg-js.h"
 #include "./websg-network-js.h"
+#include "./websg-ui-js.h"
 
 static JSValue js_get_environment_scene(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
   scene_id_t scene_id = websg_get_environment_scene();
@@ -2279,5 +2280,6 @@ void js_define_websg_api(JSContext *ctx, JSValue *target) {
   );
 
   js_define_websg_network_api(ctx, &websg);
+  js_define_websg_ui_api(ctx, &websg);
   JS_SetPropertyStr(ctx, *target, "WebSG", websg);
 }

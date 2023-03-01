@@ -36,7 +36,7 @@ import {
 import { moveCursorView, readUint32, writeUint32 } from "../allocator/CursorView";
 import { AccessorComponentTypeToTypedArray, AccessorTypeToElementSize } from "../accessor/accessor.common";
 
-function getScriptResource<T extends RemoteResourceConstructor>(
+export function getScriptResource<T extends RemoteResourceConstructor>(
   wasmCtx: WASMModuleContext,
   resourceConstructor: T,
   resourceId: number
