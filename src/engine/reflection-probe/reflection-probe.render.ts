@@ -1,7 +1,7 @@
 import { Box3, Scene, Vector3, Texture, InstancedMesh, Matrix4, WebGLArrayRenderTarget, Event, Vector2 } from "three";
 
 import { getModule } from "../module/module.common";
-import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
+import { RendererModule, RendererModuleState, RenderThreadState } from "../renderer/renderer.render";
 import { LoadStatus } from "../resource/resource.common";
 import { getLocalResources, RenderNode, RenderScene } from "../resource/resource.render";
 import { ReflectionProbe } from "./ReflectionProbe";
@@ -161,7 +161,11 @@ const boundingBoxSize = new Vector3();
 const instanceWorldMatrix = new Matrix4();
 const instanceReflectionProbeParams = new Vector3();
 
-export function updateNodeReflections(ctx: RenderThreadState, scene: RenderScene | undefined) {
+export function updateNodeReflections(
+  ctx: RenderThreadState,
+  scene: RenderScene | undefined,
+  rendererModule: RendererModuleState
+) {
   if (!scene) {
     return;
   }

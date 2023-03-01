@@ -1,3 +1,5 @@
+import { getGPUTier } from "detect-gpu";
+
 import GameWorker from "./GameWorker?worker";
 import { WorkerMessageType, InitializeGameWorkerMessage, InitializeRenderWorkerMessage } from "./WorkerMessage";
 import {
@@ -11,6 +13,12 @@ import mainThreadConfig from "./config.main";
 import { MockMessagePort } from "./module/MockMessageChannel";
 import { getLocalResources, MainWorld, ResourceLoaderSystem } from "./resource/resource.main";
 import { waitUntil } from "./utils/waitUntil";
+import {
+  gpuTierToRenderQuality,
+  LOCAL_STORAGE_RENDER_QUALITY,
+  RenderQuality,
+  RenderQualitySetting,
+} from "./renderer/renderer.common";
 
 export type MainThreadSystem = (state: IMainThreadContext) => void;
 
@@ -26,6 +34,7 @@ export interface IMainThreadContext extends ConsumerThreadContext {
   supportedXRSessionModes: XRSessionMode[] | false;
   dt: number;
   elapsed: number;
+  quality: RenderQuality;
 }
 
 async function getSupportedXRSessionModes(): Promise<false | XRSessionMode[]> {
@@ -52,6 +61,41 @@ async function getSupportedXRSessionModes(): Promise<false | XRSessionMode[]> {
   return false;
 }
 
+async function getRenderQuality() {
+  const benchmarksURL = new URL("/detect-gpu-benchmarks", document.location.href).href;
+
+  const qualitySettingStr = localStorage.getItem(LOCAL_STORAGE_RENDER_QUALITY);
+  const qualitySetting = qualitySettingStr ? JSON.parse(qualitySettingStr) : undefined;
+
+  let quality: RenderQuality;
+
+  if (!qualitySetting || qualitySetting === RenderQualitySetting.Auto) {
+    const result = await getGPUTier({ benchmarksURL, mobileTiers: [0, 60, 90, 120], desktopTiers: [0, 60, 90, 120] });
+
+    console.info(`GPU Detected: "${result.gpu}" Tier: ${result.tier}`);
+
+    if (result.type !== "BENCHMARK") {
+      quality = RenderQuality.Medium;
+    } else {
+      quality = gpuTierToRenderQuality(result.tier);
+    }
+  } else {
+    if (qualitySetting === RenderQualitySetting.Low) {
+      quality = RenderQuality.Low;
+    } else if (qualitySetting === RenderQualitySetting.Medium) {
+      quality = RenderQuality.Medium;
+    } else if (qualitySetting === RenderQualitySetting.High) {
+      quality = RenderQuality.High;
+    } else if (qualitySetting === RenderQualitySetting.Ultra) {
+      quality = RenderQuality.Ultra;
+    } else {
+      quality = RenderQuality.Medium;
+    }
+  }
+
+  return quality;
+}
+
 export async function MainThread(canvas: HTMLCanvasElement) {
   const supportsOffscreenCanvas = !!window.OffscreenCanvas;
   const [, hashSearch] = window.location.hash.split("?");
@@ -59,6 +103,7 @@ export async function MainThread(canvas: HTMLCanvasElement) {
 
   const supportedXRSessionModes = await getSupportedXRSessionModes();
 
+  const quality = await getRenderQuality();
   const useOffscreenCanvas = supportsOffscreenCanvas && renderMain === null && !supportedXRSessionModes;
 
   const singleConsumerThreadSharedState: SingleConsumerThreadSharedState | undefined = useOffscreenCanvas
@@ -106,6 +151,7 @@ export async function MainThread(canvas: HTMLCanvasElement) {
     elapsed: 0,
     tick: 0,
     singleConsumerThreadSharedState,
+    quality,
   };
 
   function onWorkerMessage(event: MessageEvent) {

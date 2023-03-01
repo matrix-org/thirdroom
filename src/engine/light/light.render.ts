@@ -1,11 +1,13 @@
 import { DirectionalLight, Light, PointLight, Scene, SpotLight } from "three";
 
+import { getModule } from "../module/module.common";
 import { updateTransformFromNode } from "../node/node.render";
-import { RenderThreadState } from "../renderer/renderer.render";
+import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
 import { RenderNode } from "../resource/resource.render";
 import { LightType } from "../resource/schema";
 
 export function updateNodeLight(ctx: RenderThreadState, scene: Scene, node: RenderNode) {
+  const { renderPipeline } = getModule(ctx, RendererModule);
   const currentLightResourceId = node.currentLightResourceId;
   const nextLightResourceId = node.light?.eid || 0;
 
@@ -46,7 +48,10 @@ export function updateNodeLight(ctx: RenderThreadState, scene: Scene, node: Rend
       directionalLight.shadow.camera.far = 600;
       directionalLight.shadow.bias = 0.0001;
       directionalLight.shadow.normalBias = 0.2;
-      directionalLight.shadow.mapSize.set(2048, 2048);
+
+      if (renderPipeline.directionalShadowMapSize) {
+        directionalLight.shadow.mapSize.copy(renderPipeline.directionalShadowMapSize);
+      }
 
       scene.add(directionalLight);
     }
@@ -70,6 +75,10 @@ export function updateNodeLight(ctx: RenderThreadState, scene: Scene, node: Rend
     pointLight.castShadow = localLight.castShadow;
     pointLight.distance = localLight.range;
 
+    if (renderPipeline.shadowMapSize) {
+      pointLight.shadow.mapSize.copy(renderPipeline.shadowMapSize);
+    }
+
     light = pointLight;
   } else if (lightType === LightType.Spot) {
     let spotLight = node.lightObject as SpotLight | undefined;
@@ -88,6 +97,10 @@ export function updateNodeLight(ctx: RenderThreadState, scene: Scene, node: Rend
     spotLight.distance = localLight.range;
     spotLight.angle = localLight.outerConeAngle;
     spotLight.penumbra = 1.0 - localLight.innerConeAngle / localLight.outerConeAngle;
+
+    if (renderPipeline.shadowMapSize) {
+      spotLight.shadow.mapSize.copy(renderPipeline.shadowMapSize);
+    }
 
     light = spotLight;
   }
