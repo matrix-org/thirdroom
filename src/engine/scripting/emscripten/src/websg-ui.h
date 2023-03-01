@@ -1,6 +1,7 @@
 #ifndef __websg_ui_h
 #define __websg_ui_h
 #include <math.h>
+#include <stdint.h>
 #include "./websg.h"
 
 #define import_websg_ui(NAME) __attribute__((import_module("websg_ui"),import_name(#NAME)))
@@ -22,10 +23,10 @@ typedef struct UICanvasProps {
 
 import_websg_ui(create_ui_canvas) ui_canvas_id_t websg_ui_create_canvas(UICanvasProps *props);
 import_websg_ui(node_add_ui_canvas) ui_canvas_id_t websg_node_add_ui_canvas(node_id_t node_id, ui_canvas_id_t canvas_id);
-import_websg_ui(ui_canvas_set_width) uint32_t websg_ui_canvas_set_width(ui_canvas_id_t canvas_id, float_t width);
-import_websg_ui(ui_canvas_set_height) uint32_t websg_ui_canvas_set_height(ui_canvas_id_t canvas_id, float_t height);
-import_websg_ui(ui_canvas_set_pixel_density) uint32_t websg_ui_canvas_set_pixel_density(ui_canvas_id_t canvas_id, float_t pixel_density);
-import_websg_ui(ui_canvas_redraw) uint32_t websg_ui_canvas_redraw(ui_canvas_id_t canvas_id);
+import_websg_ui(ui_canvas_set_width) int32_t websg_ui_canvas_set_width(ui_canvas_id_t canvas_id, float_t width);
+import_websg_ui(ui_canvas_set_height) int32_t websg_ui_canvas_set_height(ui_canvas_id_t canvas_id, float_t height);
+import_websg_ui(ui_canvas_set_pixel_density) int32_t websg_ui_canvas_set_pixel_density(ui_canvas_id_t canvas_id, float_t pixel_density);
+import_websg_ui(ui_canvas_redraw) int32_t websg_ui_canvas_redraw(ui_canvas_id_t canvas_id);
 
 /**
  * UI Flex
