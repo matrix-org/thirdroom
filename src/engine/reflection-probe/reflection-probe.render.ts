@@ -1,7 +1,6 @@
 import { Box3, Scene, Vector3, Texture, InstancedMesh, Matrix4, WebGLArrayRenderTarget, Event, Vector2 } from "three";
 
 import { getModule } from "../module/module.common";
-//import { RenderQuality } from "../renderer/renderer.common";
 import { RendererModule, RendererModuleState, RenderThreadState } from "../renderer/renderer.render";
 import { LoadStatus } from "../resource/resource.common";
 import { getLocalResources, RenderNode, RenderScene } from "../resource/resource.render";
@@ -70,43 +69,6 @@ export function updateReflectionProbeTextureArray(ctx: RenderThreadState, scene:
   const rendererModule = getModule(ctx, RendererModule);
 
   const reflectionProbes = getReflectionProbes(ctx);
-
-  // if (rendererModule.quality == RenderQuality.Low) {
-  //   if (
-  //     scene.reflectionProbeNeedsUpdate &&
-  //     scene.reflectionProbe?.reflectionProbeTexture?.loadStatus === LoadStatus.Loaded &&
-  //     scene.reflectionProbe.reflectionProbeTexture.texture
-  //   ) {
-  //     const useRGBM = scene.reflectionProbe.reflectionProbeTexture.rgbm;
-  //     scene.reflectionProbeNeedsUpdate = false;
-  //     const texture = scene.reflectionProbe.reflectionProbeTexture.texture;
-
-  //     const hdrDecodeParams = useRGBM ? new Vector2(34.49, 2.2) : null;
-
-  //     const renderTarget = (rendererModule.pmremGenerator as any).fromEquirectangular(texture, null, hdrDecodeParams);
-
-  //     rendererModule.scene.environment = renderTarget.texture;
-
-  //     const onReflectionProbeTextureDisposed = (event: Event) => {
-  //       const texture = event.target as Texture;
-
-  //       const renderTarget = reflectionProbeMapRenderTargets.get(texture);
-
-  //       if (renderTarget) {
-  //         reflectionProbeMapRenderTargets.delete(texture);
-  //         // Ensure render target is disposed when the texture is disposed.
-  //         renderTarget.dispose();
-  //       }
-
-  //       texture.removeEventListener("dispose", onReflectionProbeTextureDisposed);
-  //     };
-
-  //     renderTarget.texture.addEventListener("dispose", onReflectionProbeTextureDisposed);
-  //     rendererModule.pmremGenerator.dispose(); // Dispose of the extra render target and materials
-  //   }
-
-  //   return;
-  // }
 
   let needsUpdate = scene.reflectionProbeNeedsUpdate;
 
@@ -204,7 +166,6 @@ export function updateNodeReflections(
   scene: RenderScene | undefined,
   rendererModule: RendererModuleState
 ) {
-  // if (!scene || rendererModule.quality === RenderQuality.Low) {
   if (!scene) {
     return;
   }
