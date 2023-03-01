@@ -115,6 +115,17 @@ export function createWebSGUIModule(ctx: GameState, wasmCtx: WASMModuleContext) 
 
       return 0;
     },
+    ui_canvas_redraw(canvasId: number) {
+      const canvas = getScriptResource(wasmCtx, RemoteUICanvas, canvasId);
+
+      if (!canvas) {
+        return -1;
+      }
+
+      canvas.redraw++;
+
+      return 0;
+    },
 
     // UI Flex
 
@@ -207,7 +218,7 @@ export function createWebSGUIModule(ctx: GameState, wasmCtx: WASMModuleContext) 
 
       return 0;
     },
-    flex_add_child(flexId: number, childId: number) {
+    ui_flex_add_child(flexId: number, childId: number) {
       const flex = getScriptResource(wasmCtx, RemoteUIFlex, flexId);
 
       if (!flex) {
@@ -224,7 +235,7 @@ export function createWebSGUIModule(ctx: GameState, wasmCtx: WASMModuleContext) 
 
       return 0;
     },
-    flex_add_text(flexId: number, textId: number) {
+    ui_flex_add_text(flexId: number, textId: number) {
       const flex = getScriptResource(wasmCtx, RemoteUIFlex, flexId);
 
       if (!flex) {
@@ -242,7 +253,7 @@ export function createWebSGUIModule(ctx: GameState, wasmCtx: WASMModuleContext) 
       return 0;
     },
 
-    flex_add_button(flexId: number, buttonId: number) {
+    ui_flex_add_button(flexId: number, buttonId: number) {
       const flex = getScriptResource(wasmCtx, RemoteUIFlex, flexId);
 
       if (!flex) {
@@ -272,7 +283,7 @@ export function createWebSGUIModule(ctx: GameState, wasmCtx: WASMModuleContext) 
         return -1;
       }
     },
-    get_ui_button_pressed(btnId: number) {
+    ui_button_get_pressed(btnId: number) {
       const btn = getScriptResource(wasmCtx, RemoteUIButton, btnId);
 
       if (!btn) {
@@ -287,7 +298,7 @@ export function createWebSGUIModule(ctx: GameState, wasmCtx: WASMModuleContext) 
 
       return interactable.pressed ? 1 : 0;
     },
-    get_ui_button_held(btnId: number) {
+    ui_button_get_held(btnId: number) {
       const btn = getScriptResource(wasmCtx, RemoteUIButton, btnId);
 
       if (!btn) {
@@ -302,7 +313,7 @@ export function createWebSGUIModule(ctx: GameState, wasmCtx: WASMModuleContext) 
 
       return interactable.held ? 1 : 0;
     },
-    get_ui_button_released(btnId: number) {
+    ui_button_get_released(btnId: number) {
       const btn = getScriptResource(wasmCtx, RemoteUIButton, btnId);
 
       if (!btn) {
@@ -379,7 +390,7 @@ export function createWebSGUIModule(ctx: GameState, wasmCtx: WASMModuleContext) 
 
       return 0;
     },
-    ui_text_set_text_color(textId: number, colorPtr: number) {
+    ui_text_set_color(textId: number, colorPtr: number) {
       const flex = getScriptResource(wasmCtx, RemoteUIText, textId);
 
       if (!flex) {
