@@ -70,7 +70,9 @@ async function getRenderQuality() {
   let quality: RenderQuality;
 
   if (!qualitySetting || qualitySetting === RenderQualitySetting.Auto) {
-    const result = await getGPUTier({ benchmarksURL });
+    const result = await getGPUTier({ benchmarksURL, mobileTiers: [0, 60, 90, 120], desktopTiers: [0, 60, 90, 120] });
+
+    console.info(`GPU Detected: "${result.gpu}" Tier: ${result.tier}`);
 
     if (result.type !== "BENCHMARK") {
       quality = RenderQuality.Medium;
