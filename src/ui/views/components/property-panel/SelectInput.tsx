@@ -22,7 +22,7 @@ interface SelectInputProps<T> {
 export function SelectInput<T>({ before, options, disabled, value, onChange }: SelectInputProps<T>) {
   const selectedOption = options.find((option) => option.value === value);
 
-  const { isOpen, getToggleButtonProps, getMenuProps, getItemProps } = useSelect({
+  const { isOpen, highlightedIndex, getToggleButtonProps, getMenuProps, getItemProps } = useSelect({
     selectedItem: selectedOption,
     items: options,
     itemToString: (item) => item?.label ?? "",
@@ -51,7 +51,7 @@ export function SelectInput<T>({ before, options, disabled, value, onChange }: S
           <Scroll className="ComboInput__menu-scroll">
             {options.map((option, index) => (
               <MenuItem
-                variant={option.value === value ? "primary" : "surface"}
+                variant={highlightedIndex === index ? "primary" : "surface"}
                 key={option.label + index}
                 {...getItemProps({ item: option, index })}
               >
