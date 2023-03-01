@@ -23,6 +23,7 @@ export function SelectInput<T>({ before, options, disabled, value, onChange }: S
   const selectedOption = options.find((option) => option.value === value);
 
   const { isOpen, getToggleButtonProps, getMenuProps, getItemProps } = useSelect({
+    selectedItem: selectedOption,
     items: options,
     itemToString: (item) => item?.label ?? "",
     onSelectedItemChange: (change) => {
