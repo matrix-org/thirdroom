@@ -71,7 +71,12 @@ async function getRenderQuality() {
 
   if (!qualitySetting || qualitySetting === RenderQualitySetting.Auto) {
     const result = await getGPUTier({ benchmarksURL });
-    quality = gpuTierToRenderQuality(result.tier);
+
+    if (result.type !== "BENCHMARK") {
+      quality = RenderQuality.Medium;
+    } else {
+      quality = gpuTierToRenderQuality(result.tier);
+    }
   } else {
     if (qualitySetting === RenderQualitySetting.Low) {
       quality = RenderQuality.Low;

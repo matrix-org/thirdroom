@@ -1,4 +1,4 @@
-import { useState, ChangeEvent, FormEvent } from "react";
+import { useState, ChangeEvent, FormEvent, useMemo } from "react";
 
 import { Content } from "../../../atoms/content/Content";
 import { WindowContent } from "../../components/window/WindowContent";
@@ -29,7 +29,9 @@ import {
   LOCAL_STORAGE_RENDER_QUALITY,
   RenderQualityOptions,
   RenderQualitySetting,
+  RenderQualityToSetting,
 } from "../../../../engine/renderer/renderer.common";
+import { useMainThreadContext } from "../../../hooks/useMainThread";
 
 export function UserProfileOverview() {
   const { session, platform, profileRoom } = useHydrogen(true);
@@ -43,6 +45,15 @@ export function UserProfileOverview() {
   const [discoverPage, setDiscoverPage] = useLocalStorage("feature_discoverPage", false);
   const [immersiveAR, setImmersiveAR] = useLocalStorage("feature_immersiveAR", false);
   const [renderQuality, setRenderQuality] = useLocalStorage(LOCAL_STORAGE_RENDER_QUALITY, RenderQualitySetting.Auto);
+
+  const mainThread = useMainThreadContext();
+
+  const renderQualityOptions = useMemo(() => {
+    const currentQuality = RenderQualityOptions.find(
+      (option) => option.value === RenderQualityToSetting[mainThread.quality]
+    );
+    return [{ value: RenderQualitySetting.Auto, label: `Auto (${currentQuality?.label})` }, ...RenderQualityOptions];
+  }, [mainThread.quality]);
 
   const [, tDAvatarPreviewUrl] = use3DAvatar(profileRoom);
 
@@ -111,7 +122,7 @@ export function UserProfileOverview() {
                 </div>
                 <div className="flex gap-lg">
                   <SettingTile className="grow basis-0" label={<Label>Graphics Quality (REQUIRES REFRESH)</Label>}>
-                    <SelectInput options={RenderQualityOptions} value={renderQuality} onChange={setRenderQuality} />
+                    <SelectInput options={renderQualityOptions} value={renderQuality} onChange={setRenderQuality} />
                   </SettingTile>
                   <span className="grow basis-0" />
                 </div>

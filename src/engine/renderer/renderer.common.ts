@@ -86,10 +86,6 @@ export enum RenderQualitySetting {
 
 export const RenderQualityOptions: { label: string; value: RenderQualitySetting }[] = [
   {
-    label: "Auto",
-    value: RenderQualitySetting.Auto,
-  },
-  {
     label: "Low",
     value: RenderQualitySetting.Low,
   },
@@ -113,3 +109,10 @@ export enum RenderQuality {
   High,
   Ultra,
 }
+
+export const RenderQualityToSetting = {
+  [RenderQuality.Low]: RenderQualitySetting.Low,
+  [RenderQuality.Medium]: RenderQualitySetting.Medium,
+  [RenderQuality.High]: RenderQualitySetting.High,
+  [RenderQuality.Ultra]: RenderQualitySetting.Ultra,
+};
