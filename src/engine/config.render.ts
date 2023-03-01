@@ -1,4 +1,5 @@
 import { ThirdroomModule } from "../plugins/thirdroom/thirdroom.render";
+import { EditorModule } from "./editor/editor.render";
 import { InputModule, UpdateXRInputSourcesSystem } from "./input/input.render";
 import { UpdateRendererMaterialSystem } from "./material/UpdateRendererMaterialSystem";
 import { UpdateRendererMeshPrimitivesSystem } from "./mesh/mesh.render";
@@ -11,7 +12,7 @@ import { StatsModule, RenderThreadStatsSystem } from "./stats/stats.render";
 import { WebSGUIModule } from "./ui/ui.render";
 
 export default defineConfig({
-  modules: [ResourceModule, RendererModule, InputModule, StatsModule, ThirdroomModule, WebSGUIModule],
+  modules: [ResourceModule, RendererModule, InputModule, StatsModule, ThirdroomModule, EditorModule, WebSGUIModule],
   systems: [
     RendererIncomingTripleBufferSystem,
     UpdateXRInputSourcesSystem,

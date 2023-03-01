@@ -16,13 +16,17 @@ import {
   SelectionChangedMessage,
   SetSelectedEntityMessage,
   ToggleSelectedEntityMessage,
+  SetPropertyMessage,
+  SetTexturePropertyMessage,
 } from "./editor.common";
 import { IMainThreadContext } from "../MainThread";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import { createDisposables } from "../utils/createDisposables";
 import { NOOP } from "../config.common";
 import { ResourceType } from "../resource/schema";
-import { MainNode, MainScene } from "../resource/resource.main";
+import { getLocalResources, MainNode, MainScene } from "../resource/resource.main";
+import { ILocalResourceConstructor } from "../resource/ResourceDefinition";
+import kebabToPascalCase from "../utils/kebabToPascalCase";
 
 /*********
  * Types *
@@ -106,8 +110,9 @@ export function MainThreadEditorSystem(mainThread: IMainThreadContext) {
 }
 
 function updateHierarchy(ctx: IMainThreadContext, editor: EditorModuleState) {
+  const publicScene = ctx.worldResource.environment?.publicScene;
   const event: HierarchyChangedEvent = {
-    scene: ctx.worldResource.environment?.publicScene && buildEditorNode(ctx.worldResource.environment.publicScene),
+    scene: publicScene && buildEditorNode(publicScene),
     activeEntity: editor.activeEntity,
     selectedEntities: editor.selectedEntities,
   };
@@ -176,6 +181,24 @@ export function setSelectedEntity(ctx: IMainThreadContext, eid: number) {
   });
 }
 
+export function setProperty<T>(ctx: IMainThreadContext, eid: number, propName: string, value: T) {
+  ctx.sendMessage<SetPropertyMessage<T>>(Thread.Game, {
+    type: EditorMessageType.SetProperty,
+    eid,
+    propName,
+    value,
+  });
+}
+
+export function setTextureProperty(ctx: IMainThreadContext, eid: number, propName: string, textureEid: number) {
+  ctx.sendMessage<SetTexturePropertyMessage>(Thread.Game, {
+    type: EditorMessageType.SetTextureProperty,
+    eid,
+    propName,
+    textureEid,
+  });
+}
+
 export function addSelectedEntity(ctx: IMainThreadContext, eid: number) {
   ctx.sendMessage<AddSelectedEntityMessage>(Thread.Game, {
     type: EditorMessageType.AddSelectedEntity,
@@ -226,7 +249,7 @@ function buildEditorNode(sceneOrNode: MainScene | MainNode, parent?: EditorNode)
     node = {
       id: mainScene.eid,
       eid: mainScene.eid,
-      name: mainScene.name,
+      name: mainScene.name ?? "Unnamed",
       children: [],
     };
 
@@ -237,7 +260,7 @@ function buildEditorNode(sceneOrNode: MainScene | MainNode, parent?: EditorNode)
     node = {
       id: mainNode.eid,
       eid: mainNode.eid,
-      name: mainNode.name,
+      name: mainNode.name ?? "Unnamed",
       children: [],
     };
 
@@ -254,4 +277,33 @@ function buildEditorNode(sceneOrNode: MainScene | MainNode, parent?: EditorNode)
   }
 
   return node;
+}
+
+export function buildResourceList(
+  ctx: IMainThreadContext,
+  resourceType: ILocalResourceConstructor<IMainThreadContext>
+): EditorNode {
+  const resourceDef = resourceType.resourceDef;
+
+  const resourceNodes: EditorNode[] = [];
+
+  const rootNode: EditorNode = {
+    id: -1,
+    eid: -1,
+    name: kebabToPascalCase(resourceDef.name),
+    children: resourceNodes,
+  };
+
+  const resources = getLocalResources(ctx, resourceType);
+
+  for (const resource of resources) {
+    resourceNodes.push({
+      id: resource.eid,
+      eid: resource.eid,
+      name: "name" in resource && typeof resource.name === "string" ? resource.name : "Unknown Resource",
+      children: [],
+    });
+  }
+
+  return rootNode;
 }

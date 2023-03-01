@@ -8,6 +8,7 @@ import {
   RGBAFormat,
   Scene,
   sRGBEncoding,
+  Texture,
   Vector2,
   WebGLRenderer,
   WebGLRenderTarget,
@@ -20,6 +21,35 @@ import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass";
 import { GammaCorrectionShader } from "three/examples/jsm/shaders/GammaCorrectionShader";
 
 import { Layer } from "../node/node.common";
+import { RenderQuality } from "./renderer.common";
+
+const QualityMSAA = {
+  [RenderQuality.Low]: 1,
+  [RenderQuality.Medium]: 4,
+  [RenderQuality.High]: 8,
+  [RenderQuality.Ultra]: 16,
+};
+
+const QualityAnisotropy = {
+  [RenderQuality.Low]: 4,
+  [RenderQuality.Medium]: 4,
+  [RenderQuality.High]: 8,
+  [RenderQuality.Ultra]: 16,
+};
+
+const QualityDirectionalShadowMapSize = {
+  [RenderQuality.Low]: undefined,
+  [RenderQuality.Medium]: new Vector2(512, 512),
+  [RenderQuality.High]: new Vector2(1024, 1024),
+  [RenderQuality.Ultra]: new Vector2(2048, 2048),
+};
+
+const QualityShadowMapSize = {
+  [RenderQuality.Low]: undefined,
+  [RenderQuality.Medium]: new Vector2(512, 512),
+  [RenderQuality.High]: new Vector2(512, 512),
+  [RenderQuality.Ultra]: new Vector2(1024, 1024),
+};
 
 /**
  * The RenderPipeline class is intended to be just one of a few different options for render pipelines
@@ -33,8 +63,10 @@ export class RenderPipeline {
   bloomPass: UnrealBloomPass;
   gammaCorrectionPass: ShaderPass;
   outlineLayers: Layers;
+  directionalShadowMapSize?: Vector2;
+  shadowMapSize?: Vector2;
 
-  constructor(private renderer: WebGLRenderer) {
+  constructor(private renderer: WebGLRenderer, private quality: RenderQuality) {
     const rendererSize = renderer.getSize(new Vector2());
 
     const target = new WebGLRenderTarget(rendererSize.width, rendererSize.height, {
@@ -42,7 +74,7 @@ export class RenderPipeline {
       magFilter: LinearFilter,
       format: RGBAFormat,
       encoding: sRGBEncoding,
-      samples: 16,
+      samples: QualityMSAA[quality],
       type: FloatType,
     });
 
@@ -69,11 +101,30 @@ export class RenderPipeline {
 
     this.effectComposer.addPass(this.renderPass);
     this.effectComposer.addPass(this.outlinePass);
-    this.effectComposer.addPass(this.bloomPass);
+
+    if (this.quality >= RenderQuality.High) {
+      this.effectComposer.addPass(this.bloomPass);
+    }
+
     this.effectComposer.addPass(this.gammaCorrectionPass);
 
     this.outlineLayers = new Layers();
     this.outlineLayers.set(Layer.EditorSelection);
+
+    if (this.quality === RenderQuality.Low) {
+      this.renderer.setPixelRatio(0.75);
+    } else if (this.quality >= RenderQuality.Medium) {
+      this.renderer.setPixelRatio(1);
+    }
+
+    // Set the texture anisotropy which improves rendering at extreme angles.
+    // Note this uses the GPU's maximum anisotropy with an upper limit of 8. We may want to bump this cap up to 16
+    // but we should provide a quality setting for GPUs with a high max anisotropy but limited overall resources.
+    Texture.DEFAULT_ANISOTROPY = Math.min(renderer.capabilities.getMaxAnisotropy(), QualityAnisotropy[quality]);
+
+    this.renderer.shadowMap.enabled = quality >= RenderQuality.Medium;
+    this.directionalShadowMapSize = QualityDirectionalShadowMapSize[quality];
+    this.shadowMapSize = QualityShadowMapSize[quality];
   }
 
   setSize(width: number, height: number) {
@@ -82,7 +133,7 @@ export class RenderPipeline {
   }
 
   render(scene: Scene, camera: PerspectiveCamera | OrthographicCamera, dt: number) {
-    if (this.renderer.xr.isPresenting) {
+    if (this.renderer.xr.isPresenting || this.quality === RenderQuality.Low) {
       this.renderer.render(scene, camera);
     } else {
       this.renderPass.scene = scene;

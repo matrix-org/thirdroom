@@ -59,13 +59,21 @@ export function setTransformFromNode(
   object3D.layers.mask = node.layers;
 }
 
-export function updateLocalNodeResources(ctx: RenderThreadState, rendererModule: RendererModuleState) {
+export function updateLocalNodeResources(
+  ctx: RenderThreadState,
+  rendererModule: RendererModuleState,
+  forceUpdate: boolean
+) {
   const nodes = getLocalResources(ctx, RenderNode);
 
   const scene = rendererModule.scene;
 
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i];
+
+    if (forceUpdate) {
+      node.needsUpdate = true;
+    }
 
     const needsUpdate = node.needsUpdate;
 

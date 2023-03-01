@@ -1,4 +1,4 @@
-import { useState, ChangeEvent, FormEvent } from "react";
+import { useState, ChangeEvent, FormEvent, useMemo } from "react";
 
 import { Content } from "../../../atoms/content/Content";
 import { WindowContent } from "../../components/window/WindowContent";
@@ -24,6 +24,14 @@ import { useFilePicker } from "../../../hooks/useFilePicker";
 import { uploadAttachment } from "../../../utils/matrixUtils";
 import { Switch } from "../../../atoms/button/Switch";
 import { useLocalStorage } from "../../../hooks/useLocalStorage";
+import { SelectInput } from "../../components/property-panel/SelectInput";
+import {
+  LOCAL_STORAGE_RENDER_QUALITY,
+  RenderQualityOptions,
+  RenderQualitySetting,
+  RenderQualityToSetting,
+} from "../../../../engine/renderer/renderer.common";
+import { useMainThreadContext } from "../../../hooks/useMainThread";
 
 export function UserProfileOverview() {
   const { session, platform, profileRoom } = useHydrogen(true);
@@ -36,6 +44,16 @@ export function UserProfileOverview() {
   );
   const [discoverPage, setDiscoverPage] = useLocalStorage("feature_discoverPage", false);
   const [immersiveAR, setImmersiveAR] = useLocalStorage("feature_immersiveAR", false);
+  const [renderQuality, setRenderQuality] = useLocalStorage(LOCAL_STORAGE_RENDER_QUALITY, RenderQualitySetting.Auto);
+
+  const mainThread = useMainThreadContext();
+
+  const renderQualityOptions = useMemo(() => {
+    const currentQuality = RenderQualityOptions.find(
+      (option) => option.value === RenderQualityToSetting[mainThread.quality]
+    );
+    return [{ value: RenderQualitySetting.Auto, label: `Auto (${currentQuality?.label})` }, ...RenderQualityOptions];
+  }, [mainThread.quality]);
 
   const [, tDAvatarPreviewUrl] = use3DAvatar(profileRoom);
 
@@ -99,6 +117,12 @@ export function UserProfileOverview() {
                 <div className="flex gap-lg">
                   <SettingTile className="grow basis-0" label={<Label>Default Display Name</Label>}>
                     <Input name="displayName" onChange={onDisplayNameChange} defaultValue={displayName} required />
+                  </SettingTile>
+                  <span className="grow basis-0" />
+                </div>
+                <div className="flex gap-lg">
+                  <SettingTile className="grow basis-0" label={<Label>Graphics Quality (REQUIRES REFRESH)</Label>}>
+                    <SelectInput options={renderQualityOptions} value={renderQuality} onChange={setRenderQuality} />
                   </SettingTile>
                   <span className="grow basis-0" />
                 </div>

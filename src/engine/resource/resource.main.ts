@@ -6,6 +6,7 @@ import { IMainThreadContext } from "../MainThread";
 import { getModule } from "../module/module.common";
 import { defineLocalResourceClass } from "./LocalResourceClass";
 import { createLocalResourceModule, LoadStatus, ResourceId } from "./resource.common";
+import { ILocalResourceConstructor } from "./ResourceDefinition";
 import {
   AccessorComponentType,
   AccessorResource,
@@ -56,6 +57,8 @@ export {
   ResourceLoaderSystem,
   ReturnRecycledResourcesSystem,
 };
+
+export type MainThreadResource = ILocalResourceConstructor<IMainThreadContext>;
 
 export class MainNametag extends defineLocalResourceClass(NametagResource) {
   declare resourceType: ResourceType.Nametag;

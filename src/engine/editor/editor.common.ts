@@ -40,6 +40,8 @@ export enum EditorMessageType {
   FocusEntity = "focus-entity",
   RenameEntity = "rename-entity",
   ReparentEntities = "reparent-entities",
+  SetProperty = "set-property",
+  SetTextureProperty = "set-texture-property",
 }
 
 export interface InitializeEditorStateMessage {
@@ -97,4 +99,17 @@ export interface ReparentEntitiesMessage {
   entities: number[];
   target: number | undefined;
   position: ReparentEntityPosition;
+}
+
+export interface SetPropertyMessage<T = unknown> {
+  type: EditorMessageType.SetProperty;
+  eid: number;
+  propName: string;
+  value: T;
+}
+export interface SetTexturePropertyMessage {
+  type: EditorMessageType.SetTextureProperty;
+  eid: number;
+  propName: string;
+  textureEid: number;
 }

@@ -834,8 +834,8 @@ void js_define_websg_ui_api(JSContext *ctx, JSValue *target) {
   JSValue ui = JS_NewObject(ctx);
 
   // UI Canvas
-  JS_SetPropertyStr(ctx, ui, "createUICanvas", JS_NewCFunction(ctx, js_create_ui_canvas, "createUICanvas", 3));
-  JS_SetPropertyStr(ctx, ui, "nodeAddUICanvas", JS_NewCFunction(ctx, js_node_add_ui_canvas, "nodeAddUICanvas", 3));
+  JS_SetPropertyStr(ctx, ui, "createUICanvas", JS_NewCFunction(ctx, js_create_ui_canvas, "createUICanvas", 1));
+  JS_SetPropertyStr(ctx, ui, "nodeAddUICanvas", JS_NewCFunction(ctx, js_node_add_ui_canvas, "nodeAddUICanvas", 2));
   JS_SetPropertyStr(ctx, ui, "uiCanvasSetWidth", JS_NewCFunction(ctx, js_ui_canvas_set_width, "uiCanvasSetWidth", 2));
   JS_SetPropertyStr(ctx, ui, "uiCanvasSetHeight", JS_NewCFunction(ctx, js_ui_canvas_set_height, "uiCanvasSetHeight", 2));
   JS_SetPropertyStr(ctx, ui, "uiCanvasSetPixelDensity", JS_NewCFunction(ctx, js_ui_canvas_set_pixel_density, "uiCanvasSetPixelDensity", 2));

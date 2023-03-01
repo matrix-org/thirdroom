@@ -1,9 +1,9 @@
-.EditorView_rightPanel {
+.EditorView__leftPanel,
+.EditorView__rightPanel {
   --status-bar-height: 48px;
   --controls-height: 58px;
   --controls-top: calc(var(--controls-height) + var(--sp-xs));
   position: absolute;
-  left: var(--sp-md);
   top: calc(var(--status-bar-height) + var(--sp-xs));
   bottom: calc(var(--controls-top) + var(--sp-xs));
   pointer-events: none;
@@ -15,4 +15,11 @@
   & > * {
     pointer-events: all;
   }
+}
+.EditorView__leftPanel {
+  left: var(--sp-md);
+}
+
+.EditorView__rightPanel {
+  right: var(--sp-md);
 }

@@ -104,6 +104,7 @@ interface ResourceModuleState<ThreadContext extends ConsumerThreadContext> {
   resources: Map<ResourceId, LocalResourceTypes>;
   resourceInfos: Map<ResourceId, LocalResourceInfo>;
   resourcesByType: Map<string, LocalResourceTypes[]>;
+  resourceConstructors: ILocalResourceConstructor<ThreadContext>[];
   resourceLoaders: Map<string, ResourceLoader<ThreadContext>>;
   fromGameState: FromGameResourceModuleStateTripleBuffer;
   toGameState: ToGameResourceModuleStateTripleBuffer;
@@ -155,6 +156,7 @@ export const createLocalResourceModule = <ThreadContext extends ConsumerThreadCo
         resourceInfos: new Map(),
         resourcesByType: new Map(),
         resourceLoaders: new Map(),
+        resourceConstructors: [],
         fromGameState,
         toGameState,
         disposedResources,
@@ -185,6 +187,8 @@ export const createLocalResourceModule = <ThreadContext extends ConsumerThreadCo
 
     const LocalResourceClass =
       "resourceDef" in resourceDefOrClass ? resourceDefOrClass : defineLocalResourceClass(resourceDefOrClass);
+
+    resourceModule.resourceConstructors.push(LocalResourceClass);
 
     const resourceDef = LocalResourceClass.resourceDef;
 

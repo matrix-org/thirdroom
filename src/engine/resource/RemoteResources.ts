@@ -144,6 +144,7 @@ export class RemoteUIFlex extends defineRemoteResourceClass(UIFlexResource) {
 export class RemoteUICanvas extends defineRemoteResourceClass(UICanvasResource) {
   declare root: RemoteUIFlex;
 }
+const NodeIsStaticOffset = NodeResource.schema.isStatic.byteOffset / 4;
 
 export class RemoteNode extends defineRemoteResourceClass(NodeResource) {
   declare parentScene: RemoteScene | undefined;
@@ -163,6 +164,14 @@ export class RemoteNode extends defineRemoteResourceClass(NodeResource) {
   declare nametag: RemoteNametag | undefined;
   declare interactable: RemoteInteractable | undefined;
   declare uiCanvas: RemoteUICanvas | undefined;
+
+  get isStatic() {
+    return !this.manager.ctx.editorLoaded && this.u32View[NodeIsStaticOffset] === 1;
+  }
+
+  set isStatic(value: boolean) {
+    this.u32View[NodeIsStaticOffset] = value ? 1 : 0;
+  }
 }
 
 export class RemoteAnimationSampler extends defineRemoteResourceClass(AnimationSamplerResource) {
