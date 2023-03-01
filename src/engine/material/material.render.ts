@@ -12,6 +12,7 @@ import {
 } from "three";
 
 import { getModule } from "../module/module.common";
+//import { RenderQuality } from "../renderer/renderer.common";
 import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
 import { RenderMaterial, RenderMeshPrimitive } from "../resource/resource.render";
 import { MeshPrimitiveAttributeIndex, MeshPrimitiveMode } from "../resource/schema";
@@ -110,6 +111,7 @@ export function patchMaterial(ctx: RenderThreadState, material: PrimitiveMateria
     material.defines = {};
   }
 
+  //if (!("isMeshBasicMaterial" in material) && rendererModule.quality >= RenderQuality.Medium) {
   if (!("isMeshBasicMaterial" in material)) {
     material.defines.USE_ENVMAP = "";
     material.defines.ENVMAP_MODE_REFLECTION = "";

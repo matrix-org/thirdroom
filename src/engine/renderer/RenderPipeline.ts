@@ -133,7 +133,7 @@ export class RenderPipeline {
   }
 
   render(scene: Scene, camera: PerspectiveCamera | OrthographicCamera, dt: number) {
-    if (this.renderer.xr.isPresenting) {
+    if (this.renderer.xr.isPresenting || this.quality === RenderQuality.Low) {
       this.renderer.render(scene, camera);
     } else {
       this.renderPass.scene = scene;

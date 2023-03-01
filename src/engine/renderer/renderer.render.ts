@@ -282,7 +282,7 @@ export function RendererSystem(ctx: RenderThreadState) {
   updateLocalNodeResources(ctx, rendererModule, editorLoaded);
   updateTileRenderers(ctx, tileRendererNodes, activeCameraNode);
   updateReflectionProbeTextureArray(ctx, activeScene);
-  updateNodeReflections(ctx, activeScene);
+  updateNodeReflections(ctx, activeScene, rendererModule);
   updateNodesFromXRPoses(ctx, rendererModule, inputModule);
 
   if (activeScene && activeCameraNode && activeCameraNode.cameraObject) {
