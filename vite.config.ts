@@ -32,6 +32,10 @@ export default defineConfig({
           src: path.resolve(__dirname, "node_modules/@webxr-input-profiles/assets/dist/**/*"),
           dest: "webxr-input-profiles",
         },
+        {
+          src: path.resolve(__dirname, "node_modules/detect-gpu/dist/benchmarks/*"),
+          dest: "detect-gpu-benchmarks",
+        },
       ],
     }),
   ],

@@ -29,7 +29,7 @@ export function SelectInput<T>({ options, disabled, value, onChange }: SelectInp
 
   return (
     <div className="ComboInput">
-      <button className="SelectInput" {...getToggleButtonProps()} disabled={disabled}>
+      <button className="SelectInput" {...getToggleButtonProps()} type="button" disabled={disabled}>
         <Text className="grow truncate" variant="b3">
           {selectedOption?.label ?? "Select Item"}
         </Text>

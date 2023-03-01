@@ -24,6 +24,12 @@ import { useFilePicker } from "../../../hooks/useFilePicker";
 import { uploadAttachment } from "../../../utils/matrixUtils";
 import { Switch } from "../../../atoms/button/Switch";
 import { useLocalStorage } from "../../../hooks/useLocalStorage";
+import { SelectInput } from "../../components/property-panel/SelectInput";
+import {
+  LOCAL_STORAGE_RENDER_QUALITY,
+  RenderQualityOptions,
+  RenderQualitySetting,
+} from "../../../../engine/renderer/renderer.common";
 
 export function UserProfileOverview() {
   const { session, platform, profileRoom } = useHydrogen(true);
@@ -36,6 +42,7 @@ export function UserProfileOverview() {
   );
   const [discoverPage, setDiscoverPage] = useLocalStorage("feature_discoverPage", false);
   const [immersiveAR, setImmersiveAR] = useLocalStorage("feature_immersiveAR", false);
+  const [renderQuality, setRenderQuality] = useLocalStorage(LOCAL_STORAGE_RENDER_QUALITY, RenderQualitySetting.Auto);
 
   const [, tDAvatarPreviewUrl] = use3DAvatar(profileRoom);
 
@@ -99,6 +106,12 @@ export function UserProfileOverview() {
                 <div className="flex gap-lg">
                   <SettingTile className="grow basis-0" label={<Label>Default Display Name</Label>}>
                     <Input name="displayName" onChange={onDisplayNameChange} defaultValue={displayName} required />
+                  </SettingTile>
+                  <span className="grow basis-0" />
+                </div>
+                <div className="flex gap-lg">
+                  <SettingTile className="grow basis-0" label={<Label>Graphics Quality (REQUIRES REFRESH)</Label>}>
+                    <SelectInput options={RenderQualityOptions} value={renderQuality} onChange={setRenderQuality} />
                   </SettingTile>
                   <span className="grow basis-0" />
                 </div>

@@ -6,7 +6,6 @@ import {
   WebGLRenderer,
   DataArrayTexture,
   PMREMGenerator,
-  Texture,
   Object3D,
   NoToneMapping,
 } from "three";
@@ -30,6 +29,7 @@ import {
   NotifySceneRendererMessage,
   RendererMessageType,
   rendererModuleName,
+  RenderQuality,
   XRMode,
   XRSessionModeToXRMode,
 } from "./renderer.common";
@@ -75,6 +75,7 @@ export interface RendererModuleState {
   xrAvatarRoot: Object3D;
   dynamicAccessors: RenderAccessor[];
   xrMode: Uint8Array;
+  quality: RenderQuality;
 }
 
 // TODO: Add multiviewStereo to three types once https://github.com/mrdoob/three.js/pull/24048 is merged.
@@ -87,7 +88,7 @@ declare module "three" {
 export const RendererModule = defineModule<RenderThreadState, RendererModuleState>({
   name: rendererModuleName,
   async create(ctx, { waitForMessage, sendMessage }) {
-    const { canvasTarget, initialCanvasHeight, initialCanvasWidth, supportedXRSessionModes } =
+    const { canvasTarget, initialCanvasHeight, initialCanvasWidth, supportedXRSessionModes, quality } =
       await waitForMessage<InitializeCanvasMessage>(Thread.Main, RendererMessageType.InitializeCanvas);
 
     patchShaderChunks();
@@ -129,15 +130,9 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
     renderer.toneMapping = NoToneMapping;
     renderer.toneMappingExposure = 1;
     renderer.physicallyCorrectLights = true;
-    renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = PCFSoftShadowMap;
     renderer.info.autoReset = false;
     renderer.setSize(initialCanvasWidth, initialCanvasHeight, false);
-
-    // Set the texture anisotropy which improves rendering at extreme angles.
-    // Note this uses the GPU's maximum anisotropy with an upper limit of 8. We may want to bump this cap up to 16
-    // but we should provide a quality setting for GPUs with a high max anisotropy but limited overall resources.
-    Texture.DEFAULT_ANISOTROPY = Math.min(renderer.capabilities.getMaxAnisotropy(), 8);
 
     if (supportedXRSessionModes) {
       renderer.xr.enabled = true;
@@ -169,7 +164,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
     return {
       needsResize: true,
       renderer,
-      renderPipeline: new RenderPipeline(renderer),
+      renderPipeline: new RenderPipeline(renderer, quality),
       canvasWidth: initialCanvasWidth,
       canvasHeight: initialCanvasHeight,
       scenes: [],
@@ -185,6 +180,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       xrAvatarRoot,
       dynamicAccessors: [],
       xrMode,
+      quality,
     };
   },
   init(ctx) {
