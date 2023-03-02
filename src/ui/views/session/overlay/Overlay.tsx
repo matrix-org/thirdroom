@@ -21,7 +21,7 @@ import { WorldPreview } from "./WorldPreview";
 import { CreateWorld } from "../create-world/CreateWorld";
 import { UserProfile } from "../user-profile/UserProfile";
 import { useRoom } from "../../../hooks/useRoom";
-import { useStore, SidebarTabs, OverlayWindow } from "../../../hooks/useStore";
+import { useStore, OverlayWindow } from "../../../hooks/useStore";
 import { RoomListHome } from "../sidebar/RoomListHome";
 import { RoomListFriends } from "../sidebar/RoomListFriends";
 import { useInvite } from "../../../hooks/useInvite";
@@ -36,6 +36,7 @@ import { DiscoverView } from "../discover/DiscoverView";
 import config from "../../../../../config.json";
 import { activeChatsAtom, openedChatAtom } from "../../../state/overlayChat";
 import { overlayWorldAtom } from "../../../state/overlayWorld";
+import { SidebarTab, sidebarTabAtom } from "../../../state/sidebarTab";
 
 export function Overlay() {
   const { session, platform } = useHydrogen(true);
@@ -44,10 +45,9 @@ export function Overlay() {
   const openedChatId = useAtomValue(openedChatAtom);
   const [activeChats, setActiveChat] = useAtom(activeChatsAtom);
   const selectedWorldId = useAtomValue(overlayWorldAtom);
+  const sidebarTab = useAtomValue(sidebarTabAtom);
 
-  const { selectedSidebarTab, worldId, isEnteredWorld } = useStore((state) => ({
-    selectedSidebarTab: state.overlaySidebar.selectedSidebarTab,
-    selectSidebarTab: state.overlaySidebar.selectSidebarTab,
+  const { worldId, isEnteredWorld } = useStore((state) => ({
     worldId: state.world.worldId,
     isEnteredWorld: state.world.entered,
   }));
@@ -74,9 +74,9 @@ export function Overlay() {
               header={<RoomListHeader />}
               content={
                 <RoomListContent>
-                  {selectedSidebarTab === SidebarTabs.Home && <RoomListHome groupCalls={groupCalls} />}
-                  {selectedSidebarTab === SidebarTabs.Friends && <RoomListFriends />}
-                  {selectedSidebarTab === SidebarTabs.Notifications && <RoomListNotifications />}
+                  {sidebarTab === SidebarTab.Home && <RoomListHome groupCalls={groupCalls} />}
+                  {sidebarTab === SidebarTab.Friends && <RoomListFriends />}
+                  {sidebarTab === SidebarTab.Notifications && <RoomListNotifications />}
                 </RoomListContent>
               }
               footer={

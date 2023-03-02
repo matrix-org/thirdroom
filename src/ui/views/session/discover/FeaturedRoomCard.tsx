@@ -7,9 +7,10 @@ import { RoomPreviewCard } from "../../components/room-preview-card/RoomPreviewC
 import { RoomSummaryProvider } from "../../components/RoomSummaryProvider";
 import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avatar";
 import { Dots } from "../../../atoms/loading/Dots";
-import { SidebarTabs, useStore } from "../../../hooks/useStore";
+import { useStore } from "../../../hooks/useStore";
 import { JoinRoomProvider } from "../../components/JoinRoomProvider";
 import { activeChatsAtom } from "../../../state/overlayChat";
+import { SidebarTab, sidebarTabAtom } from "../../../state/sidebarTab";
 
 export function FeaturedRoomCard({
   session,
@@ -21,11 +22,12 @@ export function FeaturedRoomCard({
   roomId: string;
 }) {
   const selectChat = useSetAtom(activeChatsAtom);
+  const setSidebarTab = useSetAtom(sidebarTabAtom);
 
   const handleViewRoom = () => {
     const state = useStore.getState();
     selectChat({ type: "OPEN", roomId });
-    state.overlaySidebar.selectSidebarTab(SidebarTabs.Home);
+    setSidebarTab(SidebarTab.Home);
     state.overlayWindow.closeWindow();
   };
 

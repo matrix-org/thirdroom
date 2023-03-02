@@ -1,4 +1,6 @@
-import { OverlayWindow, SidebarTabs, useStore } from "../../../hooks/useStore";
+import { useAtomValue } from "jotai";
+
+import { OverlayWindow, useStore } from "../../../hooks/useStore";
 import AddIC from "../../../../../res/ic/add.svg";
 import { Text } from "../../../atoms/text/Text";
 import "./RoomListHeader.css";
@@ -9,9 +11,10 @@ import { DropdownMenu } from "../../../atoms/menu/DropdownMenu";
 import { DropdownMenuItem } from "../../../atoms/menu/DropdownMenuItem";
 import { useDialog } from "../../../hooks/useDialog";
 import { Dialog } from "../../../atoms/dialog/Dialog";
+import { sidebarTabAtom, SidebarTab } from "../../../state/sidebarTab";
 
 export function RoomListHeader() {
-  const { selectedSidebarTab } = useStore((state) => state.overlaySidebar);
+  const sidebarTab = useAtomValue(sidebarTabAtom);
   const { selectWindow } = useStore((state) => state.overlayWindow);
   const { open, setOpen, openDialog, closeDialog } = useDialog(false);
   const {
@@ -23,7 +26,7 @@ export function RoomListHeader() {
 
   return (
     <header className="RoomListHeader shrink-0 flex items-center gap-xs">
-      {selectedSidebarTab === SidebarTabs.Home && (
+      {sidebarTab === SidebarTab.Home && (
         <>
           <Text className="grow truncate" variant="s2" weight="semi-bold">
             Home
@@ -45,7 +48,7 @@ export function RoomListHeader() {
           </DropdownMenu>
         </>
       )}
-      {selectedSidebarTab === SidebarTabs.Friends && (
+      {sidebarTab === SidebarTab.Friends && (
         <>
           <Text className="grow truncate" variant="s2" weight="semi-bold">
             Friends
@@ -56,7 +59,7 @@ export function RoomListHeader() {
           <IconButton onClick={openDialog} label="Direct Message" iconSrc={AddIC} />
         </>
       )}
-      {selectedSidebarTab === SidebarTabs.Notifications && (
+      {sidebarTab === SidebarTab.Notifications && (
         <>
           <Text className="grow truncate" variant="s2" weight="semi-bold">
             Notifications

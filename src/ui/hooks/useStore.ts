@@ -1,12 +1,6 @@
 import create from "zustand";
 import { immer } from "zustand/middleware/immer";
 
-export enum SidebarTabs {
-  Home = "Home",
-  Friends = "Friends",
-  Notifications = "Notifications",
-}
-
 export enum OverlayWindow {
   CreateWorld = "create_world",
   UserProfile = "user_profile",
@@ -21,11 +15,6 @@ export interface UserProfileState {
   setUserId: (id: string) => void;
   setDisplayName: (name: string) => void;
   setAvatarUrl: (url?: string) => void;
-}
-
-export interface OverlaySidebarState {
-  selectedSidebarTab: SidebarTabs;
-  selectSidebarTab(tab: SidebarTabs): void;
 }
 
 export interface OverlayWindowState {
@@ -47,7 +36,6 @@ export interface WorldState {
 
 export interface StoreState {
   userProfile: UserProfileState;
-  overlaySidebar: OverlaySidebarState;
   overlayWindow: OverlayWindowState;
   world: WorldState;
 }
@@ -74,16 +62,17 @@ export const useStore = create<StoreState>()(
         });
       },
     },
-    overlaySidebar: {
-      selectedSidebarTab: SidebarTabs.Home,
-      selectSidebarTab(tab: SidebarTabs) {
-        set((state) => {
-          state.overlayWindow.selectedWindow = undefined;
-          state.overlayWindow.worldSettingsId = undefined;
-          state.overlaySidebar.selectedSidebarTab = tab;
-        });
-      },
-    },
+    // overlaySidebar: {
+    //   selectedSidebarTab: SidebarTabs.Home,
+    //   selectSidebarTab(tab: SidebarTabs) {
+    //     set((state) => {
+    //       TODO: next 2 lines
+    //       state.overlayWindow.selectedWindow = undefined;
+    //       state.overlayWindow.worldSettingsId = undefined;
+    //       state.overlaySidebar.selectedSidebarTab = tab;
+    //     });
+    //   },
+    // },
     overlayWindow: {
       selectedWindow: undefined,
       selectWindow(window: OverlayWindow) {
