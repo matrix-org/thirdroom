@@ -7,6 +7,29 @@
 #include "./websg-js.h"
 #include "./websg-network-js.h"
 
+void *get_typed_array_data(JSContext *ctx, JSValue *value, size_t byte_length) {
+  size_t view_byte_offset;
+  size_t view_byte_length;
+  size_t view_bytes_per_element;
+
+  JSValue buffer = JS_GetTypedArrayBuffer(ctx, *value, &view_byte_offset, &view_byte_length, &view_bytes_per_element);
+
+  if (JS_IsException(buffer)) {
+    return NULL;
+  }
+
+  if (view_byte_length != byte_length) {
+    JS_ThrowRangeError(ctx, "WebSG: Invalid typed array length.");
+    return NULL;
+  }
+
+  size_t buffer_byte_length;
+  uint8_t *data = JS_GetArrayBuffer(ctx, &buffer_byte_length, buffer);
+  data += view_byte_offset;
+
+  return (void *)data;
+}
+
 static JSValue js_get_environment_scene(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
   scene_id_t scene_id = websg_get_environment_scene();
 
@@ -778,6 +801,45 @@ static JSValue js_node_set_light(JSContext *ctx, JSValueConst this_val, int argc
   return JS_UNDEFINED;
 }
 
+static JSValue js_node_get_collider(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  node_id_t node_id;
+
+  if (JS_ToUint32(ctx, &node_id, argv[0]) == -1) {
+    return JS_EXCEPTION;
+  }
+
+  collider_id_t collider_id = websg_node_get_collider(node_id);
+
+  if (collider_id == 0) {
+    return JS_UNDEFINED;
+  }
+
+  return JS_NewUint32(ctx, collider_id);
+}
+
+static JSValue js_node_set_collider(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  node_id_t node_id;
+
+  if (JS_ToUint32(ctx, &node_id, argv[0]) == -1) {
+    return JS_EXCEPTION;
+  }
+
+  collider_id_t collider_id;
+
+  if (JS_ToUint32(ctx, &collider_id, argv[1]) == -1) {
+    return JS_EXCEPTION;
+  }
+
+  int32_t result = websg_node_set_collider(node_id, collider_id);
+
+  if (result == -1) {
+    JS_ThrowInternalError(ctx, "WebSG: Error setting collider.");
+    return JS_EXCEPTION;
+  }
+
+  return JS_UNDEFINED;
+}
+
 JSAtom POSITION;
 JSAtom NORMAL;
 JSAtom TANGENT;
@@ -906,6 +968,51 @@ static JSValue js_create_mesh(JSContext *ctx, JSValueConst this_val, int argc, J
 
   if (mesh_id == 0) {
     JS_ThrowInternalError(ctx, "WebSG: Couldn't create mesh.");
+    return JS_EXCEPTION;
+  }
+
+  return JS_NewUint32(ctx, mesh_id);
+}
+
+static JSValue js_create_box_mesh(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  BoxMeshProps *props = js_mallocz(ctx, sizeof(BoxMeshProps));
+
+  JSValue size_val = JS_GetPropertyStr(ctx, argv[0], "size");
+
+  if (!JS_IsUndefined(size_val)) {
+    float_t *size = get_typed_array_data(ctx, &size_val, sizeof(float_t) * 3);
+
+    if (size == NULL) {
+      return JS_EXCEPTION;
+    }
+
+    memcpy(props->size, size, sizeof(float_t) * 3);
+  }
+
+   JSValue segments_val = JS_GetPropertyStr(ctx, argv[0], "segments");
+
+  if (!JS_IsUndefined(segments_val)) {
+    uint32_t *segments = get_typed_array_data(ctx, &segments_val, sizeof(uint32_t) * 3);
+
+    if (segments == NULL) {
+      return JS_EXCEPTION;
+    }
+
+    memcpy(props->segments, segments, sizeof(uint32_t) * 3);
+  }
+
+  JSValue materialVal = JS_GetPropertyStr(ctx, argv[0], "material");
+
+  if (!JS_IsUndefined(materialVal)) {
+    if (JS_ToUint32(ctx, &props->material, materialVal) == -1) {
+      return JS_EXCEPTION;
+    }
+  }
+
+  mesh_id_t mesh_id = websg_create_box_mesh(props);
+
+  if (mesh_id == 0) {
+    JS_ThrowInternalError(ctx, "WebSG: Couldn't create box mesh.");
     return JS_EXCEPTION;
   }
 
@@ -1789,6 +1896,230 @@ static JSValue js_get_interactable_released(JSContext *ctx, JSValueConst this_va
   return JS_NewBool(ctx, result);
 }
 
+JSAtom colliderTypeBox;
+JSAtom colliderTypeSphere;
+JSAtom colliderTypeCapsule;
+JSAtom colliderTypeCylinder;
+JSAtom colliderTypeHull;
+JSAtom colliderTypeTrimesh;
+
+ColliderType get_collider_type_from_atom(JSAtom atom) {
+  if (atom == colliderTypeBox) {
+    return ColliderType_Box;
+  } else if (atom == colliderTypeSphere) {
+    return ColliderType_Sphere;
+  } else if (atom == colliderTypeCapsule) {
+    return ColliderType_Capsule;
+  } else if (atom == colliderTypeCylinder) {
+    return ColliderType_Cylinder;
+  } else if (atom == colliderTypeHull) {
+    return ColliderType_Hull;
+  } else if (atom == colliderTypeTrimesh) {
+    return ColliderType_Trimesh;
+  } else {
+    return -1;
+  }
+}
+
+static JSValue js_create_collider(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  ColliderProps *props = js_mallocz(ctx, sizeof(ColliderProps));
+
+  JSValue typeVal = JS_GetPropertyStr(ctx, argv[0], "type");
+
+  ColliderType collider_type =  get_collider_type_from_atom(JS_ValueToAtom(ctx, typeVal));
+
+  if (collider_type == -1) {
+    JS_ThrowTypeError(ctx, "WebSG: Unknown collider type.");
+    return JS_EXCEPTION;
+  }
+
+  JSValue isTriggerVal = JS_GetPropertyStr(ctx, argv[0], "isTrigger");
+
+  if (!JS_IsUndefined(isTriggerVal)) {
+    int is_trigger = JS_ToBool(ctx, isTriggerVal);
+
+    if (is_trigger < 0) {
+      return JS_EXCEPTION;
+    }
+
+    props->is_trigger = is_trigger;
+  }
+
+  JSValue size_val = JS_GetPropertyStr(ctx, argv[0], "size");
+
+  if (!JS_IsUndefined(size_val)) {
+    float_t *size = get_typed_array_data(ctx, &size_val, sizeof(float_t) * 3);
+
+    if (size == NULL) {
+      return JS_EXCEPTION;
+    }
+
+    memcpy(props->size, size, sizeof(float_t) * 3);
+  }
+
+  JSValue radius_val = JS_GetPropertyStr(ctx, argv[0], "radius");
+
+  if (!JS_IsUndefined(radius_val)) {
+    double_t radius;
+
+    if (JS_ToFloat64(ctx, &radius, radius_val) == -1) {
+      return JS_EXCEPTION;
+    }
+
+    props->radius = (float_t)radius;
+  }
+
+  JSValue height_val = JS_GetPropertyStr(ctx, argv[0], "height");
+
+  if (!JS_IsUndefined(height_val)) {
+    double_t height;
+
+    if (JS_ToFloat64(ctx, &height, height_val) == -1) {
+      return JS_EXCEPTION;
+    }
+
+    props->height = (float_t)height;
+  }
+
+  JSValue mesh_val = JS_GetPropertyStr(ctx, argv[0], "mesh");
+
+  if (!JS_IsUndefined(mesh_val)) {
+    mesh_id_t mesh_id;
+
+    if (JS_ToUint32(ctx, &mesh_id, mesh_val) == -1) {
+      return JS_EXCEPTION;
+    }
+
+    props->mesh = mesh_id;
+  }
+
+  collider_id_t collider_id = websg_create_collider(props);
+
+  if (collider_id == 0) {
+    JS_ThrowInternalError(ctx, "WebSG: Couldn't create collider.");
+    return JS_EXCEPTION;
+  }
+
+  return JS_NewUint32(ctx, collider_id);
+}
+
+
+JSAtom physicsBodyTypeStatic;
+JSAtom physicsBodyTypeKinematic;
+JSAtom physicsBodyTypeRigid;
+
+PhysicsBodyType get_physics_body_type_from_atom(JSAtom atom) {
+  if (atom == physicsBodyTypeStatic) {
+    return PhysicsBodyType_Static;
+  } else if (atom == physicsBodyTypeKinematic) {
+    return PhysicsBodyType_Kinematic;
+  } else if (atom == physicsBodyTypeRigid) {
+    return PhysicsBodyType_Rigid;
+  } else {
+    return -1;
+  }
+}
+
+static JSValue js_add_physics_body(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  node_id_t node_id;
+
+  if (JS_ToUint32(ctx, &node_id, argv[0]) == -1) {
+    return JS_EXCEPTION;
+  }
+
+  PhysicsBodyProps *props = js_malloc(ctx, sizeof(PhysicsBodyProps));
+
+  JSValue typeVal = JS_GetPropertyStr(ctx, argv[1], "type");
+
+  PhysicsBodyType physics_body_type = get_physics_body_type_from_atom(JS_ValueToAtom(ctx, typeVal));
+
+  if (physics_body_type == -1) {
+    JS_ThrowTypeError(ctx, "WebSG: Unknown physics body type.");
+    return JS_EXCEPTION;
+  }
+
+  props->type = physics_body_type;
+
+  JSValue linear_velocity_val = JS_GetPropertyStr(ctx, argv[1], "linearVelocity");
+
+  if (!JS_IsUndefined(linear_velocity_val)) {
+    float_t *linear_velocity = get_typed_array_data(ctx, &linear_velocity_val, sizeof(float_t) * 3);
+
+    if (linear_velocity == NULL) {
+      return JS_EXCEPTION;
+    }
+
+    memcpy(props->linear_velocity, linear_velocity, sizeof(float_t) * 3);
+  }
+
+  JSValue angular_velocity_val = JS_GetPropertyStr(ctx, argv[1], "angularVelocity");
+
+  if (!JS_IsUndefined(angular_velocity_val)) {
+    float_t *angular_velocity = get_typed_array_data(ctx, &angular_velocity_val, sizeof(float_t) * 3);
+
+    if (angular_velocity == NULL) {
+      return JS_EXCEPTION;
+    }
+
+    memcpy(props->angular_velocity, angular_velocity, sizeof(float_t) * 3);
+  }
+
+  JSValue inertia_tensor_val = JS_GetPropertyStr(ctx, argv[1], "inertiaTensor");
+
+  if (!JS_IsUndefined(inertia_tensor_val)) {
+    float_t *inertia_tensor = get_typed_array_data(ctx, &inertia_tensor_val, sizeof(float_t) * 9);
+
+    if (inertia_tensor == NULL) {
+      return JS_EXCEPTION;
+    }
+
+    memcpy(props->inertia_tensor, inertia_tensor, sizeof(float_t) * 9);
+  }
+
+  int32_t result = websg_add_physics_body(node_id, props);
+
+  if (result == -1) {
+    JS_ThrowInternalError(ctx, "WebSG: Error adding physics body.");
+    return JS_EXCEPTION;
+  }
+
+  return JS_UNDEFINED;
+}
+
+static JSValue js_remove_physics_body(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  node_id_t node_id;
+
+  if (JS_ToUint32(ctx, &node_id, argv[0]) == -1) {
+    return JS_EXCEPTION;
+  }
+
+  int32_t result = websg_remove_physics_body(node_id);
+
+  if (result == -1) {
+    JS_ThrowInternalError(ctx, "WebSG: Error removing physics body.");
+    return JS_EXCEPTION;
+  }
+
+  return JS_UNDEFINED;
+}
+
+static JSValue js_has_physics_body(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  node_id_t node_id;
+
+  if (JS_ToUint32(ctx, &node_id, argv[0]) == -1) {
+    return JS_EXCEPTION;
+  }
+
+  int32_t result = websg_has_physics_body(node_id);
+
+  if (result == -1) {
+    JS_ThrowInternalError(ctx, "WebSG: Error checking for physics_body.");
+    return JS_EXCEPTION;
+  }
+
+  return JS_NewBool(ctx, result);
+}
+
 void js_define_websg_api(JSContext *ctx, JSValue *target) {
   JSValue websg = JS_NewObject(ctx);
 
@@ -1995,6 +2326,18 @@ void js_define_websg_api(JSContext *ctx, JSValue *target) {
     "nodeSetLight",
     JS_NewCFunction(ctx, js_node_set_light, "nodeSetLight", 2)
   );
+  JS_SetPropertyStr(
+    ctx,
+    websg,
+    "nodeGetCollider",
+    JS_NewCFunction(ctx, js_node_get_collider, "nodeGetCollider", 1)
+  );
+  JS_SetPropertyStr(
+    ctx,
+    websg,
+    "nodeSetCollider",
+    JS_NewCFunction(ctx, js_node_set_collider, "nodeSetCollider", 2)
+  );
 
   // Mesh
 
@@ -2032,6 +2375,12 @@ void js_define_websg_api(JSContext *ctx, JSValue *target) {
     websg,
     "createMesh",
     JS_NewCFunction(ctx, js_create_mesh, "createMesh", 1)
+  );
+  JS_SetPropertyStr(
+    ctx,
+    websg,
+    "createBoxMesh",
+    JS_NewCFunction(ctx, js_create_box_mesh, "createBoxMesh", 1)
   );
   JS_SetPropertyStr(
     ctx,
@@ -2128,6 +2477,11 @@ void js_define_websg_api(JSContext *ctx, JSValue *target) {
 
   standard = JS_NewAtom(ctx, "standard");
   unlit = JS_NewAtom(ctx, "unlit");
+
+  JSValue material_type = JS_NewObject(ctx);
+  JS_SetPropertyStr(ctx, material_type, "Standard", JS_AtomToValue(ctx, standard));
+  JS_SetPropertyStr(ctx, material_type, "Unlit", JS_AtomToValue(ctx, unlit));
+  JS_SetPropertyStr(ctx, websg, "MaterialType", material_type);
 
   JS_SetPropertyStr(
     ctx,
@@ -2276,6 +2630,62 @@ void js_define_websg_api(JSContext *ctx, JSValue *target) {
     websg,
     "getInteractableReleased",
     JS_NewCFunction(ctx, js_get_interactable_released, "getInteractableReleased", 1)
+  );
+
+  // Collider
+
+  colliderTypeBox = JS_NewAtom(ctx, "box");
+  colliderTypeSphere = JS_NewAtom(ctx, "sphere");
+  colliderTypeCapsule = JS_NewAtom(ctx, "capsule");
+  colliderTypeCylinder = JS_NewAtom(ctx, "cylinder");
+  colliderTypeHull = JS_NewAtom(ctx, "hull");
+  colliderTypeTrimesh = JS_NewAtom(ctx, "trimesh");
+
+  JSValue collider_type = JS_NewObject(ctx);
+  JS_SetPropertyStr(ctx, collider_type, "Box", JS_AtomToValue(ctx, colliderTypeBox));
+  JS_SetPropertyStr(ctx, collider_type, "Sphere", JS_AtomToValue(ctx, colliderTypeSphere));
+  JS_SetPropertyStr(ctx, collider_type, "Capsule", JS_AtomToValue(ctx, colliderTypeCapsule));
+  JS_SetPropertyStr(ctx, collider_type, "Cylinder", JS_AtomToValue(ctx, colliderTypeCylinder));
+  JS_SetPropertyStr(ctx, collider_type, "Hull", JS_AtomToValue(ctx, colliderTypeHull));
+  JS_SetPropertyStr(ctx, collider_type, "Trimesh", JS_AtomToValue(ctx, colliderTypeTrimesh));
+  JS_SetPropertyStr(ctx, websg, "ColliderType", collider_type);
+
+  JS_SetPropertyStr(
+    ctx,
+    websg,
+    "createCollider",
+    JS_NewCFunction(ctx, js_create_collider, "createCollider", 1)
+  );
+
+  // Physics Body
+
+  physicsBodyTypeKinematic = JS_NewAtom(ctx, "kinematic");
+  physicsBodyTypeRigid = JS_NewAtom(ctx, "rigid");
+  physicsBodyTypeStatic = JS_NewAtom(ctx, "static");
+
+  JSValue physics_body_type = JS_NewObject(ctx);
+  JS_SetPropertyStr(ctx, physics_body_type, "Kinematic", JS_AtomToValue(ctx, physicsBodyTypeKinematic));
+  JS_SetPropertyStr(ctx, physics_body_type, "Rigid", JS_AtomToValue(ctx, physicsBodyTypeRigid));
+  JS_SetPropertyStr(ctx, physics_body_type, "Static", JS_AtomToValue(ctx, physicsBodyTypeStatic));
+  JS_SetPropertyStr(ctx, websg, "PhysicsBodyType", physics_body_type);
+
+  JS_SetPropertyStr(
+    ctx,
+    websg,
+    "addPhysicsBody",
+    JS_NewCFunction(ctx, js_add_physics_body, "addPhysicsBody", 2)
+  );
+  JS_SetPropertyStr(
+    ctx,
+    websg,
+    "removePhysicsBody",
+    JS_NewCFunction(ctx, js_remove_physics_body, "removePhysicsBody", 1)
+  );
+  JS_SetPropertyStr(
+    ctx,
+    websg,
+    "hasPhysicsBody",
+    JS_NewCFunction(ctx, js_has_physics_body, "hasPhysicsBody", 1)
   );
 
   js_define_websg_network_api(ctx, &websg);
