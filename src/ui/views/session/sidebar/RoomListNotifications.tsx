@@ -1,5 +1,5 @@
 import { Invite, Room } from "@thirdroom/hydrogen-view-sdk";
-import { useAtomValue, useSetAtom } from "jotai";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { getIdentifierColorNumber, getAvatarHttpUrl } from "../../../utils/avatar";
@@ -10,10 +10,10 @@ import { RoomTileTitle } from "../../components/room-tile/RoomTileTitle";
 import { Category } from "../../components/category/Category";
 import { CategoryHeader } from "../../components/category/CategoryHeader";
 import { RoomTypes } from "../../../hooks/useRoomsOfType";
-import { useStore } from "../../../hooks/useStore";
 import { useInvitesOfType } from "../../../hooks/useInvitesOfType";
 import { EmptyState } from "../../components/empty-state/EmptyState";
 import { activeChatsAtom, openedChatAtom } from "../../../state/overlayChat";
+import { overlayWorldAtom } from "../../../state/overlayWorld";
 
 export function RoomListNotifications() {
   const { session, platform } = useHydrogen(true);
@@ -23,7 +23,7 @@ export function RoomListNotifications() {
 
   const openedChatId = useAtomValue(openedChatAtom);
   const setActiveChat = useSetAtom(activeChatsAtom);
-  const { selectedWorldId, selectWorld } = useStore((state) => state.overlayWorld);
+  const [selectedWorldId, selectWorld] = useAtom(overlayWorldAtom);
 
   const renderAvatar = (room: Room | Invite, isWorld: boolean) => {
     const avatar = (

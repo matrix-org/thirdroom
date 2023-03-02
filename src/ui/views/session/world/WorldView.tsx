@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, forwardRef } from "react";
 import { GroupCall, Room, RoomStatus } from "@thirdroom/hydrogen-view-sdk";
 import classNames from "classnames";
+import { useSetAtom } from "jotai";
 
 import { WorldChat } from "../world-chat/WorldChat";
 import { Stats } from "../stats/Stats";
@@ -62,6 +63,7 @@ import { useIsMounted } from "../../../hooks/useIsMounted";
 import { InteractableType } from "../../../../engine/resource/schema";
 import { useWebXRSession } from "../../../hooks/useWebXRSession";
 import { useMemoizedState } from "../../../hooks/useMemoizedState";
+import { overlayWorldAtom } from "../../../state/overlayWorld";
 
 export interface ActiveEntityState {
   interactableType: InteractableType;
@@ -127,7 +129,7 @@ export function WorldView({ world }: WorldViewProps) {
   const calls = useCalls(session);
   const activeCall = useRoomCall(calls, world.id);
   const { enterWorld, exitWorld } = useWorldAction(session);
-  const { selectWorld } = useStore((state) => state.overlayWorld);
+  const selectWorld = useSetAtom(overlayWorldAtom);
   const isEnteredWorld = useStore((state) => state.world.entered);
   const { isOpen: isChatOpen, openWorldChat, closeWorldChat } = useStore((state) => state.worldChat);
   const setIsPointerLock = useStore((state) => state.pointerLock.setIsPointerLock);

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { CallIntent, LocalMedia, Room, StateEvent, SubscriptionHandle } from "@thirdroom/hydrogen-view-sdk";
+import { useSetAtom } from "jotai";
 
 import { useStore } from "../../../hooks/useStore";
 import { IMainThreadContext } from "../../../../engine/MainThread";
@@ -23,6 +24,7 @@ import { Button } from "../../../atoms/button/Button";
 import { useWorldAction } from "../../../hooks/useWorldAction";
 import { WorldPreviewCard } from "../../components/world-preview-card/WorldPreviewCard";
 import { disposeActiveMatrixRoom, setActiveMatrixRoom } from "../../../../engine/matrix/matrix.main";
+import { overlayWorldAtom } from "../../../state/overlayWorld";
 
 interface WorldLoadProgress {
   loaded: number;
@@ -155,7 +157,7 @@ function useEnterWorld() {
 export function WorldLoading({ roomId, reloadId }: { roomId?: string; reloadId?: string }) {
   const { worldId, setWorld, entered, setNetworkInterfaceDisposer } = useStore((state) => state.world);
   const { closeOverlay, openOverlay, isOpen: isOverlayOpen } = useStore((state) => state.overlay);
-  const selectWorld = useStore((state) => state.overlayWorld.selectWorld);
+  const selectWorld = useSetAtom(overlayWorldAtom);
   const { session } = useHydrogen(true);
   const { enterWorld: enterWorldAction } = useWorldAction(session);
   const [resetLoadProgress, loadProgress] = useWorldLoadingProgress();

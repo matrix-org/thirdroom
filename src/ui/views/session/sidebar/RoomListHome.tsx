@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { GroupCall } from "@thirdroom/hydrogen-view-sdk";
-import { useAtomValue, useSetAtom } from "jotai";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { Category } from "../../components/category/Category";
@@ -16,6 +16,7 @@ import { EmptyState } from "../../components/empty-state/EmptyState";
 import { OverlayWindow } from "../../../hooks/useStore";
 import { Button } from "../../../atoms/button/Button";
 import { activeChatsAtom, openedChatAtom } from "../../../state/overlayChat";
+import { overlayWorldAtom } from "../../../state/overlayWorld";
 
 interface RoomListHomeProps {
   groupCalls: Map<string, GroupCall>;
@@ -33,7 +34,7 @@ export function RoomListHome({ groupCalls }: RoomListHomeProps) {
 
   const openedChatId = useAtomValue(openedChatAtom);
   const setActiveChat = useSetAtom(activeChatsAtom);
-  const { selectedWorldId, selectWorld } = useStore((state) => state.overlayWorld);
+  const [selectedWorldId, selectWorld] = useAtom(overlayWorldAtom);
 
   if (worlds.length === 0 && rooms.length === 0) {
     return (

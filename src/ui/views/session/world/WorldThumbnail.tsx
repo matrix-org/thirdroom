@@ -1,14 +1,16 @@
 import classNames from "classnames";
+import { useAtomValue } from "jotai";
 import { useEffect, useState } from "react";
 
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { useIsMounted } from "../../../hooks/useIsMounted";
 import { useStore } from "../../../hooks/useStore";
+import { overlayWorldAtom } from "../../../state/overlayWorld";
 import { loadImageUrl } from "../../../utils/common";
 import "./WorldThumbnail.css";
 
 export function WorldThumbnail() {
-  const selectedWorldId = useStore((state) => state.overlayWorld.selectedWorldId);
+  const selectedWorldId = useAtomValue(overlayWorldAtom);
   const { worldId, entered } = useStore((state) => state.world);
   const isOverlayOpen = useStore((state) => state.overlay.isOpen);
 

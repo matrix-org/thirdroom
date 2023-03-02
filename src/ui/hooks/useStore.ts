@@ -42,11 +42,6 @@ export interface OverlayWindowState {
   closeWindow(): void;
 }
 
-export interface OverlayWorldState {
-  selectedWorldId: string | undefined;
-  selectWorld(roomId: string | undefined): void;
-}
-
 export interface WorldState {
   worldId: string | undefined;
   entered: boolean;
@@ -72,7 +67,6 @@ export interface StoreState {
   overlay: OverlayState;
   overlaySidebar: OverlaySidebarState;
   overlayWindow: OverlayWindowState;
-  overlayWorld: OverlayWorldState;
   world: WorldState;
   worldChat: WorldChatState;
   pointerLock: PointerLockState;
@@ -140,15 +134,6 @@ export const useStore = create<StoreState>()(
         set((state) => {
           state.overlayWindow.selectedWindow = undefined;
           state.overlayWindow.worldSettingsId = undefined;
-        });
-      },
-    },
-    overlayWorld: {
-      selectedWorldId: undefined,
-      selectWorld(roomId: string | undefined) {
-        set((state) => {
-          // state.overlayChat.selectedChatId = undefined;
-          state.overlayWorld.selectedWorldId = roomId;
         });
       },
     },

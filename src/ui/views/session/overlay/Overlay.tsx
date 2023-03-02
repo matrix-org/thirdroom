@@ -35,6 +35,7 @@ import { useRoomCall } from "../../../hooks/useRoomCall";
 import { DiscoverView } from "../discover/DiscoverView";
 import config from "../../../../../config.json";
 import { activeChatsAtom, openedChatAtom } from "../../../state/overlayChat";
+import { overlayWorldAtom } from "../../../state/overlayWorld";
 
 export function Overlay() {
   const { session, platform } = useHydrogen(true);
@@ -42,13 +43,13 @@ export function Overlay() {
 
   const openedChatId = useAtomValue(openedChatAtom);
   const [activeChats, setActiveChat] = useAtom(activeChatsAtom);
+  const selectedWorldId = useAtomValue(overlayWorldAtom);
 
-  const { selectedSidebarTab, worldId, isEnteredWorld, selectedWorldId } = useStore((state) => ({
+  const { selectedSidebarTab, worldId, isEnteredWorld } = useStore((state) => ({
     selectedSidebarTab: state.overlaySidebar.selectedSidebarTab,
     selectSidebarTab: state.overlaySidebar.selectSidebarTab,
     worldId: state.world.worldId,
     isEnteredWorld: state.world.entered,
-    selectedWorldId: state.overlayWorld.selectedWorldId,
   }));
 
   const repositoryRoom = useRoom(session, config.repositoryRoomIdOrAlias);

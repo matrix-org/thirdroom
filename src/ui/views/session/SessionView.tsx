@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { Outlet } from "react-router-dom";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
+import { useSetAtom } from "jotai";
 
 import "./SessionView.css";
 import { useInitMainThreadContext, MainThreadContextProvider } from "../../hooks/useMainThread";
@@ -14,6 +15,7 @@ import { useUnknownWorldPath } from "../../hooks/useWorld";
 import { useAutoJoinRoom } from "../../hooks/useAutoJoinRoom";
 import { useHydrogen } from "../../hooks/useHydrogen";
 import config from "../../../../config.json";
+import { overlayWorldAtom } from "../../state/overlayWorld";
 
 export default function SessionView() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -22,13 +24,14 @@ export default function SessionView() {
   const isOverlayOpen = useStore((state) => state.overlay.isOpen);
   const [worldId, worldAlias] = useUnknownWorldPath();
   const homeWorldId = useHomeWorld();
+  const selectWorld = useSetAtom(overlayWorldAtom);
   useAutoJoinRoom(session, config.repositoryRoomIdOrAlias);
 
   useEffect(() => {
     if (!worldId && !worldAlias && homeWorldId) {
-      useStore.getState().overlayWorld.selectWorld(homeWorldId);
+      selectWorld(homeWorldId);
     }
-  }, [worldId, worldAlias, homeWorldId]);
+  }, [worldId, worldAlias, homeWorldId, selectWorld]);
 
   return (
     <DndProvider backend={HTML5Backend}>

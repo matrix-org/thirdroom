@@ -1,4 +1,5 @@
 import { Platform, Session } from "@thirdroom/hydrogen-view-sdk";
+import { useSetAtom } from "jotai";
 
 import { Avatar } from "../../../atoms/avatar/Avatar";
 import { Button } from "../../../atoms/button/Button";
@@ -8,6 +9,7 @@ import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avata
 import { Dots } from "../../../atoms/loading/Dots";
 import { SidebarTabs, useStore } from "../../../hooks/useStore";
 import { JoinRoomProvider } from "../../components/JoinRoomProvider";
+import { overlayWorldAtom } from "../../../state/overlayWorld";
 
 export function FeaturedWorldCard({
   session,
@@ -18,9 +20,10 @@ export function FeaturedWorldCard({
   platform: Platform;
   roomId: string;
 }) {
+  const selectWorld = useSetAtom(overlayWorldAtom);
   const handleViewWorld = () => {
     const state = useStore.getState();
-    state.overlayWorld.selectWorld(roomId);
+    selectWorld(roomId);
     state.overlaySidebar.selectSidebarTab(SidebarTabs.Home);
     state.overlayWindow.closeWindow();
   };

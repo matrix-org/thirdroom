@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Room, RoomStatus, Session } from "@thirdroom/hydrogen-view-sdk";
+import { useAtomValue, useSetAtom } from "jotai";
 
 import "./WorldPreview.css";
 import { Button } from "../../../atoms/button/Button";
@@ -20,6 +21,7 @@ import { useWorldAction } from "../../../hooks/useWorldAction";
 import { useUnknownWorldPath } from "../../../hooks/useWorld";
 import { useAsyncCallback } from "../../../hooks/useAsyncCallback";
 import { useUpdateScene } from "../../../hooks/useUpdateScene";
+import { overlayWorldAtom } from "../../../state/overlayWorld";
 
 interface InviteWorldPreviewProps {
   session: Session;
@@ -54,7 +56,7 @@ function InviteWorldPreview({ session, roomId }: InviteWorldPreviewProps) {
 }
 
 function JoinWorldCard({ worldIdOrAlias }: { worldIdOrAlias: string }) {
-  const { selectWorld } = useStore((state) => state.overlayWorld);
+  const selectWorld = useSetAtom(overlayWorldAtom);
   const { session } = useHydrogen(true);
 
   const {
@@ -200,7 +202,7 @@ export function WorldPreview() {
   const { session } = useHydrogen(true);
 
   const worldId = useStore((state) => state.world.worldId);
-  const { selectedWorldId } = useStore((state) => state.overlayWorld);
+  const selectedWorldId = useAtomValue(overlayWorldAtom);
   const [unknownWorldId, unknownWorldAlias] = useUnknownWorldPath();
 
   const previewWorldId = selectedWorldId || worldId;

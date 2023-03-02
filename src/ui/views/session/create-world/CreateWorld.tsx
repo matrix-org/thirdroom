@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSetAtom } from "jotai";
 
 import { Text } from "../../../atoms/text/Text";
 import { Icon } from "../../../atoms/icon/Icon";
@@ -16,15 +17,17 @@ import CrossIC from "../../../../../res/ic/cross.svg";
 import { ScenePreview } from "../../components/scene-preview/ScenePreview";
 import { getHttpUrl } from "../../../utils/avatar";
 import { CreateWorldForm } from "./CreateWorldForm";
+import { overlayWorldAtom } from "../../../state/overlayWorld";
 
 export function CreateWorld() {
   const { session } = useHydrogen(true);
   const { closeWindow } = useStore((state) => state.overlayWindow);
 
+  const selectWorld = useSetAtom(overlayWorldAtom);
   const [scenePreviewUrl, setScenePreviewUrl] = useState<string>();
 
   const handleOnCreate = (roomId: string) => {
-    useStore.getState().overlayWorld.selectWorld(roomId);
+    selectWorld(roomId);
     closeWindow();
   };
 
