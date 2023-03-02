@@ -13,6 +13,7 @@ import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avata
 import { useRoomList } from "../../../hooks/useRoomList";
 import { useWorldPath } from "../../../hooks/useWorld";
 import { activeChatsAtom } from "../../../state/overlayChat";
+import { worldChatVisibilityAtom } from "../../../state/worldChatVisibility";
 
 function OverlayButton({
   style,
@@ -101,7 +102,7 @@ export function NotificationButton({ onClick }: { onClick: () => void }) {
 export function StatusBar() {
   const { session } = useHydrogen(true);
   const { isOpen: isOverlayOpen, closeOverlay, openOverlay } = useStore((state) => state.overlay);
-  const closeWorldChat = useStore((state) => state.worldChat.closeWorldChat);
+  const setWorldChatVisibility = useSetAtom(worldChatVisibilityAtom);
 
   const homeMatch = useMatch({ path: "/", end: true });
   const isHome = homeMatch !== null;
@@ -113,7 +114,7 @@ export function StatusBar() {
       closeOverlay();
     } else {
       document.exitPointerLock();
-      closeWorldChat();
+      setWorldChatVisibility(false);
       openOverlay();
     }
   };

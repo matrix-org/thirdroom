@@ -51,19 +51,12 @@ export interface WorldState {
   setNetworkInterfaceDisposer(disposer: () => void): void;
 }
 
-export interface WorldChatState {
-  isOpen: boolean;
-  openWorldChat(): void;
-  closeWorldChat(): void;
-}
-
 export interface StoreState {
   userProfile: UserProfileState;
   overlay: OverlayState;
   overlaySidebar: OverlaySidebarState;
   overlayWindow: OverlayWindowState;
   world: WorldState;
-  worldChat: WorldChatState;
 }
 
 export const useStore = create<StoreState>()(
@@ -154,19 +147,6 @@ export const useStore = create<StoreState>()(
         set((state) => {
           state.world.disposeNetworkInterface = disposer;
           state.world.entered = true;
-        });
-      },
-    },
-    worldChat: {
-      isOpen: false,
-      openWorldChat() {
-        set((state) => {
-          state.worldChat.isOpen = true;
-        });
-      },
-      closeWorldChat() {
-        set((state) => {
-          state.worldChat.isOpen = false;
         });
       },
     },

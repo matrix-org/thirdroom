@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, forwardRef } from "react";
 import { GroupCall, Room, RoomStatus } from "@thirdroom/hydrogen-view-sdk";
 import classNames from "classnames";
-import { useSetAtom } from "jotai";
+import { useAtom, useSetAtom } from "jotai";
 
 import { WorldChat } from "../world-chat/WorldChat";
 import { Stats } from "../stats/Stats";
@@ -63,6 +63,7 @@ import { InteractableType } from "../../../../engine/resource/schema";
 import { useWebXRSession } from "../../../hooks/useWebXRSession";
 import { useMemoizedState } from "../../../hooks/useMemoizedState";
 import { overlayWorldAtom } from "../../../state/overlayWorld";
+import { worldChatVisibilityAtom } from "../../../state/worldChatVisibility";
 
 export interface ActiveEntityState {
   interactableType: InteractableType;
@@ -130,7 +131,7 @@ export function WorldView({ world }: WorldViewProps) {
   const { enterWorld, exitWorld } = useWorldAction(session);
   const selectWorld = useSetAtom(overlayWorldAtom);
   const isEnteredWorld = useStore((state) => state.world.entered);
-  const { isOpen: isChatOpen, openWorldChat, closeWorldChat } = useStore((state) => state.worldChat);
+  const [worldChatVisible, setWorldChatVisibility] = useAtom(worldChatVisibilityAtom);
   const { isOpen: isOverlayOpen, openOverlay, closeOverlay } = useStore((state) => state.overlay);
   const [editorEnabled, setEditorEnabled] = useState(false);
   const [statsEnabled, setStatsEnabled] = useState(false);
@@ -291,9 +292,9 @@ export function WorldView({ world }: WorldViewProps) {
         setShortcutUI(false);
         return;
       }
-      if (isEscape && isChatOpen) {
+      if (isEscape && worldChatVisible) {
         mainThread.canvas?.requestPointerLock();
-        closeWorldChat();
+        setWorldChatVisibility(false);
         return;
       }
       if (isEscape && isOverlayOpen) {
@@ -306,14 +307,14 @@ export function WorldView({ world }: WorldViewProps) {
         openOverlay();
         return;
       }
-      if (e.key === "Enter" && isOverlayOpen === false && isChatOpen === false) {
+      if (e.key === "Enter" && isOverlayOpen === false && worldChatVisible === false) {
         if (document.activeElement !== document.body) return;
         document.exitPointerLock();
-        openWorldChat();
+        setWorldChatVisibility(true);
         return;
       }
 
-      if (isTyping || isChatOpen || showActiveMembers || shortcutUI) return;
+      if (isTyping || worldChatVisible || showActiveMembers || shortcutUI) return;
 
       if (e.altKey && e.code === "KeyL") {
         exitWorld();
@@ -344,14 +345,13 @@ export function WorldView({ world }: WorldViewProps) {
     },
     [
       isEnteredWorld,
-      isChatOpen,
+      worldChatVisible,
+      setWorldChatVisibility,
       isOverlayOpen,
       showNames,
       showActiveMembers,
       shortcutUI,
       onboarding,
-      openWorldChat,
-      closeWorldChat,
       openOverlay,
       closeOverlay,
       enterXR,
@@ -362,17 +362,16 @@ export function WorldView({ world }: WorldViewProps) {
   useEvent(
     "click",
     (e) => {
-      const isChatOpen = useStore.getState().worldChat.isOpen;
       const isOverlayOpen = useStore.getState().overlay.isOpen;
       const isEnteredWorld = useStore.getState().world.entered;
       if (isEnteredWorld === false) return;
 
       mainThread.canvas?.requestPointerLock();
-      if (isChatOpen) closeWorldChat();
+      if (worldChatVisible) setWorldChatVisibility(false);
       if (isOverlayOpen) closeOverlay();
     },
     mainThread.canvas,
-    []
+    [worldChatVisible, setWorldChatVisibility]
   );
 
   useEffect(() => {
@@ -394,12 +393,12 @@ export function WorldView({ world }: WorldViewProps) {
     <div className="WorldView">
       <OnboardingModal open={onboarding} world={world} requestClose={onFinishOnboarding} />
       <Stats statsEnabled={statsEnabled} />
-      <div className={classNames("WorldView__chat flex", { "WorldView__chat--open": isChatOpen })}>
-        {!("isBeingCreated" in world) && <WorldChat open={isChatOpen} room={world} />}
+      <div className={classNames("WorldView__chat flex", { "WorldView__chat--open": worldChatVisible })}>
+        {!("isBeingCreated" in world) && <WorldChat open={worldChatVisible} room={world} />}
       </div>
       {world && (
         <>
-          {!isChatOpen && (
+          {!worldChatVisible && (
             <Hotbar>
               {[
                 { imageSrc: "/image/small-crate-icon.png" },
