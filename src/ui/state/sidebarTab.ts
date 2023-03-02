@@ -1,9 +1,19 @@
 import { atom } from "jotai";
 
+import { OverlayWindow, overlayWindowAtom } from "./overlayWindow";
+
 export enum SidebarTab {
   Home = "Home",
   Friends = "Friends",
   Notifications = "Notifications",
 }
 
-export const sidebarTabAtom = atom<SidebarTab>(SidebarTab.Home);
+const baseSidebarTabAtom = atom<SidebarTab>(SidebarTab.Home);
+
+export const sidebarTabAtom = atom<SidebarTab, [SidebarTab], void>(
+  (get) => get(baseSidebarTabAtom),
+  (get, set, value) => {
+    set(overlayWindowAtom, { type: OverlayWindow.None });
+    set(baseSidebarTabAtom, value);
+  }
+);

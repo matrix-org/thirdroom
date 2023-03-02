@@ -1,24 +1,26 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSetAtom } from "jotai";
 
 import { DropdownMenu } from "../../../atoms/menu/DropdownMenu";
 import { DropdownMenuItem } from "../../../atoms/menu/DropdownMenuItem";
 import { Avatar } from "../../../atoms/avatar/Avatar";
 import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avatar";
 import CopyIC from "../../../../../res/ic/copy.svg";
-import { OverlayWindow, useStore } from "../../../hooks/useStore";
+import { useStore } from "../../../hooks/useStore";
 import { Text } from "../../../atoms/text/Text";
 import { IconButton } from "../../../atoms/button/IconButton";
 import { Tooltip } from "../../../atoms/tooltip/Tooltip";
 import { copyToClipboard } from "../../../utils/common";
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import "./UserMenu.css";
+import { OverlayWindow, overlayWindowAtom } from "../../../state/overlayWindow";
 
 export function UserMenu() {
   const { session, platform, logout } = useHydrogen(true);
   const { accountManagementUrl } = session.sessionInfo;
   const { userId, displayName, avatarUrl } = useStore((state) => state.userProfile);
-  const { selectWindow } = useStore((state) => state.overlayWindow);
+  const setOverlayWindow = useSetAtom(overlayWindowAtom);
   const [copied, setCopied] = useState(false);
   const navigate = useNavigate();
 
@@ -52,7 +54,9 @@ export function UserMenu() {
             </div>
           </div>
           <div>
-            <DropdownMenuItem onSelect={() => selectWindow(OverlayWindow.UserProfile)}>View Profile</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => setOverlayWindow({ type: OverlayWindow.UserProfile })}>
+              View Profile
+            </DropdownMenuItem>
             {accountManagementUrl && (
               <DropdownMenuItem onSelect={() => window.open(accountManagementUrl)}>Manage Account</DropdownMenuItem>
             )}

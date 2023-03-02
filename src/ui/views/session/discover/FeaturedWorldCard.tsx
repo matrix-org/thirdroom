@@ -7,10 +7,10 @@ import { RoomPreviewCard } from "../../components/room-preview-card/RoomPreviewC
 import { RoomSummaryProvider } from "../../components/RoomSummaryProvider";
 import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avatar";
 import { Dots } from "../../../atoms/loading/Dots";
-import { useStore } from "../../../hooks/useStore";
 import { JoinRoomProvider } from "../../components/JoinRoomProvider";
 import { overlayWorldAtom } from "../../../state/overlayWorld";
 import { SidebarTab, sidebarTabAtom } from "../../../state/sidebarTab";
+import { OverlayWindow, overlayWindowAtom } from "../../../state/overlayWindow";
 
 export function FeaturedWorldCard({
   session,
@@ -23,12 +23,12 @@ export function FeaturedWorldCard({
 }) {
   const selectWorld = useSetAtom(overlayWorldAtom);
   const setSidebarTab = useSetAtom(sidebarTabAtom);
+  const setOverlayWindow = useSetAtom(overlayWindowAtom);
 
   const handleViewWorld = () => {
-    const state = useStore.getState();
     selectWorld(roomId);
     setSidebarTab(SidebarTab.Home);
-    state.overlayWindow.closeWindow();
+    setOverlayWindow({ type: OverlayWindow.None });
   };
 
   return (

@@ -7,7 +7,7 @@ import { Modal } from "../../../atoms/modal/Modal";
 import { Text } from "../../../atoms/text/Text";
 import { Thumbnail } from "../../../atoms/thumbnail/Thumbnail";
 import { ThumbnailImg } from "../../../atoms/thumbnail/ThumbnailImg";
-import { useStore } from "../../../hooks/useStore";
+import { OverlayWindow, overlayWindowAtom } from "../../../state/overlayWindow";
 import { overlayWorldAtom } from "../../../state/overlayWorld";
 import { getHttpUrl } from "../../../utils/avatar";
 import { ScenePreviewCard, ScenePreviewCardContent } from "../../components/scene-preview-card/ScenePreviewCard";
@@ -23,10 +23,11 @@ export function FeaturedSceneCard({ session, roomId, stateEvent }: FeaturedScene
   const [create, setCreate] = useState(false);
   const content = stateEvent.content;
   const selectWorld = useSetAtom(overlayWorldAtom);
+  const setOverlayWindow = useSetAtom(overlayWindowAtom);
 
   const handleCreateWorld = (roomId: string) => {
     selectWorld(roomId);
-    useStore.getState().overlayWindow.closeWindow();
+    setOverlayWindow({ type: OverlayWindow.None });
     setCreate(false);
   };
 

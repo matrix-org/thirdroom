@@ -1,13 +1,6 @@
 import create from "zustand";
 import { immer } from "zustand/middleware/immer";
 
-export enum OverlayWindow {
-  CreateWorld = "create_world",
-  UserProfile = "user_profile",
-  WorldSettings = "world_settings",
-  Discover = "Discover",
-}
-
 export interface UserProfileState {
   userId: string;
   displayName: string;
@@ -15,14 +8,6 @@ export interface UserProfileState {
   setUserId: (id: string) => void;
   setDisplayName: (name: string) => void;
   setAvatarUrl: (url?: string) => void;
-}
-
-export interface OverlayWindowState {
-  selectedWindow?: OverlayWindow;
-  worldSettingsId?: string;
-  selectWindow(window: OverlayWindow): void;
-  selectWorldSettingsWindow(roomId: string): void;
-  closeWindow(): void;
 }
 
 export interface WorldState {
@@ -36,7 +21,6 @@ export interface WorldState {
 
 export interface StoreState {
   userProfile: UserProfileState;
-  overlayWindow: OverlayWindowState;
   world: WorldState;
 }
 
@@ -59,37 +43,6 @@ export const useStore = create<StoreState>()(
       setAvatarUrl: (url) => {
         set((state) => {
           state.userProfile.avatarUrl = url;
-        });
-      },
-    },
-    // overlaySidebar: {
-    //   selectedSidebarTab: SidebarTabs.Home,
-    //   selectSidebarTab(tab: SidebarTabs) {
-    //     set((state) => {
-    //       TODO: next 2 lines
-    //       state.overlayWindow.selectedWindow = undefined;
-    //       state.overlayWindow.worldSettingsId = undefined;
-    //       state.overlaySidebar.selectedSidebarTab = tab;
-    //     });
-    //   },
-    // },
-    overlayWindow: {
-      selectedWindow: undefined,
-      selectWindow(window: OverlayWindow) {
-        set((state) => {
-          state.overlayWindow.selectedWindow = window;
-        });
-      },
-      selectWorldSettingsWindow(roomId) {
-        set((state) => {
-          state.overlayWindow.selectedWindow = OverlayWindow.WorldSettings;
-          state.overlayWindow.worldSettingsId = roomId;
-        });
-      },
-      closeWindow() {
-        set((state) => {
-          state.overlayWindow.selectedWindow = undefined;
-          state.overlayWindow.worldSettingsId = undefined;
         });
       },
     },

@@ -1,4 +1,5 @@
 import { useState, ChangeEvent, FormEvent, useMemo } from "react";
+import { useSetAtom } from "jotai";
 
 import { Content } from "../../../atoms/content/Content";
 import { WindowContent } from "../../components/window/WindowContent";
@@ -32,11 +33,12 @@ import {
   RenderQualityToSetting,
 } from "../../../../engine/renderer/renderer.common";
 import { useMainThreadContext } from "../../../hooks/useMainThread";
+import { OverlayWindow, overlayWindowAtom } from "../../../state/overlayWindow";
 
 export function UserProfileOverview() {
   const { session, platform, profileRoom } = useHydrogen(true);
   const { displayName, avatarUrl } = useStore((state) => state.userProfile);
-  const { closeWindow } = useStore((state) => state.overlayWindow);
+  const setOverlayWindow = useSetAtom(overlayWindowAtom);
 
   const [newDisplayName, setNewDisplayName] = useState(displayName);
   const [authoritativeNetworking, setAuthNetworking] = useState(
@@ -83,7 +85,7 @@ export function UserProfileOverview() {
 
   const handleSubmit = async (evt: FormEvent<HTMLFormElement>) => {
     evt.preventDefault();
-    closeWindow();
+    setOverlayWindow({ type: OverlayWindow.None });
     const name = evt.currentTarget.displayName.value.trim() as string;
     if (name !== displayName && name !== "") {
       session.hsApi.setProfileDisplayName(session.userId, name);
@@ -99,7 +101,7 @@ export function UserProfileOverview() {
   const handleReset = () => {
     setNewDisplayName(displayName);
     resetAvatarUses();
-    closeWindow();
+    setOverlayWindow({ type: OverlayWindow.None });
   };
 
   return (

@@ -21,7 +21,7 @@ import { WorldPreview } from "./WorldPreview";
 import { CreateWorld } from "../create-world/CreateWorld";
 import { UserProfile } from "../user-profile/UserProfile";
 import { useRoom } from "../../../hooks/useRoom";
-import { useStore, OverlayWindow } from "../../../hooks/useStore";
+import { useStore } from "../../../hooks/useStore";
 import { RoomListHome } from "../sidebar/RoomListHome";
 import { RoomListFriends } from "../sidebar/RoomListFriends";
 import { useInvite } from "../../../hooks/useInvite";
@@ -37,6 +37,7 @@ import config from "../../../../../config.json";
 import { activeChatsAtom, openedChatAtom } from "../../../state/overlayChat";
 import { overlayWorldAtom } from "../../../state/overlayWorld";
 import { SidebarTab, sidebarTabAtom } from "../../../state/sidebarTab";
+import { OverlayWindow, overlayWindowAtom } from "../../../state/overlayWindow";
 
 export function Overlay() {
   const { session, platform } = useHydrogen(true);
@@ -59,7 +60,7 @@ export function Overlay() {
   const world = useRoom(session, isEnteredWorld ? worldId : undefined);
   const selectedChat = useRoom(session, openedChatId);
   const selectedChatInvite = useInvite(session, openedChatId);
-  const { selectedWindow, worldSettingsId } = useStore((state) => state.overlayWindow);
+  const overlayWindow = useAtomValue(overlayWindowAtom);
   const groupCalls = new Map<string, GroupCall>();
   Array.from(calls).flatMap(([, groupCall]) => groupCalls.set(groupCall.roomId, groupCall));
 
@@ -69,7 +70,7 @@ export function Overlay() {
       <SidebarView
         spaces={<SpacesView />}
         roomList={
-          selectedWindow === undefined && (
+          overlayWindow.type === OverlayWindow.None && (
             <RoomListView
               header={<RoomListHeader />}
               content={
@@ -90,14 +91,12 @@ export function Overlay() {
           )
         }
       />
-      {selectedWindow ? (
+      {overlayWindow.type !== OverlayWindow.None ? (
         <div className="Overlay__window grow flex">
-          {selectedWindow === OverlayWindow.CreateWorld && <CreateWorld />}
-          {selectedWindow === OverlayWindow.UserProfile && <UserProfile />}
-          {selectedWindow === OverlayWindow.WorldSettings && worldSettingsId && (
-            <WorldSettings roomId={worldSettingsId} />
-          )}
-          {selectedWindow === OverlayWindow.Discover && repositoryRoom && <DiscoverView room={repositoryRoom} />}
+          {overlayWindow.type === OverlayWindow.CreateWorld && <CreateWorld />}
+          {overlayWindow.type === OverlayWindow.UserProfile && <UserProfile />}
+          {overlayWindow.type === OverlayWindow.WorldSettings && <WorldSettings roomId={overlayWindow.roomId} />}
+          {overlayWindow.type === OverlayWindow.Discover && repositoryRoom && <DiscoverView room={repositoryRoom} />}
         </div>
       ) : (
         <div className="Overlay__content grow">

@@ -6,17 +6,16 @@ import { useHydrogen } from "../../../hooks/useHydrogen";
 import { Category } from "../../components/category/Category";
 import { CategoryHeader } from "../../components/category/CategoryHeader";
 import { useRoomsOfType, RoomTypes } from "../../../hooks/useRoomsOfType";
-import { useStore } from "../../../hooks/useStore";
 import { WorldSelector } from "./selector/WorldSelector";
 import { RoomSelector } from "./selector/RoomSelector";
 import { Icon } from "../../../atoms/icon/Icon";
 import ChevronRightIC from "../../../../../res/ic/chevron-right.svg";
 import ChevronBottomIC from "../../../../../res/ic/chevron-bottom.svg";
 import { EmptyState } from "../../components/empty-state/EmptyState";
-import { OverlayWindow } from "../../../hooks/useStore";
 import { Button } from "../../../atoms/button/Button";
 import { activeChatsAtom, openedChatAtom } from "../../../state/overlayChat";
 import { overlayWorldAtom } from "../../../state/overlayWorld";
+import { OverlayWindow, overlayWindowAtom } from "../../../state/overlayWindow";
 
 interface RoomListHomeProps {
   groupCalls: Map<string, GroupCall>;
@@ -24,7 +23,6 @@ interface RoomListHomeProps {
 
 export function RoomListHome({ groupCalls }: RoomListHomeProps) {
   const { session, platform } = useHydrogen(true);
-  const { selectWindow } = useStore((state) => state.overlayWindow);
 
   const [worlds] = useRoomsOfType(session, RoomTypes.World);
   const [rooms] = useRoomsOfType(session, RoomTypes.Room);
@@ -35,6 +33,7 @@ export function RoomListHome({ groupCalls }: RoomListHomeProps) {
   const openedChatId = useAtomValue(openedChatAtom);
   const setActiveChat = useSetAtom(activeChatsAtom);
   const [selectedWorldId, selectWorld] = useAtom(overlayWorldAtom);
+  const setOverlayWindow = useSetAtom(overlayWindowAtom);
 
   if (worlds.length === 0 && rooms.length === 0) {
     return (
@@ -42,7 +41,7 @@ export function RoomListHome({ groupCalls }: RoomListHomeProps) {
         style={{ minHeight: "400px" }}
         heading="No Worlds"
         text="You haven’t joined any worlds yet."
-        actions={<Button onClick={() => selectWindow(OverlayWindow.CreateWorld)}>Create World</Button>}
+        actions={<Button onClick={() => setOverlayWindow({ type: OverlayWindow.CreateWorld })}>Create World</Button>}
       />
     );
   }

@@ -1,6 +1,5 @@
-import { useAtomValue } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 
-import { OverlayWindow, useStore } from "../../../hooks/useStore";
 import AddIC from "../../../../../res/ic/add.svg";
 import { Text } from "../../../atoms/text/Text";
 import "./RoomListHeader.css";
@@ -12,10 +11,11 @@ import { DropdownMenuItem } from "../../../atoms/menu/DropdownMenuItem";
 import { useDialog } from "../../../hooks/useDialog";
 import { Dialog } from "../../../atoms/dialog/Dialog";
 import { sidebarTabAtom, SidebarTab } from "../../../state/sidebarTab";
+import { OverlayWindow, overlayWindowAtom } from "../../../state/overlayWindow";
 
 export function RoomListHeader() {
   const sidebarTab = useAtomValue(sidebarTabAtom);
-  const { selectWindow } = useStore((state) => state.overlayWindow);
+  const setOverlayWindow = useSetAtom(overlayWindowAtom);
   const { open, setOpen, openDialog, closeDialog } = useDialog(false);
   const {
     open: openJoin,
@@ -37,7 +37,7 @@ export function RoomListHeader() {
           <DropdownMenu
             content={
               <>
-                <DropdownMenuItem onSelect={() => selectWindow(OverlayWindow.CreateWorld)}>
+                <DropdownMenuItem onSelect={() => setOverlayWindow({ type: OverlayWindow.CreateWorld })}>
                   Create World
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={openJoinDialog}>Join with Alias</DropdownMenuItem>
