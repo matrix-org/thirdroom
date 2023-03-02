@@ -39,6 +39,8 @@ import {
   UIFlexResource,
   UIImageResource,
   UITextResource,
+  ColliderResource,
+  PhysicsBodyResource,
 } from "./schema";
 
 export class RemoteNametag extends defineRemoteResourceClass(NametagResource) {}
@@ -144,6 +146,11 @@ export class RemoteUIFlex extends defineRemoteResourceClass(UIFlexResource) {
 export class RemoteUICanvas extends defineRemoteResourceClass(UICanvasResource) {
   declare root: RemoteUIFlex;
 }
+export class RemoteCollider extends defineRemoteResourceClass(ColliderResource) {
+  declare mesh: RemoteMesh | undefined;
+}
+
+export class RemotePhysicsBody extends defineRemoteResourceClass(PhysicsBodyResource) {}
 const NodeIsStaticOffset = NodeResource.schema.isStatic.byteOffset / 4;
 
 export class RemoteNode extends defineRemoteResourceClass(NodeResource) {
@@ -164,6 +171,8 @@ export class RemoteNode extends defineRemoteResourceClass(NodeResource) {
   declare nametag: RemoteNametag | undefined;
   declare interactable: RemoteInteractable | undefined;
   declare uiCanvas: RemoteUICanvas | undefined;
+  declare collider: RemoteCollider | undefined;
+  declare physicsBody: RemotePhysicsBody | undefined;
 
   get isStatic() {
     return !this.manager.ctx.editorLoaded && this.u32View[NodeIsStaticOffset] === 1;

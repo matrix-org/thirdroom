@@ -91,6 +91,8 @@ import {
   UITextResource,
   UIButtonResource,
   UIImageResource,
+  ColliderResource,
+  PhysicsBodyResource,
 } from "./schema";
 
 export class RenderNametag extends defineLocalResourceClass(NametagResource) {}
@@ -652,6 +654,11 @@ export class RenderUICanvas extends defineLocalResourceClass(UICanvasResource) {
   canvas?: HTMLCanvasElement;
   lastRedraw = 0;
 }
+export class RenderCollider extends defineLocalResourceClass(ColliderResource) {
+  declare mesh: RenderMesh | undefined;
+}
+
+export class RenderPhysicsBody extends defineLocalResourceClass(PhysicsBodyResource) {}
 
 export class RenderNode extends defineLocalResourceClass(NodeResource) {
   declare parentScene: RenderScene | undefined;
@@ -671,6 +678,8 @@ export class RenderNode extends defineLocalResourceClass(NodeResource) {
   declare nametag: RenderNametag | undefined;
   declare interactable: RenderInteractable | undefined;
   declare uiCanvas: RenderUICanvas | undefined;
+  declare collider: RenderCollider | undefined;
+  declare physicsBody: RenderPhysicsBody | undefined;
 
   currentMeshResourceId = 0;
   bone?: Bone;
@@ -810,6 +819,8 @@ const {
   RenderScene,
   RenderMeshPrimitive,
   RenderInteractable,
+  RenderCollider,
+  RenderPhysicsBody,
   RenderAccessor,
   RenderSparseAccessor,
   RenderSkin,

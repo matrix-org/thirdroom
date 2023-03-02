@@ -21,6 +21,7 @@ import {
   BufferResource,
   BufferViewResource,
   CameraResource,
+  ColliderResource,
   EnvironmentResource,
   ImageResource,
   InstancedMeshResource,
@@ -32,6 +33,7 @@ import {
   MeshResource,
   NametagResource,
   NodeResource,
+  PhysicsBodyResource,
   ReflectionProbeResource,
   ResourceType,
   SamplerResource,
@@ -255,6 +257,11 @@ export class MainUICanvas extends defineLocalResourceClass(UICanvasResource) {
   canvas?: HTMLCanvasElement;
   yogaNode: Yoga.Node;
 }
+export class MainCollider extends defineLocalResourceClass(ColliderResource) {
+  declare mesh: MainMesh | undefined;
+}
+
+export class MainPhysicsBody extends defineLocalResourceClass(PhysicsBodyResource) {}
 
 export class MainNode extends defineLocalResourceClass(NodeResource) {
   declare resourceType: ResourceType.Node;
@@ -276,6 +283,8 @@ export class MainNode extends defineLocalResourceClass(NodeResource) {
   declare interactable: MainInteractable | undefined;
   declare uiCanvas: MainUICanvas | undefined;
 
+  declare collider: MainCollider | undefined;
+  declare physicsBody: MainPhysicsBody | undefined;
   currentAudioEmitterResourceId = 0;
   emitterInputNode?: GainNode;
   emitterPannerNode?: PannerNode;
@@ -362,6 +371,8 @@ const {
   MainScene,
   MainMeshPrimitive,
   MainInteractable,
+  MainCollider,
+  MainPhysicsBody,
   MainAccessor,
   MainSparseAccessor,
   MainSkin,

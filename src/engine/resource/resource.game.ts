@@ -46,6 +46,8 @@ import {
   RemoteUIFlex,
   RemoteUIImage,
   RemoteUIText,
+  RemoteCollider,
+  RemotePhysicsBody,
 } from "./RemoteResources";
 import {
   ArrayBufferResourceType,
@@ -193,6 +195,8 @@ export const ResourceModule = defineModule<GameState, ResourceModuleState>({
       registerResource(ctx, RemoteScene),
       registerResource(ctx, RemoteMeshPrimitive),
       registerResource(ctx, RemoteInteractable),
+      registerResource(ctx, RemoteCollider),
+      registerResource(ctx, RemotePhysicsBody),
       registerResource(ctx, RemoteAccessor),
       registerResource(ctx, RemoteSparseAccessor),
       registerResource(ctx, RemoteSkin),
