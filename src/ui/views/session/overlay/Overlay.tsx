@@ -1,5 +1,6 @@
 import classNames from "classnames";
 import { GroupCall } from "@thirdroom/hydrogen-view-sdk";
+import { useAtom, useAtomValue } from "jotai";
 
 import "./Overlay.css";
 import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avatar";
@@ -33,29 +34,18 @@ import { useCalls } from "../../../hooks/useCalls";
 import { useRoomCall } from "../../../hooks/useRoomCall";
 import { DiscoverView } from "../discover/DiscoverView";
 import config from "../../../../../config.json";
+import { activeChatsAtom, openedChatAtom } from "../../../state/overlayChat";
 
 export function Overlay() {
   const { session, platform } = useHydrogen(true);
   const calls = useCalls(session);
 
-  const {
-    selectedSidebarTab,
-    selectedChatId,
-    activeChats,
-    selectChat,
-    minimizeChat,
-    closeChat,
-    worldId,
-    isEnteredWorld,
-    selectedWorldId,
-  } = useStore((state) => ({
+  const openedChatId = useAtomValue(openedChatAtom);
+  const [activeChats, setActiveChat] = useAtom(activeChatsAtom);
+
+  const { selectedSidebarTab, worldId, isEnteredWorld, selectedWorldId } = useStore((state) => ({
     selectedSidebarTab: state.overlaySidebar.selectedSidebarTab,
     selectSidebarTab: state.overlaySidebar.selectSidebarTab,
-    selectedChatId: state.overlayChat.selectedChatId,
-    activeChats: state.overlayChat.activeChats,
-    selectChat: state.overlayChat.selectChat,
-    minimizeChat: state.overlayChat.minimizeChat,
-    closeChat: state.overlayChat.closeChat,
     worldId: state.world.worldId,
     isEnteredWorld: state.world.entered,
     selectedWorldId: state.overlayWorld.selectedWorldId,
@@ -66,8 +56,8 @@ export function Overlay() {
   const activeCall = useRoomCall(calls, worldId);
   const { exitWorld } = useWorldAction(session);
   const world = useRoom(session, isEnteredWorld ? worldId : undefined);
-  const selectedChat = useRoom(session, selectedChatId);
-  const selectedChatInvite = useInvite(session, selectedChatId);
+  const selectedChat = useRoom(session, openedChatId);
+  const selectedChatInvite = useInvite(session, openedChatId);
   const { selectedWindow, worldSettingsId } = useStore((state) => state.overlayWindow);
   const groupCalls = new Map<string, GroupCall>();
   Array.from(calls).flatMap(([, groupCall]) => groupCalls.set(groupCall.roomId, groupCall));
@@ -120,8 +110,8 @@ export function Overlay() {
                       platform={platform}
                       session={session}
                       room={selectedChat || selectedChatInvite!}
-                      onMinimize={minimizeChat}
-                      onClose={closeChat}
+                      onMinimize={(roomId) => setActiveChat({ type: "MINIMIZE", roomId })}
+                      onClose={(roomId) => setActiveChat({ type: "CLOSE", roomId })}
                     />
                     {selectedChat && <ChatViewContent room={selectedChat} />}
                     {selectedChatInvite && <ChatViewInvite session={session} roomId={selectedChatInvite.id} />}
@@ -131,12 +121,13 @@ export function Overlay() {
               tiles={[...activeChats].map((rId) => {
                 const room = session.rooms.get(rId) ?? session.invites.get(rId);
                 if (!room) return null;
+                const isActive = rId === openedChatId;
 
                 const roomName = room.name || "Empty room";
                 return (
                   <ActiveChatTile
                     key={rId}
-                    isActive={rId === selectedChatId}
+                    isActive={isActive}
                     roomId={rId}
                     avatar={
                       <Avatar
@@ -151,8 +142,8 @@ export function Overlay() {
                       />
                     }
                     title={roomName}
-                    onClick={selectChat}
-                    onClose={closeChat}
+                    onClick={(roomId) => setActiveChat({ type: isActive ? "MINIMIZE" : "OPEN", roomId })}
+                    onClose={(roomId) => setActiveChat({ type: "CLOSE", roomId })}
                   />
                 );
               })}

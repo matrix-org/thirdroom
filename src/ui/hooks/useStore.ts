@@ -47,14 +47,6 @@ export interface OverlayWorldState {
   selectWorld(roomId: string | undefined): void;
 }
 
-export interface OverlayChatState {
-  selectedChatId: string | undefined;
-  activeChats: Set<string>;
-  selectChat(roomId: string | undefined): void;
-  minimizeChat(roomId: string): void;
-  closeChat(roomId: string): void;
-}
-
 export interface WorldState {
   worldId: string | undefined;
   entered: boolean;
@@ -80,7 +72,6 @@ export interface StoreState {
   overlay: OverlayState;
   overlaySidebar: OverlaySidebarState;
   overlayWindow: OverlayWindowState;
-  overlayChat: OverlayChatState;
   overlayWorld: OverlayWorldState;
   world: WorldState;
   worldChat: WorldChatState;
@@ -152,42 +143,11 @@ export const useStore = create<StoreState>()(
         });
       },
     },
-    overlayChat: {
-      activeChats: new Set(),
-      selectedChatId: undefined,
-      selectChat(roomId: string) {
-        set((state) => {
-          if (!state.overlayChat.activeChats.has(roomId)) {
-            state.overlayChat.activeChats.add(roomId);
-          }
-
-          if (state.overlayChat.selectedChatId === roomId) {
-            state.overlayChat.selectedChatId = undefined;
-          } else {
-            state.overlayChat.selectedChatId = roomId;
-          }
-        });
-      },
-      minimizeChat(roomId: string) {
-        set((state) => {
-          state.overlayChat.selectedChatId = undefined;
-        });
-      },
-      closeChat(roomId: string) {
-        set((state) => {
-          if (state.overlayChat.selectedChatId === roomId) {
-            state.overlayChat.selectedChatId = undefined;
-          }
-
-          state.overlayChat.activeChats.delete(roomId);
-        });
-      },
-    },
     overlayWorld: {
       selectedWorldId: undefined,
       selectWorld(roomId: string | undefined) {
         set((state) => {
-          state.overlayChat.selectedChatId = undefined;
+          // state.overlayChat.selectedChatId = undefined;
           state.overlayWorld.selectedWorldId = roomId;
         });
       },

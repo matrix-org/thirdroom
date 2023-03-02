@@ -1,6 +1,7 @@
 import { CSSProperties, ReactNode, useReducer, useRef } from "react";
 import { useMatch } from "react-router-dom";
 import { Session } from "@thirdroom/hydrogen-view-sdk";
+import { useSetAtom } from "jotai";
 
 import { Text } from "../../../atoms/text/Text";
 import { useHydrogen } from "../../../hooks/useHydrogen";
@@ -11,6 +12,7 @@ import { Avatar } from "../../../atoms/avatar/Avatar";
 import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avatar";
 import { useRoomList } from "../../../hooks/useRoomList";
 import { useWorldPath } from "../../../hooks/useWorld";
+import { activeChatsAtom } from "../../../state/overlayChat";
 
 function OverlayButton({
   style,
@@ -60,11 +62,11 @@ function useNotifications(session: Session) {
 export function NotificationButton({ onClick }: { onClick: () => void }) {
   const { session, platform } = useHydrogen(true);
   const { notifCount, eventEntry, roomId } = useNotifications(session);
-  const { selectChat } = useStore((state) => state.overlayChat);
+  const selectChat = useSetAtom(activeChatsAtom);
 
   const handleNotificationClick = () => {
     onClick();
-    if (eventEntry) selectChat(roomId);
+    if (eventEntry) selectChat({ type: "OPEN", roomId });
   };
 
   return (
