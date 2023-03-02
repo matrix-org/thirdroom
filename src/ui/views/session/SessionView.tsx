@@ -2,13 +2,12 @@ import { useEffect, useRef } from "react";
 import { Outlet } from "react-router-dom";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
-import { useSetAtom } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 
 import "./SessionView.css";
 import { useInitMainThreadContext, MainThreadContextProvider } from "../../hooks/useMainThread";
 import { Overlay } from "./overlay/Overlay";
 import { StatusBar } from "./statusbar/StatusBar";
-import { useStore } from "../../hooks/useStore";
 import { LoadingScreen } from "../components/loading-screen/LoadingScreen";
 import { useHomeWorld } from "../../hooks/useHomeWorld";
 import { useUnknownWorldPath } from "../../hooks/useWorld";
@@ -16,12 +15,13 @@ import { useAutoJoinRoom } from "../../hooks/useAutoJoinRoom";
 import { useHydrogen } from "../../hooks/useHydrogen";
 import config from "../../../../config.json";
 import { overlayWorldAtom } from "../../state/overlayWorld";
+import { overlayVisibilityAtom } from "../../state/overlayVisibility";
 
 export default function SessionView() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const mainThread = useInitMainThreadContext(canvasRef);
   const { session } = useHydrogen(true);
-  const isOverlayOpen = useStore((state) => state.overlay.isOpen);
+  const overlayVisible = useAtomValue(overlayVisibilityAtom);
   const [worldId, worldAlias] = useUnknownWorldPath();
   const homeWorldId = useHomeWorld();
   const selectWorld = useSetAtom(overlayWorldAtom);
@@ -40,7 +40,7 @@ export default function SessionView() {
         {mainThread ? (
           <MainThreadContextProvider value={mainThread}>
             <Outlet />
-            {isOverlayOpen && <Overlay />}
+            {overlayVisible && <Overlay />}
             <StatusBar />
           </MainThreadContextProvider>
         ) : (

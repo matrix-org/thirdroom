@@ -23,12 +23,6 @@ export interface UserProfileState {
   setAvatarUrl: (url?: string) => void;
 }
 
-export interface OverlayState {
-  isOpen: boolean;
-  openOverlay(): void;
-  closeOverlay(): void;
-}
-
 export interface OverlaySidebarState {
   selectedSidebarTab: SidebarTabs;
   selectSidebarTab(tab: SidebarTabs): void;
@@ -53,7 +47,6 @@ export interface WorldState {
 
 export interface StoreState {
   userProfile: UserProfileState;
-  overlay: OverlayState;
   overlaySidebar: OverlaySidebarState;
   overlayWindow: OverlayWindowState;
   world: WorldState;
@@ -78,19 +71,6 @@ export const useStore = create<StoreState>()(
       setAvatarUrl: (url) => {
         set((state) => {
           state.userProfile.avatarUrl = url;
-        });
-      },
-    },
-    overlay: {
-      isOpen: true,
-      openOverlay() {
-        set((state) => {
-          state.overlay.isOpen = true;
-        });
-      },
-      closeOverlay() {
-        set((state) => {
-          state.overlay.isOpen = false;
         });
       },
     },

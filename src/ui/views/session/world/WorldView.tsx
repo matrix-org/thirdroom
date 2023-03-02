@@ -64,6 +64,7 @@ import { useWebXRSession } from "../../../hooks/useWebXRSession";
 import { useMemoizedState } from "../../../hooks/useMemoizedState";
 import { overlayWorldAtom } from "../../../state/overlayWorld";
 import { worldChatVisibilityAtom } from "../../../state/worldChatVisibility";
+import { overlayVisibilityAtom } from "../../../state/overlayVisibility";
 
 export interface ActiveEntityState {
   interactableType: InteractableType;
@@ -132,7 +133,7 @@ export function WorldView({ world }: WorldViewProps) {
   const selectWorld = useSetAtom(overlayWorldAtom);
   const isEnteredWorld = useStore((state) => state.world.entered);
   const [worldChatVisible, setWorldChatVisibility] = useAtom(worldChatVisibilityAtom);
-  const { isOpen: isOverlayOpen, openOverlay, closeOverlay } = useStore((state) => state.overlay);
+  const [overlayVisible, setOverlayVisibility] = useAtom(overlayVisibilityAtom);
   const [editorEnabled, setEditorEnabled] = useState(false);
   const [statsEnabled, setStatsEnabled] = useState(false);
   const [shortcutUI, setShortcutUI] = useState(false);
@@ -297,17 +298,17 @@ export function WorldView({ world }: WorldViewProps) {
         setWorldChatVisibility(false);
         return;
       }
-      if (isEscape && isOverlayOpen) {
+      if (isEscape && overlayVisible) {
         mainThread.canvas?.requestPointerLock();
-        closeOverlay();
+        setOverlayVisibility(false);
         return;
       }
-      if (isEscape && isOverlayOpen === false) {
+      if (isEscape && overlayVisible === false) {
         document.exitPointerLock();
-        openOverlay();
+        setOverlayVisibility(true);
         return;
       }
-      if (e.key === "Enter" && isOverlayOpen === false && worldChatVisible === false) {
+      if (e.key === "Enter" && overlayVisible === false && worldChatVisible === false) {
         if (document.activeElement !== document.body) return;
         document.exitPointerLock();
         setWorldChatVisibility(true);
@@ -347,13 +348,12 @@ export function WorldView({ world }: WorldViewProps) {
       isEnteredWorld,
       worldChatVisible,
       setWorldChatVisibility,
-      isOverlayOpen,
+      overlayVisible,
+      setOverlayVisibility,
       showNames,
       showActiveMembers,
       shortcutUI,
       onboarding,
-      openOverlay,
-      closeOverlay,
       enterXR,
       isWebXRSupported,
     ]
@@ -362,16 +362,15 @@ export function WorldView({ world }: WorldViewProps) {
   useEvent(
     "click",
     (e) => {
-      const isOverlayOpen = useStore.getState().overlay.isOpen;
       const isEnteredWorld = useStore.getState().world.entered;
       if (isEnteredWorld === false) return;
 
       mainThread.canvas?.requestPointerLock();
       if (worldChatVisible) setWorldChatVisibility(false);
-      if (isOverlayOpen) closeOverlay();
+      if (overlayVisible) setOverlayVisibility(false);
     },
     mainThread.canvas,
-    [worldChatVisible, setWorldChatVisibility]
+    [worldChatVisible, setWorldChatVisibility, overlayVisible, setOverlayVisibility]
   );
 
   useEffect(() => {
@@ -483,7 +482,7 @@ export function WorldView({ world }: WorldViewProps) {
         </>
       )}
       {world && editorEnabled && <EditorView />}
-      {!("isBeingCreated" in world) && <Nametags room={world} show={showNames && !isOverlayOpen} />}
+      {!("isBeingCreated" in world) && <Nametags room={world} show={showNames && !overlayVisible} />}
       {!("isBeingCreated" in world) && (
         <>
           <Dialog open={showActiveMembers} onOpenChange={setShowActiveMembers}>
@@ -502,10 +501,10 @@ export function WorldView({ world }: WorldViewProps) {
           </Dialog>
         </>
       )}
-      {!isOverlayOpen && showNames && activeEntity && (
+      {!overlayVisible && showNames && activeEntity && (
         <EntityTooltip activeEntity={activeEntity} portalProcess={portalProcess} />
       )}
-      {!isOverlayOpen && <Reticle activeEntity={activeEntity} mouseDown={mouseDown} />}
+      {!overlayVisible && <Reticle activeEntity={activeEntity} mouseDown={mouseDown} />}
       <div className="WorldView__toast-container">
         <div className={classNames("WorldView__toast", { "WorldView__toast--shown": toastShown })}>
           <Text variant="b2" color="world" weight="semi-bold">

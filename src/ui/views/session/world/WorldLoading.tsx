@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { CallIntent, LocalMedia, Room, StateEvent, SubscriptionHandle } from "@thirdroom/hydrogen-view-sdk";
-import { useSetAtom } from "jotai";
+import { useAtom, useSetAtom } from "jotai";
 
 import { useStore } from "../../../hooks/useStore";
 import { IMainThreadContext } from "../../../../engine/MainThread";
@@ -25,6 +25,7 @@ import { useWorldAction } from "../../../hooks/useWorldAction";
 import { WorldPreviewCard } from "../../components/world-preview-card/WorldPreviewCard";
 import { disposeActiveMatrixRoom, setActiveMatrixRoom } from "../../../../engine/matrix/matrix.main";
 import { overlayWorldAtom } from "../../../state/overlayWorld";
+import { overlayVisibilityAtom } from "../../../state/overlayVisibility";
 
 interface WorldLoadProgress {
   loaded: number;
@@ -156,7 +157,7 @@ function useEnterWorld() {
 
 export function WorldLoading({ roomId, reloadId }: { roomId?: string; reloadId?: string }) {
   const { worldId, setWorld, entered, setNetworkInterfaceDisposer } = useStore((state) => state.world);
-  const { closeOverlay, openOverlay, isOpen: isOverlayOpen } = useStore((state) => state.overlay);
+  const [overlayVisible, setOverlayVisibility] = useAtom(overlayVisibilityAtom);
   const selectWorld = useSetAtom(overlayWorldAtom);
   const { session } = useHydrogen(true);
   const { enterWorld: enterWorldAction } = useWorldAction(session);
@@ -170,22 +171,22 @@ export function WorldLoading({ roomId, reloadId }: { roomId?: string; reloadId?:
 
   useEffect(() => {
     if (roomId && prevRoomId !== roomId) {
-      closeOverlay();
+      setOverlayVisibility(false);
     }
 
     if (!roomId && prevRoomId) {
-      openOverlay();
+      setOverlayVisibility(true);
     }
-  }, [roomId, prevRoomId, openOverlay, closeOverlay]);
+  }, [roomId, prevRoomId, setOverlayVisibility]);
 
   const loadWorld = useLoadWorld();
   const enterWorld = useEnterWorld();
 
   useEffect(() => {
-    if (!isOverlayOpen && roomId && session.rooms.get(roomId)) {
+    if (!overlayVisible && roomId && session.rooms.get(roomId)) {
       selectWorld(roomId);
     }
-  }, [isOverlayOpen, selectWorld, roomId, session.rooms]);
+  }, [overlayVisible, selectWorld, roomId, session.rooms]);
 
   useEffect(() => {
     setError(undefined);
@@ -249,7 +250,7 @@ export function WorldLoading({ roomId, reloadId }: { roomId?: string; reloadId?:
     };
   }, [world]);
 
-  if (isOverlayOpen) return null;
+  if (overlayVisible) return null;
 
   if (roomId && error) {
     return (
