@@ -57,11 +57,6 @@ export interface WorldChatState {
   closeWorldChat(): void;
 }
 
-export interface PointerLockState {
-  isPointerLock: boolean;
-  setIsPointerLock(isPointerLock: boolean): void;
-}
-
 export interface StoreState {
   userProfile: UserProfileState;
   overlay: OverlayState;
@@ -69,7 +64,6 @@ export interface StoreState {
   overlayWindow: OverlayWindowState;
   world: WorldState;
   worldChat: WorldChatState;
-  pointerLock: PointerLockState;
 }
 
 export const useStore = create<StoreState>()(
@@ -173,14 +167,6 @@ export const useStore = create<StoreState>()(
       closeWorldChat() {
         set((state) => {
           state.worldChat.isOpen = false;
-        });
-      },
-    },
-    pointerLock: {
-      isPointerLock: false,
-      setIsPointerLock(isPointerLock: boolean) {
-        set((state) => {
-          state.pointerLock.isPointerLock = isPointerLock;
         });
       },
     },

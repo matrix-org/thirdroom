@@ -9,7 +9,6 @@ import { Text } from "../../../atoms/text/Text";
 import { IconButton } from "../../../atoms/button/IconButton";
 import { useStore } from "../../../hooks/useStore";
 import { useKeyDown } from "../../../hooks/useKeyDown";
-import { usePointerLockChange } from "../../../hooks/usePointerLockChange";
 import { useEvent } from "../../../hooks/useEvent";
 import PeopleIC from "../../../../../res/ic/peoples.svg";
 import SubtitlesIC from "../../../../../res/ic/subtitles.svg";
@@ -132,7 +131,6 @@ export function WorldView({ world }: WorldViewProps) {
   const selectWorld = useSetAtom(overlayWorldAtom);
   const isEnteredWorld = useStore((state) => state.world.entered);
   const { isOpen: isChatOpen, openWorldChat, closeWorldChat } = useStore((state) => state.worldChat);
-  const setIsPointerLock = useStore((state) => state.pointerLock.setIsPointerLock);
   const { isOpen: isOverlayOpen, openOverlay, closeOverlay } = useStore((state) => state.overlay);
   const [editorEnabled, setEditorEnabled] = useState(false);
   const [statsEnabled, setStatsEnabled] = useState(false);
@@ -389,8 +387,6 @@ export function WorldView({ world }: WorldViewProps) {
     finishOnboarding();
     mainThread.canvas?.requestPointerLock();
   }, [mainThread.canvas, finishOnboarding]);
-
-  usePointerLockChange(mainThread.canvas, setIsPointerLock, []);
 
   if (isPresenting) return null;
 
