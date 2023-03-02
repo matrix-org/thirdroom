@@ -306,6 +306,16 @@ export const readFloat32 = (v: CursorView) => {
   return val;
 };
 
+export const readFloat32Array = (v: CursorView, length: number) => {
+  if (!v.littleEndian) {
+    throw new Error("Cannot use readFloat32Array with non little endian cursor view");
+  }
+
+  const arr = new Float32Array(v.buffer, v.cursor, length);
+  v.cursor += arr.byteLength;
+  return arr;
+};
+
 export const readUint64 = (v: CursorView) => {
   const val = v.getBigUint64(v.cursor, v.littleEndian);
   v.cursor += BigUint64Array.BYTES_PER_ELEMENT;
@@ -322,6 +332,16 @@ export const readUint32 = (v: CursorView) => {
   const val = v.getUint32(v.cursor, v.littleEndian);
   v.cursor += Uint32Array.BYTES_PER_ELEMENT;
   return val;
+};
+
+export const readUint32Array = (v: CursorView, length: number) => {
+  if (!v.littleEndian) {
+    throw new Error("Cannot use readUint32Array with non little endian cursor view");
+  }
+
+  const arr = new Uint32Array(v.buffer, v.cursor, length);
+  v.cursor += arr.byteLength;
+  return arr;
 };
 
 export const readInt32 = (v: CursorView) => {

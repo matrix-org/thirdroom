@@ -28,6 +28,8 @@ type RemoteResourcePropValue<
   ? SharedArrayBuffer
   : Def["schema"][Prop]["type"] extends "bool"
   ? boolean
+  : Def["schema"][Prop]["type"] extends "mat3"
+  ? Float32Array
   : Def["schema"][Prop]["type"] extends "mat4"
   ? Float32Array
   : Def["schema"][Prop]["type"] extends "f32"
@@ -90,6 +92,8 @@ type InitialRemoteResourcePropValue<
   ? SharedArrayBuffer
   : Def["schema"][Prop]["type"] extends "bool"
   ? boolean
+  : Def["schema"][Prop]["type"] extends "mat3"
+  ? ArrayLike<number>
   : Def["schema"][Prop]["type"] extends "mat4"
   ? ArrayLike<number>
   : Def["schema"][Prop]["type"] extends "f32"

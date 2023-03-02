@@ -32,6 +32,8 @@ export enum ResourceType {
   World,
   Avatar,
   Environment,
+  Collider,
+  PhysicsBody,
 }
 
 export const NametagResource = defineResource("nametag", ResourceType.Nametag, {
@@ -418,6 +420,38 @@ export const InteractableResource = defineResource("interactable", ResourceType.
   released: PropType.bool({ mutableScript: false, script: true }),
 });
 
+export enum ColliderType {
+  Box,
+  Sphere,
+  Capsule,
+  Cylinder,
+  Hull,
+  Trimesh,
+}
+
+export const ColliderResource = defineResource("collider", ResourceType.Collider, {
+  type: PropType.enum(ColliderType, { required: true, mutable: false }),
+  isTrigger: PropType.bool({ mutable: false }),
+  size: PropType.vec3({ mutable: false }),
+  radius: PropType.f32({ mutable: false }),
+  height: PropType.f32({ mutable: false }),
+  mesh: PropType.ref(MeshResource, { mutable: false }),
+});
+
+export enum PhysicsBodyType {
+  Static,
+  Kinematic,
+  Rigid,
+}
+
+export const PhysicsBodyResource = defineResource("physics-body", ResourceType.PhysicsBody, {
+  type: PropType.enum(PhysicsBodyType, { required: true, mutable: false }),
+  mass: PropType.f32({ min: 0 }),
+  linearVelocity: PropType.vec3(),
+  angularVelocity: PropType.vec3(),
+  inertiaTensor: PropType.mat3(),
+});
+
 export const NodeResource = defineResource("node", ResourceType.Node, {
   name: PropType.string({ default: "Node", script: true }),
   parentScene: PropType.ref("scene", { backRef: true, editor: false }),
@@ -447,6 +481,8 @@ export const NodeResource = defineResource("node", ResourceType.Node, {
   tilesRenderer: PropType.ref(TilesRendererResource, { script: true }),
   nametag: PropType.ref(NametagResource, { script: false }),
   interactable: PropType.ref(InteractableResource, { script: true }),
+  collider: PropType.ref(ColliderResource, { script: true }),
+  physicsBody: PropType.ref(PhysicsBodyResource, { script: true }),
 });
 
 export enum AnimationSamplerInterpolation {
