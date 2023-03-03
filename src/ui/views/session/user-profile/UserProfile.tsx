@@ -1,18 +1,18 @@
 import { useState } from "react";
-import { useSetAtom } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 
 import { Avatar } from "../../../atoms/avatar/Avatar";
 import { IconButton } from "../../../atoms/button/IconButton";
 import { Window } from "../../components/window/Window";
 import { Header } from "../../../atoms/header/Header";
 import { HeaderTitle } from "../../../atoms/header/HeaderTitle";
-import { useStore } from "../../../hooks/useStore";
 import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avatar";
 import { UserProfileOverview } from "./UserProfileOverview";
 import { UserProfileInventory } from "./UserProfileInventory";
 import CrossIC from "../../../../../res/ic/cross.svg";
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { OverlayWindow, overlayWindowAtom } from "../../../state/overlayWindow";
+import { userProfileAtom } from "../../../state/userProfile";
 
 enum UserProfileSegment {
   Overview = "Overview",
@@ -22,7 +22,7 @@ enum UserProfileSegment {
 export function UserProfile() {
   const { session, platform } = useHydrogen(true);
   const setOverlayWindow = useSetAtom(overlayWindowAtom);
-  const { userId, displayName, avatarUrl } = useStore((state) => state.userProfile);
+  const { userId, displayName, avatarUrl } = useAtomValue(userProfileAtom);
   const [selectedSegment] = useState(UserProfileSegment.Overview);
 
   return (

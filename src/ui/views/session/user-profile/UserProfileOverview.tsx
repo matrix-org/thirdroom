@@ -1,10 +1,9 @@
 import { useState, ChangeEvent, FormEvent, useMemo } from "react";
-import { useSetAtom } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 
 import { Content } from "../../../atoms/content/Content";
 import { WindowContent } from "../../components/window/WindowContent";
 import { useHydrogen } from "../../../hooks/useHydrogen";
-import { useStore } from "../../../hooks/useStore";
 import { Scroll } from "../../../atoms/scroll/Scroll";
 import { SettingTile } from "../../components/setting-tile/SettingTile";
 import { Input } from "../../../atoms/input/Input";
@@ -34,10 +33,11 @@ import {
 } from "../../../../engine/renderer/renderer.common";
 import { useMainThreadContext } from "../../../hooks/useMainThread";
 import { OverlayWindow, overlayWindowAtom } from "../../../state/overlayWindow";
+import { userProfileAtom } from "../../../state/userProfile";
 
 export function UserProfileOverview() {
   const { session, platform, profileRoom } = useHydrogen(true);
-  const { displayName, avatarUrl } = useStore((state) => state.userProfile);
+  const { displayName, avatarUrl } = useAtomValue(userProfileAtom);
   const setOverlayWindow = useSetAtom(overlayWindowAtom);
 
   const [newDisplayName, setNewDisplayName] = useState(displayName);

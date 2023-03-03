@@ -1,22 +1,25 @@
 import { useCallback, useEffect, useState } from "react";
 import { Session, Client, SyncStatus, Room, RoomVisibility, RoomType } from "@thirdroom/hydrogen-view-sdk";
+import { useSetAtom } from "jotai";
 
 import { getMxIdUsername, getProfileRoom, waitToCreateRoom } from "../utils/matrixUtils";
-import { useStore } from "./useStore";
 import { useIsMounted } from "./useIsMounted";
+import { userProfileAtom } from "../state/userProfile";
 
 export function useUserProfile(client: Client, session?: Session) {
-  const { setUserId, setDisplayName, setAvatarUrl } = useStore((state) => state.userProfile);
+  const setUserProfile = useSetAtom(userProfileAtom);
   const isMounted = useIsMounted();
   const [profileRoom, setProfileRoom] = useState<Room>();
 
   const updateProfile = useCallback(
     (userId: string, displayName?: string, avatarUrl?: string) => {
-      setUserId(userId);
-      setDisplayName(displayName || getMxIdUsername(userId));
-      setAvatarUrl(avatarUrl);
+      setUserProfile({
+        userId,
+        displayName: displayName || getMxIdUsername(userId),
+        avatarUrl,
+      });
     },
-    [setUserId, setDisplayName, setAvatarUrl]
+    [setUserProfile]
   );
 
   const updateFromServer = useCallback(
@@ -43,11 +46,8 @@ export function useUserProfile(client: Client, session?: Session) {
       const unSubs = memberObserver?.subscribe((member) => {
         if (member.membership !== "join") unSubs?.();
 
-        const { displayName, avatarUrl } = useStore.getState().userProfile;
-        const { avatarUrl: url, displayName: name } = member;
-        if (avatarUrl === url && displayName === name) return;
-
-        updateProfile(session.userId, name, url);
+        const { avatarUrl, displayName } = member;
+        updateProfile(session.userId, avatarUrl, displayName);
       });
     },
     [updateProfile, setProfileRoom]

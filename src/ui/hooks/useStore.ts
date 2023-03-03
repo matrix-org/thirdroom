@@ -1,15 +1,5 @@
 import create from "zustand";
 import { immer } from "zustand/middleware/immer";
-
-export interface UserProfileState {
-  userId: string;
-  displayName: string;
-  avatarUrl?: string;
-  setUserId: (id: string) => void;
-  setDisplayName: (name: string) => void;
-  setAvatarUrl: (url?: string) => void;
-}
-
 export interface WorldState {
   worldId: string | undefined;
   entered: boolean;
@@ -20,32 +10,11 @@ export interface WorldState {
 }
 
 export interface StoreState {
-  userProfile: UserProfileState;
   world: WorldState;
 }
 
 export const useStore = create<StoreState>()(
   immer((set, get) => ({
-    userProfile: {
-      userId: "@dummy:server.xyz",
-      displayName: "dummy",
-      avatarUrl: undefined,
-      setUserId: (id) => {
-        set((state) => {
-          state.userProfile.userId = id;
-        });
-      },
-      setDisplayName: (name) => {
-        set((state) => {
-          state.userProfile.displayName = name;
-        });
-      },
-      setAvatarUrl: (url) => {
-        set((state) => {
-          state.userProfile.avatarUrl = url;
-        });
-      },
-    },
     world: {
       worldId: undefined,
       entered: false,
