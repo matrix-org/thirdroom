@@ -1,14 +1,16 @@
 import { Session } from "@thirdroom/hydrogen-view-sdk";
+import { useSetAtom } from "jotai";
 import { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { worldAtom } from "../state/world";
 import { roomIdToAlias } from "../utils/matrixUtils";
-import { useStore } from "./useStore";
 
 let worldReloadId = 0;
 
 export function useWorldAction(session: Session) {
   const navigate = useNavigate();
+  const setWorld = useSetAtom(worldAtom);
 
   const enterWorld = useCallback(
     (
@@ -28,13 +30,9 @@ export function useWorldAction(session: Session) {
   );
 
   const exitWorld = useCallback(() => {
-    const world = useStore.getState().world;
-    if (world.worldId) {
-      world.disposeNetworkInterface?.();
-      world.closeWorld();
-    }
+    setWorld({ type: "CLOSE" });
     navigate("/");
-  }, [navigate]);
+  }, [navigate, setWorld]);
 
   return {
     enterWorld,

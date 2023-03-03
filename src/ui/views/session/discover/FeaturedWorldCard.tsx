@@ -1,4 +1,5 @@
 import { Platform, Session } from "@thirdroom/hydrogen-view-sdk";
+import { useSetAtom } from "jotai";
 
 import { Avatar } from "../../../atoms/avatar/Avatar";
 import { Button } from "../../../atoms/button/Button";
@@ -6,8 +7,10 @@ import { RoomPreviewCard } from "../../components/room-preview-card/RoomPreviewC
 import { RoomSummaryProvider } from "../../components/RoomSummaryProvider";
 import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avatar";
 import { Dots } from "../../../atoms/loading/Dots";
-import { SidebarTabs, useStore } from "../../../hooks/useStore";
 import { JoinRoomProvider } from "../../components/JoinRoomProvider";
+import { overlayWorldAtom } from "../../../state/overlayWorld";
+import { SidebarTab, sidebarTabAtom } from "../../../state/sidebarTab";
+import { OverlayWindow, overlayWindowAtom } from "../../../state/overlayWindow";
 
 export function FeaturedWorldCard({
   session,
@@ -18,11 +21,14 @@ export function FeaturedWorldCard({
   platform: Platform;
   roomId: string;
 }) {
+  const selectWorld = useSetAtom(overlayWorldAtom);
+  const setSidebarTab = useSetAtom(sidebarTabAtom);
+  const setOverlayWindow = useSetAtom(overlayWindowAtom);
+
   const handleViewWorld = () => {
-    const state = useStore.getState();
-    state.overlayWorld.selectWorld(roomId);
-    state.overlaySidebar.selectSidebarTab(SidebarTabs.Home);
-    state.overlayWindow.closeWindow();
+    selectWorld(roomId);
+    setSidebarTab(SidebarTab.Home);
+    setOverlayWindow({ type: OverlayWindow.None });
   };
 
   return (

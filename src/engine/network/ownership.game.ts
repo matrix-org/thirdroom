@@ -43,7 +43,11 @@ export const takeOwnership = (ctx: GameState, network: GameNetworkState, node: R
   const eid = node.eid;
   if (network.authoritative && !isHost(network)) {
     // TODO: when Authored component is implemented, add Owned component here
-  } else if (!hasComponent(ctx.world, Owned, eid)) {
+  } else if (
+    hasComponent(ctx.world, Prefab, eid) &&
+    hasComponent(ctx.world, Networked, eid) &&
+    !hasComponent(ctx.world, Owned, eid)
+  ) {
     removeObjectFromWorld(ctx, node);
 
     // send message to remove on other side

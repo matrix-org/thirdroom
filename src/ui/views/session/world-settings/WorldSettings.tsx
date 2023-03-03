@@ -1,4 +1,5 @@
 import { ChangeEvent, FormEvent, useEffect, useState, useRef } from "react";
+import { useSetAtom } from "jotai";
 
 import { IconButton } from "../../../atoms/button/IconButton";
 import { Content } from "../../../atoms/content/Content";
@@ -9,7 +10,6 @@ import CrossIC from "../../../../../res/ic/cross.svg";
 import { WindowContent } from "../../components/window/WindowContent";
 import { WindowAside } from "../../components/window/WindowAside";
 import { ScenePreview } from "../../components/scene-preview/ScenePreview";
-import { useStore } from "../../../hooks/useStore";
 import { Scroll } from "../../../atoms/scroll/Scroll";
 import { Footer } from "../../../atoms/footer/Footer";
 import { Button } from "../../../atoms/button/Button";
@@ -30,6 +30,7 @@ import { AutoFileUpload, AutoUploadInfo } from "../../components/AutoFileUpload"
 import { useIsMounted } from "../../../hooks/useIsMounted";
 import { uploadAttachment } from "../../../utils/matrixUtils";
 import { MAX_OBJECT_CAP } from "../../../../engine/config.common";
+import { OverlayWindow, overlayWindowAtom } from "../../../state/overlayWindow";
 
 interface WorldSettingsProps {
   roomId: string;
@@ -38,7 +39,7 @@ interface WorldSettingsProps {
 export function WorldSettings({ roomId }: WorldSettingsProps) {
   const { session, platform } = useHydrogen(true);
 
-  const { closeWindow } = useStore((state) => state.overlayWindow);
+  const setOverlayWindow = useSetAtom(overlayWindowAtom);
   const isMounted = useIsMounted();
   const room = useRoom(session, roomId);
 
@@ -131,17 +132,23 @@ export function WorldSettings({ roomId }: WorldSettingsProps) {
       );
     }
 
-    closeWindow();
+    setOverlayWindow({ type: OverlayWindow.None });
   };
 
   return (
-    <Window onRequestClose={closeWindow}>
+    <Window onRequestClose={() => setOverlayWindow({ type: OverlayWindow.None })}>
       <Content
         onSubmit={handleSubmit}
         top={
           <Header
             left={<HeaderTitle>World Settings</HeaderTitle>}
-            right={<IconButton onClick={() => closeWindow()} label="Close" iconSrc={CrossIC} />}
+            right={
+              <IconButton
+                onClick={() => setOverlayWindow({ type: OverlayWindow.None })}
+                label="Close"
+                iconSrc={CrossIC}
+              />
+            }
           />
         }
       >
@@ -215,7 +222,7 @@ export function WorldSettings({ roomId }: WorldSettingsProps) {
               bottom={
                 <Footer
                   left={
-                    <Button size="lg" fill="outline" onClick={() => closeWindow()}>
+                    <Button size="lg" fill="outline" onClick={() => setOverlayWindow({ type: OverlayWindow.None })}>
                       Cancel
                     </Button>
                   }

@@ -1,4 +1,5 @@
 import { Invite, Room } from "@thirdroom/hydrogen-view-sdk";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { getIdentifierColorNumber, getAvatarHttpUrl } from "../../../utils/avatar";
@@ -9,9 +10,10 @@ import { RoomTileTitle } from "../../components/room-tile/RoomTileTitle";
 import { Category } from "../../components/category/Category";
 import { CategoryHeader } from "../../components/category/CategoryHeader";
 import { RoomTypes } from "../../../hooks/useRoomsOfType";
-import { useStore } from "../../../hooks/useStore";
 import { useInvitesOfType } from "../../../hooks/useInvitesOfType";
 import { EmptyState } from "../../components/empty-state/EmptyState";
+import { activeChatsAtom, openedChatAtom } from "../../../state/overlayChat";
+import { overlayWorldAtom } from "../../../state/overlayWorld";
 
 export function RoomListNotifications() {
   const { session, platform } = useHydrogen(true);
@@ -19,8 +21,9 @@ export function RoomListNotifications() {
   const [roomInvites] = useInvitesOfType(session, RoomTypes.Room);
   const [dmInvites] = useInvitesOfType(session, RoomTypes.Direct);
 
-  const { selectedChatId, selectChat } = useStore((state) => state.overlayChat);
-  const { selectedWorldId, selectWorld } = useStore((state) => state.overlayWorld);
+  const openedChatId = useAtomValue(openedChatAtom);
+  const setActiveChat = useSetAtom(activeChatsAtom);
+  const [selectedWorldId, selectWorld] = useAtom(overlayWorldAtom);
 
   const renderAvatar = (room: Room | Invite, isWorld: boolean) => {
     const avatar = (
@@ -33,7 +36,7 @@ export function RoomListNotifications() {
         imageSrc={room.avatarUrl ? getAvatarHttpUrl(room.avatarUrl, 50, platform, room.mediaRepository) : undefined}
       />
     );
-    if (selectedChatId === room.id || selectedWorldId === room.id) return <AvatarOutline>{avatar}</AvatarOutline>;
+    if (openedChatId === room.id || selectedWorldId === room.id) return <AvatarOutline>{avatar}</AvatarOutline>;
     return avatar;
   };
 
@@ -68,7 +71,7 @@ export function RoomListNotifications() {
               key={invite.id}
               avatar={renderAvatar(invite, false)}
               content={<RoomTileTitle>{invite.name || "Empty room"}</RoomTileTitle>}
-              onClick={() => selectChat(invite.id)}
+              onClick={() => setActiveChat({ type: "OPEN", roomId: invite.id })}
             />
           ))}
         </Category>
@@ -80,7 +83,7 @@ export function RoomListNotifications() {
               key={invite.id}
               avatar={renderAvatar(invite, false)}
               content={<RoomTileTitle>{invite.name || "Empty room"}</RoomTileTitle>}
-              onClick={() => selectChat(invite.id)}
+              onClick={() => setActiveChat({ type: "OPEN", roomId: invite.id })}
             />
           ))}
         </Category>

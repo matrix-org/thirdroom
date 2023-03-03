@@ -42,11 +42,12 @@
     "@radix-ui/react-switch": "^0.1.5",
     "@radix-ui/react-tooltip": "^0.1.7",
     "@react-aria/interactions": "^3.9.1",
+    "@react-pdf/yoga": "^4.1.0",
     "@sentry/react": "^7.13.0",
     "@sentry/tracing": "^7.13.0",
     "@thi.ng/malloc": "^6.1.19",
     "@thirdroom/hydrogen-view-sdk": "0.0.29",
-    "@thirdroom/manifold-editor-components": "^0.0.4",
+    "@thirdroom/manifold-editor-components": "^0.0.5",
     "@thirdroom/ringbuffer": "^0.0.1",
     "@webxr-input-profiles/assets": "^1.0.13",
     "bitecs": "NateTheGreatt/bitECS",
@@ -57,6 +58,7 @@
     "events": "^3.3.0",
     "gl-matrix": "^3.4.3",
     "immer": "^9.0.12",
+    "jotai": "^2.0.2",
     "ktx-parse": "^0.4.5",
     "meshoptimizer": "^0.18.1",
     "murmurhash-js": "^1.0.0",
@@ -69,8 +71,7 @@
     "react-router-dom": "6",
     "react-virtualized-auto-sizer": "^1.0.6",
     "react-window": "^1.8.7",
-    "three": "npm:@thirdroom/three@^0.148.2",
-    "zustand": "^4.0.0-rc.0"
+    "three": "npm:@thirdroom/three@^0.148.2"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^5.16.4",

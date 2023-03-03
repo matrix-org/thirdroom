@@ -1,4 +1,5 @@
 import { Session, StateEvent } from "@thirdroom/hydrogen-view-sdk";
+import { useSetAtom } from "jotai";
 import { useState } from "react";
 
 import { Button } from "../../../atoms/button/Button";
@@ -6,7 +7,8 @@ import { Modal } from "../../../atoms/modal/Modal";
 import { Text } from "../../../atoms/text/Text";
 import { Thumbnail } from "../../../atoms/thumbnail/Thumbnail";
 import { ThumbnailImg } from "../../../atoms/thumbnail/ThumbnailImg";
-import { useStore } from "../../../hooks/useStore";
+import { OverlayWindow, overlayWindowAtom } from "../../../state/overlayWindow";
+import { overlayWorldAtom } from "../../../state/overlayWorld";
 import { getHttpUrl } from "../../../utils/avatar";
 import { ScenePreviewCard, ScenePreviewCardContent } from "../../components/scene-preview-card/ScenePreviewCard";
 import { CreateWorldModal } from "../create-world/CreateWorldModal";
@@ -20,10 +22,12 @@ interface FeaturedSceneCardProps {
 export function FeaturedSceneCard({ session, roomId, stateEvent }: FeaturedSceneCardProps) {
   const [create, setCreate] = useState(false);
   const content = stateEvent.content;
+  const selectWorld = useSetAtom(overlayWorldAtom);
+  const setOverlayWindow = useSetAtom(overlayWindowAtom);
 
   const handleCreateWorld = (roomId: string) => {
-    useStore.getState().overlayWorld.selectWorld(roomId);
-    useStore.getState().overlayWindow.closeWindow();
+    selectWorld(roomId);
+    setOverlayWindow({ type: OverlayWindow.None });
     setCreate(false);
   };
 

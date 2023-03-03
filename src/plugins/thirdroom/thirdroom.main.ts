@@ -1,5 +1,6 @@
 import { IMainThreadContext } from "../../engine/MainThread";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
+import { PhysicsMessageType, TogglePhysicsDebugMessage } from "../../engine/physics/physics.common";
 import { createDisposables } from "../../engine/utils/createDisposables";
 import { createDeferred } from "../../engine/utils/Deferred";
 import { registerThirdroomGlobalFn } from "../../engine/utils/registerThirdroomGlobal";
@@ -51,6 +52,12 @@ export const ThirdroomModule = defineModule<IMainThreadContext, ThirdRoomModuleS
       ctx.sendMessage<FindResourceRetainersMessage>(Thread.Game, {
         type: ThirdRoomMessageType.FindResourceRetainers,
         resourceId,
+      });
+    });
+
+    registerThirdroomGlobalFn("togglePhysicsDebug", () => {
+      ctx.sendMessage<TogglePhysicsDebugMessage>(Thread.Game, {
+        type: PhysicsMessageType.TogglePhysicsDebug,
       });
     });
   },

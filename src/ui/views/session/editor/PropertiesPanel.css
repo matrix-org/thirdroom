@@ -9,6 +9,12 @@
   box-shadow: var(--bs-surface);
 }
 
+.PropertiesPanel__input-divider {
+  background: var(--bg-surface-border);
+  width: 1px;
+  height: 100%;
+}
+
 .PropertyContainer {
   padding: var(--sp-xxs) var(--sp-sm);
 

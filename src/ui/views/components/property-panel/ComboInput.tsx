@@ -18,9 +18,8 @@ interface ComboInputProps<T> {
   disabled?: boolean;
   selected: Option<T>;
   onSelectedChange: (value: Option<T>) => void;
-  dropDownWidth?: number;
 }
-export function ComboInput<T>({ options, disabled, selected, onSelectedChange, dropDownWidth }: ComboInputProps<T>) {
+export function ComboInput<T>({ options, disabled, selected, onSelectedChange }: ComboInputProps<T>) {
   const [inputOptions, setInputOptions] = useState(options);
 
   const { isOpen, highlightedIndex, getToggleButtonProps, getMenuProps, getInputProps, getItemProps } = useCombobox({

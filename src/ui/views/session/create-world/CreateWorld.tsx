@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSetAtom } from "jotai";
 
 import { Text } from "../../../atoms/text/Text";
 import { Icon } from "../../../atoms/icon/Icon";
@@ -10,26 +11,28 @@ import { WindowContent } from "../../components/window/WindowContent";
 import { WindowAside } from "../../components/window/WindowAside";
 import LanguageIC from "../../../../../res/ic/language.svg";
 import { useHydrogen } from "../../../hooks/useHydrogen";
-import { useStore } from "../../../hooks/useStore";
 import { Content } from "../../../atoms/content/Content";
 import CrossIC from "../../../../../res/ic/cross.svg";
 import { ScenePreview } from "../../components/scene-preview/ScenePreview";
 import { getHttpUrl } from "../../../utils/avatar";
 import { CreateWorldForm } from "./CreateWorldForm";
+import { overlayWorldAtom } from "../../../state/overlayWorld";
+import { OverlayWindow, overlayWindowAtom } from "../../../state/overlayWindow";
 
 export function CreateWorld() {
   const { session } = useHydrogen(true);
-  const { closeWindow } = useStore((state) => state.overlayWindow);
+  const setOverlayWindow = useSetAtom(overlayWindowAtom);
 
+  const selectWorld = useSetAtom(overlayWorldAtom);
   const [scenePreviewUrl, setScenePreviewUrl] = useState<string>();
 
   const handleOnCreate = (roomId: string) => {
-    useStore.getState().overlayWorld.selectWorld(roomId);
-    closeWindow();
+    selectWorld(roomId);
+    setOverlayWindow({ type: OverlayWindow.None });
   };
 
   return (
-    <Window onRequestClose={closeWindow}>
+    <Window onRequestClose={() => setOverlayWindow({ type: OverlayWindow.None })}>
       <Content
         top={
           <Header
@@ -38,7 +41,13 @@ export function CreateWorld() {
                 Create World
               </HeaderTitle>
             }
-            right={<IconButton onClick={() => closeWindow()} iconSrc={CrossIC} label="Close" />}
+            right={
+              <IconButton
+                onClick={() => setOverlayWindow({ type: OverlayWindow.None })}
+                iconSrc={CrossIC}
+                label="Close"
+              />
+            }
           />
         }
       >
@@ -47,7 +56,7 @@ export function CreateWorld() {
             <CreateWorldForm
               onSceneChange={(sceneUrl, previewUrl) => setScenePreviewUrl(previewUrl)}
               onCreate={handleOnCreate}
-              onClose={closeWindow}
+              onClose={() => setOverlayWindow({ type: OverlayWindow.None })}
             />
           }
           aside={
