@@ -747,7 +747,7 @@ function swapToFirstPerson(ctx: GameState, node: RemoteNode) {
   avatar.visible = false;
 }
 
-export function ThirdroomSystem(ctx: GameState) {
+export async function ThirdroomSystem(ctx: GameState) {
   const input = getModule(ctx, InputModule);
   const physics = getModule(ctx, PhysicsModule);
 
