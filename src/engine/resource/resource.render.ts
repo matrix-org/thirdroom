@@ -27,6 +27,7 @@ import {
   SkinnedMesh,
   Texture,
   Mesh,
+  Material,
 } from "three";
 
 import {
@@ -743,6 +744,14 @@ export class RenderNode extends defineLocalResourceClass(NodeResource) {
       if (index !== -1) {
         tileRendererNodes.splice(index, 1);
       }
+    }
+
+    if (this.uiCanvasMesh) {
+      this.uiCanvasMesh.parent?.remove(this.uiCanvasMesh);
+      this.uiCanvasMesh.geometry.dispose();
+      (this.uiCanvasMesh.material as MeshBasicMaterial & { map: Texture }).map.dispose();
+      (this.uiCanvasMesh.material as Material).dispose();
+      this.uiCanvasMesh = undefined;
     }
   }
 }
