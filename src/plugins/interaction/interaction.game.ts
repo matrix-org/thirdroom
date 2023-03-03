@@ -772,8 +772,6 @@ function updateGrabThrowXR(
           interactable.released = false;
           interactable.held = true;
         }
-
-        updateNodeCanvasUI(ctx, shapecastHit, node);
       } else {
         // TODO: websgui
         // if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, focusedEntity);
