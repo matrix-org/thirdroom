@@ -47,7 +47,7 @@
     "@sentry/tracing": "^7.13.0",
     "@thi.ng/malloc": "^6.1.19",
     "@thirdroom/hydrogen-view-sdk": "0.0.29",
-    "@thirdroom/manifold-editor-components": "^0.0.4",
+    "@thirdroom/manifold-editor-components": "^0.0.5",
     "@thirdroom/ringbuffer": "^0.0.1",
     "@webxr-input-profiles/assets": "^1.0.13",
     "bitecs": "NateTheGreatt/bitECS",

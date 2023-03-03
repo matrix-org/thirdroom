@@ -1,3 +1,6 @@
+import { useRef } from "react";
+import { TreeViewRefApi } from "@thirdroom/manifold-editor-components";
+
 import "./EditorView.css";
 import { useEditor } from "../../../hooks/useEditor";
 import { HierarchyPanel } from "./HierarchyPanel";
@@ -6,6 +9,7 @@ import { getLocalResource, MainThreadResource } from "../../../../engine/resourc
 import { PropertiesPanel } from "./PropertiesPanel";
 
 export function EditorView() {
+  const treeViewRef = useRef<TreeViewRefApi>(null);
   const {
     loading,
     scene,
@@ -17,7 +21,8 @@ export function EditorView() {
     resourceOptions,
     resourceType,
     setResourceType,
-  } = useEditor();
+    goToRef,
+  } = useEditor(treeViewRef);
 
   const mainThread = useMainThreadContext();
   const resource = getLocalResource(mainThread, activeEntity) as unknown as MainThreadResource;
@@ -37,11 +42,12 @@ export function EditorView() {
               resourceOptions={resourceOptions}
               setResourceType={setResourceType}
               resourceType={resourceType}
+              treeViewRef={treeViewRef}
             />
           </div>
           {typeof resource === "object" && (
             <div className="EditorView__rightPanel">
-              <PropertiesPanel resource={resource} />
+              <PropertiesPanel resource={resource} goToRef={goToRef} />
             </div>
           )}
         </>

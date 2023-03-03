@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { RefObject, useCallback, useEffect, useState } from "react";
+import { TreeViewRefApi } from "@thirdroom/manifold-editor-components";
 
+import { IMainThreadContext } from "../../engine/MainThread";
 import { useMainThreadContext } from "./useMainThread";
 import { getModule } from "../../engine/module/module.common";
 import {
@@ -11,12 +13,14 @@ import {
   EditorLoadedEvent,
   SelectionChangedEvent,
   buildResourceList,
+  setSelectedEntity,
 } from "../../engine/editor/editor.main";
 import { EditorNode } from "../../engine/editor/editor.common";
 import { NOOP } from "../../engine/config.common";
-import { ResourceModule, MainNode } from "../../engine/resource/resource.main";
+import { ResourceModule, MainNode, getLocalResource } from "../../engine/resource/resource.main";
 import { MainThreadResource } from "../../engine/resource/resource.main";
 import kebabToPascalCase from "../../engine/utils/kebabToPascalCase";
+import { LocalResourceInstance, ResourceDefinition } from "../../engine/resource/ResourceDefinition";
 
 export enum HierarchyTab {
   Scenes = "Scenes",
@@ -33,20 +37,23 @@ interface EditorUIState {
   resourceOptions: ResourceOptions;
   hierarchyTab: HierarchyTab;
   resourceType: MainThreadResource;
+  focusEid?: number;
 }
 
 type UseEditor = EditorUIState & {
   setHierarchyTab: (tab: HierarchyTab) => void;
   setResourceType: (type: MainThreadResource) => void;
+  goToRef: (resourceId: number) => void;
 };
 
-export function useEditor(): UseEditor {
+export function useEditor(treeViewRef: RefObject<TreeViewRefApi>): UseEditor {
   const mainThread = useMainThreadContext();
   const editor = getModule(mainThread, EditorModule);
   const [state, setState] = useState<EditorUIState>({
     activeEntity: NOOP,
     loading: true,
     selectedEntities: [],
+    focusEid: undefined,
     resourceOptions: [],
     resourceType: MainNode,
     hierarchyTab: HierarchyTab.Scenes,
@@ -70,6 +77,35 @@ export function useEditor(): UseEditor {
       }));
     },
     [mainThread]
+  );
+
+  const goToRef = useCallback(
+    (resourceId: number) => {
+      const resource = getLocalResource<LocalResourceInstance<ResourceDefinition, IMainThreadContext>>(
+        mainThread,
+        resourceId
+      );
+
+      if (!resource) {
+        return;
+      }
+
+      const resourceType = resource.constructor;
+
+      setSelectedEntity(mainThread, resourceId);
+      setState((prev) => ({
+        ...prev,
+        hierarchyTab: HierarchyTab.Resources,
+        resourceType,
+        resources: buildResourceList(mainThread, resourceType),
+      }));
+
+      if (treeViewRef) {
+        // TODO: Figure out why this doesn't seem to be scrolling to the node properly
+        treeViewRef.current?.scrollToNode(resource.eid, "center");
+      }
+    },
+    [mainThread, treeViewRef]
   );
 
   useEffect(() => {
@@ -126,5 +162,5 @@ export function useEditor(): UseEditor {
     };
   }, [editor, mainThread]);
 
-  return { ...state, setHierarchyTab, setResourceType };
+  return { ...state, setHierarchyTab, setResourceType, goToRef };
 }
