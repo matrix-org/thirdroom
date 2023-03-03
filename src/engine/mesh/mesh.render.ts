@@ -102,7 +102,7 @@ function createMeshPrimitiveObject(
 
             boneInverses.push(inverseMatrix);
           } else {
-            throw new Error(`Joint ${skin.joints[j]} not found`);
+            throw new Error(`Joint ${skin.joints[j].name} not found`);
           }
         }
 

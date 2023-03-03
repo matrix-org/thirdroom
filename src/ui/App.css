@@ -1,7 +1,7 @@
-@import "./style/display.css";
-@import "./style/flex.css";
-@import "./style/text.css";
-@import "./style/legacy-scroll.css";
+@import url("./style/display.css");
+@import url("./style/flex.css");
+@import url("./style/text.css");
+@import url("./style/legacy-scroll.css");
 
 @custom-selector :--heading h1, h2, h3, h4, h5, h6;
 
