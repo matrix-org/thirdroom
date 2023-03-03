@@ -14,7 +14,7 @@ import { Quaternion, Vector3 } from "three";
 
 import { GameState, World } from "../GameTypes";
 import { defineMapComponent } from "../ecs/MapComponent";
-import { defineModule, getModule } from "../module/module.common";
+import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import { addResourceRef, getRemoteResource, removeResourceRef } from "../resource/resource.game";
 import { RemoteMesh, RemoteMeshPrimitive, RemoteNode } from "../resource/RemoteResources";
 import { maxEntities } from "../config.common";
@@ -22,8 +22,22 @@ import { ColliderType, MeshPrimitiveAttributeIndex } from "../resource/schema";
 import { getAccessorArrayView } from "../accessor/accessor.common";
 import { updateMatrixWorld } from "../component/transform";
 import { Player } from "../component/Player";
+import {
+  PhysicsDebugRenderTripleBuffer,
+  PhysicsDisableDebugRenderMessage,
+  PhysicsEnableDebugRenderMessage,
+  PhysicsMessageType,
+} from "./physics.common";
+import {
+  createObjectTripleBuffer,
+  defineObjectBufferSchema,
+  getWriteObjectBufferView,
+} from "../allocator/ObjectBufferView";
+import { createDisposables } from "../utils/createDisposables";
 
 export interface PhysicsModuleState {
+  debugRender: boolean;
+  debugRenderTripleBuffer?: PhysicsDebugRenderTripleBuffer;
   physicsWorld: RAPIER.World;
   eventQueue: RAPIER.EventQueue;
   handleToEid: Map<number, number>;
@@ -35,7 +49,7 @@ export interface PhysicsModuleState {
 
 export const PhysicsModule = defineModule<GameState, PhysicsModuleState>({
   name: "physics",
-  async create() {
+  async create(_ctx, { waitForMessage }) {
     await RAPIER.init();
 
     const gravity = new RAPIER.Vector3(0.0, -9.81, 0.0);
@@ -49,6 +63,8 @@ export const PhysicsModule = defineModule<GameState, PhysicsModuleState>({
     characterController.setApplyImpulsesToDynamicBodies(true);
 
     return {
+      debugRender: false,
+      debugRenderTripleBuffer: undefined,
       physicsWorld,
       eventQueue,
       handleToEid,
@@ -58,8 +74,17 @@ export const PhysicsModule = defineModule<GameState, PhysicsModuleState>({
       eidTocharacterController: new Map<number, RAPIER.KinematicCharacterController>(),
     };
   },
-  init(ctx) {},
+  init(ctx) {
+    return createDisposables([
+      registerMessageHandler(ctx, PhysicsMessageType.TogglePhysicsDebug, onTogglePhysicsDebug),
+    ]);
+  },
 });
+
+function onTogglePhysicsDebug(ctx: GameState) {
+  const physicsModule = getModule(ctx, PhysicsModule);
+  physicsModule.debugRender = !physicsModule.debugRender;
+}
 
 const RigidBodySoA = defineComponent(
   {
@@ -112,7 +137,9 @@ const applyRigidBodyToTransform = (body: RapierRigidBody, node: RemoteNode) => {
 
 export function PhysicsSystem(ctx: GameState) {
   const { world, dt } = ctx;
-  const { physicsWorld, handleToEid, eventQueue, collisionHandlers } = getModule(ctx, PhysicsModule);
+  const physicsModule = getModule(ctx, PhysicsModule);
+
+  const { physicsWorld, handleToEid, eventQueue, collisionHandlers, debugRender } = physicsModule;
 
   // apply transform to rigidbody for new physics entities
   const entered = enteredRigidBodyQuery(world);
@@ -203,6 +230,40 @@ export function PhysicsSystem(ctx: GameState) {
       _v.fromArray(_worldVec3);
       body.setNextKinematicTranslation(_v);
     }
+  }
+
+  if (debugRender) {
+    const buffers = physicsWorld.debugRender();
+
+    if (!physicsModule.debugRenderTripleBuffer) {
+      // Allow for double the number of vertices at the start.
+      const initialSize = (buffers.vertices.length / 3) * 2;
+
+      const physicsDebugRenderSchema = defineObjectBufferSchema({
+        size: [Uint32Array, 1],
+        vertices: [Float32Array, initialSize * 3],
+        colors: [Float32Array, initialSize * 4],
+      });
+
+      const tripleBuffer = createObjectTripleBuffer(physicsDebugRenderSchema, ctx.gameToRenderTripleBufferFlags);
+
+      physicsModule.debugRenderTripleBuffer = tripleBuffer;
+
+      ctx.sendMessage<PhysicsEnableDebugRenderMessage>(Thread.Render, {
+        type: PhysicsMessageType.PhysicsEnableDebugRender,
+        tripleBuffer,
+      });
+    }
+
+    const writeView = getWriteObjectBufferView(physicsModule.debugRenderTripleBuffer);
+    writeView.size[0] = buffers.vertices.length / 3;
+    writeView.vertices.set(buffers.vertices);
+    writeView.colors.set(buffers.colors);
+  } else if (physicsModule.debugRenderTripleBuffer) {
+    ctx.sendMessage<PhysicsDisableDebugRenderMessage>(Thread.Render, {
+      type: PhysicsMessageType.PhysicsDisableDebugRender,
+    });
+    physicsModule.debugRenderTripleBuffer = undefined;
   }
 }
 
