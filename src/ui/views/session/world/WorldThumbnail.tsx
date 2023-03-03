@@ -4,15 +4,15 @@ import { useEffect, useState } from "react";
 
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { useIsMounted } from "../../../hooks/useIsMounted";
-import { useStore } from "../../../hooks/useStore";
 import { overlayVisibilityAtom } from "../../../state/overlayVisibility";
 import { overlayWorldAtom } from "../../../state/overlayWorld";
+import { worldAtom } from "../../../state/world";
 import { loadImageUrl } from "../../../utils/common";
 import "./WorldThumbnail.css";
 
 export function WorldThumbnail() {
   const selectedWorldId = useAtomValue(overlayWorldAtom);
-  const { worldId, entered } = useStore((state) => state.world);
+  const { worldId, entered } = useAtomValue(worldAtom);
   const overlayVisible = useAtomValue(overlayVisibilityAtom);
 
   const previewId = selectedWorldId ?? worldId;

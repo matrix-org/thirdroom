@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useRef, useState, forwardRef } from "react";
 import { GroupCall, Room, RoomStatus } from "@thirdroom/hydrogen-view-sdk";
 import classNames from "classnames";
-import { useAtom, useSetAtom } from "jotai";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 
 import { WorldChat } from "../world-chat/WorldChat";
 import { Stats } from "../stats/Stats";
 import { Text } from "../../../atoms/text/Text";
 import { IconButton } from "../../../atoms/button/IconButton";
-import { useStore } from "../../../hooks/useStore";
 import { useKeyDown } from "../../../hooks/useKeyDown";
 import { useEvent } from "../../../hooks/useEvent";
 import PeopleIC from "../../../../../res/ic/peoples.svg";
@@ -65,6 +64,7 @@ import { useMemoizedState } from "../../../hooks/useMemoizedState";
 import { overlayWorldAtom } from "../../../state/overlayWorld";
 import { worldChatVisibilityAtom } from "../../../state/worldChatVisibility";
 import { overlayVisibilityAtom } from "../../../state/overlayVisibility";
+import { worldAtom } from "../../../state/world";
 
 export interface ActiveEntityState {
   interactableType: InteractableType;
@@ -131,7 +131,7 @@ export function WorldView({ world }: WorldViewProps) {
   const activeCall = useRoomCall(calls, world.id);
   const { enterWorld, exitWorld } = useWorldAction(session);
   const selectWorld = useSetAtom(overlayWorldAtom);
-  const isEnteredWorld = useStore((state) => state.world.entered);
+  const isWorldEntered = useAtomValue(worldAtom).entered;
   const [worldChatVisible, setWorldChatVisibility] = useAtom(worldChatVisibilityAtom);
   const [overlayVisible, setOverlayVisibility] = useAtom(overlayVisibilityAtom);
   const [editorEnabled, setEditorEnabled] = useState(false);
@@ -139,7 +139,7 @@ export function WorldView({ world }: WorldViewProps) {
   const [shortcutUI, setShortcutUI] = useState(false);
   const isMounted = useIsMounted();
 
-  const { onboarding, finishOnboarding } = useOnboarding(isEnteredWorld ? world?.id : undefined);
+  const { onboarding, finishOnboarding } = useOnboarding(isWorldEntered ? world?.id : undefined);
 
   const muteBtnRef = useRef<HTMLButtonElement | null>(null);
   const { toastShown, toastContent, showToast } = useToast();
@@ -277,7 +277,7 @@ export function WorldView({ world }: WorldViewProps) {
 
   useKeyDown(
     (e) => {
-      if (isEnteredWorld === false) return;
+      if (isWorldEntered === false) return;
       if (onboarding) return;
 
       const isEscape = e.key === "Escape";
@@ -345,7 +345,7 @@ export function WorldView({ world }: WorldViewProps) {
       }
     },
     [
-      isEnteredWorld,
+      isWorldEntered,
       worldChatVisible,
       setWorldChatVisibility,
       overlayVisible,
@@ -362,15 +362,14 @@ export function WorldView({ world }: WorldViewProps) {
   useEvent(
     "click",
     (e) => {
-      const isEnteredWorld = useStore.getState().world.entered;
-      if (isEnteredWorld === false) return;
+      if (isWorldEntered === false) return;
 
       mainThread.canvas?.requestPointerLock();
       if (worldChatVisible) setWorldChatVisibility(false);
       if (overlayVisible) setOverlayVisibility(false);
     },
     mainThread.canvas,
-    [worldChatVisible, setWorldChatVisibility, overlayVisible, setOverlayVisibility]
+    [isWorldEntered, worldChatVisible, setWorldChatVisibility, overlayVisible, setOverlayVisibility]
   );
 
   useEffect(() => {

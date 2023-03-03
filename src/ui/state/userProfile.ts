@@ -1,18 +1,18 @@
 import { atom } from "jotai";
 
-interface IUserProfile {
+interface UserProfileState {
   userId: string;
   displayName: string;
   avatarUrl?: string;
 }
 
-const baseUserProfileAtom = atom<IUserProfile>({
+const baseUserProfileAtom = atom<UserProfileState>({
   userId: "@dummy:server.xyz",
   displayName: "dummy",
   avatarUrl: undefined,
 });
 
-export const userProfileAtom = atom<IUserProfile, [IUserProfile], void>(
+export const userProfileAtom = atom<UserProfileState, [UserProfileState], void>(
   (get) => get(baseUserProfileAtom),
   (get, set, update) => {
     const { userId, displayName, avatarUrl } = get(baseUserProfileAtom);

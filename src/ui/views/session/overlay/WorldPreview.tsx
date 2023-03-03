@@ -5,7 +5,6 @@ import { useAtomValue, useSetAtom } from "jotai";
 import "./WorldPreview.css";
 import { Button } from "../../../atoms/button/Button";
 import { WorldPreviewCard } from "../../components/world-preview-card/WorldPreviewCard";
-import { useStore } from "../../../hooks/useStore";
 import { useRoom } from "../../../hooks/useRoom";
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { useRoomStatus } from "../../../hooks/useRoomStatus";
@@ -22,6 +21,7 @@ import { useUnknownWorldPath } from "../../../hooks/useWorld";
 import { useAsyncCallback } from "../../../hooks/useAsyncCallback";
 import { useUpdateScene } from "../../../hooks/useUpdateScene";
 import { overlayWorldAtom } from "../../../state/overlayWorld";
+import { worldAtom } from "../../../state/world";
 
 interface InviteWorldPreviewProps {
   session: Session;
@@ -201,7 +201,7 @@ function EnterWorldButton({ room }: { room: Room }) {
 export function WorldPreview() {
   const { session } = useHydrogen(true);
 
-  const worldId = useStore((state) => state.world.worldId);
+  const worldId = useAtomValue(worldAtom).worldId;
   const selectedWorldId = useAtomValue(overlayWorldAtom);
   const [unknownWorldId, unknownWorldAlias] = useUnknownWorldPath();
 

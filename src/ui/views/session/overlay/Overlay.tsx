@@ -21,7 +21,6 @@ import { WorldPreview } from "./WorldPreview";
 import { CreateWorld } from "../create-world/CreateWorld";
 import { UserProfile } from "../user-profile/UserProfile";
 import { useRoom } from "../../../hooks/useRoom";
-import { useStore } from "../../../hooks/useStore";
 import { RoomListHome } from "../sidebar/RoomListHome";
 import { RoomListFriends } from "../sidebar/RoomListFriends";
 import { useInvite } from "../../../hooks/useInvite";
@@ -38,6 +37,7 @@ import { activeChatsAtom, openedChatAtom } from "../../../state/overlayChat";
 import { overlayWorldAtom } from "../../../state/overlayWorld";
 import { SidebarTab, sidebarTabAtom } from "../../../state/sidebarTab";
 import { OverlayWindow, overlayWindowAtom } from "../../../state/overlayWindow";
+import { worldAtom } from "../../../state/world";
 
 export function Overlay() {
   const { session, platform } = useHydrogen(true);
@@ -48,16 +48,13 @@ export function Overlay() {
   const selectedWorldId = useAtomValue(overlayWorldAtom);
   const sidebarTab = useAtomValue(sidebarTabAtom);
 
-  const { worldId, isEnteredWorld } = useStore((state) => ({
-    worldId: state.world.worldId,
-    isEnteredWorld: state.world.entered,
-  }));
+  const { worldId, entered: isWorldEntered } = useAtomValue(worldAtom);
 
   const repositoryRoom = useRoom(session, config.repositoryRoomIdOrAlias);
 
   const activeCall = useRoomCall(calls, worldId);
   const { exitWorld } = useWorldAction(session);
-  const world = useRoom(session, isEnteredWorld ? worldId : undefined);
+  const world = useRoom(session, isWorldEntered ? worldId : undefined);
   const selectedChat = useRoom(session, openedChatId);
   const selectedChatInvite = useInvite(session, openedChatId);
   const overlayWindow = useAtomValue(overlayWindowAtom);
@@ -66,7 +63,7 @@ export function Overlay() {
 
   const isChatOpen = selectedChat || selectedChatInvite;
   return (
-    <div className={classNames("Overlay", { "Overlay--no-bg": !isEnteredWorld }, "flex items-end")}>
+    <div className={classNames("Overlay", { "Overlay--no-bg": !isWorldEntered }, "flex items-end")}>
       <SidebarView
         spaces={<SpacesView />}
         roomList={

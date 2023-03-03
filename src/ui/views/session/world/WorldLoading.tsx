@@ -1,8 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { CallIntent, LocalMedia, Room, StateEvent, SubscriptionHandle } from "@thirdroom/hydrogen-view-sdk";
 import { useAtom, useSetAtom } from "jotai";
 
-import { useStore } from "../../../hooks/useStore";
 import { IMainThreadContext } from "../../../../engine/MainThread";
 import { getModule, registerMessageHandler, Thread } from "../../../../engine/module/module.common";
 import { FetchProgressMessage, FetchProgressMessageType } from "../../../../engine/utils/fetchWithProgress.game";
@@ -26,6 +25,7 @@ import { WorldPreviewCard } from "../../components/world-preview-card/WorldPrevi
 import { disposeActiveMatrixRoom, setActiveMatrixRoom } from "../../../../engine/matrix/matrix.main";
 import { overlayWorldAtom } from "../../../state/overlayWorld";
 import { overlayVisibilityAtom } from "../../../state/overlayVisibility";
+import { worldAtom } from "../../../state/world";
 
 interface WorldLoadProgress {
   loaded: number;
@@ -93,9 +93,16 @@ function useLoadWorld() {
   return loadWorldCallback;
 }
 
-function useEnterWorld() {
+function useEnterWorld(entered: boolean) {
   const mainThread = useMainThreadContext();
   const { session, platform, client } = useHydrogen(true);
+  const networkInterfaceDisposerRef = useRef<() => void>();
+
+  useEffect(() => {
+    if (!entered) {
+      networkInterfaceDisposerRef.current?.();
+    }
+  }, [entered]);
 
   const connectGroupCall = useCallback(
     async (world: Room) => {
@@ -136,7 +143,12 @@ function useEnterWorld() {
       }
 
       const powerLevels = await world.observePowerLevels();
-      const disposer = await createMatrixNetworkInterface(mainThread, client, powerLevels.get(), groupCall);
+      networkInterfaceDisposerRef.current = await createMatrixNetworkInterface(
+        mainThread,
+        client,
+        powerLevels.get(),
+        groupCall
+      );
 
       const audio = getModule(mainThread, AudioModule);
       audio.context.resume().catch(() => console.error("Couldn't resume audio context"));
@@ -146,8 +158,6 @@ function useEnterWorld() {
       if (muteSettings?.microphone === false && localStorage.getItem("microphone") !== "true") {
         groupCall.setMuted(muteSettings.toggleMicrophone());
       }
-
-      return disposer;
     },
     [session, mainThread, client, connectGroupCall]
   );
@@ -156,7 +166,7 @@ function useEnterWorld() {
 }
 
 export function WorldLoading({ roomId, reloadId }: { roomId?: string; reloadId?: string }) {
-  const { worldId, setWorld, entered, setNetworkInterfaceDisposer } = useStore((state) => state.world);
+  const [{ worldId, entered }, setWorld] = useAtom(worldAtom);
   const [overlayVisible, setOverlayVisibility] = useAtom(overlayVisibilityAtom);
   const selectWorld = useSetAtom(overlayWorldAtom);
   const { session } = useHydrogen(true);
@@ -180,7 +190,7 @@ export function WorldLoading({ roomId, reloadId }: { roomId?: string; reloadId?:
   }, [roomId, prevRoomId, setOverlayVisibility]);
 
   const loadWorld = useLoadWorld();
-  const enterWorld = useEnterWorld();
+  const enterWorld = useEnterWorld(entered);
 
   useEffect(() => {
     if (!overlayVisible && roomId && session.rooms.get(roomId)) {
@@ -199,10 +209,12 @@ export function WorldLoading({ roomId, reloadId }: { roomId?: string; reloadId?:
       const handleLoad = (event: StateEvent | undefined) => {
         resetLoadProgress();
         loadWorld(world.id, event)
-          .then(() => {
-            setWorld("");
-            setWorld(world.id);
-          })
+          .then(() =>
+            setWorld({
+              type: "LOAD",
+              roomId: world.id,
+            })
+          )
           .catch((err: Error) => {
             setError(err);
           });
@@ -215,27 +227,24 @@ export function WorldLoading({ roomId, reloadId }: { roomId?: string; reloadId?:
 
     return () => {
       subscriptionHandle?.();
-      const world = useStore.getState().world;
-      world.disposeNetworkInterface?.();
-      world.closeWorld();
+      setWorld({ type: "CLOSE" });
       disposeActiveMatrixRoom(mainThread);
     };
   }, [session, roomId, reloadId, loadWorld, isMounted, setWorld, resetLoadProgress, mainThread]);
 
   useEffect(() => {
     const world = worldId ? session.rooms.get(worldId) : undefined;
+
     if (world && !entered) {
       enterWorld(world)
-        .then((networkInterfaceDisposer) => {
-          if (networkInterfaceDisposer) {
-            setNetworkInterfaceDisposer(networkInterfaceDisposer);
-          }
+        .then(() => {
+          setWorld({ type: "ENTER" });
         })
         .catch((err: Error) => {
           setError(err);
         });
     }
-  }, [worldId, entered, enterWorld, setNetworkInterfaceDisposer, session.rooms]);
+  }, [worldId, entered, enterWorld, setWorld, session.rooms]);
 
   useEffect(() => {
     let disposed = false;
