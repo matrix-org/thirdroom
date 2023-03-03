@@ -1,34 +1,35 @@
 import { vec3 } from "gl-matrix";
 
-import { RenderUIFlex } from "../resource/resource.render";
-
 export enum WebSGUIMessage {
   ButtonPress = "websgui-button-press",
-  CanvasInteraction = "websgui-canvas-interaction",
+  ButtonFocus = "websgui-button-focus",
+  ButtonUnfocus = "websgui-button-unfocus",
+  CanvasPress = "websgui-canvas-press",
+  CanvasFocus = "websgui-canvas-focus",
 }
 
-export interface UICanvasInteractionMessage {
-  type: WebSGUIMessage.CanvasInteraction;
+// game -> render
+export interface UICanvasPressMessage {
+  type: WebSGUIMessage.CanvasPress;
   uiCanvasEid: number;
   hitPoint: vec3;
 }
 
+export interface UICanvasFocusMessage {
+  type: WebSGUIMessage.CanvasFocus;
+  uiCanvasEid: number;
+  hitPoint: vec3;
+}
+
+// render -> game
 export interface UIButtonPressMessage {
   type: WebSGUIMessage.ButtonPress;
   buttonEid: number;
 }
-
-export function traverseUIFlex(node: RenderUIFlex, callback: (child: RenderUIFlex, index: number) => boolean | void) {
-  let curChild = node.firstChild;
-  let i = 0;
-
-  while (curChild) {
-    const continueTraversal = callback(curChild, i++) !== false;
-    if (continueTraversal) {
-      traverseUIFlex(curChild, callback);
-      curChild = curChild.nextSibling;
-    } else {
-      return;
-    }
-  }
+export interface UIButtonFocusMessage {
+  type: WebSGUIMessage.ButtonFocus;
+  buttonEid: number;
+}
+export interface UIButtonUnfocusMessage {
+  type: WebSGUIMessage.ButtonUnfocus;
 }

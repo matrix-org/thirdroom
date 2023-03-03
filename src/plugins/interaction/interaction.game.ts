@@ -55,7 +55,7 @@ import {
 import { InteractableAction, InteractionMessage, InteractionMessageType } from "./interaction.common";
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
 import { XRAvatarRig } from "../../engine/input/WebXRAvatarRigSystem";
-import { UICanvasInteractionMessage, WebSGUIMessage } from "../../engine/ui/ui.common";
+import { UICanvasFocusMessage, UICanvasPressMessage, WebSGUIMessage } from "../../engine/ui/ui.common";
 
 // TODO: importing from spawnables.game in this file induces a runtime error
 // import { SpawnablesModule } from "../spawnables/spawnables.game";
@@ -303,7 +303,7 @@ export function ResetInteractablesSystem(ctx: GameState) {
   for (let i = 0; i < interactableEntities.length; i++) {
     const eid = interactableEntities[i];
 
-    if (Interactable.type[eid] !== InteractableType.Interactable) {
+    if (Interactable.type[eid] !== InteractableType.Interactable && Interactable.type[eid] !== InteractableType.UI) {
       continue;
     }
 
@@ -411,32 +411,38 @@ function updateFocus(ctx: GameState, physics: PhysicsModuleState, rig: RemoteNod
     focusShapeCastCollisionGroups
   );
 
-  let eid;
-  if (hit !== null) {
-    eid = physics.handleToEid.get(hit.collider.handle);
-    if (!eid) {
-      console.warn(`Could not find entity for physics handle ${hit.collider.handle}`);
-    } else if (hit.toi <= Interactable.interactionDistance[eid]) {
-      addComponent(ctx.world, FocusComponent, rig.eid);
-      FocusComponent.focusedEntity[rig.eid] = eid;
-    } else {
-      // clear focus
-      removeComponent(ctx.world, FocusComponent, rig.eid, true);
-      FocusComponent.focusedEntity[rig.eid] = 0;
-    }
-  } else {
-    // clear focus
+  // if there's no hit, clear focus
+  if (!hit) {
     removeComponent(ctx.world, FocusComponent, rig.eid, true);
-    FocusComponent.focusedEntity[rig.eid] = 0;
+    sendInteractionMessage(ctx, InteractableAction.Unfocus);
+    return;
   }
 
-  // only update UI if it's our player
-  const ourPlayer = hasComponent(ctx.world, OurPlayer, rig.eid);
+  const eid = physics.handleToEid.get(hit.collider.handle);
+  if (!eid) {
+    console.warn(`Could not find entity for physics handle ${hit.collider.handle}`);
+    return;
+  }
 
-  if (ourPlayer) {
-    // TODO: only send these messages when they change
-    if (FocusComponent.focusedEntity[rig.eid]) sendInteractionMessage(ctx, InteractableAction.Focus, eid);
-    if (!FocusComponent.focusedEntity[rig.eid]) sendInteractionMessage(ctx, InteractableAction.Unfocus);
+  // if within interaction distance, deem entity as focused
+  if (hit.toi <= Interactable.interactionDistance[eid]) {
+    // if it's render UI, don't focus, render thread will report back with button focus
+    if (Interactable.type[eid] === InteractableType.UI) {
+      const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
+      const projectedHit = projectHitOntoCanvas(ctx, hit, node);
+      notifyUICanvasFocus(ctx, projectedHit, node);
+    } else {
+      addComponent(ctx.world, FocusComponent, rig.eid);
+      FocusComponent.focusedEntity[rig.eid] = eid;
+
+      // only update react UI if it's our player
+      const ourPlayer = hasComponent(ctx.world, OurPlayer, rig.eid);
+      if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Focus, eid);
+    }
+  } else {
+    // if not within interaction distance, remove any existing focus
+    removeComponent(ctx.world, FocusComponent, rig.eid, true);
+    sendInteractionMessage(ctx, InteractableAction.Unfocus);
   }
 }
 
@@ -455,6 +461,16 @@ function updateDeletion(ctx: GameState, interaction: InteractionModuleState, con
       playOneShotAudio(ctx, interaction.clickEmitter?.sources[1] as RemoteAudioSource, 0.4);
     }
   }
+}
+
+function projectHitOntoCanvas(ctx: GameState, shapecastHit: RAPIER.ShapeColliderTOI, node: RemoteNode) {
+  const { x, y, z } = shapecastHit.witness1;
+
+  // convert to local space
+  const hitPoint = vec3.clone([x, y, z]);
+  vec3.sub(hitPoint, hitPoint, node.position);
+
+  return hitPoint;
 }
 
 function updateGrabThrow(
@@ -515,9 +531,7 @@ function updateGrabThrow(
     playOneShotAudio(ctx, interaction.clickEmitter?.sources[0] as RemoteAudioSource, 1, 0.6);
 
     GrabComponent.heldOffset[rig.eid] = 0;
-
-    // if grab is pressed
-  } else if (grabPressed) {
+  } else {
     // raycast outward from camera
     const cameraMatrix = grabbingNode.worldMatrix;
     mat4.getRotation(_worldQuat, cameraMatrix);
@@ -551,55 +565,56 @@ function updateGrabThrow(
       if (!node || !eid) {
         console.warn(`Could not find entity for physics handle ${shapecastHit.collider.handle}`);
       } else if (shapecastHit.toi <= Interactable.interactionDistance[node.eid]) {
-        if (Interactable.type[node.eid] === InteractableType.Grabbable) {
-          playOneShotAudio(ctx, interaction.clickEmitter?.sources[0] as RemoteAudioSource);
+        if (grabPressed) {
+          if (Interactable.type[node.eid] === InteractableType.Grabbable) {
+            playOneShotAudio(ctx, interaction.clickEmitter?.sources[0] as RemoteAudioSource);
 
-          const ownedEnts = network.authoritative ? networkedQuery(ctx.world) : ownedNetworkedQuery(ctx.world);
-          if (ownedEnts.length > interaction.maxObjCap && !hasComponent(ctx.world, Owned, node.eid)) {
-            // do nothing if we hit the max obj cap
-            ctx.sendMessage(Thread.Main, {
-              type: ObjectCapReachedMessageType,
-            });
-          } else {
-            // otherwise attempt to take ownership
-            const newEid = takeOwnership(ctx, network, node);
-
-            if (newEid !== NOOP) {
-              addComponent(ctx.world, GrabComponent, rig.eid);
-              GrabComponent.grabbedEntity[rig.eid] = newEid;
-              heldEntity = newEid;
-              if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, newEid);
+            const ownedEnts = network.authoritative ? networkedQuery(ctx.world) : ownedNetworkedQuery(ctx.world);
+            if (ownedEnts.length > interaction.maxObjCap && !hasComponent(ctx.world, Owned, node.eid)) {
+              // do nothing if we hit the max obj cap
+              ctx.sendMessage(Thread.Main, {
+                type: ObjectCapReachedMessageType,
+              });
             } else {
-              addComponent(ctx.world, GrabComponent, rig.eid);
-              GrabComponent.grabbedEntity[rig.eid] = eid;
-              if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, eid);
+              // otherwise attempt to take ownership
+              const newEid = takeOwnership(ctx, network, node);
+
+              if (newEid !== NOOP) {
+                addComponent(ctx.world, GrabComponent, rig.eid);
+                GrabComponent.grabbedEntity[rig.eid] = newEid;
+                heldEntity = newEid;
+                if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, newEid);
+              } else {
+                addComponent(ctx.world, GrabComponent, rig.eid);
+                GrabComponent.grabbedEntity[rig.eid] = eid;
+                if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, eid);
+              }
             }
+          } else if (Interactable.type[node.eid] === InteractableType.Interactable) {
+            playOneShotAudio(ctx, interaction.clickEmitter?.sources[0] as RemoteAudioSource);
+
+            if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Interact, eid);
+            const interactable = node.interactable;
+
+            if (interactable) {
+              interactable.pressed = true;
+              interactable.released = false;
+              interactable.held = true;
+            }
+          } else if (Interactable.type[node.eid] === InteractableType.UI) {
+            const interactable = node.interactable;
+
+            if (interactable) {
+              interactable.pressed = true;
+              interactable.released = false;
+              interactable.held = true;
+            }
+
+            const projectedHit = projectHitOntoCanvas(ctx, shapecastHit, node);
+            notifyUICanvasPressed(ctx, projectedHit, node);
+          } else {
+            if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, eid);
           }
-        } else if (Interactable.type[node.eid] === InteractableType.Interactable) {
-          playOneShotAudio(ctx, interaction.clickEmitter?.sources[0] as RemoteAudioSource);
-
-          if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Interact, eid);
-          const interactable = node.interactable;
-
-          if (interactable) {
-            interactable.pressed = true;
-            interactable.released = false;
-            interactable.held = true;
-          }
-        } else if (Interactable.type[node.eid] === InteractableType.UI) {
-          playOneShotAudio(ctx, interaction.clickEmitter?.sources[0] as RemoteAudioSource);
-
-          const interactable = node.interactable;
-
-          if (interactable) {
-            interactable.pressed = true;
-            interactable.released = false;
-            interactable.held = true;
-          }
-
-          updateNodeCanvasUI(ctx, shapecastHit, node);
-        } else {
-          if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, eid);
         }
       }
     }
@@ -662,23 +677,6 @@ function updateGrabThrow(
       body.setAngvel(zero, true);
       body.setRotation(_r.fromArray(_worldQuat), true);
     }
-  }
-}
-
-function updateNodeCanvasUI(ctx: GameState, shapecastHit: RAPIER.ShapeColliderTOI, node: RemoteNode) {
-  const uiCanvas = getObjectPublicRoot(node).uiCanvas;
-  if (uiCanvas) {
-    const { x, y, z } = shapecastHit.witness1;
-
-    // convert to local space
-    const hitPoint = vec3.clone([x, y, z]);
-    vec3.sub(hitPoint, hitPoint, node.position);
-
-    ctx.sendMessage<UICanvasInteractionMessage>(Thread.Render, {
-      type: WebSGUIMessage.CanvasInteraction,
-      hitPoint,
-      uiCanvasEid: uiCanvas.eid,
-    });
   }
 }
 
@@ -817,7 +815,37 @@ function updateGrabThrowXR(
   }
 }
 
-function sendInteractionMessage(ctx: GameState, action: InteractableAction, eid = NOOP) {
+function notifyUICanvasPressed(ctx: GameState, hitPoint: vec3, node: RemoteNode) {
+  let uiCanvas;
+  try {
+    uiCanvas = getObjectPublicRoot(node).uiCanvas!;
+  } catch (e) {
+    uiCanvas = node.uiCanvas;
+  }
+
+  ctx.sendMessage<UICanvasPressMessage>(Thread.Render, {
+    type: WebSGUIMessage.CanvasPress,
+    hitPoint,
+    uiCanvasEid: uiCanvas!.eid,
+  });
+}
+
+function notifyUICanvasFocus(ctx: GameState, hitPoint: vec3, node: RemoteNode) {
+  let uiCanvas;
+  try {
+    uiCanvas = getObjectPublicRoot(node).uiCanvas!;
+  } catch (e) {
+    uiCanvas = node.uiCanvas;
+  }
+
+  ctx.sendMessage<UICanvasFocusMessage>(Thread.Render, {
+    type: WebSGUIMessage.CanvasFocus,
+    hitPoint,
+    uiCanvasEid: uiCanvas!.eid,
+  });
+}
+
+export function sendInteractionMessage(ctx: GameState, action: InteractableAction, eid = NOOP) {
   const network = getModule(ctx, NetworkModule);
 
   const interactableType = Interactable.type[eid];
@@ -850,10 +878,15 @@ function sendInteractionMessage(ctx: GameState, action: InteractableAction, eid 
       uri = PortalComponent.get(eid)?.uri;
     }
 
+    const name =
+      Prefab.get(eid) ||
+      getRemoteResource<RemoteNode>(ctx, eid)?.name ||
+      getRemoteResource<RemoteUIButton>(ctx, eid)?.label;
+
     ctx.sendMessage<InteractionMessage>(Thread.Main, {
       type: InteractionMessageType,
       interactableType,
-      name: Prefab.get(eid) || getRemoteResource<RemoteNode>(ctx, eid)?.name,
+      name,
       held: hasComponent(ctx.world, GrabComponent, eid),
       action,
       peerId,

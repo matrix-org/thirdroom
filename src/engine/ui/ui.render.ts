@@ -2,13 +2,28 @@
 import Yoga from "@react-pdf/yoga";
 import { CanvasTexture, Mesh, MeshBasicMaterial, PlaneGeometry, Texture } from "three";
 import { Scene } from "three";
+import { vec3 } from "gl-matrix";
 
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import { RenderThreadState } from "../renderer/renderer.render";
-import { RenderImage, RenderNode, RenderUICanvas, RenderUIFlex, RenderUIText } from "../resource/resource.render";
+import {
+  RenderImage,
+  RenderNode,
+  RenderUIButton,
+  RenderUICanvas,
+  RenderUIFlex,
+  RenderUIText,
+} from "../resource/resource.render";
 import { createDisposables } from "../utils/createDisposables";
 import { updateTransformFromNode } from "../node/node.render";
-import { UICanvasInteractionMessage, traverseUIFlex, WebSGUIMessage, UIButtonPressMessage } from "./ui.common";
+import {
+  UIButtonFocusMessage,
+  UIButtonPressMessage,
+  UIButtonUnfocusMessage,
+  UICanvasFocusMessage,
+  UICanvasPressMessage,
+  WebSGUIMessage,
+} from "./ui.common";
 import { getLocalResource } from "../resource/resource.render";
 import { RenderImageDataType } from "../utils/textures";
 import { LoadStatus } from "../resource/resource.common";
@@ -30,39 +45,95 @@ export const WebSGUIModule = defineModule<
     };
   },
   async init(ctx: RenderThreadState) {
-    return createDisposables([registerMessageHandler(ctx, WebSGUIMessage.CanvasInteraction, onButtonPress)]);
+    return createDisposables([
+      registerMessageHandler(ctx, WebSGUIMessage.CanvasPress, onCanvasPressed),
+      registerMessageHandler(ctx, WebSGUIMessage.CanvasFocus, onCanvasFocused),
+    ]);
   },
 });
 
-function onButtonPress(ctx: RenderThreadState, message: UICanvasInteractionMessage): void {
-  const uiCanvas = getLocalResource<RenderUICanvas>(ctx, message.uiCanvasEid);
-  if (uiCanvas) {
-    const { pixelDensity, width, height, root } = uiCanvas;
+export function traverseUIFlex(node: RenderUIFlex, callback: (child: RenderUIFlex, index: number) => boolean | void) {
+  let curChild = node.firstChild;
+  let i = 0;
 
-    const x = message.hitPoint[0] * pixelDensity + (width * pixelDensity) / 2;
-    const y = -(message.hitPoint[1] * pixelDensity - (height * pixelDensity) / 2);
-
-    // TODO: optimize
-    traverseUIFlex(root, (child) => {
-      const layout = child.yogaNode.getComputedLayout();
-
-      // if x and y is within this button's bounds, register a hit
-      if (
-        child.button &&
-        x > layout.left &&
-        x < layout.left + layout.width &&
-        y > layout.top &&
-        y < layout.top + layout.height
-      ) {
-        ctx.sendMessage<UIButtonPressMessage>(Thread.Game, {
-          type: WebSGUIMessage.ButtonPress,
-          buttonEid: child.button.eid,
-        });
-
-        return false;
-      }
-    });
+  while (curChild) {
+    const continueTraversal = callback(curChild, i++) !== false;
+    if (continueTraversal) {
+      traverseUIFlex(curChild, callback);
+      curChild = curChild.nextSibling;
+    } else {
+      return;
+    }
   }
+}
+
+function findHitButton(uiCanvas: RenderUICanvas, hitPoint: vec3): RenderUIButton | undefined {
+  const { pixelDensity, width, height, root } = uiCanvas;
+
+  const x = hitPoint[0] * pixelDensity + (width * pixelDensity) / 2;
+  const y = -(hitPoint[1] * pixelDensity - (height * pixelDensity) / 2);
+
+  let button;
+
+  traverseUIFlex(root, (child) => {
+    // TODO: iterate over array of buttons instead of traversing entire graph looking for buttons
+    if (!child.button) return true;
+
+    // if x and y is within this button's bounds, register a hit
+    const layout = child.yogaNode.getComputedLayout();
+
+    let parent = child.parent;
+    while (parent) {
+      const parentLayout = parent.yogaNode.getComputedLayout();
+      layout.top += parentLayout.top;
+      layout.left += parentLayout.left;
+      parent = parent.parent;
+    }
+
+    if (x > layout.left && x < layout.left + layout.width && y > layout.top && y < layout.top + layout.height) {
+      button = child.button;
+      return false;
+    }
+  });
+
+  return button;
+}
+
+function onCanvasFocused(ctx: RenderThreadState, message: UICanvasFocusMessage): void {
+  const uiCanvas = getLocalResource<RenderUICanvas>(ctx, message.uiCanvasEid);
+  if (!uiCanvas) {
+    console.warn("Could not find UI canvas for eid", message.uiCanvasEid);
+    return;
+  }
+
+  const button = findHitButton(uiCanvas, message.hitPoint);
+  if (!button) {
+    ctx.sendMessage<UIButtonUnfocusMessage>(Thread.Game, {
+      type: WebSGUIMessage.ButtonUnfocus,
+    });
+    return;
+  }
+
+  ctx.sendMessage<UIButtonFocusMessage>(Thread.Game, {
+    type: WebSGUIMessage.ButtonFocus,
+    buttonEid: button.eid,
+  });
+}
+
+function onCanvasPressed(ctx: RenderThreadState, message: UICanvasPressMessage): void {
+  const uiCanvas = getLocalResource<RenderUICanvas>(ctx, message.uiCanvasEid);
+  if (!uiCanvas) {
+    console.warn("Could not find UI canvas for eid", message.uiCanvasEid);
+    return;
+  }
+
+  const button = findHitButton(uiCanvas, message.hitPoint);
+  if (!button) return;
+
+  ctx.sendMessage<UIButtonPressMessage>(Thread.Game, {
+    type: WebSGUIMessage.ButtonPress,
+    buttonEid: button.eid,
+  });
 }
 
 const rgbaToString = ([r, g, b, a]: Float32Array) => `rgba(${r * 255},${g * 255},${b * 255},${a})`;
@@ -167,7 +238,7 @@ export function updateNodeUICanvas(ctx: RenderThreadState, scene: Scene, node: R
   // if uiCanvas changed
   if (currentUICanvasResourceId !== nextUICanvasResourceId && node.uiCanvas) {
     // teardown
-    if (node.uiCanvas.root.yogaNode) {
+    if (node.uiCanvas.root) {
       if (node.uiCanvas.root.yogaNode) Yoga.Node.destroy(node.uiCanvas.root.yogaNode);
       traverseUIFlex(node.uiCanvas.root, (child) => {
         if (child.yogaNode) {
@@ -179,7 +250,7 @@ export function updateNodeUICanvas(ctx: RenderThreadState, scene: Scene, node: R
 
   node.currentUICanvasResourceId = nextUICanvasResourceId;
 
-  if (!node.uiCanvas) {
+  if (!node.uiCanvas || !node.uiCanvas.root) {
     return;
   }
 

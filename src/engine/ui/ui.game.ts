@@ -1,6 +1,11 @@
 import * as RAPIER from "@dimforge/rapier3d-compat";
 
-import { addInteractableComponent } from "../../plugins/interaction/interaction.game";
+import {
+  addInteractableComponent,
+  InteractionModule,
+  sendInteractionMessage,
+} from "../../plugins/interaction/interaction.game";
+import { moveCursorView, readFloat32, readFloat32Array, readUint32 } from "../allocator/CursorView";
 import { GameState } from "../GameTypes";
 import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
 import { dynamicObjectCollisionGroups } from "../physics/CollisionGroups";
@@ -9,12 +14,11 @@ import {
   addObjectToWorld,
   createRemoteObject,
   getObjectPublicRoot,
-  RemoteImage,
+  RemoteAudioSource,
   RemoteNode,
   RemoteUIButton,
   RemoteUICanvas,
   RemoteUIFlex,
-  RemoteUIImage,
   RemoteUIText,
 } from "../resource/RemoteResources";
 import { tryGetRemoteResource } from "../resource/resource.game";
@@ -22,7 +26,10 @@ import { InteractableType } from "../resource/schema";
 import { readString, WASMModuleContext, writeFloat32Array } from "../scripting/WASMModuleContext";
 import { getScriptResource } from "../scripting/websg";
 import { createDisposables } from "../utils/createDisposables";
-import { UIButtonPressMessage, WebSGUIMessage } from "./ui.common";
+import { UIButtonFocusMessage, UIButtonPressMessage, UIButtonUnfocusMessage, WebSGUIMessage } from "./ui.common";
+import { readString as readStringCursorView } from "../allocator/CursorView";
+import { InteractableAction } from "../../plugins/interaction/interaction.common";
+import { playOneShotAudio } from "../audio/audio.game";
 
 export const WebSGUIModule = defineModule<GameState, {}>({
   name: "GameWebSGUI",
@@ -35,6 +42,14 @@ export const WebSGUIModule = defineModule<GameState, {}>({
         const button = tryGetRemoteResource<RemoteUIButton>(ctx, message.buttonEid);
         button.interactable!.pressed = true;
         button.interactable!.held = true;
+        const interaction = getModule(ctx, InteractionModule);
+        playOneShotAudio(ctx, interaction.clickEmitter?.sources[0] as RemoteAudioSource);
+      }),
+      registerMessageHandler(ctx, WebSGUIMessage.ButtonFocus, (ctx, message: UIButtonFocusMessage) => {
+        sendInteractionMessage(ctx, InteractableAction.Focus, message.buttonEid);
+      }),
+      registerMessageHandler(ctx, WebSGUIMessage.ButtonUnfocus, (ctx, message: UIButtonUnfocusMessage) => {
+        sendInteractionMessage(ctx, InteractableAction.Unfocus);
       }),
     ]);
   },
@@ -46,9 +61,15 @@ export function createWebSGUIModule(ctx: GameState, wasmCtx: WASMModuleContext) 
   return {
     // UI Canvas
 
-    create_ui_canvas(width: number, height: number, pixelDensity: number) {
+    create_ui_canvas(propsPtr: number) {
+      moveCursorView(wasmCtx.cursorView, propsPtr);
+      const width = readFloat32(wasmCtx.cursorView);
+      const height = readFloat32(wasmCtx.cursorView);
+      const pixelDensity = readFloat32(wasmCtx.cursorView);
+      // createDemoUI(ctx);
+
       try {
-        const uiCanvas = new RemoteUICanvas(ctx.resourceManager, {
+        const uiCanvas = new RemoteUICanvas(wasmCtx.resourceManager, {
           width,
           height,
           pixelDensity,
@@ -59,7 +80,7 @@ export function createWebSGUIModule(ctx: GameState, wasmCtx: WASMModuleContext) 
         return -1;
       }
     },
-    node_add_ui_canvas(nodeId: number, canvasId: number) {
+    node_set_ui_canvas(nodeId: number, canvasId: number) {
       const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
       const canvas = getScriptResource(wasmCtx, RemoteUICanvas, canvasId);
 
@@ -78,7 +99,27 @@ export function createWebSGUIModule(ctx: GameState, wasmCtx: WASMModuleContext) 
         .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS)
         .setCollisionGroups(dynamicObjectCollisionGroups);
       physics.physicsWorld.createCollider(colliderDesc, rigidBody);
+
       addRigidBody(ctx, node, rigidBody);
+
+      addInteractableComponent(ctx, physics, node, InteractableType.UI);
+
+      return 0;
+    },
+    ui_canvas_set_root(canvasId: number, rootId: number) {
+      const canvas = getScriptResource(wasmCtx, RemoteUICanvas, canvasId);
+
+      if (!canvas) {
+        return -1;
+      }
+
+      const flex = getScriptResource(wasmCtx, RemoteUIFlex, rootId);
+
+      if (!flex) {
+        return -1;
+      }
+
+      canvas.root = flex;
 
       return 0;
     },
@@ -129,11 +170,25 @@ export function createWebSGUIModule(ctx: GameState, wasmCtx: WASMModuleContext) 
 
     // UI Flex
 
-    create_ui_flex(width: number, height: number) {
+    create_ui_flex(propsPtr: number) {
+      moveCursorView(wasmCtx.cursorView, propsPtr);
+      const width = readFloat32(wasmCtx.cursorView);
+      const height = readFloat32(wasmCtx.cursorView);
+      const flexDirection = readUint32(wasmCtx.cursorView);
+      const backgroundColor = readFloat32Array(wasmCtx.cursorView, 4);
+      const borderColor = readFloat32Array(wasmCtx.cursorView, 4);
+      const padding = readFloat32Array(wasmCtx.cursorView, 4);
+      const margin = readFloat32Array(wasmCtx.cursorView, 4);
+
       try {
-        const uiFlex = new RemoteUIFlex(ctx.resourceManager, {
+        const uiFlex = new RemoteUIFlex(wasmCtx.resourceManager, {
           width,
           height,
+          flexDirection,
+          backgroundColor,
+          borderColor,
+          padding,
+          margin,
         });
         return uiFlex.eid;
       } catch (e) {
@@ -273,15 +328,33 @@ export function createWebSGUIModule(ctx: GameState, wasmCtx: WASMModuleContext) 
 
     // UI Button
 
-    create_ui_button() {
+    create_ui_button(labelPtr: number, length: number) {
+      const label = readString(wasmCtx, labelPtr, length);
       try {
-        const uiBtn = new RemoteUIButton(ctx.resourceManager);
+        const uiBtn = new RemoteUIButton(wasmCtx.resourceManager, { label });
         addInteractableComponent(ctx, physics, uiBtn, InteractableType.UI);
         return uiBtn.eid;
       } catch (e) {
         console.error("WebSG: error creating ui button", e);
         return -1;
       }
+    },
+    ui_button_set_label(btnId: number, labelPtr: number, length: number) {
+      const btn = getScriptResource(wasmCtx, RemoteUIButton, btnId);
+
+      if (!btn) {
+        return -1;
+      }
+
+      const label = readString(wasmCtx, labelPtr, length);
+
+      if (!label) {
+        return -1;
+      }
+
+      btn.label = label;
+
+      return 0;
     },
     ui_button_get_pressed(btnId: number) {
       const btn = getScriptResource(wasmCtx, RemoteUIButton, btnId);
@@ -331,11 +404,24 @@ export function createWebSGUIModule(ctx: GameState, wasmCtx: WASMModuleContext) 
 
     // UI Text
 
-    create_ui_text(valuePtr: number, byteLength: number) {
+    create_ui_text(propsPtr: number) {
+      moveCursorView(wasmCtx.cursorView, propsPtr);
+
+      const fontSize = readFloat32(wasmCtx.cursorView);
+      const color = readFloat32Array(wasmCtx.cursorView, 4);
+      const value = readStringCursorView(wasmCtx.cursorView, Uint16Array.BYTES_PER_ELEMENT);
+      // const fontFamily = readStringCursorView(wasmCtx.cursorView, Uint8Array.BYTES_PER_ELEMENT);
+      // const fontWeight = readStringCursorView(wasmCtx.cursorView, Uint8Array.BYTES_PER_ELEMENT);
+      // const fontStyle = readStringCursorView(wasmCtx.cursorView, Uint8Array.BYTES_PER_ELEMENT);
+
       try {
-        const value = readString(wasmCtx, valuePtr, byteLength);
-        const uiText = new RemoteUIText(ctx.resourceManager, {
+        const uiText = new RemoteUIText(wasmCtx.resourceManager, {
           value,
+          color,
+          fontSize,
+          // fontFamily,
+          // fontWeight,
+          // fontStyle,
         });
         return uiText.eid;
       } catch (e) {
@@ -411,20 +497,24 @@ export function createUICanvasNode(
   height: number,
   pixelDensity = 1000
 ) {
-  const widthPx = width * pixelDensity;
-  const heightPx = height * pixelDensity;
+  // const widthPx = width * pixelDensity;
+  // const heightPx = height * pixelDensity;
 
-  const root = new RemoteUIFlex(ctx.resourceManager, {
-    width: widthPx,
-    height: heightPx,
-  });
+  // const root = new RemoteUIFlex(ctx.resourceManager, {
+  //   width: widthPx,
+  //   height: heightPx,
+  // });
 
   const uiCanvas = new RemoteUICanvas(ctx.resourceManager, {
-    root,
+    // root,
     width,
     height,
     pixelDensity,
   });
+
+  // setTimeout(() => {
+  // uiCanvas.root = root;
+  // }, 10);
 
   const node = new RemoteNode(ctx.resourceManager, { uiCanvas });
 
@@ -439,7 +529,7 @@ export function createUICanvasNode(
   physics.physicsWorld.createCollider(colliderDesc, rigidBody);
   addRigidBody(ctx, obj, rigidBody);
 
-  addInteractableComponent(ctx, physics, obj, InteractableType.Interactable);
+  addInteractableComponent(ctx, physics, obj, InteractableType.UI);
 
   return obj;
 }
@@ -512,79 +602,87 @@ export async function createDemoUI(ctx: GameState): Promise<[RemoteUICanvas, Rem
   const obj = createUICanvasNode(ctx, physics, 5, 5, 1000);
   const node = getObjectPublicRoot(obj) as RemoteNode & { uiCanvas: RemoteUICanvas };
 
-  const root = node.uiCanvas.root;
+  // const root = node.uiCanvas.root;
 
-  root.backgroundColor.set([0, 0, 0, 0.5]);
+  const widthPx = 5 * 1000;
+  const heightPx = 5 * 1000;
+  setTimeout(() => {
+    const root = new RemoteUIFlex(ctx.resourceManager, {
+      width: widthPx,
+      height: heightPx,
+      backgroundColor: [0, 0, 0, 0.5],
+    });
 
-  const button = new RemoteUIButton(ctx.resourceManager, {
-    // interactable: new RemoteInteractable(ctx.resourceManager, {
-    //   type: InteractableType.Interactable,
-    // }),
-  });
+    node.uiCanvas.root = root;
 
-  addInteractableComponent(ctx, physics, button, InteractableType.Interactable);
+    // const button = new RemoteUIButton(ctx.resourceManager, {
+    //   label: "button label",
+    // });
 
-  const remoteImage = new RemoteImage(ctx.resourceManager, {
-    uri: "/image/large-crate-icon.png",
-  });
+    // addInteractableComponent(ctx, physics, button, InteractableType.UI);
 
-  const image = new RemoteUIImage(ctx.resourceManager, {
-    source: remoteImage,
-  });
+    // const remoteImage = new RemoteImage(ctx.resourceManager, {
+    //   uri: "/image/large-crate-icon.png",
+    // });
 
-  const text = new RemoteUIText(ctx.resourceManager, {
-    value: "i am a button",
-    fontSize: 118,
-    fontFamily: "serif",
-    fontStyle: "italic",
-    fontWeight: "bold",
-    color: [255, 255, 255, 1],
-  });
+    // const image = new RemoteUIImage(ctx.resourceManager, {
+    //   source: remoteImage,
+    // });
 
-  const flex = new RemoteUIFlex(ctx.resourceManager, {
-    width: 2000,
-    height: 1500,
-    padding: [80, 0, 0, 80],
-    backgroundColor: [0, 0, 0, 1],
-    text,
-    button,
-    image,
-  });
+    // const text = new RemoteUIText(ctx.resourceManager, {
+    //   value: "i am a button",
+    //   fontSize: 118,
+    //   fontFamily: "serif",
+    //   fontStyle: "italic",
+    //   fontWeight: "bold",
+    //   color: [255, 255, 255, 1],
+    // });
 
-  const flex1 = new RemoteUIFlex(ctx.resourceManager, {
-    width: 2000,
-    height: 1500,
-    backgroundColor: [0, 0, 0, 0.7],
-  });
+    // const flex = new RemoteUIFlex(ctx.resourceManager, {
+    //   width: 2000,
+    //   height: 1500,
+    //   padding: [80, 0, 0, 80],
+    //   backgroundColor: [0, 0, 0, 1],
+    //   text,
+    //   button,
+    //   image,
+    // });
 
-  const flex2 = new RemoteUIFlex(ctx.resourceManager, {
-    width: 500,
-    height: 500,
-    backgroundColor: [255 / 10, 255 / 10, 255 / 10, 1],
-  });
+    // const flex1 = new RemoteUIFlex(ctx.resourceManager, {
+    //   width: 2000,
+    //   height: 1500,
+    //   backgroundColor: [0, 0, 0, 0.7],
+    // });
 
-  const flex3 = new RemoteUIFlex(ctx.resourceManager, {
-    width: 500,
-    height: 500,
-    backgroundColor: [255 / 5, 255 / 5, 255 / 5, 1],
-  });
+    // const flex2 = new RemoteUIFlex(ctx.resourceManager, {
+    //   width: 500,
+    //   height: 500,
+    //   backgroundColor: [255 / 10, 255 / 10, 255 / 10, 1],
+    // });
 
-  const flex4 = new RemoteUIFlex(ctx.resourceManager, {
-    width: 100,
-    height: 100,
-    backgroundColor: [255 / 1.5, 255 / 1.5, 255 / 1.5, 1],
-  });
+    // const flex3 = new RemoteUIFlex(ctx.resourceManager, {
+    //   width: 500,
+    //   height: 500,
+    //   backgroundColor: [255 / 5, 255 / 5, 255 / 5, 1],
+    // });
 
-  addUIFlexChild(root, flex);
-  addUIFlexChild(root, flex1);
-  addUIFlexChild(flex1, flex2);
-  addUIFlexChild(flex1, flex3);
-  addUIFlexChild(flex3, flex4);
+    // const flex4 = new RemoteUIFlex(ctx.resourceManager, {
+    //   width: 100,
+    //   height: 100,
+    //   backgroundColor: [255 / 1.5, 255 / 1.5, 255 / 1.5, 1],
+    // });
 
-  obj.position[2] = -2.5;
-  obj.position[1] = 2.5;
+    // addUIFlexChild(root, flex);
+    // addUIFlexChild(root, flex1);
+    // addUIFlexChild(flex1, flex2);
+    // addUIFlexChild(flex1, flex3);
+    // addUIFlexChild(flex3, flex4);
 
-  addObjectToWorld(ctx, obj);
+    obj.position[2] = -2.5;
+    obj.position[1] = 2.5;
 
-  return [node.uiCanvas, button, text];
+    addObjectToWorld(ctx, obj);
+  }, 100);
+
+  // return [node.uiCanvas, button, text];
 }

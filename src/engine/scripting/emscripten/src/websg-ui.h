@@ -22,7 +22,8 @@ typedef struct UICanvasProps {
 } UICanvasProps;
 
 import_websg_ui(create_ui_canvas) ui_canvas_id_t websg_ui_create_canvas(UICanvasProps *props);
-import_websg_ui(node_add_ui_canvas) ui_canvas_id_t websg_node_add_ui_canvas(node_id_t node_id, ui_canvas_id_t canvas_id);
+import_websg_ui(node_set_ui_canvas) int32_t websg_node_set_ui_canvas(node_id_t node_id, ui_canvas_id_t canvas_id);
+import_websg_ui(ui_canvas_set_root) int32_t websg_ui_canvas_set_root(ui_canvas_id_t canvas_id, ui_flex_id_t root_id);
 import_websg_ui(ui_canvas_set_width) int32_t websg_ui_canvas_set_width(ui_canvas_id_t canvas_id, float_t width);
 import_websg_ui(ui_canvas_set_height) int32_t websg_ui_canvas_set_height(ui_canvas_id_t canvas_id, float_t height);
 import_websg_ui(ui_canvas_set_pixel_density) int32_t websg_ui_canvas_set_pixel_density(ui_canvas_id_t canvas_id, float_t pixel_density);
@@ -50,10 +51,10 @@ typedef struct UIFlexProps {
   float_t width;
   float_t height;
   FlexDirection flex_direction;
-  float_t *background_color;
-  float_t *border_color;
-  float_t *padding;
-  float_t *margin;
+  float_t background_color[4];
+  float_t border_color[4];
+  float_t padding[4];
+  float_t margin[4];
 } UIFlexProps;
 
 import_websg_ui(create_ui_flex) ui_flex_id_t websg_ui_create_flex(UIFlexProps *props);
@@ -72,7 +73,8 @@ import_websg_ui(ui_flex_add_button) int32_t websg_ui_flex_add_button(ui_flex_id_
  * UI Button
  **/
 
-import_websg_ui(create_ui_button) ui_button_id_t websg_ui_create_button();
+import_websg_ui(create_ui_button) ui_button_id_t websg_ui_create_button(const char *label, size_t length);
+import_websg_ui(ui_button_set_label) int32_t websg_ui_button_set_label(ui_button_id_t btn_id, char *label, size_t length);
 import_websg_ui(ui_button_get_pressed) int32_t websg_ui_button_get_pressed(ui_button_id_t btn_id);
 import_websg_ui(ui_button_get_held) int32_t websg_ui_button_get_held(ui_button_id_t btn_id);
 import_websg_ui(ui_button_get_released) int32_t websg_ui_button_get_released(ui_button_id_t btn_id);
@@ -82,13 +84,20 @@ import_websg_ui(ui_button_get_released) int32_t websg_ui_button_get_released(ui_
  **/
 
 typedef struct UITextProps {
-  char *value;
-  size_t length;
-  char *font_family;
   float_t font_size;
+  float_t color[4];
+
+  uint16_t value_length;
+  char *value;
+
+  uint8_t font_family_length;
+  char *font_family;
+
+  uint8_t font_weight_length;
   char *font_weight;
+
+  uint8_t font_style_length;
   char *font_style;
-  float_t *color;
 } UITextProps;
 
 import_websg_ui(create_ui_text) ui_text_id_t websg_ui_create_text(UITextProps *props);

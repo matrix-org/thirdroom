@@ -453,6 +453,7 @@ export const UITextResource = defineResource("ui-text", ResourceType.UIText, {
 
 export const UIButtonResource = defineResource("ui-button", ResourceType.UIButton, {
   interactable: PropType.ref(InteractableResource, { script: true }),
+  label: PropType.string({ script: true }),
 });
 
 export const UIImageResource = defineResource("ui-image", ResourceType.UIImage, {
