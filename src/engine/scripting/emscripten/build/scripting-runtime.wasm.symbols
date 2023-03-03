@@ -119,8 +119,8 @@
 118:websg_ui_text_set_font_style
 119:websg_ui_text_set_color
 120:__wasi_clock_time_get
-121:__wasi_proc_exit
-122:__wasi_fd_close
+121:__wasi_fd_close
+122:__wasi_proc_exit
 123:__wasi_environ_sizes_get
 124:__wasi_environ_get
 125:__wasi_fd_write
@@ -1066,9 +1066,9 @@
 1065:__syscall_openat
 1066:__syscall_fstat64
 1067:emscripten_resize_heap
-1068:_Exit
-1069:__errno_location
-1070:__map_file
+1068:__errno_location
+1069:__map_file
+1070:_Exit
 1071:acos
 1072:R
 1073:acosh

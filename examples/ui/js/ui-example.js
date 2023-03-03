@@ -48,12 +48,9 @@ onload = () => {
   text = WebSG.UI.createUIText({
     fontSize: 64,
     color: new Float32Array([0, 0, 0, 1]),
-    // TODO: fix string passing
-    // value: "button pressed 0 times",
-    // fontFamily: "serif",
+    value: "button pressed 0 times",
+    fontFamily: "serif",
   });
-
-  WebSG.UI.uiTextSetValue(text, "button pressed 0 times");
 
   flexC = WebSG.UI.createUIFlex({
     width: 800,

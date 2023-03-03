@@ -654,8 +654,8 @@ static JSValue js_create_ui_text(JSContext *ctx, JSValueConst this_val, int argc
       return JS_EXCEPTION;
     }
 
-    props->value_length = (uint16_t)length;
-    memcpy(props->value, value, length);
+    props->value_length = length;
+    props->value = value;
   }
 
   JSValue font_family_val = JS_GetPropertyStr(ctx, argv[0], "fontFamily");
@@ -668,8 +668,8 @@ static JSValue js_create_ui_text(JSContext *ctx, JSValueConst this_val, int argc
       return JS_EXCEPTION;
     }
 
-    props->font_family_length = (uint8_t)length;
-    memcpy(props->font_family, font_family, length);
+    props->font_family_length = length;
+    props->font_family = font_family;
   }
 
   JSValue font_weight_val = JS_GetPropertyStr(ctx, argv[0], "fontWeight");
@@ -682,8 +682,8 @@ static JSValue js_create_ui_text(JSContext *ctx, JSValueConst this_val, int argc
       return JS_EXCEPTION;
     }
 
-    props->font_weight_length = (uint8_t)length;
-    memcpy(props->font_weight, font_weight, length);
+    props->font_weight_length = length;
+    props->font_weight = font_weight;
   }
 
   JSValue font_style_val = JS_GetPropertyStr(ctx, argv[0], "fontStyle");
@@ -696,8 +696,8 @@ static JSValue js_create_ui_text(JSContext *ctx, JSValueConst this_val, int argc
       return JS_EXCEPTION;
     }
 
-    props->font_style_length = (uint8_t)length;
-    memcpy(props->font_style, font_style, length);
+    props->font_style_length = length;
+    props->font_style = font_style;
   }
 
   JSValue font_size_val = JS_GetPropertyStr(ctx, argv[0], "fontSize");
@@ -725,6 +725,22 @@ static JSValue js_create_ui_text(JSContext *ctx, JSValueConst this_val, int argc
   }
 
   ui_text_id_t text_id = websg_ui_create_text(props);
+
+  if (props->value != NULL) {
+    js_free(ctx, (void *)props->value);
+  }
+
+  if (props->font_family != NULL) {
+    js_free(ctx, (void *)props->font_family);
+  }
+
+  if (props->font_weight != NULL) {
+    js_free(ctx, (void *)props->font_weight);
+  }
+
+  if (props->font_style != NULL) {
+    js_free(ctx, (void *)props->font_style);
+  }
 
   if (text_id == 0) {
     JS_ThrowInternalError(ctx, "WebSG UI: Error creating UI text.");

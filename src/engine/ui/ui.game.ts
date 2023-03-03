@@ -25,7 +25,6 @@ import { readString, WASMModuleContext, writeFloat32Array } from "../scripting/W
 import { getScriptResource } from "../scripting/websg";
 import { createDisposables } from "../utils/createDisposables";
 import { UIButtonFocusMessage, UIButtonPressMessage, UIButtonUnfocusMessage, WebSGUIMessage } from "./ui.common";
-import { readString as readStringCursorView } from "../allocator/CursorView";
 import { InteractableAction } from "../../plugins/interaction/interaction.common";
 import { playOneShotAudio } from "../audio/audio.game";
 
@@ -406,19 +405,28 @@ export function createWebSGUIModule(ctx: GameState, wasmCtx: WASMModuleContext) 
 
       const fontSize = readFloat32(wasmCtx.cursorView);
       const color = readFloat32Array(wasmCtx.cursorView, 4);
-      const value = readStringCursorView(wasmCtx.cursorView, Uint16Array.BYTES_PER_ELEMENT);
-      // const fontFamily = readStringCursorView(wasmCtx.cursorView, Uint8Array.BYTES_PER_ELEMENT);
-      // const fontWeight = readStringCursorView(wasmCtx.cursorView, Uint8Array.BYTES_PER_ELEMENT);
-      // const fontStyle = readStringCursorView(wasmCtx.cursorView, Uint8Array.BYTES_PER_ELEMENT);
+      const valuePtr = readUint32(wasmCtx.cursorView);
+      const valueLen = readUint32(wasmCtx.cursorView);
+      const fontFamilyPtr = readUint32(wasmCtx.cursorView);
+      const fontFamilyLen = readUint32(wasmCtx.cursorView);
+      const fontWeightPtr = readUint32(wasmCtx.cursorView);
+      const fontWeightLen = readUint32(wasmCtx.cursorView);
+      const fontStylePtr = readUint32(wasmCtx.cursorView);
+      const fontStyleLen = readUint32(wasmCtx.cursorView);
+
+      const value = valuePtr ? readString(wasmCtx, valuePtr, valueLen) : undefined;
+      const fontFamily = fontFamilyPtr ? readString(wasmCtx, fontFamilyPtr, fontFamilyLen) : undefined;
+      const fontWeight = fontWeightPtr ? readString(wasmCtx, fontWeightPtr, fontWeightLen) : undefined;
+      const fontStyle = fontStylePtr ? readString(wasmCtx, fontStylePtr, fontStyleLen) : undefined;
 
       try {
         const uiText = new RemoteUIText(wasmCtx.resourceManager, {
           value,
           color,
           fontSize,
-          // fontFamily,
-          // fontWeight,
-          // fontStyle,
+          fontFamily,
+          fontWeight,
+          fontStyle,
         });
         return uiText.eid;
       } catch (e) {

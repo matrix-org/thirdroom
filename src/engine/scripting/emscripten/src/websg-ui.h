@@ -87,17 +87,17 @@ typedef struct UITextProps {
   float_t font_size;
   float_t color[4];
 
-  uint16_t value_length;
-  char *value;
+  const char *value;
+  uint32_t value_length;
 
-  uint8_t font_family_length;
-  char *font_family;
+  const char *font_family;
+  uint32_t font_family_length;
 
-  uint8_t font_weight_length;
-  char *font_weight;
+  const char *font_weight;
+  uint32_t font_weight_length;
 
-  uint8_t font_style_length;
-  char *font_style;
+  const char *font_style;
+  uint32_t font_style_length;
 } UITextProps;
 
 import_websg_ui(create_ui_text) ui_text_id_t websg_ui_create_text(UITextProps *props);
