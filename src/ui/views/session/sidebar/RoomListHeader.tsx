@@ -1,4 +1,5 @@
-import { OverlayWindow, SidebarTabs, useStore } from "../../../hooks/useStore";
+import { useAtomValue, useSetAtom } from "jotai";
+
 import AddIC from "../../../../../res/ic/add.svg";
 import { Text } from "../../../atoms/text/Text";
 import "./RoomListHeader.css";
@@ -9,10 +10,12 @@ import { DropdownMenu } from "../../../atoms/menu/DropdownMenu";
 import { DropdownMenuItem } from "../../../atoms/menu/DropdownMenuItem";
 import { useDialog } from "../../../hooks/useDialog";
 import { Dialog } from "../../../atoms/dialog/Dialog";
+import { sidebarTabAtom, SidebarTab } from "../../../state/sidebarTab";
+import { OverlayWindow, overlayWindowAtom } from "../../../state/overlayWindow";
 
 export function RoomListHeader() {
-  const { selectedSidebarTab } = useStore((state) => state.overlaySidebar);
-  const { selectWindow } = useStore((state) => state.overlayWindow);
+  const sidebarTab = useAtomValue(sidebarTabAtom);
+  const setOverlayWindow = useSetAtom(overlayWindowAtom);
   const { open, setOpen, openDialog, closeDialog } = useDialog(false);
   const {
     open: openJoin,
@@ -23,7 +26,7 @@ export function RoomListHeader() {
 
   return (
     <header className="RoomListHeader shrink-0 flex items-center gap-xs">
-      {selectedSidebarTab === SidebarTabs.Home && (
+      {sidebarTab === SidebarTab.Home && (
         <>
           <Text className="grow truncate" variant="s2" weight="semi-bold">
             Home
@@ -34,7 +37,7 @@ export function RoomListHeader() {
           <DropdownMenu
             content={
               <>
-                <DropdownMenuItem onSelect={() => selectWindow(OverlayWindow.CreateWorld)}>
+                <DropdownMenuItem onSelect={() => setOverlayWindow({ type: OverlayWindow.CreateWorld })}>
                   Create World
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={openJoinDialog}>Join with Alias</DropdownMenuItem>
@@ -45,7 +48,7 @@ export function RoomListHeader() {
           </DropdownMenu>
         </>
       )}
-      {selectedSidebarTab === SidebarTabs.Friends && (
+      {sidebarTab === SidebarTab.Friends && (
         <>
           <Text className="grow truncate" variant="s2" weight="semi-bold">
             Friends
@@ -56,7 +59,7 @@ export function RoomListHeader() {
           <IconButton onClick={openDialog} label="Direct Message" iconSrc={AddIC} />
         </>
       )}
-      {selectedSidebarTab === SidebarTabs.Notifications && (
+      {sidebarTab === SidebarTab.Notifications && (
         <>
           <Text className="grow truncate" variant="s2" weight="semi-bold">
             Notifications

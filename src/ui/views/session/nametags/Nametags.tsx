@@ -1,6 +1,7 @@
 import { GroupCall, Member, Room } from "@thirdroom/hydrogen-view-sdk";
 import { useCallback, useEffect, useRef, useState } from "react";
 import classNames from "classnames";
+import { useAtomValue } from "jotai";
 
 import "./Nametags.css";
 import { getModule } from "../../../../engine/module/module.common";
@@ -11,9 +12,9 @@ import { useHydrogen } from "../../../hooks/useHydrogen";
 import { Avatar } from "../../../atoms/avatar/Avatar";
 import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avatar";
 import { AudioModule } from "../../../../engine/audio/audio.main";
-import { useStore } from "../../../hooks/useStore";
 import { getRoomCall } from "../../../utils/matrixUtils";
 import { MainNametag } from "../../../../engine/resource/resource.main";
+import { worldAtom } from "../../../state/world";
 
 // src: https://css-tricks.com/using-requestanimationframe-with-react-hooks/
 export const useAnimationFrame = (callback: Function, enabled = true) => {
@@ -116,7 +117,7 @@ function Nametag({ room, nametag, groupCall }: NametagProps) {
 
 export function Nametags({ room, show }: { room: Room; show: boolean }) {
   const engine = useMainThreadContext();
-  const { worldId } = useStore((state) => state.world);
+  const worldId = useAtomValue(worldAtom).worldId;
 
   const [nametags, setNametags] = useState<MainNametag[]>([]);
 

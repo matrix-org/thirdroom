@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Room, GroupCall, Platform, Session } from "@thirdroom/hydrogen-view-sdk";
+import { useSetAtom } from "jotai";
 
 import { Avatar } from "../../../../atoms/avatar/Avatar";
 import { AvatarOutline } from "../../../../atoms/avatar/AvatarOutline";
@@ -12,10 +13,10 @@ import { WorldTileMembers } from "../WorldTileMembers";
 import MoreHorizontalIC from "../../../../../../res/ic/more-horizontal.svg";
 import { DropdownMenu } from "../../../../atoms/menu/DropdownMenu";
 import { DropdownMenuItem } from "../../../../atoms/menu/DropdownMenuItem";
-import { useStore } from "../../../../hooks/useStore";
 import { Dialog } from "../../../../atoms/dialog/Dialog";
 import { MemberListDialog } from "../../dialogs/MemberListDialog";
 import { useDialog } from "../../../../hooks/useDialog";
+import { OverlayWindow, overlayWindowAtom } from "../../../../state/overlayWindow";
 
 interface WorldSelectorProps {
   isSelected: boolean;
@@ -27,7 +28,7 @@ interface WorldSelectorProps {
 }
 
 export function WorldSelector({ isSelected, onSelect, room, groupCall, platform, session }: WorldSelectorProps) {
-  const { selectWorldSettingsWindow } = useStore((state) => state.overlayWindow);
+  const setOverlayWindow = useSetAtom(overlayWindowAtom);
   const [focused, setFocused] = useState(false);
   const {
     open: openMember,
@@ -83,7 +84,16 @@ export function WorldSelector({ isSelected, onSelect, room, groupCall, platform,
               <>
                 <DropdownMenuItem onSelect={openInviteDialog}>Invite</DropdownMenuItem>
                 <DropdownMenuItem onSelect={openMemberDialog}>Members</DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => selectWorldSettingsWindow(room.id)}>Settings</DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() =>
+                    setOverlayWindow({
+                      type: OverlayWindow.WorldSettings,
+                      roomId: room.id,
+                    })
+                  }
+                >
+                  Settings
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   variant="danger"
                   onSelect={() => {

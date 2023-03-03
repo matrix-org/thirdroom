@@ -1,9 +1,9 @@
 import { useState, ChangeEvent, FormEvent, useMemo } from "react";
+import { useAtomValue, useSetAtom } from "jotai";
 
 import { Content } from "../../../atoms/content/Content";
 import { WindowContent } from "../../components/window/WindowContent";
 import { useHydrogen } from "../../../hooks/useHydrogen";
-import { useStore } from "../../../hooks/useStore";
 import { Scroll } from "../../../atoms/scroll/Scroll";
 import { SettingTile } from "../../components/setting-tile/SettingTile";
 import { Input } from "../../../atoms/input/Input";
@@ -32,11 +32,13 @@ import {
   RenderQualityToSetting,
 } from "../../../../engine/renderer/renderer.common";
 import { useMainThreadContext } from "../../../hooks/useMainThread";
+import { OverlayWindow, overlayWindowAtom } from "../../../state/overlayWindow";
+import { userProfileAtom } from "../../../state/userProfile";
 
 export function UserProfileOverview() {
   const { session, platform, profileRoom } = useHydrogen(true);
-  const { displayName, avatarUrl } = useStore((state) => state.userProfile);
-  const { closeWindow } = useStore((state) => state.overlayWindow);
+  const { displayName, avatarUrl } = useAtomValue(userProfileAtom);
+  const setOverlayWindow = useSetAtom(overlayWindowAtom);
 
   const [newDisplayName, setNewDisplayName] = useState(displayName);
   const [authoritativeNetworking, setAuthNetworking] = useState(
@@ -83,7 +85,7 @@ export function UserProfileOverview() {
 
   const handleSubmit = async (evt: FormEvent<HTMLFormElement>) => {
     evt.preventDefault();
-    closeWindow();
+    setOverlayWindow({ type: OverlayWindow.None });
     const name = evt.currentTarget.displayName.value.trim() as string;
     if (name !== displayName && name !== "") {
       session.hsApi.setProfileDisplayName(session.userId, name);
@@ -99,7 +101,7 @@ export function UserProfileOverview() {
   const handleReset = () => {
     setNewDisplayName(displayName);
     resetAvatarUses();
-    closeWindow();
+    setOverlayWindow({ type: OverlayWindow.None });
   };
 
   return (

@@ -1,14 +1,13 @@
 import { useCallback, useEffect, useRef, useState, forwardRef } from "react";
 import { GroupCall, Room, RoomStatus } from "@thirdroom/hydrogen-view-sdk";
 import classNames from "classnames";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 
 import { WorldChat } from "../world-chat/WorldChat";
 import { Stats } from "../stats/Stats";
 import { Text } from "../../../atoms/text/Text";
 import { IconButton } from "../../../atoms/button/IconButton";
-import { useStore } from "../../../hooks/useStore";
 import { useKeyDown } from "../../../hooks/useKeyDown";
-import { usePointerLockChange } from "../../../hooks/usePointerLockChange";
 import { useEvent } from "../../../hooks/useEvent";
 import PeopleIC from "../../../../../res/ic/peoples.svg";
 import SubtitlesIC from "../../../../../res/ic/subtitles.svg";
@@ -62,6 +61,10 @@ import { useIsMounted } from "../../../hooks/useIsMounted";
 import { InteractableType } from "../../../../engine/resource/schema";
 import { useWebXRSession } from "../../../hooks/useWebXRSession";
 import { useMemoizedState } from "../../../hooks/useMemoizedState";
+import { overlayWorldAtom } from "../../../state/overlayWorld";
+import { worldChatVisibilityAtom } from "../../../state/worldChatVisibility";
+import { overlayVisibilityAtom } from "../../../state/overlayVisibility";
+import { worldAtom } from "../../../state/world";
 
 export interface ActiveEntityState {
   interactableType: InteractableType;
@@ -127,17 +130,16 @@ export function WorldView({ world }: WorldViewProps) {
   const calls = useCalls(session);
   const activeCall = useRoomCall(calls, world.id);
   const { enterWorld, exitWorld } = useWorldAction(session);
-  const { selectWorld } = useStore((state) => state.overlayWorld);
-  const isEnteredWorld = useStore((state) => state.world.entered);
-  const { isOpen: isChatOpen, openWorldChat, closeWorldChat } = useStore((state) => state.worldChat);
-  const setIsPointerLock = useStore((state) => state.pointerLock.setIsPointerLock);
-  const { isOpen: isOverlayOpen, openOverlay, closeOverlay } = useStore((state) => state.overlay);
+  const selectWorld = useSetAtom(overlayWorldAtom);
+  const isWorldEntered = useAtomValue(worldAtom).entered;
+  const [worldChatVisible, setWorldChatVisibility] = useAtom(worldChatVisibilityAtom);
+  const [overlayVisible, setOverlayVisibility] = useAtom(overlayVisibilityAtom);
   const [editorEnabled, setEditorEnabled] = useState(false);
   const [statsEnabled, setStatsEnabled] = useState(false);
   const [shortcutUI, setShortcutUI] = useState(false);
   const isMounted = useIsMounted();
 
-  const { onboarding, finishOnboarding } = useOnboarding(isEnteredWorld ? world?.id : undefined);
+  const { onboarding, finishOnboarding } = useOnboarding(isWorldEntered ? world?.id : undefined);
 
   const muteBtnRef = useRef<HTMLButtonElement | null>(null);
   const { toastShown, toastContent, showToast } = useToast();
@@ -276,7 +278,7 @@ export function WorldView({ world }: WorldViewProps) {
 
   useKeyDown(
     (e) => {
-      if (isEnteredWorld === false) return;
+      if (isWorldEntered === false) return;
       if (onboarding) return;
 
       const isEscape = e.key === "Escape";
@@ -292,29 +294,29 @@ export function WorldView({ world }: WorldViewProps) {
         setShortcutUI(false);
         return;
       }
-      if (isEscape && isChatOpen) {
+      if (isEscape && worldChatVisible) {
         mainThread.canvas?.requestPointerLock();
-        closeWorldChat();
+        setWorldChatVisibility(false);
         return;
       }
-      if (isEscape && isOverlayOpen) {
+      if (isEscape && overlayVisible) {
         mainThread.canvas?.requestPointerLock();
-        closeOverlay();
+        setOverlayVisibility(false);
         return;
       }
-      if (isEscape && isOverlayOpen === false) {
+      if (isEscape && overlayVisible === false) {
         document.exitPointerLock();
-        openOverlay();
+        setOverlayVisibility(true);
         return;
       }
-      if (e.key === "Enter" && isOverlayOpen === false && isChatOpen === false) {
+      if (e.key === "Enter" && overlayVisible === false && worldChatVisible === false) {
         if (document.activeElement !== document.body) return;
         document.exitPointerLock();
-        openWorldChat();
+        setWorldChatVisibility(true);
         return;
       }
 
-      if (isTyping || isChatOpen || showActiveMembers || shortcutUI) return;
+      if (isTyping || worldChatVisible || showActiveMembers || shortcutUI) return;
 
       if (e.altKey && e.code === "KeyL") {
         exitWorld();
@@ -344,17 +346,15 @@ export function WorldView({ world }: WorldViewProps) {
       }
     },
     [
-      isEnteredWorld,
-      isChatOpen,
-      isOverlayOpen,
+      isWorldEntered,
+      worldChatVisible,
+      setWorldChatVisibility,
+      overlayVisible,
+      setOverlayVisibility,
       showNames,
       showActiveMembers,
       shortcutUI,
       onboarding,
-      openWorldChat,
-      closeWorldChat,
-      openOverlay,
-      closeOverlay,
       enterXR,
       isWebXRSupported,
     ]
@@ -363,17 +363,14 @@ export function WorldView({ world }: WorldViewProps) {
   useEvent(
     "click",
     (e) => {
-      const isChatOpen = useStore.getState().worldChat.isOpen;
-      const isOverlayOpen = useStore.getState().overlay.isOpen;
-      const isEnteredWorld = useStore.getState().world.entered;
-      if (isEnteredWorld === false) return;
+      if (isWorldEntered === false) return;
 
       mainThread.canvas?.requestPointerLock();
-      if (isChatOpen) closeWorldChat();
-      if (isOverlayOpen) closeOverlay();
+      if (worldChatVisible) setWorldChatVisibility(false);
+      if (overlayVisible) setOverlayVisibility(false);
     },
     mainThread.canvas,
-    []
+    [isWorldEntered, worldChatVisible, setWorldChatVisibility, overlayVisible, setOverlayVisibility]
   );
 
   useEffect(() => {
@@ -389,20 +386,18 @@ export function WorldView({ world }: WorldViewProps) {
     mainThread.canvas?.requestPointerLock();
   }, [mainThread.canvas, finishOnboarding]);
 
-  usePointerLockChange(mainThread.canvas, setIsPointerLock, []);
-
   if (isPresenting) return null;
 
   return (
     <div className="WorldView">
       <OnboardingModal open={onboarding} world={world} requestClose={onFinishOnboarding} />
       <Stats statsEnabled={statsEnabled} />
-      <div className={classNames("WorldView__chat flex", { "WorldView__chat--open": isChatOpen })}>
-        {!("isBeingCreated" in world) && <WorldChat open={isChatOpen} room={world} />}
+      <div className={classNames("WorldView__chat flex", { "WorldView__chat--open": worldChatVisible })}>
+        {!("isBeingCreated" in world) && <WorldChat open={worldChatVisible} room={world} />}
       </div>
       {world && (
         <>
-          {!isChatOpen && (
+          {!worldChatVisible && (
             <Hotbar>
               {[
                 { imageSrc: "/image/small-crate-icon.png" },
@@ -487,7 +482,7 @@ export function WorldView({ world }: WorldViewProps) {
         </>
       )}
       {world && editorEnabled && <EditorView />}
-      {!("isBeingCreated" in world) && <Nametags room={world} show={showNames && !isOverlayOpen} />}
+      {!("isBeingCreated" in world) && <Nametags room={world} show={showNames && !overlayVisible} />}
       {!("isBeingCreated" in world) && (
         <>
           <Dialog open={showActiveMembers} onOpenChange={setShowActiveMembers}>
@@ -506,10 +501,10 @@ export function WorldView({ world }: WorldViewProps) {
           </Dialog>
         </>
       )}
-      {!isOverlayOpen && showNames && activeEntity && (
+      {!overlayVisible && showNames && activeEntity && (
         <EntityTooltip activeEntity={activeEntity} portalProcess={portalProcess} />
       )}
-      {!isOverlayOpen && <Reticle activeEntity={activeEntity} mouseDown={mouseDown} />}
+      {!overlayVisible && <Reticle activeEntity={activeEntity} mouseDown={mouseDown} />}
       <div className="WorldView__toast-container">
         <div className={classNames("WorldView__toast", { "WorldView__toast--shown": toastShown })}>
           <Text variant="b2" color="world" weight="semi-bold">

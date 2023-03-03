@@ -1,16 +1,19 @@
 import classNames from "classnames";
+import { useAtomValue } from "jotai";
 import { useEffect, useState } from "react";
 
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { useIsMounted } from "../../../hooks/useIsMounted";
-import { useStore } from "../../../hooks/useStore";
+import { overlayVisibilityAtom } from "../../../state/overlayVisibility";
+import { overlayWorldAtom } from "../../../state/overlayWorld";
+import { worldAtom } from "../../../state/world";
 import { loadImageUrl } from "../../../utils/common";
 import "./WorldThumbnail.css";
 
 export function WorldThumbnail() {
-  const selectedWorldId = useStore((state) => state.overlayWorld.selectedWorldId);
-  const { worldId, entered } = useStore((state) => state.world);
-  const isOverlayOpen = useStore((state) => state.overlay.isOpen);
+  const selectedWorldId = useAtomValue(overlayWorldAtom);
+  const { worldId, entered } = useAtomValue(worldAtom);
+  const overlayVisible = useAtomValue(overlayVisibilityAtom);
 
   const previewId = selectedWorldId ?? worldId;
 
@@ -52,7 +55,7 @@ export function WorldThumbnail() {
     };
   }, [session, previewId, isMounted]);
 
-  if ((!isOverlayOpen || worldId === selectedWorldId) && entered) return <></>;
+  if ((!overlayVisible || worldId === selectedWorldId) && entered) return <></>;
   return (
     <div className={classNames("WorldThumbnail", { "WorldThumbnail--blur": worldPreview && !worldPreview?.url })}>
       {worldPreview && <img alt="World Preview" src={worldPreview.url ?? worldPreview.thumbnail} />}
