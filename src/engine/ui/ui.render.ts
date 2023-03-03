@@ -1,6 +1,6 @@
 // typedefs: https://github.com/facebook/yoga/blob/main/javascript/src_js/wrapAsm.d.ts
 import Yoga from "@react-pdf/yoga";
-import { CanvasTexture, Mesh, MeshBasicMaterial, PlaneGeometry, Texture } from "three";
+import { CanvasTexture, Material, Mesh, MeshBasicMaterial, PlaneGeometry, Texture } from "three";
 import { Scene } from "three";
 import { vec3 } from "gl-matrix";
 
@@ -245,6 +245,13 @@ export function updateNodeUICanvas(ctx: RenderThreadState, scene: Scene, node: R
           Yoga.Node.destroy(child.yogaNode);
         }
       });
+    }
+    if (node.uiCanvasMesh) {
+      scene.remove(node.uiCanvasMesh);
+      node.uiCanvasMesh.geometry.dispose();
+      (node.uiCanvasMesh.material as MeshBasicMaterial & { map: Texture }).map.dispose();
+      (node.uiCanvasMesh.material as Material).dispose();
+      node.uiCanvasMesh = undefined;
     }
   }
 
