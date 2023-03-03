@@ -50,6 +50,20 @@ export function EntityTooltip({ activeEntity, portalProcess }: EntityTooltipProp
             </div>
           </>
         )}
+        {activeEntity.interactableType === InteractableType.UI && (
+          <>
+            <Text weight="bold" color="world">
+              {activeEntity.name}
+            </Text>
+            <div className="flex flex-column gap-xxs">
+              <Text variant="b3" color="world">
+                <span className="EntityTooltip__boxedKey">E</span> /
+                <Icon src={MouseIC} size="sm" className="EntityTooltip__mouseIcon" color="world" />
+                <span> Interact</span>
+              </Text>
+            </div>
+          </>
+        )}
         {activeEntity.interactableType === InteractableType.Grabbable && (
           <>
             <Text weight="bold" color="world">

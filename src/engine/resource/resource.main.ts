@@ -1,3 +1,6 @@
+import Yoga from "@react-pdf/yoga";
+import { CanvasTexture } from "three";
+
 import { AudioModule } from "../audio/audio.main";
 import { IMainThreadContext } from "../MainThread";
 import { getModule } from "../module/module.common";
@@ -39,6 +42,11 @@ import {
   SparseAccessorResource,
   TextureResource,
   TilesRendererResource,
+  UIButtonResource,
+  UICanvasResource,
+  UIFlexResource,
+  UIImageResource,
+  UITextResource,
   WorldResource,
 } from "./schema";
 
@@ -220,6 +228,35 @@ export class MainSkin extends defineLocalResourceClass(SkinResource) {
 
 export class MainInteractable extends defineLocalResourceClass(InteractableResource) {}
 
+export class MainUIText extends defineLocalResourceClass(UITextResource) {}
+export class MainUIButton extends defineLocalResourceClass(UIButtonResource) {}
+export class MainUIImage extends defineLocalResourceClass(UIImageResource) {
+  declare source: MainImage;
+  declare alt: string;
+
+  domElement?: HTMLImageElement;
+}
+
+export class MainUIFlex extends defineLocalResourceClass(UIFlexResource) {
+  declare parent: MainUIFlex | undefined;
+  declare firstChild: MainUIFlex | undefined;
+  declare prevSibling: MainUIFlex | undefined;
+  declare nextSibling: MainUIFlex | undefined;
+
+  declare text: MainUIText;
+  declare button: MainUIButton;
+  declare image: MainUIImage;
+
+  yogaNode: Yoga.Node;
+}
+
+export class MainUICanvas extends defineLocalResourceClass(UICanvasResource) {
+  declare root: MainUIFlex;
+
+  canvasTexture?: CanvasTexture;
+  canvas?: HTMLCanvasElement;
+  yogaNode: Yoga.Node;
+}
 export class MainCollider extends defineLocalResourceClass(ColliderResource) {
   declare mesh: MainMesh | undefined;
 }
@@ -244,6 +281,8 @@ export class MainNode extends defineLocalResourceClass(NodeResource) {
   declare tilesRenderer: MainTilesRenderer | undefined;
   declare nametag: MainNametag | undefined;
   declare interactable: MainInteractable | undefined;
+  declare uiCanvas: MainUICanvas | undefined;
+
   declare collider: MainCollider | undefined;
   declare physicsBody: MainPhysicsBody | undefined;
   currentAudioEmitterResourceId = 0;
@@ -311,6 +350,11 @@ const {
   ReturnRecycledResourcesSystem,
 } = createLocalResourceModule<IMainThreadContext>([
   MainNode,
+  MainUIButton,
+  MainUICanvas,
+  MainUIFlex,
+  MainUIImage,
+  MainUIText,
   MainAudioData,
   MainAudioSource,
   MainAudioEmitter,

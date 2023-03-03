@@ -34,10 +34,13 @@ import { PhysicsModule, PhysicsModuleState, RigidBody } from "../../engine/physi
 import { Prefab } from "../../engine/prefab/prefab.game";
 import { addResourceRef, getRemoteResource, tryGetRemoteResource } from "../../engine/resource/resource.game";
 import {
+  getObjectPublicRoot,
   RemoteAudioData,
   RemoteAudioEmitter,
   RemoteAudioSource,
+  RemoteInteractable,
   RemoteNode,
+  RemoteUIButton,
   removeObjectFromWorld,
 } from "../../engine/resource/RemoteResources";
 import { AudioEmitterType, InteractableType } from "../../engine/resource/schema";
@@ -52,6 +55,7 @@ import {
 import { InteractableAction, InteractionMessage, InteractionMessageType } from "./interaction.common";
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
 import { XRAvatarRig } from "../../engine/input/WebXRAvatarRigSystem";
+import { UICanvasFocusMessage, UICanvasPressMessage, WebSGUIMessage } from "../../engine/ui/ui.common";
 
 // TODO: importing from spawnables.game in this file induces a runtime error
 // import { SpawnablesModule } from "../spawnables/spawnables.game";
@@ -288,7 +292,41 @@ const _r = new Vector4();
 const zero = new Vector3();
 
 const remoteNodeQuery = defineQuery([RemoteNode]);
+
+const remoteUIButtonQuery = defineQuery([RemoteUIButton]);
+
 const interactableQuery = defineQuery([Interactable]);
+
+export function ResetInteractablesSystem(ctx: GameState) {
+  const interactableEntities = interactableQuery(ctx.world);
+
+  for (let i = 0; i < interactableEntities.length; i++) {
+    const eid = interactableEntities[i];
+
+    if (Interactable.type[eid] !== InteractableType.Interactable && Interactable.type[eid] !== InteractableType.UI) {
+      continue;
+    }
+
+    const remoteNode = getRemoteResource<RemoteNode | RemoteUIButton>(ctx, eid);
+    const interactable = remoteNode?.interactable;
+
+    if (interactable) {
+      interactable.pressed = false;
+      interactable.released = false;
+    }
+  }
+}
+
+function addInteractableForScripts(ctx: GameState, physics: PhysicsModuleState, ents: number[], i: number) {
+  const eid = ents[i];
+  const remoteNode = tryGetRemoteResource<RemoteNode | RemoteUIButton>(ctx, eid);
+  const interactable = remoteNode.interactable;
+  const hasInteractable = hasComponent(ctx.world, Interactable, eid);
+
+  if (interactable && !hasInteractable && interactable.type === InteractableType.Interactable) {
+    addInteractableComponent(ctx, physics, remoteNode, interactable.type);
+  }
+}
 
 export function InteractionSystem(ctx: GameState) {
   const network = getModule(ctx, NetworkModule);
@@ -296,37 +334,15 @@ export function InteractionSystem(ctx: GameState) {
   const input = getModule(ctx, InputModule);
   const interaction = getModule(ctx, InteractionModule);
 
+  // scripts add InteractableResource to a node, add the interactable component
+  // TODO: replace with addInteractable via WebSG API
   const remoteNodeEntities = remoteNodeQuery(ctx.world);
-
   for (let i = 0; i < remoteNodeEntities.length; i++) {
-    const eid = remoteNodeEntities[i];
-    const remoteNode = tryGetRemoteResource<RemoteNode>(ctx, eid);
-    const interactable = remoteNode.interactable;
-    const hasInteractable = hasComponent(ctx.world, Interactable, eid);
-
-    if (interactable && !hasInteractable && interactable.type === InteractableType.Interactable) {
-      addInteractableComponent(ctx, physics, remoteNode, interactable.type);
-    } else if (!interactable && hasInteractable && Interactable.type[eid] === InteractableType.Interactable) {
-      removeInteractableComponent(ctx, physics, remoteNode);
-    }
+    addInteractableForScripts(ctx, physics, remoteNodeEntities, i);
   }
-
-  const interactableEntities = interactableQuery(ctx.world);
-
-  for (let i = 0; i < interactableEntities.length; i++) {
-    const eid = interactableEntities[i];
-
-    if (Interactable.type[eid] !== InteractableType.Interactable) {
-      continue;
-    }
-
-    const remoteNode = getRemoteResource<RemoteNode>(ctx, eid);
-    const interactable = remoteNode?.interactable;
-
-    if (interactable) {
-      interactable.pressed = false;
-      interactable.released = false;
-    }
+  const remoteUIBtnEntities = remoteUIButtonQuery(ctx.world);
+  for (let i = 0; i < remoteUIBtnEntities.length; i++) {
+    addInteractableForScripts(ctx, physics, remoteUIBtnEntities, i);
   }
 
   const rigs = inputControllerQuery(ctx.world);
@@ -395,32 +411,38 @@ function updateFocus(ctx: GameState, physics: PhysicsModuleState, rig: RemoteNod
     focusShapeCastCollisionGroups
   );
 
-  let eid;
-  if (hit !== null) {
-    eid = physics.handleToEid.get(hit.collider.handle);
-    if (!eid) {
-      console.warn(`Could not find entity for physics handle ${hit.collider.handle}`);
-    } else if (hit.toi <= Interactable.interactionDistance[eid]) {
-      addComponent(ctx.world, FocusComponent, rig.eid);
-      FocusComponent.focusedEntity[rig.eid] = eid;
-    } else {
-      // clear focus
-      removeComponent(ctx.world, FocusComponent, rig.eid, true);
-      FocusComponent.focusedEntity[rig.eid] = 0;
-    }
-  } else {
-    // clear focus
+  // if there's no hit, clear focus
+  if (!hit) {
     removeComponent(ctx.world, FocusComponent, rig.eid, true);
-    FocusComponent.focusedEntity[rig.eid] = 0;
+    sendInteractionMessage(ctx, InteractableAction.Unfocus);
+    return;
   }
 
-  // only update UI if it's our player
-  const ourPlayer = hasComponent(ctx.world, OurPlayer, rig.eid);
+  const eid = physics.handleToEid.get(hit.collider.handle);
+  if (!eid) {
+    console.warn(`Could not find entity for physics handle ${hit.collider.handle}`);
+    return;
+  }
 
-  if (ourPlayer) {
-    // TODO: only send these messages when they change
-    if (FocusComponent.focusedEntity[rig.eid]) sendInteractionMessage(ctx, InteractableAction.Focus, eid);
-    if (!FocusComponent.focusedEntity[rig.eid]) sendInteractionMessage(ctx, InteractableAction.Unfocus);
+  // if within interaction distance, deem entity as focused
+  if (hit.toi <= Interactable.interactionDistance[eid]) {
+    // if it's render UI, don't focus, render thread will report back with button focus
+    if (Interactable.type[eid] === InteractableType.UI) {
+      const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
+      const projectedHit = projectHitOntoCanvas(ctx, hit, node);
+      notifyUICanvasFocus(ctx, projectedHit, node);
+    } else {
+      addComponent(ctx.world, FocusComponent, rig.eid);
+      FocusComponent.focusedEntity[rig.eid] = eid;
+
+      // only update react UI if it's our player
+      const ourPlayer = hasComponent(ctx.world, OurPlayer, rig.eid);
+      if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Focus, eid);
+    }
+  } else {
+    // if not within interaction distance, remove any existing focus
+    removeComponent(ctx.world, FocusComponent, rig.eid, true);
+    sendInteractionMessage(ctx, InteractableAction.Unfocus);
   }
 }
 
@@ -439,6 +461,16 @@ function updateDeletion(ctx: GameState, interaction: InteractionModuleState, con
       playOneShotAudio(ctx, interaction.clickEmitter?.sources[1] as RemoteAudioSource, 0.4);
     }
   }
+}
+
+function projectHitOntoCanvas(ctx: GameState, shapecastHit: RAPIER.ShapeColliderTOI, node: RemoteNode) {
+  const { x, y, z } = shapecastHit.witness1;
+
+  // convert to local space
+  const hitPoint = vec3.clone([x, y, z]);
+  vec3.sub(hitPoint, hitPoint, node.position);
+
+  return hitPoint;
 }
 
 function updateGrabThrow(
@@ -499,9 +531,7 @@ function updateGrabThrow(
     playOneShotAudio(ctx, interaction.clickEmitter?.sources[0] as RemoteAudioSource, 1, 0.6);
 
     GrabComponent.heldOffset[rig.eid] = 0;
-
-    // if grab is pressed
-  } else if (grabPressed) {
+  } else {
     // raycast outward from camera
     const cameraMatrix = grabbingNode.worldMatrix;
     mat4.getRotation(_worldQuat, cameraMatrix);
@@ -535,43 +565,56 @@ function updateGrabThrow(
       if (!node || !eid) {
         console.warn(`Could not find entity for physics handle ${shapecastHit.collider.handle}`);
       } else if (shapecastHit.toi <= Interactable.interactionDistance[node.eid]) {
-        if (Interactable.type[node.eid] === InteractableType.Grabbable) {
-          playOneShotAudio(ctx, interaction.clickEmitter?.sources[0] as RemoteAudioSource);
+        if (grabPressed) {
+          if (Interactable.type[node.eid] === InteractableType.Grabbable) {
+            playOneShotAudio(ctx, interaction.clickEmitter?.sources[0] as RemoteAudioSource);
 
-          const ownedEnts = network.authoritative ? networkedQuery(ctx.world) : ownedNetworkedQuery(ctx.world);
-          if (ownedEnts.length > interaction.maxObjCap && !hasComponent(ctx.world, Owned, node.eid)) {
-            // do nothing if we hit the max obj cap
-            ctx.sendMessage(Thread.Main, {
-              type: ObjectCapReachedMessageType,
-            });
-          } else {
-            // otherwise attempt to take ownership
-            const newEid = takeOwnership(ctx, network, node);
-
-            if (newEid !== NOOP) {
-              addComponent(ctx.world, GrabComponent, rig.eid);
-              GrabComponent.grabbedEntity[rig.eid] = newEid;
-              heldEntity = newEid;
-              if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, newEid);
+            const ownedEnts = network.authoritative ? networkedQuery(ctx.world) : ownedNetworkedQuery(ctx.world);
+            if (ownedEnts.length > interaction.maxObjCap && !hasComponent(ctx.world, Owned, node.eid)) {
+              // do nothing if we hit the max obj cap
+              ctx.sendMessage(Thread.Main, {
+                type: ObjectCapReachedMessageType,
+              });
             } else {
-              addComponent(ctx.world, GrabComponent, rig.eid);
-              GrabComponent.grabbedEntity[rig.eid] = eid;
-              if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, eid);
-            }
-          }
-        } else if (Interactable.type[node.eid] === InteractableType.Interactable) {
-          playOneShotAudio(ctx, interaction.clickEmitter?.sources[0] as RemoteAudioSource);
-          if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Interact, eid);
-          const remoteNode = getRemoteResource<RemoteNode>(ctx, node.eid);
-          const interactable = remoteNode?.interactable;
+              // otherwise attempt to take ownership
+              const newEid = takeOwnership(ctx, network, node);
 
-          if (interactable) {
-            interactable.pressed = true;
-            interactable.released = false;
-            interactable.held = true;
+              if (newEid !== NOOP) {
+                addComponent(ctx.world, GrabComponent, rig.eid);
+                GrabComponent.grabbedEntity[rig.eid] = newEid;
+                heldEntity = newEid;
+                if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, newEid);
+              } else {
+                addComponent(ctx.world, GrabComponent, rig.eid);
+                GrabComponent.grabbedEntity[rig.eid] = eid;
+                if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, eid);
+              }
+            }
+          } else if (Interactable.type[node.eid] === InteractableType.Interactable) {
+            playOneShotAudio(ctx, interaction.clickEmitter?.sources[0] as RemoteAudioSource);
+
+            if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Interact, eid);
+            const interactable = node.interactable;
+
+            if (interactable) {
+              interactable.pressed = true;
+              interactable.released = false;
+              interactable.held = true;
+            }
+          } else if (Interactable.type[node.eid] === InteractableType.UI) {
+            const interactable = node.interactable;
+
+            if (interactable) {
+              interactable.pressed = true;
+              interactable.released = false;
+              interactable.held = true;
+            }
+
+            const projectedHit = projectHitOntoCanvas(ctx, shapecastHit, node);
+            notifyUICanvasPressed(ctx, projectedHit, node);
+          } else {
+            if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, eid);
           }
-        } else {
-          if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, eid);
         }
       }
     }
@@ -674,16 +717,17 @@ function updateGrabThrowXR(
   );
 
   if (shapecastHit === null) {
+    grabbingNode.visible = true;
     return;
   }
 
   let focusedEntity = physics.handleToEid.get(shapecastHit.collider.handle);
 
   if (!focusedEntity) {
+    grabbingNode.visible = true;
     return;
   }
 
-  // TODO: use dominant hand
   const triggerState = controller.actionStates.get(
     hand === "right" ? "primaryTrigger" : "secondaryTrigger"
   ) as ButtonActionState;
@@ -692,37 +736,36 @@ function updateGrabThrowXR(
     hand === "right" ? "primarySqueeze" : "secondarySqueeze"
   ) as ButtonActionState;
 
-  if (focusedEntity && (triggerState.pressed || squeezeState.held)) {
-    const node = tryGetRemoteResource<RemoteNode>(ctx, focusedEntity);
+  if (triggerState.pressed || squeezeState.held) {
+    let focusedNode = tryGetRemoteResource<RemoteNode>(ctx, focusedEntity);
     const ourPlayer = hasComponent(ctx.world, OurPlayer, rig.eid);
 
-    if (shapecastHit.toi <= Interactable.interactionDistance[node.eid]) {
-      if (squeezeState.held && Interactable.type[node.eid] === InteractableType.Grabbable) {
+    if (shapecastHit.toi <= Interactable.interactionDistance[focusedNode.eid]) {
+      if (squeezeState.held && Interactable.type[focusedNode.eid] === InteractableType.Grabbable) {
         const ownedEnts = network.authoritative ? networkedQuery(ctx.world) : ownedNetworkedQuery(ctx.world);
-        if (ownedEnts.length > interaction.maxObjCap && !hasComponent(ctx.world, Owned, node.eid)) {
+        if (ownedEnts.length > interaction.maxObjCap && !hasComponent(ctx.world, Owned, focusedNode.eid)) {
           // do nothing if we hit the max obj cap
+          // TODO: websgui
           // ctx.sendMessage(Thread.Main, {
           //   type: ObjectCapReachedMessageType,
           // });
         } else {
           // otherwise attempt to take ownership
-          const newEid = takeOwnership(ctx, network, node);
+          const newEid = takeOwnership(ctx, network, focusedNode);
 
           if (newEid !== NOOP) {
-            // addComponent(ctx.world, GrabComponent, rig.eid);
-            // GrabComponent.grabbedEntity[rig.eid] = newEid;
             focusedEntity = newEid;
+            // TODO: websgui
             // if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, newEid);
           } else {
-            // addComponent(ctx.world, GrabComponent, rig.eid);
-            // GrabComponent.grabbedEntity[rig.eid] = focusedEntity;
+            // TODO: websgui
             // if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, focusedEntity);
           }
         }
-      } else if (triggerState.pressed && Interactable.type[node.eid] === InteractableType.Interactable) {
+      } else if (triggerState.pressed && Interactable.type[focusedNode.eid] === InteractableType.Interactable) {
         if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Interact, focusedEntity);
-        const remoteNode = getRemoteResource<RemoteNode>(ctx, node.eid);
-        const interactable = remoteNode?.interactable;
+        const node = tryGetRemoteResource<RemoteNode>(ctx, focusedNode.eid);
+        const interactable = node.interactable;
 
         if (interactable) {
           interactable.pressed = true;
@@ -730,7 +773,8 @@ function updateGrabThrowXR(
           interactable.held = true;
         }
       } else {
-        if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, focusedEntity);
+        // TODO: websgui
+        // if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, focusedEntity);
       }
     }
 
@@ -738,9 +782,9 @@ function updateGrabThrowXR(
       return;
     }
 
-    // grabbingNode.visible = false;
+    grabbingNode.visible = false;
 
-    const focusedNode = getRemoteResource<RemoteNode>(ctx, focusedEntity)!;
+    focusedNode = tryGetRemoteResource<RemoteNode>(ctx, focusedEntity);
 
     const focusedPosition = focusedNode.position;
 
@@ -765,11 +809,41 @@ function updateGrabThrowXR(
       body.setRotation(_r.fromArray(_worldQuat), true);
     }
   } else {
-    // grabbingNode.visible = true;
+    grabbingNode.visible = true;
   }
 }
 
-function sendInteractionMessage(ctx: GameState, action: InteractableAction, eid = NOOP) {
+function notifyUICanvasPressed(ctx: GameState, hitPoint: vec3, node: RemoteNode) {
+  let uiCanvas;
+  try {
+    uiCanvas = getObjectPublicRoot(node).uiCanvas!;
+  } catch (e) {
+    uiCanvas = node.uiCanvas;
+  }
+
+  ctx.sendMessage<UICanvasPressMessage>(Thread.Render, {
+    type: WebSGUIMessage.CanvasPress,
+    hitPoint,
+    uiCanvasEid: uiCanvas!.eid,
+  });
+}
+
+function notifyUICanvasFocus(ctx: GameState, hitPoint: vec3, node: RemoteNode) {
+  let uiCanvas;
+  try {
+    uiCanvas = getObjectPublicRoot(node).uiCanvas!;
+  } catch (e) {
+    uiCanvas = node.uiCanvas;
+  }
+
+  ctx.sendMessage<UICanvasFocusMessage>(Thread.Render, {
+    type: WebSGUIMessage.CanvasFocus,
+    hitPoint,
+    uiCanvasEid: uiCanvas!.eid,
+  });
+}
+
+export function sendInteractionMessage(ctx: GameState, action: InteractableAction, eid = NOOP) {
   const network = getModule(ctx, NetworkModule);
 
   const interactableType = Interactable.type[eid];
@@ -802,10 +876,15 @@ function sendInteractionMessage(ctx: GameState, action: InteractableAction, eid 
       uri = PortalComponent.get(eid)?.uri;
     }
 
+    const name =
+      Prefab.get(eid) ||
+      getRemoteResource<RemoteNode>(ctx, eid)?.name ||
+      getRemoteResource<RemoteUIButton>(ctx, eid)?.label;
+
     ctx.sendMessage<InteractionMessage>(Thread.Main, {
       type: InteractionMessageType,
       interactableType,
-      name: Prefab.get(eid) || getRemoteResource<RemoteNode>(ctx, eid)?.name,
+      name,
       held: hasComponent(ctx.world, GrabComponent, eid),
       action,
       peerId,
@@ -818,13 +897,15 @@ function sendInteractionMessage(ctx: GameState, action: InteractableAction, eid 
 export function addInteractableComponent(
   ctx: GameState,
   physics: PhysicsModuleState,
-  node: RemoteNode,
+  node: RemoteNode | RemoteUIButton,
   interactableType: InteractableType
 ) {
   const eid = node.eid;
   addComponent(ctx.world, Interactable, eid);
   Interactable.type[eid] = interactableType;
   Interactable.interactionDistance[eid] = interactableType === InteractableType.Interactable ? 10 : 1;
+
+  node.interactable = new RemoteInteractable(ctx.resourceManager, { type: interactableType });
 
   const rigidBody = RigidBody.store.get(eid);
   if (!rigidBody) {

@@ -1,9 +1,11 @@
 import { TilesRenderer } from "3d-tiles-renderer";
+import Yoga from "@react-pdf/yoga";
 import {
   Bone,
   BufferAttribute,
   BufferGeometry,
   Camera,
+  CanvasTexture,
   Color,
   DoubleSide,
   DynamicDrawUsage,
@@ -24,6 +26,8 @@ import {
   Skeleton,
   SkinnedMesh,
   Texture,
+  Mesh,
+  Material,
 } from "three";
 
 import {
@@ -83,6 +87,11 @@ import {
   AnimationResource,
   WorldResource,
   EnvironmentResource,
+  UICanvasResource,
+  UIFlexResource,
+  UITextResource,
+  UIButtonResource,
+  UIImageResource,
   ColliderResource,
   PhysicsBodyResource,
 } from "./schema";
@@ -617,6 +626,35 @@ export class RenderSkin extends defineLocalResourceClass(SkinResource) {
 
 export class RenderInteractable extends defineLocalResourceClass(InteractableResource) {}
 
+export class RenderUIText extends defineLocalResourceClass(UITextResource) {}
+export class RenderUIButton extends defineLocalResourceClass(UIButtonResource) {}
+export class RenderUIImage extends defineLocalResourceClass(UIImageResource) {
+  declare source: RenderImage;
+  declare alt: string;
+
+  domElement?: HTMLImageElement;
+}
+
+export class RenderUIFlex extends defineLocalResourceClass(UIFlexResource) {
+  declare parent: RenderUIFlex | undefined;
+  declare firstChild: RenderUIFlex | undefined;
+  declare prevSibling: RenderUIFlex | undefined;
+  declare nextSibling: RenderUIFlex | undefined;
+
+  declare text: RenderUIText;
+  declare button: RenderUIButton;
+  declare image: RenderUIImage;
+
+  yogaNode: Yoga.Node;
+}
+
+export class RenderUICanvas extends defineLocalResourceClass(UICanvasResource) {
+  declare root: RenderUIFlex;
+
+  canvasTexture?: CanvasTexture;
+  canvas?: OffscreenCanvas;
+  lastRedraw = 0;
+}
 export class RenderCollider extends defineLocalResourceClass(ColliderResource) {
   declare mesh: RenderMesh | undefined;
 }
@@ -640,6 +678,7 @@ export class RenderNode extends defineLocalResourceClass(NodeResource) {
   declare tilesRenderer: RenderTilesRenderer | undefined;
   declare nametag: RenderNametag | undefined;
   declare interactable: RenderInteractable | undefined;
+  declare uiCanvas: RenderUICanvas | undefined;
   declare collider: RenderCollider | undefined;
   declare physicsBody: RenderPhysicsBody | undefined;
 
@@ -654,10 +693,12 @@ export class RenderNode extends defineLocalResourceClass(NodeResource) {
   tilesRendererCamera?: Camera;
   currentTilesRendererResourceId = 0;
   currentReflectionProbeResourceId = 0;
+  currentUICanvasResourceId = 0;
   reflectionProbeObject?: ReflectionProbe;
   object3DVisible = true;
   needsUpdate = true;
   object3DWorldMatrix = new Matrix4();
+  uiCanvasMesh?: Mesh;
 
   dispose(ctx: RenderThreadState) {
     if (this.meshPrimitiveObjects) {
@@ -703,6 +744,14 @@ export class RenderNode extends defineLocalResourceClass(NodeResource) {
       if (index !== -1) {
         tileRendererNodes.splice(index, 1);
       }
+    }
+
+    if (this.uiCanvasMesh) {
+      this.uiCanvasMesh.parent?.remove(this.uiCanvasMesh);
+      this.uiCanvasMesh.geometry.dispose();
+      (this.uiCanvasMesh.material as MeshBasicMaterial & { map: Texture }).map.dispose();
+      (this.uiCanvasMesh.material as Material).dispose();
+      this.uiCanvasMesh = undefined;
     }
   }
 }
@@ -758,6 +807,11 @@ const {
   ReturnRecycledResourcesSystem,
 } = createLocalResourceModule<RenderThreadState>([
   RenderNode,
+  RenderUIButton,
+  RenderUICanvas,
+  RenderUIFlex,
+  RenderUIImage,
+  RenderUIText,
   RenderAudioData,
   RenderAudioSource,
   RenderAudioEmitter,

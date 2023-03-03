@@ -59,7 +59,7 @@ import {
 import { getModule } from "../module/module.common";
 import { createMesh } from "../mesh/mesh.game";
 
-function getScriptResource<T extends RemoteResourceConstructor>(
+export function getScriptResource<T extends RemoteResourceConstructor>(
   wasmCtx: WASMModuleContext,
   resourceConstructor: T,
   resourceId: number
