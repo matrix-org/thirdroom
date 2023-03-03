@@ -34,6 +34,11 @@ import {
   AnimationSamplerResource,
   WorldResource,
   EnvironmentResource,
+  UIButtonResource,
+  UICanvasResource,
+  UIFlexResource,
+  UIImageResource,
+  UITextResource,
   ColliderResource,
   PhysicsBodyResource,
 } from "./schema";
@@ -124,6 +129,23 @@ export class RemoteSkin extends defineRemoteResourceClass(SkinResource) {
 
 export class RemoteInteractable extends defineRemoteResourceClass(InteractableResource) {}
 
+export class RemoteUIText extends defineRemoteResourceClass(UITextResource) {}
+export class RemoteUIButton extends defineRemoteResourceClass(UIButtonResource) {}
+export class RemoteUIImage extends defineRemoteResourceClass(UIImageResource) {}
+
+export class RemoteUIFlex extends defineRemoteResourceClass(UIFlexResource) {
+  declare parent: RemoteUIFlex | undefined;
+  declare firstChild: RemoteUIFlex | undefined;
+  declare prevSibling: RemoteUIFlex | undefined;
+  declare nextSibling: RemoteUIFlex | undefined;
+
+  declare text: RemoteUIText;
+  declare button: RemoteUIButton;
+  declare image: RemoteUIImage;
+}
+export class RemoteUICanvas extends defineRemoteResourceClass(UICanvasResource) {
+  declare root: RemoteUIFlex;
+}
 export class RemoteCollider extends defineRemoteResourceClass(ColliderResource) {
   declare mesh: RemoteMesh | undefined;
 }
@@ -148,6 +170,7 @@ export class RemoteNode extends defineRemoteResourceClass(NodeResource) {
   declare tilesRenderer: RemoteTilesRenderer | undefined;
   declare nametag: RemoteNametag | undefined;
   declare interactable: RemoteInteractable | undefined;
+  declare uiCanvas: RemoteUICanvas | undefined;
   declare collider: RemoteCollider | undefined;
   declare physicsBody: RemotePhysicsBody | undefined;
 

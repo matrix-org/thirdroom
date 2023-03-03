@@ -1,5 +1,5 @@
-import { CSSProperties, memo, useCallback } from "react";
-import { TreeView, NodeDropPosition, RenderNodeProps } from "@thirdroom/manifold-editor-components";
+import { RefObject, useCallback, CSSProperties, memo } from "react";
+import { TreeView, TreeViewRefApi, NodeDropPosition, RenderNodeProps } from "@thirdroom/manifold-editor-components";
 
 import "./HierarchyPanel.css";
 import { EditorNode, ReparentEntityPosition } from "../../../../engine/editor/editor.common";
@@ -178,9 +178,10 @@ interface HierarchyPanelProps {
   activeEntity: number;
   selectedEntities: number[];
   scene: EditorNode;
+  treeViewRef?: RefObject<TreeViewRefApi>;
 }
 
-export function HierarchyPanelTree({ activeEntity, selectedEntities, scene }: HierarchyPanelProps) {
+export function HierarchyPanelTree({ activeEntity, selectedEntities, scene, treeViewRef }: HierarchyPanelProps) {
   const mainThread = useMainThreadContext();
 
   const canDrop = useCallback(
@@ -271,6 +272,7 @@ export function HierarchyPanelTree({ activeEntity, selectedEntities, scene }: Hi
 
   return (
     <TreeView
+      ref={treeViewRef}
       tree={scene}
       selected={selectedEntities}
       active={activeEntity}
@@ -302,6 +304,7 @@ export function HierarchyPanel({
   setHierarchyTab,
   resourceOptions,
   setResourceType,
+  treeViewRef,
 }: HierarchyPanelProps & {
   resources?: EditorNode;
   resourceType: MainThreadResource;
@@ -343,14 +346,24 @@ export function HierarchyPanel({
           </div>
           <div className="grow">
             {resources && (
-              <HierarchyPanelTree activeEntity={activeEntity} selectedEntities={selectedEntities} scene={resources} />
+              <HierarchyPanelTree
+                activeEntity={activeEntity}
+                selectedEntities={selectedEntities}
+                scene={resources}
+                treeViewRef={treeViewRef}
+              />
             )}
           </div>
         </>
       )}
       {hierarchyTab === HierarchyTab.Scenes && (
         <div className="grow">
-          <HierarchyPanelTree activeEntity={activeEntity} selectedEntities={selectedEntities} scene={scene} />
+          <HierarchyPanelTree
+            activeEntity={activeEntity}
+            selectedEntities={selectedEntities}
+            scene={scene}
+            treeViewRef={treeViewRef}
+          />
         </div>
       )}
     </div>

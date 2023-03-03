@@ -22,6 +22,7 @@ interface MultiSelectInputProps<T> {
   disabled?: boolean;
   selected: Option<T>[];
   onSelectedChange: (value: Option<T>[]) => void;
+  onSelectedOptionClick?: (value: Option<T>) => void;
 }
 
 function getFilteredOptions<T>(options: Option<T>[], selectedOptions: Option<T>[], inputValue: string) {
@@ -32,7 +33,13 @@ function getFilteredOptions<T>(options: Option<T>[], selectedOptions: Option<T>[
   );
 }
 
-export function MultiSelectInput<T>({ options, disabled, selected, onSelectedChange }: MultiSelectInputProps<T>) {
+export function MultiSelectInput<T>({
+  options,
+  disabled,
+  selected,
+  onSelectedChange,
+  onSelectedOptionClick,
+}: MultiSelectInputProps<T>) {
   const [inputValue, setInputValue] = useState("");
   const [selectedOptions, setSelectedOptions] = useState(selected);
   const inputOptions = useMemo(
@@ -49,6 +56,7 @@ export function MultiSelectInput<T>({ options, disabled, selected, onSelectedCha
         case useMultipleSelection.stateChangeTypes.DropdownKeyDownBackspace:
         case useMultipleSelection.stateChangeTypes.FunctionRemoveSelectedItem:
           setSelectedOptions(newSelectedItems ?? []);
+          onSelectedChange(newSelectedItems ?? []);
           break;
         default:
           break;
@@ -78,11 +86,14 @@ export function MultiSelectInput<T>({ options, disabled, selected, onSelectedCha
           return changes;
       }
     },
-    onStateChange({ inputValue: newInputValue, type, selectedItem: newSelectedOptions }) {
+    onStateChange({ inputValue: newInputValue, type, selectedItem: selectedOption }) {
       switch (type) {
         case useCombobox.stateChangeTypes.InputKeyDownEnter:
         case useCombobox.stateChangeTypes.ItemClick:
-          if (newSelectedOptions) setSelectedOptions([...selectedOptions, newSelectedOptions]);
+          if (selectedOption) {
+            setSelectedOptions([...selectedOptions, selectedOption]);
+            onSelectedChange([...selectedOptions, selectedOption]);
+          }
           break;
         case useCombobox.stateChangeTypes.InputChange:
           setInputValue(newInputValue ?? "");
@@ -100,11 +111,16 @@ export function MultiSelectInput<T>({ options, disabled, selected, onSelectedCha
         before={
           selectedOptions.length > 0 && (
             <div className="flex gap-xs flex-wrap" style={{ width: "100%", marginTop: "var(--sp-xs)" }}>
-              {selectedOptions.map((option) => (
-                <Chip key={option.label} size="sm">
-                  <Text className="truncate" variant="b3" weight="medium">
-                    {option.label}
-                  </Text>
+              {selectedOptions.map((option, index) => (
+                <Chip key={option.label + index} size="sm">
+                  <button
+                    onClick={onSelectedOptionClick ? () => onSelectedOptionClick(option) : undefined}
+                    style={{ cursor: "pointer" }}
+                  >
+                    <Text className="truncate" variant="b3" weight="medium">
+                      {option.label}
+                    </Text>
+                  </button>
                   <IconButton onClick={() => removeSelectedItem(option)} size="sm" iconSrc={CrossIC} label="Remove" />
                 </Chip>
               ))}

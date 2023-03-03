@@ -92,11 +92,6 @@ export function NetworkInterpolationSystem(ctx: GameState) {
       continue;
     }
 
-    // if (!body) {
-    //   console.warn("could not find rigidbody for:", eid);
-    //   continue;
-    // }
-
     const peerId = getPeerIdFromEntityId(network, eid);
     if (peerId === undefined) {
       console.warn("could not find peerId for:", eid);
