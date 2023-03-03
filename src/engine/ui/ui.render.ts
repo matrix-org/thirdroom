@@ -139,7 +139,7 @@ function onCanvasPressed(ctx: RenderThreadState, message: UICanvasPressMessage):
 const rgbaToString = ([r, g, b, a]: Float32Array) => `rgba(${r * 255},${g * 255},${b * 255},${a})`;
 
 function drawNode(
-  ctx2d: CanvasRenderingContext2D,
+  ctx2d: OffscreenCanvasRenderingContext2D,
   loadingImages: Set<RenderImage>,
   loadingText: Set<RenderUIText>,
   node: RenderUIFlex
@@ -266,9 +266,7 @@ export function updateNodeUICanvas(ctx: RenderThreadState, scene: Scene, node: R
   const uiCanvas = node.uiCanvas;
 
   if (!node.uiCanvasMesh || !uiCanvas.canvas) {
-    uiCanvas.canvas = document.createElement("canvas");
-    uiCanvas.canvas.width = uiCanvas.root.width;
-    uiCanvas.canvas.height = uiCanvas.root.height;
+    uiCanvas.canvas = new OffscreenCanvas(uiCanvas.root.width, uiCanvas.root.height);
 
     // create & update root yoga node
     uiCanvas.root.yogaNode = Yoga.Node.create();
@@ -302,7 +300,7 @@ export function updateNodeUICanvas(ctx: RenderThreadState, scene: Scene, node: R
   const { loadingImages, loadingText } = getModule(ctx, WebSGUIModule);
 
   if (uiCanvas.redraw > uiCanvas.lastRedraw) {
-    const ctx2d = uiCanvas.canvas.getContext("2d") as CanvasRenderingContext2D;
+    const ctx2d = uiCanvas.canvas.getContext("2d") as OffscreenCanvasRenderingContext2D;
 
     ctx2d.clearRect(0, 0, uiCanvas.root.width, uiCanvas.root.height);
 

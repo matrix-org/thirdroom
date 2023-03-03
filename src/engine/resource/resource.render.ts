@@ -652,7 +652,7 @@ export class RenderUICanvas extends defineLocalResourceClass(UICanvasResource) {
   declare root: RenderUIFlex;
 
   canvasTexture?: CanvasTexture;
-  canvas?: HTMLCanvasElement;
+  canvas?: OffscreenCanvas;
   lastRedraw = 0;
 }
 export class RenderCollider extends defineLocalResourceClass(ColliderResource) {
