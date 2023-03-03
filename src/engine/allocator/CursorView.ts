@@ -375,8 +375,8 @@ export const readInt8 = (v: CursorView) => {
 };
 
 const textDecoder = new TextDecoder();
-export function readString(v: CursorView) {
-  const byteLength = readUint8(v);
+export function readString(v: CursorView, byteLength?: number) {
+  byteLength = byteLength || readUint8(v);
   const encodedString = new Uint8Array(v.buffer, v.cursor, byteLength);
   v.cursor += byteLength;
   return textDecoder.decode(encodedString);

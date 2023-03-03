@@ -42,6 +42,7 @@
     "@radix-ui/react-switch": "^0.1.5",
     "@radix-ui/react-tooltip": "^0.1.7",
     "@react-aria/interactions": "^3.9.1",
+    "@react-pdf/yoga": "^4.1.0",
     "@sentry/react": "^7.13.0",
     "@sentry/tracing": "^7.13.0",
     "@thi.ng/malloc": "^6.1.19",

@@ -1,3 +1,5 @@
+import Yoga from "@react-pdf/yoga";
+
 import { defineResource, PropType } from "./ResourceDefinition";
 
 export enum ResourceType {
@@ -32,6 +34,11 @@ export enum ResourceType {
   World,
   Avatar,
   Environment,
+  UICanvas,
+  UIText,
+  UIButton,
+  UIImage,
+  UIFlex,
   Collider,
   PhysicsBody,
 }
@@ -406,6 +413,7 @@ export enum InteractableType {
   Grabbable = 2,
   Player = 3,
   Portal = 4,
+  UI = 5,
 }
 
 export const InteractableResource = defineResource("interactable", ResourceType.Interactable, {
@@ -418,6 +426,77 @@ export const InteractableResource = defineResource("interactable", ResourceType.
   pressed: PropType.bool({ mutableScript: false, script: true }),
   held: PropType.bool({ mutableScript: false, script: true }),
   released: PropType.bool({ mutableScript: false, script: true }),
+});
+
+export enum FlexDirection {
+  COLUMN = Yoga.FLEX_DIRECTION_COLUMN,
+  COLUMN_REVERSE = Yoga.FLEX_DIRECTION_COLUMN_REVERSE,
+  ROW = Yoga.FLEX_DIRECTION_ROW,
+  ROW_REVERSE = Yoga.FLEX_DIRECTION_ROW_REVERSE,
+}
+
+export enum FlexEdge {
+  LEFT = Yoga.EDGE_LEFT,
+  TOP = Yoga.EDGE_TOP,
+  RIGHT = Yoga.EDGE_RIGHT,
+  BOTTOM = Yoga.EDGE_BOTTOM,
+}
+
+export const UITextResource = defineResource("ui-text", ResourceType.UIText, {
+  value: PropType.string({ script: true }),
+  fontFamily: PropType.string({ script: true }),
+  fontSize: PropType.f32({ default: 12, script: true }),
+  fontWeight: PropType.string({ script: true }),
+  fontStyle: PropType.string({ script: true }),
+  color: PropType.rgba({ script: true }),
+});
+
+export const UIButtonResource = defineResource("ui-button", ResourceType.UIButton, {
+  interactable: PropType.ref(InteractableResource, { script: true }),
+  label: PropType.string({ script: true }),
+});
+
+export const UIImageResource = defineResource("ui-image", ResourceType.UIImage, {
+  source: PropType.ref(ImageResource, { script: true }),
+  alt: PropType.string({ script: true, required: false }),
+});
+
+export const UIFlexResource = defineResource("ui-flex", ResourceType.UIFlex, {
+  flexDirection: PropType.enum(FlexDirection, {
+    default: FlexDirection.ROW,
+    script: true,
+    mutable: true,
+  }),
+
+  width: PropType.f32({ script: true, mutable: true }),
+  height: PropType.f32({ script: true, mutable: true }),
+
+  backgroundColor: PropType.rgba({ script: true, mutable: true }),
+  borderColor: PropType.rgba({ script: true, mutable: true }),
+
+  // TODO: vec4 alias
+  padding: PropType.rgba({ script: true, mutable: true }),
+  margin: PropType.rgba({ script: true, mutable: true }),
+
+  parent: PropType.selfRef({ backRef: true }),
+  firstChild: PropType.selfRef(),
+  prevSibling: PropType.selfRef({ backRef: true }),
+  nextSibling: PropType.selfRef(),
+
+  text: PropType.ref(UITextResource, {}),
+  button: PropType.ref(UIButtonResource, {}),
+  image: PropType.ref(UIImageResource, {}),
+});
+
+export const UICanvasResource = defineResource("ui-canvas", ResourceType.UICanvas, {
+  root: PropType.ref(UIFlexResource),
+
+  pixelDensity: PropType.f32({ script: true, mutable: true }),
+
+  width: PropType.f32({ script: true, mutable: true }),
+  height: PropType.f32({ script: true, mutable: true }),
+
+  redraw: PropType.u32({ default: 1, script: true, mutable: true }),
 });
 
 export enum ColliderType {
@@ -481,6 +560,7 @@ export const NodeResource = defineResource("node", ResourceType.Node, {
   tilesRenderer: PropType.ref(TilesRendererResource, { script: true }),
   nametag: PropType.ref(NametagResource, { script: false }),
   interactable: PropType.ref(InteractableResource, { script: true }),
+  uiCanvas: PropType.ref(UICanvasResource, { script: true }),
   collider: PropType.ref(ColliderResource, { script: true }),
   physicsBody: PropType.ref(PhysicsBodyResource, { script: true }),
 });

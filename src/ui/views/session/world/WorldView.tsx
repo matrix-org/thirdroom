@@ -187,7 +187,8 @@ export function WorldView({ world }: WorldViewProps) {
         setActiveEntity(undefined);
       } else if (
         message.interactableType === InteractableType.Grabbable ||
-        message.interactableType === InteractableType.Interactable
+        message.interactableType === InteractableType.Interactable ||
+        message.interactableType === InteractableType.UI
       ) {
         setActiveEntity({
           interactableType,

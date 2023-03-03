@@ -9,9 +9,10 @@ import { RendererIncomingTripleBufferSystem } from "./renderer/RendererIncomingT
 import { RendererOutgoingTripleBufferSystem } from "./renderer/RendererOutgoingTripleBufferSystem";
 import { ResourceModule, ResourceLoaderSystem, ReturnRecycledResourcesSystem } from "./resource/resource.render";
 import { StatsModule, RenderThreadStatsSystem } from "./stats/stats.render";
+import { WebSGUIModule } from "./ui/ui.render";
 
 export default defineConfig({
-  modules: [ResourceModule, RendererModule, InputModule, StatsModule, ThirdroomModule, EditorModule],
+  modules: [ResourceModule, RendererModule, InputModule, StatsModule, ThirdroomModule, EditorModule, WebSGUIModule],
   systems: [
     RendererIncomingTripleBufferSystem,
     UpdateXRInputSourcesSystem,

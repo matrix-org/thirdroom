@@ -101,11 +101,11 @@ static JSValue js_receive_into(JSContext *ctx, JSValueConst this_val, int argc, 
 }
 
 void js_define_websg_network_api(JSContext *ctx, JSValue *target) {
-  JSValue matrix = JS_NewObject(ctx);
-  JS_SetPropertyStr(ctx, matrix, "listen", JS_NewCFunction(ctx, js_listen, "listen", 0));
-  JS_SetPropertyStr(ctx, matrix, "close", JS_NewCFunction(ctx, js_close, "close", 0));
-  JS_SetPropertyStr(ctx, matrix, "receive", JS_NewCFunction(ctx, js_receive, "receive", 0));
-  JS_SetPropertyStr(ctx, matrix, "receiveInto", JS_NewCFunction(ctx, js_receive_into, "receiveInto", 1));
-  JS_SetPropertyStr(ctx, matrix, "broadcast", JS_NewCFunction(ctx, js_broadcast, "broadcast", 1));
-  JS_SetPropertyStr(ctx, *target, "Network", matrix);
+  JSValue network = JS_NewObject(ctx);
+  JS_SetPropertyStr(ctx, network, "listen", JS_NewCFunction(ctx, js_listen, "listen", 0));
+  JS_SetPropertyStr(ctx, network, "close", JS_NewCFunction(ctx, js_close, "close", 0));
+  JS_SetPropertyStr(ctx, network, "receive", JS_NewCFunction(ctx, js_receive, "receive", 0));
+  JS_SetPropertyStr(ctx, network, "receiveInto", JS_NewCFunction(ctx, js_receive_into, "receiveInto", 1));
+  JS_SetPropertyStr(ctx, network, "broadcast", JS_NewCFunction(ctx, js_broadcast, "broadcast", 1));
+  JS_SetPropertyStr(ctx, *target, "Network", network);
 }
