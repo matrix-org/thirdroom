@@ -83,6 +83,8 @@ import {
   AnimationResource,
   WorldResource,
   EnvironmentResource,
+  ColliderResource,
+  PhysicsBodyResource,
 } from "./schema";
 
 export class RenderNametag extends defineLocalResourceClass(NametagResource) {}
@@ -615,6 +617,12 @@ export class RenderSkin extends defineLocalResourceClass(SkinResource) {
 
 export class RenderInteractable extends defineLocalResourceClass(InteractableResource) {}
 
+export class RenderCollider extends defineLocalResourceClass(ColliderResource) {
+  declare mesh: RenderMesh | undefined;
+}
+
+export class RenderPhysicsBody extends defineLocalResourceClass(PhysicsBodyResource) {}
+
 export class RenderNode extends defineLocalResourceClass(NodeResource) {
   declare parentScene: RenderScene | undefined;
   declare parent: RenderNode | undefined;
@@ -632,6 +640,8 @@ export class RenderNode extends defineLocalResourceClass(NodeResource) {
   declare tilesRenderer: RenderTilesRenderer | undefined;
   declare nametag: RenderNametag | undefined;
   declare interactable: RenderInteractable | undefined;
+  declare collider: RenderCollider | undefined;
+  declare physicsBody: RenderPhysicsBody | undefined;
 
   currentMeshResourceId = 0;
   bone?: Bone;
@@ -764,6 +774,8 @@ const {
   RenderScene,
   RenderMeshPrimitive,
   RenderInteractable,
+  RenderCollider,
+  RenderPhysicsBody,
   RenderAccessor,
   RenderSparseAccessor,
   RenderSkin,
