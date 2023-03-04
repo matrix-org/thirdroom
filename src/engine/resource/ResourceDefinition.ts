@@ -504,6 +504,8 @@ type LocalResourcePropValue<
   ? string
   : Def["schema"][Prop]["type"] extends "u32"
   ? number
+  : Def["schema"][Prop]["type"] extends "i32"
+  ? number
   : Def["schema"][Prop]["type"] extends "arrayBuffer"
   ? SharedArrayBuffer
   : Def["schema"][Prop]["type"] extends "bool"
