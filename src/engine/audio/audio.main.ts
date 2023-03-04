@@ -416,7 +416,7 @@ function processAudioPlaybackRingBuffer(ctx: IMainThreadContext, audioModule: Ma
   while (availableRead(audioPlaybackRingBuffer)) {
     const audioItem = createAudioPlaybackItem();
     dequeueAudioPlaybackRingBuffer(audioPlaybackRingBuffer, audioItem);
-    audioPlaybackQueue.unshift(audioItem);
+    audioPlaybackQueue.push(audioItem);
   }
 
   for (let i = 0; i < audioPlaybackQueue.length; i++) {
