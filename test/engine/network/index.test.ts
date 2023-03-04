@@ -15,6 +15,7 @@ import { Owned, Networked } from "../../../src/engine/network/NetworkComponents"
 import {
   createCursorView,
   readFloat32,
+  readInt32,
   readString,
   readUint16,
   readUint32,
@@ -169,7 +170,7 @@ describe("Network Tests", () => {
       const reader = createCursorView(writer.buffer);
 
       const changeMask = readUint16(reader);
-      strictEqual(changeMask, 0b1111000111, `Expected ${toBinaryString(changeMask)} to equal 0b111000111`);
+      strictEqual(changeMask, 0b11111000111, `Expected ${toBinaryString(changeMask)} to equal 0b111000111`);
 
       const posX = readFloat32(reader);
       strictEqual(posX, 1);
@@ -208,7 +209,7 @@ describe("Network Tests", () => {
       const reader = createCursorView(writer.buffer);
 
       const changeMask = readUint16(reader);
-      strictEqual(changeMask, 0b101000010, `Expected ${toBinaryString(changeMask)} to equal 0b101000010`);
+      strictEqual(changeMask, 0b10101000010, `Expected ${toBinaryString(changeMask)} to equal 0b101000010`);
 
       // const posX = readFloat32(reader);
       // strictEqual(posX, 0);
@@ -402,6 +403,7 @@ describe("Network Tests", () => {
           addComponent(state.world, Networked, eid);
           Networked.networkId[eid] = eid;
           addComponent(state.world, Owned, eid);
+          node.skipLerp = 0;
           return node;
         });
 
