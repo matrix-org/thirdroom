@@ -1,6 +1,9 @@
 {
   "plugins": ["matrix-org"],
   "extends": ["plugin:matrix-org/typescript", "plugin:matrix-org/react", "prettier"],
+  "parserOptions": {
+    "project": ["./tsconfig.json"]
+  },
   "settings": {
     "react": {
       "version": "detect"
@@ -16,6 +19,8 @@
         "format": ["camelCase"],
         "leadingUnderscore": "allow"
       }
-    ]
+    ],
+    "@typescript-eslint/explicit-function-return-type": "off",
+    "@typescript-eslint/explicit-member-accessibility": "off"
   }
 }

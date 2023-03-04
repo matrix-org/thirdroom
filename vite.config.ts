@@ -48,8 +48,7 @@ export default defineConfig({
         postcssPresetEnv({
           stage: 1,
           browsers: "last 2 versions",
-          autoprefixer: true,
-        }) as any, // postcss-preset-env type definitions are out of date
+        }),
       ],
     },
   },

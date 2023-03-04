@@ -3,6 +3,7 @@ import { Route, Routes } from "react-router-dom";
 import { useFocusVisible } from "@react-aria/interactions";
 import { serviceWorkerFile } from "virtual:vite-plugin-service-worker";
 import * as Sentry from "@sentry/react";
+import { Provider as JotaiProvider } from "jotai";
 
 import "./App.css";
 import "@fontsource/inter/variable.css";
@@ -57,7 +58,7 @@ const WorldRootView = lazy(() => import("./views/session/world/WorldRootView"));
 
 export function App() {
   return (
-    <>
+    <JotaiProvider>
       <FocusOutlineManager />
       <SentryRoutes>
         <Route element={<HydrogenRootView />}>
@@ -137,6 +138,6 @@ export function App() {
         {storybookRoute}
         <Route path="*" element={<PageNotFound />} />
       </SentryRoutes>
-    </>
+    </JotaiProvider>
   );
 }

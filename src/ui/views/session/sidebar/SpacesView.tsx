@@ -1,10 +1,11 @@
+import { useAtom } from "jotai";
+
 import { SidebarTab } from "../../components/sidebar-tab/SidebarTab";
 import PlanetIC from "../../../../../res/ic/planet.svg";
 import PeoplesIC from "../../../../../res/ic/peoples.svg";
 import ExploreIC from "../../../../../res/ic/explore.svg";
 import NotificationIC from "../../../../../res/ic/notification.svg";
 import { useHydrogen } from "../../../hooks/useHydrogen";
-import { OverlayWindow, SidebarTabs, useStore } from "../../../hooks/useStore";
 import { BadgeWrapper } from "../../../atoms/badge/BadgeWrapper";
 import { NotificationBadge } from "../../../atoms/badge/NotificationBadge";
 import { useInviteList } from "../../../hooks/useInviteList";
@@ -12,14 +13,16 @@ import { UserMenu } from "../menus/UserMenu";
 import "./SpacesView.css";
 import { RoomTypes, useRoomsOfType } from "../../../hooks/useRoomsOfType";
 import { useLocalStorage } from "../../../hooks/useLocalStorage";
+import { sidebarTabAtom, SidebarTab as SidebarTabEnum } from "../../../state/sidebarTab";
+import { OverlayWindow, overlayWindowAtom } from "../../../state/overlayWindow";
 
 export function SpacesView() {
   const { session } = useHydrogen(true);
   const invites = useInviteList(session);
   const [rooms] = useRoomsOfType(session, RoomTypes.Room);
   const [directs] = useRoomsOfType(session, RoomTypes.Direct);
-  const { selectedSidebarTab, selectSidebarTab } = useStore((state) => state.overlaySidebar);
-  const { selectedWindow, selectWindow } = useStore((state) => state.overlayWindow);
+  const [sidebarTab, setSidebarTab] = useAtom(sidebarTabAtom);
+  const [overlayWindow, setOverlayWindow] = useAtom(overlayWindowAtom);
   const [discoverPage] = useLocalStorage("feature_discoverPage", false);
 
   const roomsNotifCount = rooms.reduce((total, room) => total + room.notificationCount, 0);
@@ -30,8 +33,8 @@ export function SpacesView() {
       <div className="grow flex flex-column items-center gap-xs">
         <BadgeWrapper badge={roomsNotifCount > 0 && <NotificationBadge content={roomsNotifCount} />}>
           <SidebarTab
-            onClick={() => selectSidebarTab(SidebarTabs.Home)}
-            isActive={selectedSidebarTab === SidebarTabs.Home && !selectedWindow}
+            onClick={() => setSidebarTab(SidebarTabEnum.Home)}
+            isActive={sidebarTab === SidebarTabEnum.Home && overlayWindow.type === OverlayWindow.None}
             name="Home"
             iconSrc={PlanetIC}
             variant="surface-low"
@@ -40,8 +43,8 @@ export function SpacesView() {
 
         <BadgeWrapper badge={directsNotifCount > 0 && <NotificationBadge content={directsNotifCount} />}>
           <SidebarTab
-            onClick={() => selectSidebarTab(SidebarTabs.Friends)}
-            isActive={selectedSidebarTab === SidebarTabs.Friends && !selectedWindow}
+            onClick={() => setSidebarTab(SidebarTabEnum.Friends)}
+            isActive={sidebarTab === SidebarTabEnum.Friends && overlayWindow.type === OverlayWindow.None}
             name="Friends"
             iconSrc={PeoplesIC}
             variant="surface-low"
@@ -50,8 +53,8 @@ export function SpacesView() {
 
         <BadgeWrapper badge={invites.length > 0 ? <NotificationBadge content={invites.length} /> : undefined}>
           <SidebarTab
-            onClick={() => selectSidebarTab(SidebarTabs.Notifications)}
-            isActive={selectedSidebarTab === SidebarTabs.Notifications && !selectedWindow}
+            onClick={() => setSidebarTab(SidebarTabEnum.Notifications)}
+            isActive={sidebarTab === SidebarTabEnum.Notifications && overlayWindow.type === OverlayWindow.None}
             name="Notifications"
             iconSrc={NotificationIC}
             variant="surface-low"
@@ -59,8 +62,8 @@ export function SpacesView() {
         </BadgeWrapper>
         {discoverPage && (
           <SidebarTab
-            onClick={() => selectWindow(OverlayWindow.Discover)}
-            isActive={selectedWindow === OverlayWindow.Discover}
+            onClick={() => setOverlayWindow({ type: OverlayWindow.Discover })}
+            isActive={overlayWindow.type === OverlayWindow.Discover}
             name="Discover"
             iconSrc={ExploreIC}
             variant="surface-low"

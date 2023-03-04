@@ -1,16 +1,19 @@
 import { CSSProperties, ReactNode, useReducer, useRef } from "react";
 import { useMatch } from "react-router-dom";
 import { Session } from "@thirdroom/hydrogen-view-sdk";
+import { useAtom, useSetAtom } from "jotai";
 
 import { Text } from "../../../atoms/text/Text";
 import { useHydrogen } from "../../../hooks/useHydrogen";
-import { useStore } from "../../../hooks/useStore";
 import "./StatusBar.css";
 import { useRecentMessage } from "../../../hooks/useRecentMessage";
 import { Avatar } from "../../../atoms/avatar/Avatar";
 import { getAvatarHttpUrl, getIdentifierColorNumber } from "../../../utils/avatar";
 import { useRoomList } from "../../../hooks/useRoomList";
 import { useWorldPath } from "../../../hooks/useWorld";
+import { activeChatsAtom } from "../../../state/overlayChat";
+import { worldChatVisibilityAtom } from "../../../state/worldChatVisibility";
+import { overlayVisibilityAtom } from "../../../state/overlayVisibility";
 
 function OverlayButton({
   style,
@@ -60,11 +63,11 @@ function useNotifications(session: Session) {
 export function NotificationButton({ onClick }: { onClick: () => void }) {
   const { session, platform } = useHydrogen(true);
   const { notifCount, eventEntry, roomId } = useNotifications(session);
-  const { selectChat } = useStore((state) => state.overlayChat);
+  const selectChat = useSetAtom(activeChatsAtom);
 
   const handleNotificationClick = () => {
     onClick();
-    if (eventEntry) selectChat(roomId);
+    if (eventEntry) selectChat({ type: "OPEN", roomId });
   };
 
   return (
@@ -98,8 +101,8 @@ export function NotificationButton({ onClick }: { onClick: () => void }) {
 
 export function StatusBar() {
   const { session } = useHydrogen(true);
-  const { isOpen: isOverlayOpen, closeOverlay, openOverlay } = useStore((state) => state.overlay);
-  const closeWorldChat = useStore((state) => state.worldChat.closeWorldChat);
+  const [overlayVisible, setOverlayVisibility] = useAtom(overlayVisibilityAtom);
+  const setWorldChatVisibility = useSetAtom(worldChatVisibilityAtom);
 
   const homeMatch = useMatch({ path: "/", end: true });
   const isHome = homeMatch !== null;
@@ -107,12 +110,12 @@ export function StatusBar() {
   const world = knownWorldId ? session.rooms.get(knownWorldId) : undefined;
 
   const handleTipClick = () => {
-    if (isOverlayOpen) {
-      closeOverlay();
+    if (overlayVisible) {
+      setOverlayVisibility(false);
     } else {
       document.exitPointerLock();
-      closeWorldChat();
-      openOverlay();
+      setWorldChatVisibility(false);
+      setOverlayVisibility(true);
     }
   };
 
@@ -134,7 +137,7 @@ export function StatusBar() {
               ESC
             </Text>
             <Text className="flex items-center" color="world" variant="b3">
-              {isOverlayOpen ? "Close Overlay" : "Open Overlay"}
+              {overlayVisible ? "Close Overlay" : "Open Overlay"}
             </Text>
           </OverlayButton>
         )}

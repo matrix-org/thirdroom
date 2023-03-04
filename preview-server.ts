@@ -1,29 +1,21 @@
 import chokidar from "chokidar";
-import { build, InlineConfig, preview, UserConfig } from "vite";
+import { build, preview } from "vite";
 import { WebSocket, WebSocketServer } from "ws";
 
-import config from "./vite.config";
-
-const userConfig = config as UserConfig;
-
-const devServerConfig: InlineConfig = {
-  ...userConfig,
-  mode: "preview",
+const buildConfig = {
+  root: __dirname,
   build: {
-    ...userConfig.build,
     minify: false,
-    sourcemap: true,
   },
   preview: {
-    ...userConfig.preview,
     open: true,
     port: 3000,
   },
 };
 
-await build(devServerConfig);
+await build(buildConfig);
 
-const previewServer = await preview(devServerConfig);
+const previewServer = await preview(buildConfig);
 
 previewServer.httpServer.prependListener("request", (_req, res) => {
   res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
@@ -60,7 +52,7 @@ const debounce = (callback: (...args: any[]) => void, wait: number) => {
 
 async function rebuild() {
   try {
-    await build(devServerConfig);
+    await build(buildConfig);
 
     for (const socket of sockets) {
       socket.send("rebuilt");
