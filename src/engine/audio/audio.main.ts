@@ -419,7 +419,7 @@ function processAudioPlaybackRingBuffer(ctx: IMainThreadContext, audioModule: Ma
     audioPlaybackQueue.push(audioItem);
   }
 
-  for (let i = audioPlaybackQueue.length - 1; i >= 0; i--) {
+  for (let i = 0; i < audioPlaybackQueue.length; i++) {
     const item = audioPlaybackQueue[i];
 
     if (item.tick >= ctx.tick) {
@@ -460,7 +460,8 @@ function processAudioPlaybackRingBuffer(ctx: IMainThreadContext, audioModule: Ma
         }
       }
 
-      audioPlaybackQueue.splice(i, 1);
+      audioPlaybackQueue.push(item);
+      i--;
     }
   }
 }
