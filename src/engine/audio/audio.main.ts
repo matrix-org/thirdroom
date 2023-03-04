@@ -419,10 +419,10 @@ function processAudioPlaybackRingBuffer(ctx: IMainThreadContext, audioModule: Ma
     audioPlaybackQueue.push(audioItem);
   }
 
-  for (let i = 0; i < audioPlaybackQueue.length; i++) {
+  for (let i = audioPlaybackQueue.length - 1; i >= 0; i--) {
     const item = audioPlaybackQueue[i];
 
-    if (item.tick <= ctx.tick) {
+    if (item.tick >= ctx.tick) {
       const audioSource = getLocalResource<MainAudioSource>(ctx, item.audioSourceId);
       const audioSourceGainNode = audioSource?.gainNode;
 
@@ -461,7 +461,6 @@ function processAudioPlaybackRingBuffer(ctx: IMainThreadContext, audioModule: Ma
       }
 
       audioPlaybackQueue.splice(i, 1);
-      i--;
     }
   }
 }
