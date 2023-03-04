@@ -460,7 +460,7 @@ function processAudioPlaybackRingBuffer(ctx: IMainThreadContext, audioModule: Ma
         }
       }
 
-      audioPlaybackQueue.push(item);
+      audioPlaybackQueue.splice(i, 1);
       i--;
     }
   }
