@@ -2,24 +2,22 @@ import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import postcssPresetEnv from "postcss-preset-env";
 import crossOriginIsolation from "vite-plugin-cross-origin-isolation";
-import pluginRewriteAll from "@thirdroom/vite-plugin-rewrite-all";
 import { serviceWorkerPlugin } from "@gautemo/vite-plugin-service-worker";
 import { viteStaticCopy } from "vite-plugin-static-copy";
 import path from "path";
 
 import testnetServerPlugin from "./src/testnet";
+import { mpaRouter } from "./src/vite/mpa-router";
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  appType: "mpa",
+  base: "/",
   server: {
     port: 3000,
     hmr: false,
   },
   plugins: [
-    pluginRewriteAll({
-      rewrites: [{ from: /\/logviewer$/, to: "/logviewer.html" }],
-    }),
+    mpaRouter(),
     react(),
     crossOriginIsolation(),
     testnetServerPlugin(),
@@ -57,12 +55,6 @@ export default defineConfig({
   },
   build: {
     sourcemap: true,
-    rollupOptions: {
-      input: {
-        main: path.resolve(__dirname, "index.html"),
-        logviewer: path.resolve(__dirname, "logviewer.html"),
-      },
-    },
   },
   test: {
     globals: true,
