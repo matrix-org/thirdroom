@@ -6,11 +6,12 @@ import { serviceWorkerPlugin } from "@gautemo/vite-plugin-service-worker";
 import { viteStaticCopy } from "vite-plugin-static-copy";
 import path from "path";
 
-import testnetServerPlugin from "./src/testnet";
 import { mpaRouter } from "./src/vite/mpa-router";
+import testnetServerPlugin from "./src/vite/testnet";
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  appType: "mpa",
   base: "/",
   server: {
     port: 3000,
@@ -55,6 +56,12 @@ export default defineConfig({
   },
   build: {
     sourcemap: true,
+    rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, "index.html"),
+        logviewer: path.resolve(__dirname, "logviewer/index.html"),
+      },
+    },
   },
   test: {
     globals: true,
