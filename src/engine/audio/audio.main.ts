@@ -422,7 +422,7 @@ function processAudioPlaybackRingBuffer(ctx: IMainThreadContext, audioModule: Ma
   for (let i = 0; i < audioPlaybackQueue.length; i++) {
     const item = audioPlaybackQueue[i];
 
-    if (item.tick <= ctx.tick) {
+    if (item.tick >= ctx.tick) {
       const audioSource = getLocalResource<MainAudioSource>(ctx, item.audioSourceId);
       const audioSourceGainNode = audioSource?.gainNode;
 
