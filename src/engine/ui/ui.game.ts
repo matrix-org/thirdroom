@@ -502,24 +502,20 @@ export function createUICanvasNode(
   height: number,
   pixelDensity = 1000
 ) {
-  // const widthPx = width * pixelDensity;
-  // const heightPx = height * pixelDensity;
+  const widthPx = width * pixelDensity;
+  const heightPx = height * pixelDensity;
 
-  // const root = new RemoteUIFlex(ctx.resourceManager, {
-  //   width: widthPx,
-  //   height: heightPx,
-  // });
+  const root = new RemoteUIFlex(ctx.resourceManager, {
+    width: widthPx,
+    height: heightPx,
+  });
 
   const uiCanvas = new RemoteUICanvas(ctx.resourceManager, {
-    // root,
+    root,
     width,
     height,
     pixelDensity,
   });
-
-  // setTimeout(() => {
-  // uiCanvas.root = root;
-  // }, 10);
 
   const node = new RemoteNode(ctx.resourceManager, { uiCanvas });
 
