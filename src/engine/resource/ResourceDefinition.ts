@@ -165,6 +165,19 @@ function createU32PropDef<O extends ScalarPropOptions>(options?: O) {
   );
 }
 
+function createI32PropDef<O extends ScalarPropOptions>(options?: O) {
+  return createPropDef(
+    {
+      type: "i32",
+      arrayType: Int32Array,
+      mutable: true,
+      required: false,
+      default: 0,
+    },
+    options
+  );
+}
+
 function createF32PropDef<O extends ScalarPropOptions>(options?: O) {
   return createPropDef(
     {
@@ -398,6 +411,7 @@ function createSelfRefPropDef<O extends RefPropOptions>(options?: O) {
 export type PropTypeType = {
   bool: ReturnType<typeof createBoolPropDef>;
   u32: ReturnType<typeof createU32PropDef>;
+  i32: ReturnType<typeof createI32PropDef>;
   f32: ReturnType<typeof createF32PropDef>;
   vec2: ReturnType<typeof createVec2PropDef>;
   vec3: ReturnType<typeof createVec3PropDef>;
@@ -418,6 +432,7 @@ export type PropTypeType = {
 export const PropType = {
   bool: createBoolPropDef,
   u32: createU32PropDef,
+  i32: createI32PropDef,
   f32: createF32PropDef,
   vec2: createVec2PropDef,
   vec3: createVec3PropDef,
@@ -488,6 +503,8 @@ type LocalResourcePropValue<
 > = Def["schema"][Prop]["type"] extends "string"
   ? string
   : Def["schema"][Prop]["type"] extends "u32"
+  ? number
+  : Def["schema"][Prop]["type"] extends "i32"
   ? number
   : Def["schema"][Prop]["type"] extends "arrayBuffer"
   ? SharedArrayBuffer

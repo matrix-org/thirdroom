@@ -546,7 +546,7 @@ export const NodeResource = defineResource("node", ResourceType.Node, {
   worldMatrixNeedsUpdate: PropType.bool({ script: true, default: true }),
   visible: PropType.bool({ script: true, default: true }),
   enabled: PropType.bool({ script: true, default: true }),
-  skipLerp: PropType.u32({ script: true, default: 0, editor: false }),
+  skipLerp: PropType.i32({ script: true, default: 10, editor: false }),
   isStatic: PropType.bool({ script: true, default: false }),
   layers: PropType.bitmask({ default: 1, script: true }),
   mesh: PropType.ref(MeshResource, { script: true }),
