@@ -469,6 +469,7 @@ function projectHitOntoCanvas(ctx: GameState, shapecastHit: RAPIER.ShapeCollider
   // convert to local space
   const hitPoint = vec3.clone([x, y, z]);
   vec3.sub(hitPoint, hitPoint, node.position);
+  vec3.transformQuat(hitPoint, hitPoint, node.quaternion);
 
   return hitPoint;
 }
