@@ -1,4 +1,3 @@
-import "./live-reload";
 import React from "react";
 import ReactDOM from "react-dom";
 import { BrowserRouter, useLocation, useNavigationType, createRoutesFromChildren, matchRoutes } from "react-router-dom";
