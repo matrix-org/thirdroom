@@ -1,5 +1,6 @@
 import { RefObject, useCallback, CSSProperties, memo } from "react";
 import { TreeView, TreeViewRefApi, NodeDropPosition, RenderNodeProps } from "@thirdroom/manifold-editor-components";
+import { useAtom, useAtomValue } from "jotai";
 
 import "./HierarchyPanel.css";
 import { EditorNode, ReparentEntityPosition } from "../../../../engine/editor/editor.common";
@@ -23,9 +24,8 @@ import FormattedListIC from "../../../../../res/ic/formatted-list.svg";
 import { Text } from "../../../atoms/text/Text";
 import { Icon } from "../../../atoms/icon/Icon";
 import { EditorHeader, EditorHeaderTab } from "../../components/editor-header/EditorHeader";
-import { HierarchyTab, ResourceOptions } from "../../../hooks/useEditor";
 import { SelectInput } from "../../components/property-panel/SelectInput";
-import { MainThreadResource } from "../../../../engine/resource/resource.main";
+import { editorAtom, HierarchyTab, hierarchyTabAtom, resourceMenuAtom } from "../../../state/editor";
 
 enum DnDItemTypes {
   Node = "node",
@@ -295,24 +295,18 @@ export function HierarchyPanelTree({ activeEntity, selectedEntities, scene, tree
 }
 
 export function HierarchyPanel({
-  activeEntity,
-  selectedEntities,
   scene,
   resources,
-  hierarchyTab,
-  resourceType,
-  setHierarchyTab,
-  resourceOptions,
-  setResourceType,
   treeViewRef,
-}: HierarchyPanelProps & {
+}: {
+  scene: EditorNode;
   resources?: EditorNode;
-  resourceType: MainThreadResource;
-  hierarchyTab: HierarchyTab;
-  setHierarchyTab: (tab: HierarchyTab) => void;
-  resourceOptions: ResourceOptions;
-  setResourceType: (type: MainThreadResource) => void;
+  treeViewRef?: RefObject<TreeViewRefApi>;
 }) {
+  const [hierarchyTab, setHierarchyTab] = useAtom(hierarchyTabAtom);
+  const [resourceMenu, setResourceMenu] = useAtom(resourceMenuAtom);
+  const { activeEntity, selectedEntities } = useAtomValue(editorAtom);
+
   return (
     <div className="HierarchyPanel flex flex-column">
       <EditorHeader className="shrink-0">
@@ -342,7 +336,11 @@ export function HierarchyPanel({
       {hierarchyTab === HierarchyTab.Resources && (
         <>
           <div className="shrink-0" style={{ padding: "var(--sp-xxs) var(--sp-xxs) 0" }}>
-            <SelectInput value={resourceType} options={resourceOptions} onChange={setResourceType} />
+            <SelectInput
+              value={resourceMenu.selected}
+              options={resourceMenu.options}
+              onChange={(selected) => setResourceMenu((state) => ({ ...state, selected }))}
+            />
           </div>
           <div className="grow">
             {resources && (
