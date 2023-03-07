@@ -21,7 +21,7 @@ import {
 } from "../resource/RemoteResources";
 import { tryGetRemoteResource } from "../resource/resource.game";
 import { InteractableType } from "../resource/schema";
-import { readString, WASMModuleContext, writeFloat32Array } from "../scripting/WASMModuleContext";
+import { readFloat32ArrayInto, readString, WASMModuleContext } from "../scripting/WASMModuleContext";
 import { getScriptResource } from "../scripting/websg";
 import { createDisposables } from "../utils/createDisposables";
 import { UIButtonFocusMessage, UIButtonPressMessage, UIButtonUnfocusMessage, WebSGUIMessage } from "./ui.common";
@@ -232,7 +232,7 @@ export function createWebSGUIModule(ctx: GameState, wasmCtx: WASMModuleContext) 
         return -1;
       }
 
-      writeFloat32Array(wasmCtx, colorPtr, flex.backgroundColor);
+      readFloat32ArrayInto(wasmCtx, colorPtr, flex.backgroundColor);
 
       return 0;
     },
@@ -243,7 +243,7 @@ export function createWebSGUIModule(ctx: GameState, wasmCtx: WASMModuleContext) 
         return -1;
       }
 
-      writeFloat32Array(wasmCtx, colorPtr, flex.borderColor);
+      readFloat32ArrayInto(wasmCtx, colorPtr, flex.borderColor);
 
       return 0;
     },
@@ -254,7 +254,7 @@ export function createWebSGUIModule(ctx: GameState, wasmCtx: WASMModuleContext) 
         return -1;
       }
 
-      writeFloat32Array(wasmCtx, paddingPtr, flex.padding);
+      readFloat32ArrayInto(wasmCtx, paddingPtr, flex.padding);
 
       return 0;
     },
@@ -265,7 +265,7 @@ export function createWebSGUIModule(ctx: GameState, wasmCtx: WASMModuleContext) 
         return -1;
       }
 
-      writeFloat32Array(wasmCtx, marginPtr, flex.margin);
+      readFloat32ArrayInto(wasmCtx, marginPtr, flex.margin);
 
       return 0;
     },
@@ -488,7 +488,7 @@ export function createWebSGUIModule(ctx: GameState, wasmCtx: WASMModuleContext) 
         return -1;
       }
 
-      writeFloat32Array(wasmCtx, colorPtr, flex.color);
+      readFloat32ArrayInto(wasmCtx, colorPtr, flex.color);
 
       return 0;
     },
