@@ -5,7 +5,7 @@ import { GameState } from "../../engine/GameTypes";
 import { playerCollisionGroups } from "../../engine/physics/CollisionGroups";
 import { PhysicsModuleState, addRigidBody, Kinematic } from "../../engine/physics/physics.game";
 import { RemoteNode } from "../../engine/resource/RemoteResources";
-import { AvatarOptions, AVATAR_HEIGHT, AVATAR_RADIUS } from "./common";
+import { AvatarOptions, AVATAR_CAPSULE_RADIUS, AVATAR_CAPSULE_HEIGHT } from "./common";
 
 export function addAvatarRigidBody(
   ctx: GameState,
@@ -14,8 +14,8 @@ export function addAvatarRigidBody(
   options: AvatarOptions = {}
 ) {
   const {
-    height = AVATAR_HEIGHT,
-    radius = AVATAR_RADIUS,
+    height = AVATAR_CAPSULE_HEIGHT,
+    radius = AVATAR_CAPSULE_RADIUS,
     kinematic = true,
     collisionGroup = playerCollisionGroups,
   } = options;
@@ -29,7 +29,7 @@ export function addAvatarRigidBody(
   const colliderDesc = RAPIER.ColliderDesc.capsule(height / 2, radius)
     .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS)
     .setCollisionGroups(collisionGroup)
-    .setTranslation(0, height / 2, 0);
+    .setTranslation(0, height - 0.1, 0);
 
   physicsWorld.createCollider(colliderDesc, rigidBody);
 
