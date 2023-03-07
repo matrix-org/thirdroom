@@ -7,8 +7,9 @@ export function mpaRouter(): PluginOption {
     async configureServer(server) {
       server.middlewares.use(
         history({
+          verbose: true,
+          disableDotRule: true,
           htmlAcceptHeaders: ["text/html", "application/xhtml+xml"],
-          index: "./index.html",
           rewrites: [
             {
               from: /^\/logviewer$/,
