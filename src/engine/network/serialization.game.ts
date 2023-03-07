@@ -61,7 +61,7 @@ import {
   RemoteNode,
   removeObjectFromWorld,
 } from "../resource/RemoteResources";
-import { AVATAR_HEIGHT, AVATAR_OFFSET } from "../../plugins/avatars/common";
+import { AVATAR_HEIGHT } from "../../plugins/avatars/common";
 import { XRMode } from "../renderer/renderer.common";
 import { AvatarComponent } from "../../plugins/avatars/components";
 import { addXRAvatarRig } from "../input/WebXRAvatarRigSystem";
@@ -555,7 +555,7 @@ export async function deserializeInformPlayerNetworkId(data: NetPipeData) {
 
   // if not our own avatar, add nametag
   if (peerId !== network.peerId) {
-    addNametag(ctx, AVATAR_HEIGHT + AVATAR_OFFSET, peerNode, peerId);
+    addNametag(ctx, AVATAR_HEIGHT, peerNode, peerId);
   }
 
   // if our own avatar
