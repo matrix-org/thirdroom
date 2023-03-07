@@ -563,7 +563,7 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
 
   if (ctx.worldResource.environment) {
     traverse(ctx.worldResource.environment.publicScene, (node) => {
-      node.isStatic = false;
+      node.isStatic = true;
     });
   }
 
