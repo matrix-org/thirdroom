@@ -4,7 +4,6 @@ import { listTextureSlots } from "@gltf-transform/functions";
 
 import { createDeferred, Deferred } from "../../engine/utils/Deferred";
 import { GLTFTransformProgressCallback } from "../web";
-import TextureCompressionWorker from "./TextureCompressionWorker?worker";
 
 export function compressTextures(onProgress?: GLTFTransformProgressCallback): Transform {
   return async (doc: Document) => {
@@ -26,7 +25,7 @@ export function compressTextures(onProgress?: GLTFTransformProgressCallback): Tr
     }
 
     for (let i = 0; i < numWorkers; i++) {
-      const worker = new TextureCompressionWorker();
+      const worker = new Worker(new URL("./TextureCompressionWorker", import.meta.url), { type: "module" });
 
       worker.addEventListener("message", (event) => {
         const jobId = event.data.jobId;

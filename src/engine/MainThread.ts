@@ -1,6 +1,5 @@
 import { getGPUTier } from "detect-gpu";
 
-import GameWorker from "./GameWorker?worker";
 import { WorkerMessageType, InitializeGameWorkerMessage, InitializeRenderWorkerMessage } from "./WorkerMessage";
 import {
   ConsumerThreadContext,
@@ -114,7 +113,7 @@ export async function MainThread(canvas: HTMLCanvasElement) {
         update: () => {},
       };
 
-  const gameWorker = new GameWorker();
+  const gameWorker = new Worker(new URL("./GameWorker", import.meta.url), { type: "module" });
   const renderWorker = await initRenderWorker(canvas, gameWorker, useOffscreenCanvas, singleConsumerThreadSharedState);
   const interWorkerMessageChannel = new MessageChannel();
 
@@ -267,8 +266,7 @@ async function initRenderWorker(
 ): Promise<Worker | MockMessagePort> {
   if (useOffscreenCanvas) {
     console.info("Browser supports OffscreenCanvas, rendering in WebWorker.");
-    const { default: RenderWorker } = await import("./RenderWorker?worker");
-    return new RenderWorker();
+    return new Worker(new URL("./RenderWorker", import.meta.url), { type: "module" });
   } else {
     console.info("Browser does not support OffscreenCanvas, rendering on main thread.");
     const { default: initRenderWorkerOnMainThread } = await import("./RenderWorker");
