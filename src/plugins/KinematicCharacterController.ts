@@ -1,5 +1,6 @@
 import { addComponent, defineComponent, defineQuery, enterQuery, Not } from "bitecs";
 import RAPIER from "@dimforge/rapier3d-compat";
+import { RawCharacterCollision } from "@dimforge/rapier3d-compat/raw";
 import { Quaternion, Vector3 } from "three";
 import { vec3 } from "gl-matrix";
 
