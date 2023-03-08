@@ -13,6 +13,7 @@ import {
   OutgoingMainThreadTripleBufferSystem,
 } from "./MainThreadTripleBufferSystems";
 import { MatrixModule } from "./matrix/matrix.main";
+import { IPSMEModule } from "./ipsme/ipsme.main";
 
 export default defineConfig<IMainThreadContext>({
   modules: [
@@ -25,6 +26,7 @@ export default defineConfig<IMainThreadContext>({
     RendererModule,
     ThirdroomModule,
     MatrixModule,
+    IPSMEModule,
   ],
   systems: [
     IncomingMainThreadTripleBufferSystem,
