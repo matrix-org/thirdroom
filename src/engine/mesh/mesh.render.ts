@@ -392,10 +392,8 @@ export function updateNodeMesh(ctx: RenderThreadState, node: RenderNode) {
 
         if (hologramMaterialEnabled && primitiveObject.material !== rendererModule.hologramMaterial) {
           primitiveObject.material = rendererModule.hologramMaterial;
-          console.log("set hologram material");
         } else if (!hologramMaterialEnabled && primitiveObject.material === rendererModule.hologramMaterial) {
           primitiveObject.material = meshPrimitive.materialObj;
-          console.log("unset hologram material");
         } else if (!node.skin && !hologramMaterialEnabled && primitiveObject.material !== meshPrimitive.materialObj) {
           primitiveObject.material = meshPrimitive.materialObj;
         }
