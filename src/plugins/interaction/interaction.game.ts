@@ -773,8 +773,18 @@ function updateGrabThrowXR(
           interactable.released = false;
           interactable.held = true;
         }
+      } else if (triggerState.pressed && Interactable.type[focusedNode.eid] === InteractableType.UI) {
+        const interactable = focusedNode.interactable;
+
+        if (interactable) {
+          interactable.pressed = true;
+          interactable.released = false;
+          interactable.held = true;
+        }
+
+        const projectedHit = projectHitOntoCanvas(ctx, shapecastHit, focusedNode);
+        notifyUICanvasPressed(ctx, projectedHit, focusedNode);
       } else {
-        // TODO: websgui
         if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, focusedEntity);
       }
     }
