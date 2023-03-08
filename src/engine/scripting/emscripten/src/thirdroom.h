@@ -14,4 +14,6 @@ import_thirdroom(get_audio_data_size) int32_t thirdroom_get_audio_data_size();
 import_thirdroom(get_audio_frequency_data) int32_t thirdroom_get_audio_frequency_data(uint8_t *data);
 import_thirdroom(get_audio_time_data) int32_t thirdroom_get_audio_time_data(uint8_t *data);
 
+import_thirdroom(in_ar) int32_t thirdroom_in_ar();
+
 #endif

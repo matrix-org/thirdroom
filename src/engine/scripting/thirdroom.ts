@@ -3,7 +3,8 @@ import { FREQ_BIN_COUNT } from "../audio/audio.common";
 import { AudioModule } from "../audio/audio.game";
 import { GameState } from "../GameTypes";
 import { getModule, Thread } from "../module/module.common";
-import { EnableMatrixMaterialMessage, RendererMessageType } from "../renderer/renderer.common";
+import { EnableMatrixMaterialMessage, RendererMessageType, XRMode } from "../renderer/renderer.common";
+import { getXRMode } from "../renderer/renderer.game";
 import { WASMModuleContext, writeEncodedString, writeUint8Array } from "./WASMModuleContext";
 
 export function createThirdroomModule(ctx: GameState, wasmCtx: WASMModuleContext) {
@@ -42,6 +43,11 @@ export function createThirdroomModule(ctx: GameState, wasmCtx: WASMModuleContext
       const audio = getModule(ctx, AudioModule);
       const { timeData } = getReadObjectBufferView(audio.analyserTripleBuffer);
       return writeUint8Array(wasmCtx, audioDataPtr, timeData);
+    },
+    in_ar() {
+      const ourXRMode = getXRMode(ctx);
+      const sceneSupportsAR = ctx.worldResource.environment?.publicScene.supportsAR || false;
+      return ourXRMode === XRMode.ImmersiveAR && sceneSupportsAR ? 1 : 0;
     },
   };
 }
