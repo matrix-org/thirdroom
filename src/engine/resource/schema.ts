@@ -368,6 +368,7 @@ export const MeshPrimitiveResource = defineResource("mesh-primitive", ResourceTy
   mode: PropType.enum(MeshPrimitiveMode, { default: MeshPrimitiveMode.TRIANGLES, script: true, mutable: false }),
   drawStart: PropType.u32({ script: true, mutable: true }),
   drawCount: PropType.u32({ script: true, mutable: true }),
+  hologramMaterialEnabled: PropType.bool({ script: true }),
   // TODO: targets
 });
 

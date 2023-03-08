@@ -757,6 +757,19 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       return 0;
     },
+    mesh_set_primitive_hologram_material_enabled(meshId: number, index: number, enabled: number) {
+      const mesh = getScriptResource(wasmCtx, RemoteMesh, meshId);
+
+      const primitive = mesh?.primitives[index];
+
+      if (!primitive) {
+        return -1;
+      }
+
+      primitive.hologramMaterialEnabled = !!enabled;
+
+      return 0;
+    },
     mesh_get_primitive_mode(meshId: number, index: number) {
       const mesh = getScriptResource(wasmCtx, RemoteMesh, meshId);
       return mesh?.primitives[index]?.mode || 0;
