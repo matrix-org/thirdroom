@@ -1,5 +1,6 @@
 import { addComponent, defineComponent, defineQuery, enterQuery, Not } from "bitecs";
 import RAPIER from "@dimforge/rapier3d-compat";
+import { RawCharacterCollision } from "@dimforge/rapier3d-compat/raw";
 import { Quaternion, Vector3 } from "three";
 import { vec3 } from "gl-matrix";
 
@@ -194,11 +195,6 @@ export function updateKinematicControls(
 
   _linearVelocity.copy(body.linvel() as Vector3);
 
-  // HACK - for when autostep misbehaves and spikes Y velocity
-  if (_linearVelocity.y > 10) {
-    _linearVelocity.y = 1;
-  }
-
   const isGrounded = characterController.computedGrounded();
   const isSprinting = isGrounded && sprint.held && !isSliding;
 
@@ -279,29 +275,37 @@ export function updateKinematicControls(
 
   body.setNextKinematicTranslation(translation);
 
-  // TODO: computed collisions are bugged, too many are generated, causes hitching
-  // for (let i = 0; i < characterController.numComputedCollisions(); i++) {
-  //   if (characterController.computedCollision(i, characterCollision) !== null) {
-  //     // TODO: Rapier v0.10.0 doesn't expose collider on characterCollision so manually grab it
-  //     const rawCollision = (characterController as any).rawCharacterCollision as RawCharacterCollision;
-  //     const collisionColliderHandle = rawCollision.handle();
-  //     const collisionCollider = physicsWorld.getCollider(collisionColliderHandle);
+  for (let i = 0; i < characterController.numComputedCollisions(); i++) {
+    if (characterController.computedCollision(i, characterCollision) !== null) {
+      // TODO: Rapier v0.10.0 doesn't expose collider on characterCollision so manually grab it
+      const rawCollision = (characterController as any).rawCharacterCollision as RawCharacterCollision;
+      const collisionColliderHandle = rawCollision.handle();
+      const collisionCollider = physicsWorld.getCollider(collisionColliderHandle);
 
-  //     if (!collisionCollider) {
-  //       return;
-  //     }
+      if (!collisionCollider) {
+        return;
+      }
 
-  //     const collisionColliderEid = handleToEid.get(collisionColliderHandle);
+      const collisionColliderEid = handleToEid.get(collisionColliderHandle);
 
-  //     if (!collisionColliderEid) {
-  //       continue;
-  //     }
+      if (!collisionColliderEid) {
+        continue;
+      }
 
-  //     for (const collisionHandler of collisionHandlers) {
-  //       collisionHandler(rig.eid, collisionColliderEid, collider.handle, collisionColliderHandle);
-  //     }
-  //   }
-  // }
+      for (const collisionHandler of collisionHandlers) {
+        collisionHandler(rig.eid, collisionColliderEid, collider.handle, collisionColliderHandle);
+      }
+    }
+  }
+}
+
+function createCharacterController(physics: PhysicsModuleState, eid: number) {
+  const characterController = physics.physicsWorld.createCharacterController(0.01);
+  characterController.enableAutostep(0.1, 0.1, true);
+  characterController.enableSnapToGround(0.1);
+  characterController.setApplyImpulsesToDynamicBodies(true);
+  physics.eidTocharacterController.set(eid, characterController);
+  return characterController;
 }
 
 export const KinematicCharacterControllerSystem = (ctx: GameState) => {
@@ -316,11 +320,7 @@ export const KinematicCharacterControllerSystem = (ctx: GameState) => {
   const entered = enteredKinematicControlsQuery(ctx.world);
   for (let i = 0; i < entered.length; i++) {
     const eid = entered[i];
-    const characterController = physics.physicsWorld.createCharacterController(0.1);
-    characterController.enableAutostep(0.2, 0.2, true);
-    characterController.enableSnapToGround(0.3);
-    characterController.setApplyImpulsesToDynamicBodies(true);
-    physics.eidTocharacterController.set(eid, characterController);
+    createCharacterController(physics, eid);
   }
 
   const rigs = kinematicControlsQuery(ctx.world);
@@ -362,11 +362,6 @@ const cspQuery = defineQuery([Networked, KinematicControls, OurPlayer, Not(Owned
 
 //   _linearVelocity.copy(body.linvel() as Vector3);
 //   // _linearVelocity.fromArray(entityState.velocity);
-
-//   // // HACK - for when autostep misbehaves and spikes Y velocity
-//   if (_linearVelocity.y > 10) {
-//     _linearVelocity.y = 1;
-//   }
 
 //   const isGrounded = characterController.computedGrounded();
 //   const isSprinting = isGrounded && sprint.held && !isSliding;
@@ -476,11 +471,7 @@ export function ClientSidePredictionSystem(ctx: GameState) {
   // TODO: enter cspQuery
   let characterController = physics.eidTocharacterController.get(eid);
   if (!characterController) {
-    characterController = physics.physicsWorld.createCharacterController(0.1);
-    characterController.enableAutostep(0.2, 0.2, true);
-    characterController.enableSnapToGround(0.3);
-    characterController.setApplyImpulsesToDynamicBodies(true);
-    physics.eidTocharacterController.set(eid, characterController);
+    characterController = createCharacterController(physics, eid);
   }
 
   const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
@@ -567,11 +558,7 @@ export function UpdateClientPosition(ctx: GameState) {
   // TODO: enter cspQuery
   let characterController = physics.eidTocharacterController.get(eid);
   if (!characterController) {
-    characterController = physics.physicsWorld.createCharacterController(0.1);
-    characterController.enableAutostep(0.2, 0.2, true);
-    characterController.enableSnapToGround(0.3);
-    characterController.setApplyImpulsesToDynamicBodies(true);
-    physics.eidTocharacterController.set(eid, characterController);
+    characterController = createCharacterController(physics, eid);
   }
 
   const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
