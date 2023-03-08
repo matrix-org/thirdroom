@@ -775,7 +775,7 @@ function updateGrabThrowXR(
         }
       } else {
         // TODO: websgui
-        // if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, focusedEntity);
+        if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, focusedEntity);
       }
     }
 

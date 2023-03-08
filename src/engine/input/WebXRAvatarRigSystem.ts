@@ -278,11 +278,7 @@ function updateXRController(
         removeChild(rigNode, controllerNode);
         controllerNode = undefined;
       } else {
-        if (ctx.worldResource.environment?.publicScene.supportsAR && getXRMode(ctx) === XRMode.ImmersiveAR) {
-          controllerNode.visible = false;
-        } else {
-          controllerNode.visible = true;
-        }
+        controllerNode.visible = true;
       }
     }
 
@@ -357,11 +353,7 @@ function updateXRController(
     }
   } else if (eid) {
     const controllerNode = tryGetRemoteResource<RemoteNode>(ctx, eid);
-    if (ctx.worldResource.environment?.publicScene.supportsAR && getXRMode(ctx) === XRMode.ImmersiveAR) {
-      controllerNode.visible = false;
-    } else {
-      controllerNode.visible = true;
-    }
+    controllerNode.visible = true;
   }
 }
 
