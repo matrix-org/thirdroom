@@ -22,6 +22,7 @@ import {
 } from "three";
 
 import { GLTFMesh } from "../gltf/GLTF";
+import { HologramMaterial } from "../material/HologramMaterial";
 import { getDefaultMaterialForMeshPrimitive } from "../material/material.render";
 import { MatrixMaterial } from "../material/MatrixMaterial";
 import { getModule } from "../module/module.common";
@@ -240,6 +241,12 @@ function createMeshPrimitiveObject(
         matrixMaterial.update(ctx.elapsed / 1000, mesh);
       }
 
+      const hologramMaterial = meshMaterial as unknown as HologramMaterial;
+
+      if (hologramMaterial.isHologramMaterial) {
+        hologramMaterial.update(ctx.elapsed / 1000, renderer);
+      }
+
       if (!meshMaterial.isMeshStandardMaterial) {
         return;
       }
@@ -334,6 +341,7 @@ export function UpdateRendererMeshPrimitivesSystem(ctx: RenderThreadState) {
       }
 
       meshPrimitive.materialObj = newMaterialObj;
+      console.log(newMaterialObj);
     }
 
     if (
@@ -379,8 +387,18 @@ export function updateNodeMesh(ctx: RenderThreadState, node: RenderNode) {
       const primitiveObject = node.meshPrimitiveObjects[i];
       const meshPrimitive = node.mesh.primitives[i];
 
-      if (meshPrimitive && !node.skin && primitiveObject.material !== meshPrimitive.materialObj) {
-        primitiveObject.material = meshPrimitive.materialObj;
+      if (meshPrimitive) {
+        const hologramMaterialEnabled = meshPrimitive.hologramMaterialEnabled;
+
+        if (hologramMaterialEnabled && primitiveObject.material !== rendererModule.hologramMaterial) {
+          primitiveObject.material = rendererModule.hologramMaterial;
+          console.log("set hologram material");
+        } else if (!hologramMaterialEnabled && primitiveObject.material === rendererModule.hologramMaterial) {
+          primitiveObject.material = meshPrimitive.materialObj;
+          console.log("unset hologram material");
+        } else if (!node.skin && !hologramMaterialEnabled && primitiveObject.material !== meshPrimitive.materialObj) {
+          primitiveObject.material = meshPrimitive.materialObj;
+        }
       }
 
       if (meshPrimitive.autoUpdateNormals) {

@@ -3,6 +3,7 @@
 #include <string.h>
 #include "./quickjs/cutils.h"
 #include "./quickjs/quickjs.h"
+#include "./js-utils.h"
 #include "../websg-ui.h"
 #include "./websg-ui-js.h"
 

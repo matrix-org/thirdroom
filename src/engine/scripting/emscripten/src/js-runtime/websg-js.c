@@ -4,6 +4,7 @@
 #include "./quickjs/cutils.h"
 #include "./quickjs/quickjs.h"
 #include "../websg.h"
+#include "./js-utils.h"
 #include "./websg-js.h"
 #include "./websg-network-js.h"
 #include "./websg-ui-js.h"
@@ -1159,6 +1160,42 @@ static JSValue js_mesh_set_primitive_draw_range(JSContext *ctx, JSValueConst thi
 
   return JS_UNDEFINED;
 }
+
+static JSValue js_mesh_set_primitive_hologram_material_enabled(
+  JSContext *ctx,
+  JSValueConst this_val,
+  int argc,
+  JSValueConst *argv
+) {
+  mesh_id_t mesh_id;
+
+  if (JS_ToUint32(ctx, &mesh_id, argv[0]) == -1) {
+    return JS_EXCEPTION;
+  }
+
+  uint32_t index;
+
+  if (JS_ToUint32(ctx, &index, argv[1]) == -1) {
+    return JS_EXCEPTION;
+  }
+
+  int enabled = JS_ToBool(ctx, argv[2]);
+
+  if (enabled < 0) {
+    return JS_EXCEPTION;
+  }
+
+  int32_t result = websg_mesh_set_primitive_hologram_material_enabled(mesh_id, index, enabled);
+
+   if (result == -1) {
+    JS_ThrowInternalError(ctx, "WebSG: Error setting hologram material.");
+    return JS_EXCEPTION;
+  }
+
+  return JS_UNDEFINED;
+}
+
+
 
 JSAtom SCALAR;
 JSAtom VEC2;
@@ -2401,6 +2438,12 @@ void js_define_websg_api(JSContext *ctx, JSValue *target) {
     websg,
     "meshSetPrimitiveDrawRange",
     JS_NewCFunction(ctx, js_mesh_set_primitive_draw_range, "meshSetPrimitiveDrawRange", 4)
+  );
+    JS_SetPropertyStr(
+    ctx,
+    websg,
+    "meshSetPrimitiveHologramMaterialEnabled",
+    JS_NewCFunction(ctx, js_mesh_set_primitive_hologram_material_enabled, "meshSetPrimitiveHologramMaterialEnabled", 3)
   );
 
   // Accessor
