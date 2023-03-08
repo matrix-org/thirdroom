@@ -38,11 +38,15 @@ export const IPSMEModule = defineModule<IMainThreadContext, IPSMEModuleState>({
 });
 
 function onInteraction(_ctx: IMainThreadContext, message: InteractionMessage) {
-  if (message.interactableType === InteractableType.Portal && message.action === InteractableAction.Grab) {
-    publish({
-      action: "OMI_link",
-      uri: message.uri,
-    });
+  if (
+    message.interactableType === InteractableType.Portal &&
+    message.action === InteractableAction.Grab &&
+    message.uri
+  ) {
+    const url = new URL(message.uri);
+    url.searchParams.set("referer", location.origin);
+    url.searchParams.set("dt", Date.now().toString());
+    publish(url.href);
     location.href = "/";
   }
 }
