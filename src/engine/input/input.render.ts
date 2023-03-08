@@ -66,7 +66,7 @@ export const InputModule = defineModule<RenderThreadState, RenderInputModule>({
       InputMessageType.InitializeInputState
     );
 
-    const basePath = new URL("/webxr-input-profiles", import.meta.url);
+    const basePath = new URL("/webxr-input-profiles", location.href);
 
     const cameraPoseTripleBuffer = createObjectTripleBuffer(XRCameraPoseSchema, ctx.renderToGameTripleBufferFlags);
 

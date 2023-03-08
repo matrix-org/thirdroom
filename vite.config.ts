@@ -28,11 +28,11 @@ export default defineConfig({
     viteStaticCopy({
       targets: [
         {
-          src: path.resolve(__dirname, "node_modules/@webxr-input-profiles/assets/dist/**/*"),
+          src: path.resolve(__dirname, "./node_modules/@webxr-input-profiles/assets/dist/profiles/**/*"),
           dest: "webxr-input-profiles",
         },
         {
-          src: path.resolve(__dirname, "node_modules/detect-gpu/dist/benchmarks/*"),
+          src: path.resolve(__dirname, "./node_modules/detect-gpu/dist/benchmarks/*"),
           dest: "detect-gpu-benchmarks",
         },
       ],
