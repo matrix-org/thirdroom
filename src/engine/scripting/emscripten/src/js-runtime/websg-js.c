@@ -692,6 +692,23 @@ static JSValue js_node_set_is_static(JSContext *ctx, JSValueConst this_val, int 
 
   int32_t value = JS_ToBool(ctx, argv[1]);
 
+  if (value < 0) {
+    return JS_EXCEPTION;
+  }
+  
+  if (!JS_IsUndefined(argv[2])) {
+    int recursive = JS_ToBool(ctx, argv[2]);
+
+    if (recursive) {
+      int32_t result = websg_node_set_is_static_recursive(node_id, value);
+
+      if (result == -1) {
+        JS_ThrowInternalError(ctx, "WebSG: Error setting isStatic.");
+        return JS_EXCEPTION;
+      }
+    }
+  }
+
   int32_t result = websg_node_set_is_static(node_id, value);
 
   if (result == -1) {
@@ -2315,7 +2332,7 @@ void js_define_websg_api(JSContext *ctx, JSValue *target) {
     ctx,
     websg,
     "nodeSetIsStatic",
-    JS_NewCFunction(ctx, js_node_set_is_static, "nodeSetIsStatic", 2)
+    JS_NewCFunction(ctx, js_node_set_is_static, "nodeSetIsStatic", 3)
   );
   JS_SetPropertyStr(
     ctx,

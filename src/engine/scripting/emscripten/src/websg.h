@@ -115,6 +115,10 @@ import_websg(node_set_visible) int32_t websg_node_set_visible(node_id_t node_id,
 import_websg(node_get_is_static) uint32_t websg_node_get_is_static(node_id_t node_id);
 // Returns 0 if successful or -1 if error
 import_websg(node_set_is_static) int32_t websg_node_set_is_static(node_id_t node_id, uint32_t is_static);
+import_websg(node_set_is_static_recursive) int32_t websg_node_set_is_static_recursive(
+  node_id_t node_id,
+  uint32_t is_static
+);
 
 // Node Refs
 

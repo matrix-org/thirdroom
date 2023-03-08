@@ -27,7 +27,7 @@ import {
   RemoteScene,
   RemoteTexture,
 } from "../resource/RemoteResources";
-import { addChild, removeChild } from "../component/transform";
+import { addChild, removeChild, traverse } from "../component/transform";
 import {
   AccessorComponentType,
   AccessorType,
@@ -547,6 +547,19 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       }
 
       node.isStatic = !!isStatic;
+
+      return 0;
+    },
+    node_set_is_static_recursive(nodeId: number, isStatic: number) {
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+      if (!node) {
+        return -1;
+      }
+
+      traverse(node, (child) => {
+        child.isStatic = !!isStatic;
+      });
 
       return 0;
     },

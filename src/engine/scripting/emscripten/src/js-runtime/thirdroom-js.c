@@ -50,6 +50,10 @@ static JSValue js_get_audio_frequency_data(JSContext *ctx, JSValueConst this_val
   return JS_NewInt32(ctx, bytes_written);
 }
 
+static JSValue js_in_ar(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  return JS_NewBool(ctx, thirdroom_in_ar());
+}
+
 void js_define_thirdroom_api(JSContext *ctx, JSValue *target) {
   JSValue thirdroom = JS_NewObject(ctx);
   
@@ -79,6 +83,13 @@ void js_define_thirdroom_api(JSContext *ctx, JSValue *target) {
     thirdroom,
     "getAudioFrequencyData",
     JS_NewCFunction(ctx, js_get_audio_frequency_data, "getAudioFrequencyData", 1)
+  );
+
+  JS_SetPropertyStr(
+    ctx,
+    thirdroom,
+    "inAR",
+    JS_NewCFunction(ctx, js_in_ar, "inAR", 0)
   );
 
   JS_SetPropertyStr(ctx, *target, "ThirdRoom", thirdroom);
