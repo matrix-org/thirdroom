@@ -16,7 +16,6 @@ import { Networked, Owned } from "../engine/network/NetworkComponents";
 import { PhysicsModule, PhysicsModuleState, RigidBody } from "../engine/physics/physics.game";
 import { tryGetRemoteResource } from "../engine/resource/resource.game";
 import { RemoteNode } from "../engine/resource/RemoteResources";
-import { getCamera } from "../engine/camera/camera.game";
 import { playOneShotAudio } from "../engine/audio/audio.game";
 import randomRange from "../engine/utils/randomRange";
 import { OurPlayer } from "../engine/component/Player";
@@ -155,13 +154,11 @@ export function addKinematicControls(ctx: GameState, eid: number) {
 
 function cameraHeadBob(ctx: GameState, rig: RemoteNode, speed: number, isGrounded: boolean, isSprinting: boolean) {
   if (speed > 0.1 && isGrounded) {
-    const camera = getCamera(ctx, rig);
     const amplitude = 0.04;
     const time = ctx.elapsed;
     const frequency = isSprinting ? 0.003 : 0.0015; // radians per second
     const phase = 0;
     const delta = amplitude * Math.sin(2 * Math.PI * time * frequency + phase);
-    camera.position[1] = -delta;
 
     if (delta > 0.039 && ctx.tick > lastFootstepFrame + 10) {
       // footstep
