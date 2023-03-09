@@ -159,9 +159,6 @@ export const XRRayComponent = defineComponent();
 const createXRHead = (input: GameInputModule, physics: PhysicsModuleState) => (ctx: GameState, options?: any) => {
   const node = createNodeFromGLTFURI(ctx, `/gltf/headset.glb`);
 
-  quat.fromEuler(node.quaternion, 0, 180, 0);
-  node.scale.set([1.2, 1.2, 1.2]);
-
   const obj = createRemoteObject(ctx, node);
   addComponent(ctx.world, XRHeadComponent, obj.eid);
 
@@ -194,8 +191,6 @@ export function createXRRay(ctx: GameState, options: any) {
 
 const createXRHandLeft = (input: GameInputModule, physics: PhysicsModuleState) => (ctx: GameState, options?: any) => {
   const node = createNodeFromGLTFURI(ctx, `/gltf/controller-left.glb`);
-  quat.fromEuler(node.quaternion, 0, 180, 0);
-  node.scale.set([1.5, 1.5, 1.5]);
 
   const obj = createRemoteObject(ctx, node);
   addComponent(ctx.world, XRControllerComponent, obj.eid);
@@ -205,8 +200,6 @@ const createXRHandLeft = (input: GameInputModule, physics: PhysicsModuleState) =
 
 const createXRHandRight = (input: GameInputModule, physics: PhysicsModuleState) => (ctx: GameState, options?: any) => {
   const node = createNodeFromGLTFURI(ctx, `/gltf/controller-right.glb`);
-  quat.fromEuler(node.quaternion, 0, 180, 0);
-  node.scale.set([1.5, 1.5, 1.5]);
 
   const obj = createRemoteObject(ctx, node);
   addComponent(ctx.world, XRControllerComponent, obj.eid);
