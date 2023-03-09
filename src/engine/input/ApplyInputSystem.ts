@@ -89,6 +89,8 @@ function applyMouseButtons(raw: { [path: string]: number }, o: InputComponentSta
 function applyMouseMovement(raw: { [path: string]: number }, o: InputComponentState) {
   raw["Mouse/movementX"] = o.xAxis;
   raw["Mouse/movementY"] = o.yAxis;
+  raw["Mouse/screenX"] = o.zAxis;
+  raw["Mouse/screenY"] = o.wAxis;
 }
 
 function applyMouseScroll(raw: { [path: string]: number }, o: InputComponentState) {

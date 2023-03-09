@@ -48,43 +48,45 @@ export const InputModule = defineModule<IMainThreadContext, MainInputModule>({
       button: number,
       xAxis: number,
       yAxis: number,
+      zAxis: number,
+      wAxis: number,
       state: number
     ) {
       if (document.pointerLockElement !== canvas && !camRigModule.orbiting) {
         return;
       }
 
-      if (!enqueueInputRingBuffer(irb, inputSourceId, componentId, button, xAxis, yAxis, state)) {
+      if (!enqueueInputRingBuffer(irb, inputSourceId, componentId, button, xAxis, yAxis, zAxis, wAxis, state)) {
         console.warn("input ring buffer full");
       }
     }
 
     function onMouseDown({ buttons }: MouseEvent) {
-      enqueue(InputSourceId.Mouse, InputComponentId.MouseButtons, 0, 0, 0, buttons);
+      enqueue(InputSourceId.Mouse, InputComponentId.MouseButtons, 0, 0, 0, 0, 0, buttons);
     }
 
     function onMouseUp({ buttons }: MouseEvent) {
-      enqueue(InputSourceId.Mouse, InputComponentId.MouseButtons, 0, 0, 0, buttons);
+      enqueue(InputSourceId.Mouse, InputComponentId.MouseButtons, 0, 0, 0, 0, 0, buttons);
     }
 
     function onKeyDown({ code }: KeyboardEvent) {
       if (last[code]) return;
       last[code] = true;
 
-      enqueue(InputSourceId.Keyboard, InputComponentId.KeyboardButton, 1, 0, 0, codeToKeyCode(code));
+      enqueue(InputSourceId.Keyboard, InputComponentId.KeyboardButton, 1, 0, 0, 0, 0, codeToKeyCode(code));
     }
 
     function onKeyUp({ code }: KeyboardEvent) {
       last[code] = false;
-      enqueue(InputSourceId.Keyboard, InputComponentId.KeyboardButton, 0, 0, 0, codeToKeyCode(code));
+      enqueue(InputSourceId.Keyboard, InputComponentId.KeyboardButton, 0, 0, 0, 0, 0, codeToKeyCode(code));
     }
 
-    function onMouseMove({ movementX, movementY }: MouseEvent) {
-      enqueue(InputSourceId.Mouse, InputComponentId.MouseMovement, 0, movementX, movementY, 0);
+    function onMouseMove({ movementX, movementY, clientX, clientY }: MouseEvent) {
+      enqueue(InputSourceId.Mouse, InputComponentId.MouseMovement, 0, movementX, movementY, clientX, clientY, 0);
     }
 
     function onWheel({ deltaX, deltaY }: WheelEvent) {
-      enqueue(InputSourceId.Mouse, InputComponentId.MouseScroll, 0, deltaX, deltaY, 0);
+      enqueue(InputSourceId.Mouse, InputComponentId.MouseScroll, 0, deltaX, deltaY, 0, 0, 0);
     }
 
     function onBlur() {}
