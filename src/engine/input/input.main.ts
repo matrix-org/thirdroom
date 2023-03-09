@@ -3,6 +3,7 @@ import { defineModule, getModule, Thread } from "../module/module.common";
 import { codeToKeyCode } from "./KeyCodes";
 import { InitializeInputStateMessage, InputComponentId, InputMessageType, InputSourceId } from "./input.common";
 import { createInputRingBuffer, enqueueInputRingBuffer, InputRingBuffer, RING_BUFFER_MAX } from "./RingBuffer";
+import { CameraRigModule } from "../../plugins/camera/CameraRig.main";
 
 /*********
  * Types *
@@ -36,6 +37,7 @@ export const InputModule = defineModule<IMainThreadContext, MainInputModule>({
   },
   init(ctx) {
     const { inputRingBuffer: irb } = getModule(ctx, InputModule);
+    const camRigModule = getModule(ctx, CameraRigModule);
     const { canvas } = ctx;
 
     const last: { [key: string]: boolean } = {};
@@ -48,7 +50,7 @@ export const InputModule = defineModule<IMainThreadContext, MainInputModule>({
       yAxis: number,
       state: number
     ) {
-      if (document.pointerLockElement !== canvas) {
+      if (document.pointerLockElement !== canvas && !camRigModule.orbiting) {
         return;
       }
 

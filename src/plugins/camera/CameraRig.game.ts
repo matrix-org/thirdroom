@@ -1,4 +1,4 @@
-import { addComponent, defineQuery, exitQuery, hasComponent, Query } from "bitecs";
+import { addComponent, defineComponent, defineQuery, exitQuery, hasComponent, Query } from "bitecs";
 import { vec2, glMatrix as glm, quat, vec3 } from "gl-matrix";
 
 import { Axes, clamp } from "../../engine/component/math";
@@ -10,13 +10,14 @@ import {
   addInputController,
   createInputController,
   InputController,
+  inputControllerQuery,
   setActiveInputController,
   tryGetInputController,
 } from "../../engine/input/InputController";
 import { defineModule, getModule, Thread } from "../../engine/module/module.common";
 import { getRemoteResource, tryGetRemoteResource } from "../../engine/resource/resource.game";
-import { RemoteNode } from "../../engine/resource/RemoteResources";
-import { addChild } from "../../engine/component/transform";
+import { RemoteNode, removeObjectFromWorld } from "../../engine/resource/RemoteResources";
+import { addChild, findChild } from "../../engine/component/transform";
 import { createRemotePerspectiveCamera, getCamera } from "../../engine/camera/camera.game";
 import { ThirdPersonComponent } from "./../thirdroom/thirdroom.game";
 import { CameraRigMessage } from "./CameraRig.common";
@@ -38,10 +39,10 @@ import {
 } from "../../engine/allocator/CursorView";
 import { Networked } from "../../engine/network/NetworkComponents";
 
-export const CameraRigModule = defineModule<GameState, {}>({
+export const CameraRigModule = defineModule<GameState, { orbiting: boolean }>({
   name: "camera-rig-module",
   create() {
-    return {};
+    return { orbiting: false };
   },
   init(ctx) {
     const input = getModule(ctx, InputModule);
@@ -53,10 +54,11 @@ export const CameraRigModule = defineModule<GameState, {}>({
   },
 });
 
-export const CameraRigActions = {
-  cameraRig: "CameraRig/cameraRig",
+export const CameraRigAction = {
+  LookMovement: "CameraRig/LookMovement",
   Drag: "CameraRig/Drag",
   Zoom: "CameraRig/Zoom",
+  ExitOrbit: "CameraRig/ExitOrbit",
 };
 
 export const CameraRigActionMap: ActionMap = {
@@ -64,7 +66,7 @@ export const CameraRigActionMap: ActionMap = {
   actionDefs: [
     {
       id: "drag",
-      path: CameraRigActions.Drag,
+      path: CameraRigAction.Drag,
       type: ActionType.Button,
       bindings: [
         {
@@ -75,7 +77,7 @@ export const CameraRigActionMap: ActionMap = {
     },
     {
       id: "zoom",
-      path: CameraRigActions.Zoom,
+      path: CameraRigAction.Zoom,
       type: ActionType.Vector2,
       bindings: [
         {
@@ -86,13 +88,24 @@ export const CameraRigActionMap: ActionMap = {
     },
     {
       id: "look",
-      path: CameraRigActions.cameraRig,
+      path: CameraRigAction.LookMovement,
       type: ActionType.Vector2,
       bindings: [
         {
           type: BindingType.Axes,
           x: "Mouse/movementX",
           y: "Mouse/movementY",
+        },
+      ],
+    },
+    {
+      id: "exit-orbit",
+      path: CameraRigAction.ExitOrbit,
+      type: ActionType.Button,
+      bindings: [
+        {
+          type: BindingType.Button,
+          path: "Keyboard/Escape",
         },
       ],
     },
@@ -127,41 +140,60 @@ export const CameraRigPitch = new Map<number, CameraRigPitch>();
 export const CameraRigYaw = new Map<number, CameraRigYaw>();
 export const CameraRigZoom = new Map<number, CameraRigZoom>();
 
+export const OrbitAnchor = defineComponent();
+
 const DEFAULT_SENSITIVITY = 100;
 
 const ZOOM_MIN = 0.5;
 const ZOOM_MAX = 10;
 
-export function beginOrbiting(ctx: GameState, node: RemoteNode) {
+export function startOrbit(ctx: GameState, nodeToOrbit: RemoteNode) {
   const input = getModule(ctx, InputModule);
+  const camRigModule = getModule(ctx, CameraRigModule);
 
-  const inner = new RemoteNode(ctx.resourceManager);
+  camRigModule.orbiting = true;
+
+  const orbitAnchor = new RemoteNode(ctx.resourceManager);
+  addComponent(ctx.world, OrbitAnchor, orbitAnchor.eid);
 
   const controller = createInputController(input.defaultController);
-  addInputController(ctx.world, input, controller, inner.eid);
-  setActiveInputController(input, inner.eid);
+  addInputController(ctx.world, input, controller, orbitAnchor.eid);
+  setActiveInputController(input, orbitAnchor.eid);
 
-  const camera = addCameraRig(ctx, inner, CameraRigType.Orbit);
+  const [camera] = addCameraRig(ctx, orbitAnchor, CameraRigType.Orbit);
 
-  addChild(node, inner);
+  camera.position[2] = 6;
+
+  addChild(nodeToOrbit, orbitAnchor);
 
   ctx.worldResource.activeCameraNode = camera;
 
-  ctx.sendMessage(Thread.Main, { type: CameraRigMessage.ExitPointerLock });
+  ctx.sendMessage(Thread.Main, { type: CameraRigMessage.StartOrbit });
 }
 
-export function ceaseOrbiting(ctx: GameState) {
+export function stopOrbit(ctx: GameState) {
   const input = getModule(ctx, InputModule);
   const physics = getModule(ctx, PhysicsModule);
+  const camRigModule = getModule(ctx, CameraRigModule);
+
+  camRigModule.orbiting = false;
 
   const ourPlayer = ourPlayerQuery(ctx.world)[0];
   const node = tryGetRemoteResource<RemoteNode>(ctx, ourPlayer);
   embodyAvatar(ctx, physics, input, node);
 
-  ctx.sendMessage(Thread.Main, { type: CameraRigMessage.RequestPointerLock });
+  const orbitAnchor = findChild(node, (child) => hasComponent(ctx.world, OrbitAnchor, child.eid));
+  if (orbitAnchor) removeObjectFromWorld(ctx, orbitAnchor);
+
+  ctx.sendMessage(Thread.Main, { type: CameraRigMessage.StopOrbit });
 }
 
-export function addCameraRig(ctx: GameState, node: RemoteNode, type: CameraRigType, anchorOffset?: vec3) {
+export function addCameraRig(
+  ctx: GameState,
+  node: RemoteNode,
+  type: CameraRigType,
+  anchorOffset?: vec3
+): [RemoteNode, CameraRigPitch, CameraRigYaw, CameraRigZoom] {
   // add camera anchor
   const cameraAnchor = new RemoteNode(ctx.resourceManager);
   cameraAnchor.name = "Camera Anchor";
@@ -177,43 +209,49 @@ export function addCameraRig(ctx: GameState, node: RemoteNode, type: CameraRigTy
   addChild(node, cameraAnchor);
   addChild(cameraAnchor, camera);
 
-  // add controls
-  addCameraRigPitchTarget(ctx.world, node, cameraAnchor, type);
-  addCameraRigYawTarget(ctx.world, node, node, type);
-  addCameraRigZoomTarget(ctx.world, node, camera, type);
+  // add targets
+  const pitch = addCameraRigPitchTarget(ctx.world, node, cameraAnchor, type);
+  const yaw = addCameraRigYawTarget(ctx.world, node, node, type);
+  const zoom = addCameraRigZoomTarget(ctx.world, node, camera, type);
 
-  return camera;
+  return [camera, pitch, yaw, zoom];
 }
 
 export function addCameraRigPitchTarget(world: World, node: RemoteNode, target: RemoteNode, type: CameraRigType) {
   addComponent(world, CameraRigPitch, node.eid);
-  CameraRigPitch.set(node.eid, {
+  const pitch: CameraRigPitch = {
     type,
     target: target.eid,
     pitch: 0,
     maxAngle: 89,
     minAngle: -89,
     sensitivity: DEFAULT_SENSITIVITY,
-  });
+  };
+  CameraRigPitch.set(node.eid, pitch);
+  return pitch;
 }
 
 export function addCameraRigYawTarget(world: World, node: RemoteNode, target: RemoteNode, type: CameraRigType) {
   addComponent(world, CameraRigYaw, node.eid);
-  CameraRigYaw.set(node.eid, {
+  const yaw: CameraRigYaw = {
     type,
     target: target.eid,
     sensitivity: DEFAULT_SENSITIVITY,
-  });
+  };
+  CameraRigYaw.set(node.eid, yaw);
+  return yaw;
 }
 
 export function addCameraRigZoomTarget(world: World, node: RemoteNode, target: RemoteNode, type: CameraRigType) {
   addComponent(world, CameraRigZoom, node.eid);
-  CameraRigZoom.set(node.eid, {
+  const zoom: CameraRigZoom = {
     type,
     target: target.eid,
     min: ZOOM_MIN,
     max: ZOOM_MAX,
-  });
+  };
+  CameraRigZoom.set(node.eid, zoom);
+  return zoom;
 }
 
 export const cameraRigPitchQuery = defineQuery([CameraRigPitch, RemoteNode]);
@@ -228,7 +266,7 @@ export const exitCameraRigZoomQuery = exitQuery(cameraRigZoomQuery);
 function applyYaw(ctx: GameState, controller: InputController, rigYaw: CameraRigYaw) {
   const node = tryGetRemoteResource<RemoteNode>(ctx, rigYaw.target);
 
-  const [lookX] = controller.actionStates.get(CameraRigActions.cameraRig) as vec2;
+  const [lookX] = controller.actionStates.get(CameraRigAction.LookMovement) as vec2;
 
   if (Math.abs(lookX) >= 1) {
     const sensitivity = rigYaw.sensitivity || 1;
@@ -240,7 +278,7 @@ function applyYaw(ctx: GameState, controller: InputController, rigYaw: CameraRig
 function applyPitch(ctx: GameState, controller: InputController, rigPitch: CameraRigPitch) {
   const node = tryGetRemoteResource<RemoteNode>(ctx, rigPitch.target);
 
-  const [, lookY] = controller.actionStates.get(CameraRigActions.cameraRig) as vec2;
+  const [, lookY] = controller.actionStates.get(CameraRigAction.LookMovement) as vec2;
 
   if (Math.abs(lookY) >= 1) {
     const sensitivity = rigPitch.sensitivity;
@@ -268,7 +306,7 @@ function applyPitch(ctx: GameState, controller: InputController, rigPitch: Camer
 function applyZoom(ctx: GameState, controller: InputController, rigZoom: CameraRigZoom) {
   const node = tryGetRemoteResource<RemoteNode>(ctx, rigZoom.target);
 
-  const [, scrollY] = controller.actionStates.get(CameraRigActions.Zoom) as vec2;
+  const [, scrollY] = controller.actionStates.get(CameraRigAction.Zoom) as vec2;
 
   if (Math.abs(scrollY) > 0) {
     node.position[2] -= scrollY / 1000;
@@ -284,14 +322,24 @@ export function CameraRigSystem(ctx: GameState) {
     return;
   }
 
+  const controllers = inputControllerQuery(ctx.world);
+  for (let i = 0; i < controllers.length; i++) {
+    const eid = controllers[i];
+    const controller = tryGetInputController(input, eid);
+    const exitOrbit = controller.actionStates.get(CameraRigAction.ExitOrbit) as ButtonActionState;
+    if (exitOrbit.pressed) {
+      stopOrbit(ctx);
+    }
+  }
+
   const pitchEntities = cameraRigPitchQuery(ctx.world);
   for (let i = 0; i < pitchEntities.length; i++) {
     const eid = pitchEntities[i];
     const pitch = CameraRigPitch.get(eid)!;
     const controller = tryGetInputController(input, eid);
 
-    const click = controller.actionStates.get(CameraRigActions.Drag) as ButtonActionState;
-    if (pitch.type === CameraRigType.Orbit && !click.held) {
+    const drag = controller.actionStates.get(CameraRigAction.Drag) as ButtonActionState;
+    if (pitch.type === CameraRigType.Orbit && !drag.held) {
       continue;
     }
 
@@ -304,8 +352,8 @@ export function CameraRigSystem(ctx: GameState) {
     const yaw = CameraRigYaw.get(eid)!;
     const controller = tryGetInputController(input, eid);
 
-    const click = controller.actionStates.get(CameraRigActions.Drag) as ButtonActionState;
-    if (yaw.type === CameraRigType.Orbit && !click.held) {
+    const drag = controller.actionStates.get(CameraRigAction.Drag) as ButtonActionState;
+    if (yaw.type === CameraRigType.Orbit && !drag.held) {
       continue;
     }
 

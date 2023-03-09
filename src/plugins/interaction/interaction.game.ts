@@ -55,6 +55,7 @@ import { InteractableAction, InteractionMessage, InteractionMessageType } from "
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
 import { XRAvatarRig } from "../../engine/input/WebXRAvatarRigSystem";
 import { UICanvasFocusMessage, UICanvasPressMessage, WebSGUIMessage } from "../../engine/ui/ui.common";
+import { CameraRigModule } from "../camera/CameraRig.game";
 
 // TODO: importing from spawnables.game in this file induces a runtime error
 // import { SpawnablesModule } from "../spawnables/spawnables.game";
@@ -342,6 +343,12 @@ export function InteractionSystem(ctx: GameState) {
   const remoteUIBtnEntities = remoteUIButtonQuery(ctx.world);
   for (let i = 0; i < remoteUIBtnEntities.length; i++) {
     addInteractableForScripts(ctx, physics, remoteUIBtnEntities, i);
+  }
+
+  // skip interaction if orbiting
+  const camRigModule = getModule(ctx, CameraRigModule);
+  if (camRigModule.orbiting) {
+    return;
   }
 
   const rigs = inputControllerQuery(ctx.world);

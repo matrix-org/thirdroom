@@ -28,7 +28,7 @@ import { Nametags } from "../nametags/Nametags";
 import { Dialog } from "../../../atoms/dialog/Dialog";
 import { MemberListDialog } from "../dialogs/MemberListDialog";
 import { useMainThreadContext } from "../../../hooks/useMainThread";
-import { registerMessageHandler, Thread } from "../../../../engine/module/module.common";
+import { getModule, registerMessageHandler, Thread } from "../../../../engine/module/module.common";
 import { NametagsEnableMessage, NametagsEnableMessageType } from "../../../../plugins/nametags/nametags.common";
 import { useToast } from "../../../hooks/useToast";
 import { usePermissionState } from "../../../hooks/usePermissionState";
@@ -65,6 +65,7 @@ import { overlayWorldAtom } from "../../../state/overlayWorld";
 import { worldChatVisibilityAtom } from "../../../state/worldChatVisibility";
 import { overlayVisibilityAtom } from "../../../state/overlayVisibility";
 import { worldAtom } from "../../../state/world";
+import { CameraRigModule } from "../../../../plugins/camera/CameraRig.main";
 
 export interface ActiveEntityState {
   interactableType: InteractableType;
@@ -145,6 +146,8 @@ export function WorldView({ world }: WorldViewProps) {
   const { toastShown, toastContent, showToast } = useToast();
 
   const engine = useMainThreadContext();
+
+  const camRigModule = getModule(engine, CameraRigModule);
 
   const [showNames, setShowNames] = useState<boolean>(() => {
     const store = localStorage.getItem(SHOW_NAMES_STORE);
@@ -284,6 +287,10 @@ export function WorldView({ world }: WorldViewProps) {
       const isEscape = e.key === "Escape";
       const isTyping = document.activeElement?.tagName.toLowerCase() === "input";
 
+      if (isEscape && camRigModule.orbiting) {
+        return;
+      }
+
       if (isEscape && showActiveMembers) {
         mainThread.canvas?.requestPointerLock();
         setShowActiveMembers(false);
@@ -365,7 +372,8 @@ export function WorldView({ world }: WorldViewProps) {
     (e) => {
       if (isWorldEntered === false) return;
 
-      mainThread.canvas?.requestPointerLock();
+      if (!camRigModule.orbiting) mainThread.canvas?.requestPointerLock();
+
       if (worldChatVisible) setWorldChatVisibility(false);
       if (overlayVisible) setOverlayVisibility(false);
     },

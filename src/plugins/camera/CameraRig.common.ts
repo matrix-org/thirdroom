@@ -1,12 +1,12 @@
 export enum CameraRigMessage {
-  RequestPointerLock = "request-pointer-lock",
-  ExitPointerLock = "exit-pointer-lock",
+  StopOrbit = "start-orbit",
+  StartOrbit = "stop-orbit",
 }
 
-export interface RequestPointerLockMessage {
-  type: CameraRigMessage.RequestPointerLock;
+export interface StartOrbitMessage {
+  type: CameraRigMessage.StartOrbit;
 }
 
-export interface ExitPointerLockMessage {
-  type: CameraRigMessage.ExitPointerLock;
+export interface StopOrbitMessage {
+  type: CameraRigMessage.StopOrbit;
 }
