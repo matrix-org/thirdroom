@@ -9,7 +9,16 @@ import { InputModule } from "./input.game";
 import { checkBitflag } from "../utils/checkBitflag";
 import { Keys } from "./KeyCodes";
 
-const out: InputComponentState = { inputSourceId: 0, componentId: 0, button: 0, xAxis: 0, yAxis: 0, state: 0 };
+const out: InputComponentState = {
+  inputSourceId: 0,
+  componentId: 0,
+  button: 0,
+  xAxis: 0,
+  yAxis: 0,
+  zAxis: 0,
+  wAxis: 0,
+  state: 0,
+};
 
 export function ApplyInputSystem(ctx: GameState) {
   const input = getModule(ctx, InputModule);
