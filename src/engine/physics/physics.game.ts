@@ -34,6 +34,7 @@ import {
   getWriteObjectBufferView,
 } from "../allocator/ObjectBufferView";
 import { createDisposables } from "../utils/createDisposables";
+import { InputControllerComponent } from "../input/InputControllerComponent";
 
 export interface PhysicsModuleState {
   debugRender: boolean;
@@ -210,10 +211,11 @@ export function PhysicsSystem(ctx: GameState) {
     }
 
     const isPlayer = hasComponent(ctx.world, Player, eid);
+    const hasInputController = hasComponent(ctx.world, InputControllerComponent, eid);
 
     if (bodyType === RAPIER.RigidBodyType.Dynamic || isPlayer) {
       applyRigidBodyToTransform(body, node);
-    } else if (bodyType === RAPIER.RigidBodyType.KinematicPositionBased && !isPlayer) {
+    } else if (bodyType === RAPIER.RigidBodyType.KinematicPositionBased && !isPlayer && !hasInputController) {
       updateMatrixWorld(node);
 
       mat4.getRotation(_worldQuat, node.worldMatrix);

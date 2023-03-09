@@ -34,7 +34,6 @@ import { PhysicsModule, PhysicsModuleState, RigidBody } from "../../engine/physi
 import { Prefab } from "../../engine/prefab/prefab.game";
 import { addResourceRef, getRemoteResource, tryGetRemoteResource } from "../../engine/resource/resource.game";
 import {
-  getObjectPublicRoot,
   RemoteAudioData,
   RemoteAudioEmitter,
   RemoteAudioSource,
@@ -569,7 +568,6 @@ function updateGrabThrow(
         if (grabPressed) {
           if (Interactable.type[node.eid] === InteractableType.Grabbable) {
             playOneShotAudio(ctx, interaction.clickEmitter?.sources[0] as RemoteAudioSource);
-
             const ownedEnts = network.authoritative ? networkedQuery(ctx.world) : ownedNetworkedQuery(ctx.world);
             if (ownedEnts.length > interaction.maxObjCap && !hasComponent(ctx.world, Owned, node.eid)) {
               // do nothing if we hit the max obj cap
@@ -579,7 +577,6 @@ function updateGrabThrow(
             } else {
               // otherwise attempt to take ownership
               const newEid = takeOwnership(ctx, network, node);
-
               if (newEid !== NOOP) {
                 addComponent(ctx.world, GrabComponent, rig.eid);
                 GrabComponent.grabbedEntity[rig.eid] = newEid;
@@ -825,13 +822,7 @@ function updateGrabThrowXR(
 }
 
 function notifyUICanvasPressed(ctx: GameState, hitPoint: vec3, node: RemoteNode) {
-  let uiCanvas;
-  try {
-    uiCanvas = getObjectPublicRoot(node).uiCanvas!;
-  } catch (e) {
-    uiCanvas = node.uiCanvas;
-  }
-
+  const uiCanvas = node.uiCanvas;
   ctx.sendMessage<UICanvasPressMessage>(Thread.Render, {
     type: WebSGUIMessage.CanvasPress,
     hitPoint,
@@ -840,13 +831,7 @@ function notifyUICanvasPressed(ctx: GameState, hitPoint: vec3, node: RemoteNode)
 }
 
 function notifyUICanvasFocus(ctx: GameState, hitPoint: vec3, node: RemoteNode) {
-  let uiCanvas;
-  try {
-    uiCanvas = getObjectPublicRoot(node).uiCanvas!;
-  } catch (e) {
-    uiCanvas = node.uiCanvas;
-  }
-
+  const uiCanvas = node.uiCanvas;
   ctx.sendMessage<UICanvasFocusMessage>(Thread.Render, {
     type: WebSGUIMessage.CanvasFocus,
     hitPoint,

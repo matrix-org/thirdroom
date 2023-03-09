@@ -1,0 +1,416 @@
+import { addComponent, defineQuery, exitQuery, hasComponent, Query } from "bitecs";
+import { vec2, glMatrix as glm, quat, vec3 } from "gl-matrix";
+
+import { Axes, clamp } from "../../engine/component/math";
+import { GameState, World } from "../../engine/GameTypes";
+import { enableActionMap } from "../../engine/input/ActionMappingSystem";
+import { ActionMap, ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
+import { InputModule } from "../../engine/input/input.game";
+import {
+  addInputController,
+  createInputController,
+  InputController,
+  setActiveInputController,
+  tryGetInputController,
+} from "../../engine/input/InputController";
+import { defineModule, getModule, Thread } from "../../engine/module/module.common";
+import { getRemoteResource, tryGetRemoteResource } from "../../engine/resource/resource.game";
+import { RemoteNode } from "../../engine/resource/RemoteResources";
+import { addChild } from "../../engine/component/transform";
+import { createRemotePerspectiveCamera, getCamera } from "../../engine/camera/camera.game";
+import { ThirdPersonComponent } from "./../thirdroom/thirdroom.game";
+import { CameraRigMessage } from "./CameraRig.common";
+import { ourPlayerQuery } from "../../engine/component/Player";
+import { embodyAvatar, NetPipeData, writeMetadata } from "../../engine/network/serialization.game";
+import { PhysicsModule } from "../../engine/physics/physics.game";
+import { NetworkModule } from "../../engine/network/network.game";
+import { isHost } from "../../engine/network/network.common";
+import { sendReliable } from "../../engine/network/outbound.game";
+import { registerInboundMessageHandler } from "../../engine/network/inbound.game";
+import { NetworkAction } from "../../engine/network/NetworkAction";
+import {
+  createCursorView,
+  writeUint32,
+  writeFloat32,
+  sliceCursorView,
+  readUint32,
+  readFloat32,
+} from "../../engine/allocator/CursorView";
+import { Networked } from "../../engine/network/NetworkComponents";
+
+export const CameraRigModule = defineModule<GameState, {}>({
+  name: "camera-rig-module",
+  create() {
+    return {};
+  },
+  init(ctx) {
+    const input = getModule(ctx, InputModule);
+    const controller = input.defaultController;
+    enableActionMap(controller, CameraRigActionMap);
+
+    const network = getModule(ctx, NetworkModule);
+    registerInboundMessageHandler(network, NetworkAction.UpdateCamera, deserializeUpdateCamera);
+  },
+});
+
+export const CameraRigActions = {
+  cameraRig: "CameraRig/cameraRig",
+  Drag: "CameraRig/Drag",
+  Zoom: "CameraRig/Zoom",
+};
+
+export const CameraRigActionMap: ActionMap = {
+  id: "camera-rig",
+  actionDefs: [
+    {
+      id: "drag",
+      path: CameraRigActions.Drag,
+      type: ActionType.Button,
+      bindings: [
+        {
+          type: BindingType.Button,
+          path: "Mouse/Left",
+        },
+      ],
+    },
+    {
+      id: "zoom",
+      path: CameraRigActions.Zoom,
+      type: ActionType.Vector2,
+      bindings: [
+        {
+          type: BindingType.Axes,
+          y: "Mouse/Scroll",
+        },
+      ],
+    },
+    {
+      id: "look",
+      path: CameraRigActions.cameraRig,
+      type: ActionType.Vector2,
+      bindings: [
+        {
+          type: BindingType.Axes,
+          x: "Mouse/movementX",
+          y: "Mouse/movementY",
+        },
+      ],
+    },
+  ],
+};
+
+export enum CameraRigType {
+  Orbit,
+  PointerLock,
+}
+export interface CameraRigPitch {
+  type: CameraRigType;
+  target: number;
+  pitch: number;
+  maxAngle: number;
+  minAngle: number;
+  sensitivity: number;
+}
+export interface CameraRigYaw {
+  type: CameraRigType;
+  target: number;
+  sensitivity: number;
+}
+export interface CameraRigZoom {
+  type: CameraRigType;
+  target: number;
+  min: number;
+  max: number;
+}
+
+export const CameraRigPitch = new Map<number, CameraRigPitch>();
+export const CameraRigYaw = new Map<number, CameraRigYaw>();
+export const CameraRigZoom = new Map<number, CameraRigZoom>();
+
+const DEFAULT_SENSITIVITY = 100;
+
+const ZOOM_MIN = 0.5;
+const ZOOM_MAX = 10;
+
+export function beginOrbiting(ctx: GameState, node: RemoteNode) {
+  const input = getModule(ctx, InputModule);
+
+  const inner = new RemoteNode(ctx.resourceManager);
+
+  const controller = createInputController(input.defaultController);
+  addInputController(ctx.world, input, controller, inner.eid);
+  setActiveInputController(input, inner.eid);
+
+  const camera = addCameraRig(ctx, inner, CameraRigType.Orbit);
+
+  addChild(node, inner);
+
+  ctx.worldResource.activeCameraNode = camera;
+
+  ctx.sendMessage(Thread.Main, { type: CameraRigMessage.ExitPointerLock });
+}
+
+export function ceaseOrbiting(ctx: GameState) {
+  const input = getModule(ctx, InputModule);
+  const physics = getModule(ctx, PhysicsModule);
+
+  const ourPlayer = ourPlayerQuery(ctx.world)[0];
+  const node = tryGetRemoteResource<RemoteNode>(ctx, ourPlayer);
+  embodyAvatar(ctx, physics, input, node);
+
+  ctx.sendMessage(Thread.Main, { type: CameraRigMessage.RequestPointerLock });
+}
+
+export function addCameraRig(ctx: GameState, node: RemoteNode, type: CameraRigType, anchorOffset?: vec3) {
+  // add camera anchor
+  const cameraAnchor = new RemoteNode(ctx.resourceManager);
+  cameraAnchor.name = "Camera Anchor";
+
+  if (anchorOffset) cameraAnchor.position.set(anchorOffset);
+
+  // add camera
+  const camera = new RemoteNode(ctx.resourceManager, {
+    camera: createRemotePerspectiveCamera(ctx),
+  });
+
+  // add hierarchy
+  addChild(node, cameraAnchor);
+  addChild(cameraAnchor, camera);
+
+  // add controls
+  addCameraRigPitchTarget(ctx.world, node, cameraAnchor, type);
+  addCameraRigYawTarget(ctx.world, node, node, type);
+  addCameraRigZoomTarget(ctx.world, node, camera, type);
+
+  return camera;
+}
+
+export function addCameraRigPitchTarget(world: World, node: RemoteNode, target: RemoteNode, type: CameraRigType) {
+  addComponent(world, CameraRigPitch, node.eid);
+  CameraRigPitch.set(node.eid, {
+    type,
+    target: target.eid,
+    pitch: 0,
+    maxAngle: 89,
+    minAngle: -89,
+    sensitivity: DEFAULT_SENSITIVITY,
+  });
+}
+
+export function addCameraRigYawTarget(world: World, node: RemoteNode, target: RemoteNode, type: CameraRigType) {
+  addComponent(world, CameraRigYaw, node.eid);
+  CameraRigYaw.set(node.eid, {
+    type,
+    target: target.eid,
+    sensitivity: DEFAULT_SENSITIVITY,
+  });
+}
+
+export function addCameraRigZoomTarget(world: World, node: RemoteNode, target: RemoteNode, type: CameraRigType) {
+  addComponent(world, CameraRigZoom, node.eid);
+  CameraRigZoom.set(node.eid, {
+    type,
+    target: target.eid,
+    min: ZOOM_MIN,
+    max: ZOOM_MAX,
+  });
+}
+
+export const cameraRigPitchQuery = defineQuery([CameraRigPitch, RemoteNode]);
+export const exitCameraRigPitchQuery = exitQuery(cameraRigPitchQuery);
+
+export const cameraRigYawQuery = defineQuery([CameraRigYaw, RemoteNode]);
+export const exitCameraRigYawQuery = exitQuery(cameraRigYawQuery);
+
+export const cameraRigZoomQuery = defineQuery([CameraRigZoom, RemoteNode]);
+export const exitCameraRigZoomQuery = exitQuery(cameraRigZoomQuery);
+
+function applyYaw(ctx: GameState, controller: InputController, rigYaw: CameraRigYaw) {
+  const node = tryGetRemoteResource<RemoteNode>(ctx, rigYaw.target);
+
+  const [lookX] = controller.actionStates.get(CameraRigActions.cameraRig) as vec2;
+
+  if (Math.abs(lookX) >= 1) {
+    const sensitivity = rigYaw.sensitivity || 1;
+    const quaternion = node.quaternion;
+    quat.rotateY(quaternion, quaternion, -(lookX / (1000 / (sensitivity || 1))) * ctx.dt);
+  }
+}
+
+function applyPitch(ctx: GameState, controller: InputController, rigPitch: CameraRigPitch) {
+  const node = tryGetRemoteResource<RemoteNode>(ctx, rigPitch.target);
+
+  const [, lookY] = controller.actionStates.get(CameraRigActions.cameraRig) as vec2;
+
+  if (Math.abs(lookY) >= 1) {
+    const sensitivity = rigPitch.sensitivity;
+    const maxAngle = rigPitch.maxAngle;
+    const minAngle = rigPitch.minAngle;
+    const maxAngleRads = glm.toRadian(maxAngle);
+    const minAngleRads = glm.toRadian(minAngle);
+
+    let pitch = rigPitch.pitch;
+
+    pitch -= (lookY / (1000 / (sensitivity || 1))) * ctx.dt;
+
+    if (pitch > maxAngleRads) {
+      pitch = maxAngleRads;
+    } else if (pitch < minAngleRads) {
+      pitch = minAngleRads;
+    }
+
+    rigPitch.pitch = pitch;
+
+    quat.setAxisAngle(node.quaternion, Axes.X, pitch);
+  }
+}
+
+function applyZoom(ctx: GameState, controller: InputController, rigZoom: CameraRigZoom) {
+  const node = tryGetRemoteResource<RemoteNode>(ctx, rigZoom.target);
+
+  const [, scrollY] = controller.actionStates.get(CameraRigActions.Zoom) as vec2;
+
+  if (Math.abs(scrollY) > 0) {
+    node.position[2] -= scrollY / 1000;
+    node.position[2] = clamp(node.position[2], rigZoom.min, rigZoom.max);
+  }
+}
+
+export function CameraRigSystem(ctx: GameState) {
+  const input = getModule(ctx, InputModule);
+  const network = getModule(ctx, NetworkModule);
+
+  if (network.authoritative && !isHost(network) && !network.clientSidePrediction) {
+    return;
+  }
+
+  const pitchEntities = cameraRigPitchQuery(ctx.world);
+  for (let i = 0; i < pitchEntities.length; i++) {
+    const eid = pitchEntities[i];
+    const pitch = CameraRigPitch.get(eid)!;
+    const controller = tryGetInputController(input, eid);
+
+    const click = controller.actionStates.get(CameraRigActions.Drag) as ButtonActionState;
+    if (pitch.type === CameraRigType.Orbit && !click.held) {
+      continue;
+    }
+
+    applyPitch(ctx, controller, pitch);
+  }
+
+  const yawEntities = cameraRigYawQuery(ctx.world);
+  for (let i = 0; i < yawEntities.length; i++) {
+    const eid = yawEntities[i];
+    const yaw = CameraRigYaw.get(eid)!;
+    const controller = tryGetInputController(input, eid);
+
+    const click = controller.actionStates.get(CameraRigActions.Drag) as ButtonActionState;
+    if (yaw.type === CameraRigType.Orbit && !click.held) {
+      continue;
+    }
+
+    applyYaw(ctx, controller, yaw);
+  }
+
+  const zoomEntities = cameraRigZoomQuery(ctx.world);
+  for (let i = 0; i < zoomEntities.length; i++) {
+    const eid = zoomEntities[i];
+    const zoom = CameraRigZoom.get(eid)!;
+    const controller = tryGetInputController(input, eid);
+
+    if (zoom.type === CameraRigType.PointerLock && !hasComponent(ctx.world, ThirdPersonComponent, eid)) {
+      continue;
+    }
+
+    applyZoom(ctx, controller, zoom);
+  }
+
+  exitQueryCleanup(ctx, exitCameraRigPitchQuery, CameraRigPitch);
+  exitQueryCleanup(ctx, exitCameraRigYawQuery, CameraRigYaw);
+  exitQueryCleanup(ctx, exitCameraRigZoomQuery, CameraRigZoom);
+}
+
+function exitQueryCleanup(ctx: GameState, query: Query, component: Map<number, any>) {
+  const ents = query(ctx.world);
+  for (let i = 0; i < ents.length; i++) {
+    const eid = ents[i];
+    component.delete(eid);
+  }
+}
+
+/**************
+ * Networking *
+ *************/
+
+const MESSAGE_SIZE = Uint8Array.BYTES_PER_ELEMENT + Uint32Array.BYTES_PER_ELEMENT + 10 * Float32Array.BYTES_PER_ELEMENT;
+const messageView = createCursorView(new ArrayBuffer(100 * MESSAGE_SIZE));
+
+export function createUpdateCameraMessage(ctx: GameState, eid: number, camera: number) {
+  const data: NetPipeData = [ctx, messageView, ""];
+
+  const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
+  const cameraNode = tryGetRemoteResource<RemoteNode>(ctx, camera);
+
+  writeMetadata(NetworkAction.UpdateCamera)(data);
+
+  writeUint32(messageView, Networked.networkId[eid]);
+
+  writeFloat32(messageView, node.quaternion[0]);
+  writeFloat32(messageView, node.quaternion[1]);
+  writeFloat32(messageView, node.quaternion[2]);
+  writeFloat32(messageView, node.quaternion[3]);
+
+  writeFloat32(messageView, cameraNode.quaternion[0]);
+  writeFloat32(messageView, cameraNode.quaternion[1]);
+  writeFloat32(messageView, cameraNode.quaternion[2]);
+  writeFloat32(messageView, cameraNode.quaternion[3]);
+
+  return sliceCursorView(messageView);
+}
+
+function deserializeUpdateCamera(data: NetPipeData) {
+  const [ctx, view] = data;
+
+  // TODO: put network ref in the net pipe data
+  const network = getModule(ctx, NetworkModule);
+
+  const nid = readUint32(view);
+  const player = network.networkIdToEntityId.get(nid)!;
+  const node = tryGetRemoteResource<RemoteNode>(ctx, player);
+
+  const camera = getCamera(ctx, node);
+
+  node.quaternion[0] = readFloat32(view);
+  node.quaternion[1] = readFloat32(view);
+  node.quaternion[2] = readFloat32(view);
+  node.quaternion[3] = readFloat32(view);
+
+  camera.quaternion[0] = readFloat32(view);
+  camera.quaternion[1] = readFloat32(view);
+  camera.quaternion[2] = readFloat32(view);
+  camera.quaternion[3] = readFloat32(view);
+
+  return data;
+}
+
+export function NetworkedCameraSystem(ctx: GameState) {
+  const ourPlayer = ourPlayerQuery(ctx.world)[0];
+  const playerNode = getRemoteResource<RemoteNode>(ctx, ourPlayer);
+  const network = getModule(ctx, NetworkModule);
+
+  if (!network.authoritative || !ourPlayer || !playerNode) {
+    return;
+  }
+
+  const haveConnectedPeers = network.peers.length > 0;
+  const hosting = network.authoritative && isHost(network);
+  if (hosting || !haveConnectedPeers) {
+    return;
+  }
+
+  const camera = getCamera(ctx, playerNode);
+  const msg = createUpdateCameraMessage(ctx, ourPlayer, camera.eid);
+  if (msg.byteLength > 0) {
+    sendReliable(ctx, network, network.hostId, msg);
+  }
+}
