@@ -1,5 +1,6 @@
 import { ReactNode, useMemo, memo, FocusEventHandler, KeyboardEventHandler, useRef } from "react";
 import classNames from "classnames";
+import { useAtom } from "jotai";
 
 import "./PropertiesPanel.css";
 
@@ -14,6 +15,8 @@ import { setProperty, setRefArrayProperty, setRefProperty } from "../../../../en
 import { setEulerFromQuaternion, setQuaternionFromEuler } from "../../../../engine/component/math";
 import { Icon } from "../../../atoms/icon/Icon";
 import CircleIC from "../../../../../res/ic/circle.svg";
+import ArrowBackIC from "../../../../../res/ic/arrow-back.svg";
+import ArrowForwardIC from "../../../../../res/ic/arrow-forward.svg";
 import {
   PropTypeType,
   ResourceDefinition,
@@ -36,6 +39,7 @@ import {
 import { IconButton } from "../../../atoms/button/IconButton";
 import { MultiSelectInput } from "../../components/property-panel/MultiSelectInput";
 import { NumericInput } from "../../../atoms/input/NumericInput";
+import { editorAtom } from "../../../state/editor";
 
 function getEulerRotation(quaternion: Float32Array) {
   const rotation = new Float32Array(3);
@@ -537,6 +541,7 @@ interface PropertiesPanelProps {
 
 export function PropertiesPanel({ className, resource, goToRef }: PropertiesPanelProps) {
   const ctx = useMainThreadContext();
+  const [editorState, dispatchEditor] = useAtom(editorAtom);
 
   const resourceDef = resource.resourceDef;
   const schema = resourceDef.schema;
@@ -550,10 +555,28 @@ export function PropertiesPanel({ className, resource, goToRef }: PropertiesPane
   return (
     <div className={classNames("PropertiesPanel flex flex-column", className)}>
       <EditorHeader className="shrink-0 flex items-center gap-xxs" style={{ padding: "0 var(--sp-xs)" }}>
+        {editorState.activeEntityHistoryIndex > 0 && (
+          <IconButton
+            color="surface"
+            size="sm"
+            label="Go Back"
+            iconSrc={ArrowBackIC}
+            onClick={() => dispatchEditor({ type: "SELECT_BACKWARD" })}
+          />
+        )}
         <Icon color="surface" size="sm" src={CircleIC} />
-        <Text variant="b2" weight="semi-bold">
+        <Text className="grow truncate" variant="b2" weight="semi-bold">
           {resource.name ?? "Unnamed"}
         </Text>
+        {editorState.activeEntityHistoryIndex < editorState.activeEntityHistorySize - 1 && (
+          <IconButton
+            color="surface"
+            size="sm"
+            label="Go Forward"
+            iconSrc={ArrowForwardIC}
+            onClick={() => dispatchEditor({ type: "SELECT_FORWARD" })}
+          />
+        )}
       </EditorHeader>
       <div className="grow">
         <Scroll type="scroll">{properties}</Scroll>

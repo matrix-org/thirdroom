@@ -1,6 +1,6 @@
 import { RefObject, useEffect, useState } from "react";
 import { TreeViewRefApi } from "@thirdroom/manifold-editor-components";
-import { useAtomValue, useSetAtom } from "jotai";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 
 import { useMainThreadContext } from "./useMainThread";
 import { getModule } from "../../engine/module/module.common";
@@ -13,6 +13,7 @@ import {
   EditorLoadedEvent,
   SelectionChangedEvent,
   buildResourceList,
+  setSelectedEntity,
 } from "../../engine/editor/editor.main";
 import { EditorNode } from "../../engine/editor/editor.common";
 import { ResourceModule, MainNode } from "../../engine/resource/resource.main";
@@ -35,7 +36,7 @@ export function useEditor(treeViewRef: RefObject<TreeViewRefApi>): EditorUIState
 
   const setResourceMenu = useSetAtom(resourceMenuAtom);
   const selectedResourceType = useAtomValue(resourceMenuAtom).selected;
-  const setEditorState = useSetAtom(editorAtom);
+  const [editorState] = useAtom(editorAtom);
 
   useEffect(() => {
     const resources = buildResourceList(mainThread, selectedResourceType);
@@ -45,6 +46,9 @@ export function useEditor(treeViewRef: RefObject<TreeViewRefApi>): EditorUIState
       resources,
     }));
   }, [selectedResourceType, mainThread]);
+  useEffect(() => {
+    setSelectedEntity(mainThread, editorState.activeEntity);
+  }, [mainThread, editorState.activeEntity]);
 
   // const goToRef = useCallback(
   //   (resourceId: number) => {
@@ -89,10 +93,6 @@ export function useEditor(treeViewRef: RefObject<TreeViewRefApi>): EditorUIState
         selected: resourceType,
         options: resourceOptions,
       });
-      setEditorState({
-        activeEntity,
-        selectedEntities,
-      });
       setState((state) => ({
         ...state,
         loading: false,
@@ -101,22 +101,13 @@ export function useEditor(treeViewRef: RefObject<TreeViewRefApi>): EditorUIState
     }
 
     function onHierarchyChanged({ activeEntity, selectedEntities, scene }: HierarchyChangedEvent) {
-      setEditorState({
-        activeEntity,
-        selectedEntities,
-      });
       setState((state) => ({
         ...state,
         scene,
       }));
     }
 
-    function onSelectionChanged({ activeEntity, selectedEntities }: SelectionChangedEvent) {
-      setEditorState({
-        activeEntity,
-        selectedEntities,
-      });
-    }
+    function onSelectionChanged({ activeEntity, selectedEntities }: SelectionChangedEvent) {}
 
     editor.eventEmitter.addListener(EditorEventType.EditorLoaded, onEditorLoaded);
     editor.eventEmitter.addListener(EditorEventType.HierarchyChanged, onHierarchyChanged);
@@ -129,7 +120,7 @@ export function useEditor(treeViewRef: RefObject<TreeViewRefApi>): EditorUIState
       editor.eventEmitter.removeListener(EditorEventType.HierarchyChanged, onHierarchyChanged);
       editor.eventEmitter.removeListener(EditorEventType.SelectionChanged, onSelectionChanged);
     };
-  }, [editor, mainThread, setResourceMenu, setEditorState]);
+  }, [editor, mainThread, setResourceMenu]);
 
   return { ...state };
 }
