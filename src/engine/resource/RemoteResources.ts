@@ -1,4 +1,3 @@
-import { defineComponent, hasComponent } from "bitecs";
 import { AnimationClip } from "three";
 
 import { getLastSibling } from "../component/transform";
@@ -221,8 +220,6 @@ export class RemoteWorld extends defineRemoteResourceClass(WorldResource) {
   declare activeRightControllerNode: RemoteNode | undefined;
 }
 
-export const RemoteObject = defineComponent();
-
 export function addObjectToWorld(ctx: GameState, object: RemoteNode) {
   const worldResource = ctx.worldResource;
   const firstNode = worldResource.firstNode;
@@ -237,10 +234,6 @@ export function addObjectToWorld(ctx: GameState, object: RemoteNode) {
 }
 
 export function removeObjectFromWorld(ctx: GameState, object: RemoteNode) {
-  if (!hasComponent(ctx.world, RemoteObject, object.eid)) {
-    throw new Error(`Node is not a RemoteObject`);
-  }
-
   object.addRef();
 
   const worldResource = ctx.worldResource;

@@ -77,7 +77,6 @@ import {
   RemoteWorld,
   addObjectToWorld,
   removeObjectFromWorld,
-  RemoteObject,
   RemoteMaterial,
 } from "../../engine/resource/RemoteResources";
 import { CharacterControllerType, SceneCharacterControllerComponent } from "../CharacterController";
@@ -273,20 +272,10 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
     addChild(ctx.worldResource.persistentScene, oobCollider);
 
     collisionHandlers.push((eid1: number, eid2: number, handle1: number, handle2: number) => {
-      let objectEid: number | undefined;
-      let floorHandle: number | undefined;
+      const objectEid = handle1 !== rigidBody.handle ? eid1 : handle2 !== rigidBody.handle ? eid2 : undefined;
+      const floorHandle = handle1 === rigidBody.handle ? handle1 : handle2 === rigidBody.handle ? handle2 : undefined;
 
-      if (hasComponent(ctx.world, RemoteObject, eid1)) {
-        objectEid = eid1;
-        floorHandle = handle2;
-      } else if (hasComponent(ctx.world, RemoteObject, eid2)) {
-        objectEid = eid2;
-        floorHandle = handle1;
-      } else {
-        return;
-      }
-
-      if (floorHandle !== rigidBody.handle) {
+      if (floorHandle === undefined || objectEid === undefined) {
         return;
       }
 
