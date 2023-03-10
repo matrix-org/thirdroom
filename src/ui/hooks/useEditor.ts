@@ -16,9 +16,11 @@ import {
   setSelectedEntity,
 } from "../../engine/editor/editor.main";
 import { EditorNode } from "../../engine/editor/editor.common";
-import { ResourceModule, MainNode } from "../../engine/resource/resource.main";
+import { ResourceModule, MainNode, getLocalResource } from "../../engine/resource/resource.main";
 import kebabToPascalCase from "../../engine/utils/kebabToPascalCase";
-import { editorAtom, resourceMenuAtom } from "../state/editor";
+import { editorAtom, HierarchyTab, hierarchyTabAtom, resourceMenuAtom } from "../state/editor";
+import { LocalResourceInstance, ResourceDefinition } from "../../engine/resource/ResourceDefinition";
+import { IMainThreadContext } from "../../engine/MainThread";
 interface EditorUIState {
   loading: boolean;
   scene?: EditorNode;
@@ -34,6 +36,7 @@ export function useEditor(treeViewRef: RefObject<TreeViewRefApi>): EditorUIState
     resources: undefined,
   });
 
+  const setHierarchyTab = useSetAtom(hierarchyTabAtom);
   const setResourceMenu = useSetAtom(resourceMenuAtom);
   const selectedResourceType = useAtomValue(resourceMenuAtom).selected;
   const [editorState] = useAtom(editorAtom);
@@ -46,38 +49,45 @@ export function useEditor(treeViewRef: RefObject<TreeViewRefApi>): EditorUIState
       resources,
     }));
   }, [selectedResourceType, mainThread]);
+
   useEffect(() => {
-    setSelectedEntity(mainThread, editorState.activeEntity);
-  }, [mainThread, editorState.activeEntity]);
+    if (editorState.activeEntityHistorySize === 0) {
+      setSelectedEntity(mainThread, editorState.activeEntity);
+    } else {
+      const resourceId = editorState.activeEntity;
+      const resource = getLocalResource<LocalResourceInstance<ResourceDefinition, IMainThreadContext>>(
+        mainThread,
+        resourceId
+      );
 
-  // const goToRef = useCallback(
-  //   (resourceId: number) => {
-  //     const resource = getLocalResource<LocalResourceInstance<ResourceDefinition, IMainThreadContext>>(
-  //       mainThread,
-  //       resourceId
-  //     );
+      if (!resource) {
+        return;
+      }
 
-  //     if (!resource) {
-  //       return;
-  //     }
+      const resourceType = resource.constructor;
 
-  //     const resourceType = resource.constructor;
+      setSelectedEntity(mainThread, resourceId);
+      setHierarchyTab(HierarchyTab.Resources);
+      setResourceMenu({ selected: resourceType });
+      setState((prev) => ({
+        ...prev,
+        resources: buildResourceList(mainThread, resourceType),
+      }));
 
-  //     setSelectedEntity(mainThread, resourceId);
-  //     setState((prev) => ({
-  //       ...prev,
-  //       hierarchyTab: HierarchyTab.Resources,
-  //       resourceType,
-  //       resources: buildResourceList(mainThread, resourceType),
-  //     }));
-
-  //     if (treeViewRef) {
-  //       // TODO: Figure out why this doesn't seem to be scrolling to the node properly
-  //       treeViewRef.current?.scrollToNode(resource.eid, "center");
-  //     }
-  //   },
-  //   [mainThread, treeViewRef]
-  // );
+      if (treeViewRef) {
+        setTimeout(() => {
+          treeViewRef.current?.scrollToNode(resource.eid, "center");
+        });
+      }
+    }
+  }, [
+    mainThread,
+    editorState.activeEntity,
+    editorState.activeEntityHistorySize,
+    treeViewRef,
+    setResourceMenu,
+    setHierarchyTab,
+  ]);
 
   useEffect(() => {
     function onEditorLoaded({ activeEntity, selectedEntities }: EditorLoadedEvent) {

@@ -343,7 +343,7 @@ export function HierarchyPanel({
             <SelectInput
               value={resourceMenu.selected}
               options={resourceMenu.options}
-              onChange={(selected) => setResourceMenu((state) => ({ ...state, selected }))}
+              onChange={(selected) => setResourceMenu({ selected })}
             />
           </div>
           <div className="grow">

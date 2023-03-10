@@ -1,5 +1,7 @@
 import { atom } from "jotai";
 
+import { editorAtom } from "./editor";
+
 interface WorldState {
   worldId: string | undefined;
   entered: boolean;
@@ -44,6 +46,7 @@ export const worldAtom = atom<WorldState, [WorldAction], void>(
         worldId: undefined,
         entered: false,
       });
+      set(editorAtom, { type: "RESET" });
     }
   }
 );

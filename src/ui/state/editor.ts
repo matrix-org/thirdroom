@@ -13,6 +13,10 @@ export type ResourceMenu = {
   selected: MainThreadResource;
   options: ResourceOptions;
 };
+type ResourceMenuAction = {
+  selected?: MainThreadResource;
+  options?: ResourceOptions;
+};
 
 interface EditorState {
   activeEntityHistoryIndex: number;
@@ -23,21 +27,35 @@ interface EditorState {
 
 export const hierarchyTabAtom = atom<HierarchyTab>(HierarchyTab.Scenes);
 
-export const resourceMenuAtom = atom<ResourceMenu>({
+const baseResourceMenuAtom = atom<ResourceMenu>({
   selected: MainNode,
   options: [],
 });
+export const resourceMenuAtom = atom<ResourceMenu, [ResourceMenuAction], void>(
+  (get) => get(baseResourceMenuAtom),
+  (get, set, update) => {
+    const menu = get(baseResourceMenuAtom);
+    set(baseResourceMenuAtom, {
+      selected: update.selected ?? menu.selected,
+      options: update.options ?? menu.options,
+    });
+  }
+);
 
 type EditorStateAction =
   | {
       type: "SELECT";
       resourceId: number;
+      isRef?: true;
     }
   | {
       type: "SELECT_BACKWARD";
     }
   | {
       type: "SELECT_FORWARD";
+    }
+  | {
+      type: "RESET";
     };
 
 const activeEntityHistoryAtom = atom<number[]>([]);
@@ -61,15 +79,25 @@ export const editorAtom = atom<EditorState, [EditorStateAction], void>(
       newState.activeEntity = action.resourceId;
 
       let history = [...get(activeEntityHistoryAtom)];
-      if (editorState.activeEntityHistoryIndex < history.length - 1) {
-        history = history.slice(0, editorState.activeEntityHistoryIndex + 1);
+      if (action.isRef) {
+        if (editorState.activeEntityHistoryIndex < history.length - 1) {
+          history = history.slice(0, editorState.activeEntityHistoryIndex + 1);
+        }
+        if (editorState.activeEntityHistorySize === 0) {
+          history.push(editorState.activeEntity);
+        }
+        history.push(action.resourceId);
+
+        newState.activeEntityHistoryIndex = history.length - 1;
+        newState.activeEntityHistorySize = history.length;
+
+        set(activeEntityHistoryAtom, history);
+      } else if (history.length > 0) {
+        newState.activeEntityHistoryIndex = -1;
+        newState.activeEntityHistorySize = 0;
+        set(activeEntityHistoryAtom, []);
       }
-      history.push(action.resourceId);
 
-      newState.activeEntityHistoryIndex = history.length - 1;
-      newState.activeEntityHistorySize = history.length;
-
-      set(activeEntityHistoryAtom, history);
       set(baseEditorAtom, newState);
       return;
     }
@@ -99,6 +127,15 @@ export const editorAtom = atom<EditorState, [EditorStateAction], void>(
       newState.activeEntity = nextEntity;
       set(baseEditorAtom, newState);
       return;
+    }
+
+    if (action.type === "RESET") {
+      set(activeEntityHistoryAtom, []);
+      set(baseEditorAtom, INITIAL_STATE);
+      set(baseResourceMenuAtom, {
+        selected: MainNode,
+        options: [],
+      });
     }
   }
 );

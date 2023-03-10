@@ -27,7 +27,7 @@ export function EditorView() {
           </div>
           {typeof resource === "object" && (
             <div className="EditorView__rightPanel">
-              <PropertiesPanel resource={resource} goToRef={(resourceId) => console.log(resourceId)} />
+              <PropertiesPanel resource={resource} />
             </div>
           )}
         </>
