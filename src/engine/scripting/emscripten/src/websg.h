@@ -7,29 +7,6 @@
 
 #define export __attribute__((used))
 
-static void *get_typed_array_data(JSContext *ctx, JSValue *value, size_t byte_length) {
-  size_t view_byte_offset;
-  size_t view_byte_length;
-  size_t view_bytes_per_element;
-
-  JSValue buffer = JS_GetTypedArrayBuffer(ctx, *value, &view_byte_offset, &view_byte_length, &view_bytes_per_element);
-
-  if (JS_IsException(buffer)) {
-    return NULL;
-  }
-
-  if (view_byte_length != byte_length) {
-    JS_ThrowRangeError(ctx, "WebSG: Invalid typed array length.");
-    return NULL;
-  }
-
-  size_t buffer_byte_length;
-  uint8_t *data = JS_GetArrayBuffer(ctx, &buffer_byte_length, buffer);
-  data += view_byte_offset;
-
-  return (void *)data;
-}
-
 typedef uint32_t scene_id_t;
 typedef uint32_t node_id_t;
 typedef uint32_t mesh_id_t;
@@ -138,6 +115,10 @@ import_websg(node_set_visible) int32_t websg_node_set_visible(node_id_t node_id,
 import_websg(node_get_is_static) uint32_t websg_node_get_is_static(node_id_t node_id);
 // Returns 0 if successful or -1 if error
 import_websg(node_set_is_static) int32_t websg_node_set_is_static(node_id_t node_id, uint32_t is_static);
+import_websg(node_set_is_static_recursive) int32_t websg_node_set_is_static_recursive(
+  node_id_t node_id,
+  uint32_t is_static
+);
 
 // Node Refs
 
@@ -229,6 +210,11 @@ import_websg(mesh_set_primitive_draw_range) MeshPrimitiveMode websg_mesh_set_pri
   uint32_t index,
   uint32_t start,
   uint32_t count
+);
+import_websg(mesh_set_primitive_hologram_material_enabled) int32_t websg_mesh_set_primitive_hologram_material_enabled(
+  mesh_id_t mesh_id,
+  uint32_t index,
+  uint32_t enabled
 );
 
 /**

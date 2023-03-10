@@ -47,8 +47,8 @@ export const RING_BUFFER_MAX = 64 * numElements;
 
 const BYTE_LENGTH = numElements * Float32Array.BYTES_PER_ELEMENT;
 
-export function createAudioPlaybackRingBuffer(capacity?: number): AudioPlaybackRingBuffer {
-  const ringBuffer = createRingBuffer(Float32Array, capacity);
+export function createAudioPlaybackRingBuffer(capacity = 1000): AudioPlaybackRingBuffer {
+  const ringBuffer = createRingBuffer(Float32Array, capacity * BYTE_LENGTH);
   const buffer = new ArrayBuffer(BYTE_LENGTH);
   const array = new Uint8Array(buffer);
   const view = createCursorView(buffer);

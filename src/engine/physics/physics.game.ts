@@ -43,7 +43,6 @@ export interface PhysicsModuleState {
   handleToEid: Map<number, number>;
   characterCollision: RAPIER.CharacterCollision;
   collisionHandlers: ((eid1: number, eid2: number, handle1: number, handle2: number) => void)[];
-  characterController: RAPIER.KinematicCharacterController;
   eidTocharacterController: Map<number, RAPIER.KinematicCharacterController>;
 }
 
@@ -57,11 +56,6 @@ export const PhysicsModule = defineModule<GameState, PhysicsModuleState>({
     const handleToEid = new Map<number, number>();
     const eventQueue = new RAPIER.EventQueue(true);
 
-    const characterController = physicsWorld.createCharacterController(0.1);
-    characterController.enableAutostep(0.25, 0.25, true);
-    characterController.enableSnapToGround(0.5);
-    characterController.setApplyImpulsesToDynamicBodies(true);
-
     return {
       debugRender: false,
       debugRenderTripleBuffer: undefined,
@@ -70,7 +64,6 @@ export const PhysicsModule = defineModule<GameState, PhysicsModuleState>({
       handleToEid,
       collisionHandlers: [],
       characterCollision: new RAPIER.CharacterCollision(),
-      characterController,
       eidTocharacterController: new Map<number, RAPIER.KinematicCharacterController>(),
     };
   },

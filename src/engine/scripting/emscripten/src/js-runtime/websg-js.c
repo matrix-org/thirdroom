@@ -4,6 +4,7 @@
 #include "./quickjs/cutils.h"
 #include "./quickjs/quickjs.h"
 #include "../websg.h"
+#include "./js-utils.h"
 #include "./websg-js.h"
 #include "./websg-network-js.h"
 #include "./websg-ui-js.h"
@@ -691,6 +692,23 @@ static JSValue js_node_set_is_static(JSContext *ctx, JSValueConst this_val, int 
 
   int32_t value = JS_ToBool(ctx, argv[1]);
 
+  if (value < 0) {
+    return JS_EXCEPTION;
+  }
+  
+  if (!JS_IsUndefined(argv[2])) {
+    int recursive = JS_ToBool(ctx, argv[2]);
+
+    if (recursive) {
+      int32_t result = websg_node_set_is_static_recursive(node_id, value);
+
+      if (result == -1) {
+        JS_ThrowInternalError(ctx, "WebSG: Error setting isStatic.");
+        return JS_EXCEPTION;
+      }
+    }
+  }
+
   int32_t result = websg_node_set_is_static(node_id, value);
 
   if (result == -1) {
@@ -1159,6 +1177,42 @@ static JSValue js_mesh_set_primitive_draw_range(JSContext *ctx, JSValueConst thi
 
   return JS_UNDEFINED;
 }
+
+static JSValue js_mesh_set_primitive_hologram_material_enabled(
+  JSContext *ctx,
+  JSValueConst this_val,
+  int argc,
+  JSValueConst *argv
+) {
+  mesh_id_t mesh_id;
+
+  if (JS_ToUint32(ctx, &mesh_id, argv[0]) == -1) {
+    return JS_EXCEPTION;
+  }
+
+  uint32_t index;
+
+  if (JS_ToUint32(ctx, &index, argv[1]) == -1) {
+    return JS_EXCEPTION;
+  }
+
+  int enabled = JS_ToBool(ctx, argv[2]);
+
+  if (enabled < 0) {
+    return JS_EXCEPTION;
+  }
+
+  int32_t result = websg_mesh_set_primitive_hologram_material_enabled(mesh_id, index, enabled);
+
+   if (result == -1) {
+    JS_ThrowInternalError(ctx, "WebSG: Error setting hologram material.");
+    return JS_EXCEPTION;
+  }
+
+  return JS_UNDEFINED;
+}
+
+
 
 JSAtom SCALAR;
 JSAtom VEC2;
@@ -2278,7 +2332,7 @@ void js_define_websg_api(JSContext *ctx, JSValue *target) {
     ctx,
     websg,
     "nodeSetIsStatic",
-    JS_NewCFunction(ctx, js_node_set_is_static, "nodeSetIsStatic", 2)
+    JS_NewCFunction(ctx, js_node_set_is_static, "nodeSetIsStatic", 3)
   );
   JS_SetPropertyStr(
     ctx,
@@ -2401,6 +2455,12 @@ void js_define_websg_api(JSContext *ctx, JSValue *target) {
     websg,
     "meshSetPrimitiveDrawRange",
     JS_NewCFunction(ctx, js_mesh_set_primitive_draw_range, "meshSetPrimitiveDrawRange", 4)
+  );
+    JS_SetPropertyStr(
+    ctx,
+    websg,
+    "meshSetPrimitiveHologramMaterialEnabled",
+    JS_NewCFunction(ctx, js_mesh_set_primitive_hologram_material_enabled, "meshSetPrimitiveHologramMaterialEnabled", 3)
   );
 
   // Accessor

@@ -8,6 +8,7 @@ import {
   PMREMGenerator,
   Object3D,
   NoToneMapping,
+  Vector2,
 } from "three";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader";
 
@@ -45,6 +46,7 @@ import { updateTileRenderers } from "../tiles-renderer/tiles-renderer.render";
 import { InputModule } from "../input/input.render";
 import { updateDynamicAccessors } from "../accessor/accessor.render";
 import { EditorModule } from "../editor/editor.render";
+import { HologramMaterial } from "../material/HologramMaterial";
 
 export interface RenderThreadState extends ConsumerThreadContext {
   canvas?: HTMLCanvasElement;
@@ -70,6 +72,7 @@ export interface RendererModuleState {
   prevSceneResource?: ResourceId;
   sceneRenderedRequests: { id: number; sceneResourceId: ResourceId; frames: number }[];
   matrixMaterial: MatrixMaterial;
+  hologramMaterial: HologramMaterial;
   enableMatrixMaterial: boolean;
   scene: Scene;
   xrAvatarRoot: Object3D;
@@ -176,6 +179,7 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       sceneRenderedRequests: [],
       matrixMaterial,
       enableMatrixMaterial: false,
+      hologramMaterial: new HologramMaterial(new Vector2(initialCanvasWidth, initialCanvasHeight)),
       scene,
       xrAvatarRoot,
       dynamicAccessors: [],

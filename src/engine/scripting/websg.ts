@@ -27,7 +27,7 @@ import {
   RemoteScene,
   RemoteTexture,
 } from "../resource/RemoteResources";
-import { addChild, removeChild } from "../component/transform";
+import { addChild, removeChild, traverse } from "../component/transform";
 import {
   AccessorComponentType,
   AccessorType,
@@ -550,6 +550,19 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       return 0;
     },
+    node_set_is_static_recursive(nodeId: number, isStatic: number) {
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+      if (!node) {
+        return -1;
+      }
+
+      traverse(node, (child) => {
+        child.isStatic = !!isStatic;
+      });
+
+      return 0;
+    },
     node_get_mesh(nodeId: number) {
       const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
 
@@ -754,6 +767,19 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       }
 
       primitive.material = material;
+
+      return 0;
+    },
+    mesh_set_primitive_hologram_material_enabled(meshId: number, index: number, enabled: number) {
+      const mesh = getScriptResource(wasmCtx, RemoteMesh, meshId);
+
+      const primitive = mesh?.primitives[index];
+
+      if (!primitive) {
+        return -1;
+      }
+
+      primitive.hologramMaterialEnabled = !!enabled;
 
       return 0;
     },

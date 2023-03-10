@@ -3,6 +3,7 @@
 #include <string.h>
 #include "./quickjs/cutils.h"
 #include "./quickjs/quickjs.h"
+#include "./js-utils.h"
 #include "../websg-ui.h"
 #include "./websg-ui-js.h"
 
@@ -725,22 +726,6 @@ static JSValue js_create_ui_text(JSContext *ctx, JSValueConst this_val, int argc
   }
 
   ui_text_id_t text_id = websg_ui_create_text(props);
-
-  if (props->value != NULL) {
-    js_free(ctx, (void *)props->value);
-  }
-
-  if (props->font_family != NULL) {
-    js_free(ctx, (void *)props->font_family);
-  }
-
-  if (props->font_weight != NULL) {
-    js_free(ctx, (void *)props->font_weight);
-  }
-
-  if (props->font_style != NULL) {
-    js_free(ctx, (void *)props->font_style);
-  }
 
   if (text_id == 0) {
     JS_ThrowInternalError(ctx, "WebSG UI: Error creating UI text.");

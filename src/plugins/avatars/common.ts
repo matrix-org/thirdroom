@@ -6,6 +6,7 @@ export interface AvatarOptions {
   collisionGroup?: number;
 }
 
-export const AVATAR_HEIGHT = 1.2;
-export const AVATAR_OFFSET = -0.6;
-export const AVATAR_RADIUS = 0.5;
+export const AVATAR_CAPSULE_HEIGHT = 1;
+export const AVATAR_CAPSULE_RADIUS = 0.35;
+export const AVATAR_HEIGHT = AVATAR_CAPSULE_HEIGHT + AVATAR_CAPSULE_RADIUS * 2;
+export const AVATAR_CAMERA_OFFSET = 0.06;

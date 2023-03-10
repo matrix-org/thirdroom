@@ -469,6 +469,7 @@ function projectHitOntoCanvas(ctx: GameState, shapecastHit: RAPIER.ShapeCollider
   // convert to local space
   const hitPoint = vec3.clone([x, y, z]);
   vec3.sub(hitPoint, hitPoint, node.position);
+  vec3.transformQuat(hitPoint, hitPoint, node.quaternion);
 
   return hitPoint;
 }
@@ -772,9 +773,19 @@ function updateGrabThrowXR(
           interactable.released = false;
           interactable.held = true;
         }
+      } else if (triggerState.pressed && Interactable.type[focusedNode.eid] === InteractableType.UI) {
+        const interactable = focusedNode.interactable;
+
+        if (interactable) {
+          interactable.pressed = true;
+          interactable.released = false;
+          interactable.held = true;
+        }
+
+        const projectedHit = projectHitOntoCanvas(ctx, shapecastHit, focusedNode);
+        notifyUICanvasPressed(ctx, projectedHit, focusedNode);
       } else {
-        // TODO: websgui
-        // if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, focusedEntity);
+        if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, focusedEntity);
       }
     }
 

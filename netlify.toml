@@ -8,7 +8,7 @@
 
 [[redirects]]
   from = "/logviewer"
-  to = "/logviewer.html"
+  to = "/logviewer/index.html"
   status = 200
 
 [[redirects]]

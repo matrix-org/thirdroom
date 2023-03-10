@@ -21,7 +21,7 @@ export function useRoomTimeline(room?: Room) {
       setTimeline(Array.from(entries));
     };
 
-    if (room._timeline) {
+    if (room._timeline?.entries) {
       handleLoad(room._timeline);
     } else {
       room.openTimeline().then(handleLoad);
