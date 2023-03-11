@@ -1,5 +1,6 @@
 import { RefObject, useCallback, CSSProperties, memo } from "react";
 import { TreeView, TreeViewRefApi, NodeDropPosition, RenderNodeProps } from "@thirdroom/manifold-editor-components";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 
 import "./HierarchyPanel.css";
 import { EditorNode, ReparentEntityPosition } from "../../../../engine/editor/editor.common";
@@ -9,7 +10,6 @@ import {
   focusEntity,
   renameEntity,
   reparentEntities,
-  setSelectedEntity,
   toggleSelectedEntity,
 } from "../../../../engine/editor/editor.main";
 import { HierarchyNode, HierarchyNodeContent, HierarchyNodeDropTarget, HierarchyNodeLeafSpacer } from "./HierarchyNode";
@@ -23,9 +23,8 @@ import FormattedListIC from "../../../../../res/ic/formatted-list.svg";
 import { Text } from "../../../atoms/text/Text";
 import { Icon } from "../../../atoms/icon/Icon";
 import { EditorHeader, EditorHeaderTab } from "../../components/editor-header/EditorHeader";
-import { HierarchyTab, ResourceOptions } from "../../../hooks/useEditor";
 import { SelectInput } from "../../components/property-panel/SelectInput";
-import { MainThreadResource } from "../../../../engine/resource/resource.main";
+import { editorAtom, HierarchyTab, hierarchyTabAtom, resourceMenuAtom } from "../../../state/editor";
 
 enum DnDItemTypes {
   Node = "node",
@@ -133,7 +132,7 @@ const RenderNode = memo<RenderNodeProps>(
           ) : (
             <IconButton
               size="sm"
-              variant={isSelected ? "primary" : "surface"}
+              variant={isActive ? "primary" : "surface"}
               label={isExpanded ? "Collapse" : "Expand"}
               iconSrc={isExpanded ? TriangleBottomIC : TriangleRightIC}
               {...toggleProps}
@@ -142,11 +141,11 @@ const RenderNode = memo<RenderNodeProps>(
           <div className="flex items-center gap-xs grow">
             <Icon
               className="shrink-0"
-              color={isSelected ? "primary" : "surface"}
+              color={isActive ? "primary" : "surface"}
               size="sm"
               src={depth > 0 ? CircleIC : LanguageIC}
             />
-            <Text className="truncate" color={isSelected ? "primary" : "surface"} variant="b2" weight="medium">
+            <Text className="truncate" color={isActive ? "primary" : "surface"} variant="b2" weight="medium">
               {name}
             </Text>
           </div>
@@ -183,6 +182,7 @@ interface HierarchyPanelProps {
 
 export function HierarchyPanelTree({ activeEntity, selectedEntities, scene, treeViewRef }: HierarchyPanelProps) {
   const mainThread = useMainThreadContext();
+  const setEditor = useSetAtom(editorAtom);
 
   const canDrop = useCallback(
     (item: DnDItem, target: number | undefined, position: NodeDropPosition) => {
@@ -242,9 +242,13 @@ export function HierarchyPanelTree({ activeEntity, selectedEntities, scene, tree
   const onSetSelectedNode = useCallback(
     (nodeId: number) => {
       if (nodeId < 0) return;
-      setSelectedEntity(mainThread, nodeId);
+
+      setEditor({
+        type: "SELECT",
+        resourceId: nodeId,
+      });
     },
-    [mainThread]
+    [setEditor]
   );
 
   const onDoubleClickNode = useCallback(
@@ -295,24 +299,18 @@ export function HierarchyPanelTree({ activeEntity, selectedEntities, scene, tree
 }
 
 export function HierarchyPanel({
-  activeEntity,
-  selectedEntities,
   scene,
   resources,
-  hierarchyTab,
-  resourceType,
-  setHierarchyTab,
-  resourceOptions,
-  setResourceType,
   treeViewRef,
-}: HierarchyPanelProps & {
+}: {
+  scene: EditorNode;
   resources?: EditorNode;
-  resourceType: MainThreadResource;
-  hierarchyTab: HierarchyTab;
-  setHierarchyTab: (tab: HierarchyTab) => void;
-  resourceOptions: ResourceOptions;
-  setResourceType: (type: MainThreadResource) => void;
+  treeViewRef?: RefObject<TreeViewRefApi>;
 }) {
+  const [hierarchyTab, setHierarchyTab] = useAtom(hierarchyTabAtom);
+  const [resourceMenu, setResourceMenu] = useAtom(resourceMenuAtom);
+  const { activeEntity, selectedEntities } = useAtomValue(editorAtom);
+
   return (
     <div className="HierarchyPanel flex flex-column">
       <EditorHeader className="shrink-0">
@@ -342,7 +340,11 @@ export function HierarchyPanel({
       {hierarchyTab === HierarchyTab.Resources && (
         <>
           <div className="shrink-0" style={{ padding: "var(--sp-xxs) var(--sp-xxs) 0" }}>
-            <SelectInput value={resourceType} options={resourceOptions} onChange={setResourceType} />
+            <SelectInput
+              value={resourceMenu.selected}
+              options={resourceMenu.options}
+              onChange={(selected) => setResourceMenu({ selected })}
+            />
           </div>
           <div className="grow">
             {resources && (

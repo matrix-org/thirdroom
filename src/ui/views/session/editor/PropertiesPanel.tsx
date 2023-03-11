@@ -1,5 +1,6 @@
-import { ReactNode, useMemo, memo, FocusEventHandler, KeyboardEventHandler, useRef } from "react";
+import { ReactNode, useMemo, memo, FocusEventHandler, KeyboardEventHandler, useRef, useCallback } from "react";
 import classNames from "classnames";
+import { useAtom } from "jotai";
 
 import "./PropertiesPanel.css";
 
@@ -14,6 +15,8 @@ import { setProperty, setRefArrayProperty, setRefProperty } from "../../../../en
 import { setEulerFromQuaternion, setQuaternionFromEuler } from "../../../../engine/component/math";
 import { Icon } from "../../../atoms/icon/Icon";
 import CircleIC from "../../../../../res/ic/circle.svg";
+import ArrowBackIC from "../../../../../res/ic/arrow-back.svg";
+import ArrowForwardIC from "../../../../../res/ic/arrow-forward.svg";
 import {
   PropTypeType,
   ResourceDefinition,
@@ -36,6 +39,7 @@ import {
 import { IconButton } from "../../../atoms/button/IconButton";
 import { MultiSelectInput } from "../../components/property-panel/MultiSelectInput";
 import { NumericInput } from "../../../atoms/input/NumericInput";
+import { editorAtom } from "../../../state/editor";
 
 function getEulerRotation(quaternion: Float32Array) {
   const rotation = new Float32Array(3);
@@ -99,7 +103,7 @@ interface BasePropertyProps<T, PropDef> {
 const BoolProperty = memo<BasePropertyProps<boolean, ResourcePropDef<"bool", boolean, true, false, unknown, unknown>>>(
   ({ propName, value, setProp, propDef }) => {
     return (
-      <PropertyContainer key={propName} name={propName}>
+      <PropertyContainer name={propName}>
         <Checkbox
           checked={value ?? propDef.default}
           onCheckedChange={(checked) => setProp(propName, checked)}
@@ -114,7 +118,7 @@ const BoolProperty = memo<BasePropertyProps<boolean, ResourcePropDef<"bool", boo
 const U32Property = memo<BasePropertyProps<number, ResourcePropDef<"u32", number, true, false, unknown, unknown>>>(
   ({ propName, value, setProp, propDef }) => {
     return (
-      <PropertyContainer key={propName} name={propName}>
+      <PropertyContainer name={propName}>
         <NumericInput
           inputSize="sm"
           type="u32"
@@ -132,7 +136,7 @@ const U32Property = memo<BasePropertyProps<number, ResourcePropDef<"u32", number
 const F32Property = memo<BasePropertyProps<number, ResourcePropDef<"f32", number, true, false, unknown, unknown>>>(
   ({ propName, value, setProp, propDef }) => {
     return (
-      <PropertyContainer key={propName} name={propName}>
+      <PropertyContainer name={propName}>
         <NumericInput
           inputSize="sm"
           type="f32"
@@ -152,7 +156,7 @@ const Vec2Property = memo<
 >(
   ({ propName, value, propDef, setProp }) => {
     return (
-      <PropertyContainer key={propName} name={propName}>
+      <PropertyContainer name={propName}>
         <VectorInput
           value={value ?? propDef.default}
           type="vec2"
@@ -170,7 +174,7 @@ const Vec3Property = memo<
 >(
   ({ propName, value, propDef, setProp }) => {
     return (
-      <PropertyContainer key={propName} name={propName}>
+      <PropertyContainer name={propName}>
         <VectorInput
           value={value ?? propDef.default}
           type="vec3"
@@ -188,7 +192,7 @@ const QuatProperty = memo<
 >(
   ({ propName, value, propDef, setProp }) => {
     return (
-      <PropertyContainer key={propName} name={propName}>
+      <PropertyContainer name={propName}>
         <VectorInput
           value={getEulerRotation(value)}
           type="vec3"
@@ -208,7 +212,7 @@ const RgbProperty = memo<
 >(
   ({ propName, value, propDef, setProp }) => {
     return (
-      <PropertyContainer key={propName} name={propName}>
+      <PropertyContainer name={propName}>
         <ColorInput
           type="rgb"
           value={convertRGB(value ?? propDef.default, engineToUserChannel)}
@@ -226,7 +230,7 @@ const RgbaProperty = memo<
 >(
   ({ propName, value, propDef, setProp }) => {
     return (
-      <PropertyContainer key={propName} name={propName}>
+      <PropertyContainer name={propName}>
         <ColorInput
           type="rgba"
           value={convertRGBA(value ?? propDef.default, engineToUserChannel, engineToUserAlpha)}
@@ -244,7 +248,7 @@ const BitmaskProperty = memo<
 >(
   ({ propName, value, setProp, propDef }) => {
     return (
-      <PropertyContainer key={propName} name={propName}>
+      <PropertyContainer name={propName}>
         <NumericInput
           type="u32"
           inputSize="sm"
@@ -266,7 +270,7 @@ const EnumProperty = memo<
 >(
   ({ propName, value, setProp, propDef, options }) => {
     return (
-      <PropertyContainer key={propName} name={propName}>
+      <PropertyContainer name={propName}>
         <SelectInput
           value={value}
           options={options}
@@ -305,7 +309,7 @@ const StringProperty = memo<
     };
 
     return (
-      <PropertyContainer key={propName} name={propName}>
+      <PropertyContainer name={propName}>
         <Input
           ref={inputRef}
           onBlur={handleBlur}
@@ -327,7 +331,7 @@ const ArrayBufferProperty = memo<{
 }>(
   ({ propName, propDef }) => {
     return (
-      <PropertyContainer key={propName} name={propName}>
+      <PropertyContainer name={propName}>
         <Input inputSize="sm" value={`size: ${propDef.size}`} disabled outlined readOnly />
       </PropertyContainer>
     );
@@ -343,7 +347,7 @@ const RefProperty = memo<
 >(
   ({ propName, value, setProp, propDef, options, goToRef }) => {
     return (
-      <PropertyContainer key={propName} name={propName}>
+      <PropertyContainer name={propName}>
         <SelectInput
           before={
             <>
@@ -373,7 +377,7 @@ const RefArrayProperty = memo<
 >(
   ({ propName, value, setProp, propDef, options, goToRef }) => {
     return (
-      <PropertyContainer key={propName} name={propName}>
+      <PropertyContainer name={propName}>
         <MultiSelectInput
           options={options}
           selected={value}
@@ -479,7 +483,7 @@ export function getPropComponents(ctx: IMainThreadContext, resource: MainNode) {
       return <StringProperty key={propName} value={value} propName={propName} setProp={setProp} propDef={propDef} />;
     },
     arrayBuffer: (propName, propDef) => {
-      return <ArrayBufferProperty propName={propName} propDef={propDef} />;
+      return <ArrayBufferProperty key={propName} propName={propName} propDef={propDef} />;
     },
     ref: (propName, propDef, goToRef) => {
       const value = resource[propName];
@@ -532,15 +536,25 @@ export function getPropComponents(ctx: IMainThreadContext, resource: MainNode) {
 interface PropertiesPanelProps {
   className?: string;
   resource: MainNode;
-  goToRef: (resourceId: number) => void;
 }
 
-export function PropertiesPanel({ className, resource, goToRef }: PropertiesPanelProps) {
+export function PropertiesPanel({ className, resource }: PropertiesPanelProps) {
   const ctx = useMainThreadContext();
+  const [editorState, dispatchEditor] = useAtom(editorAtom);
 
   const resourceDef = resource.resourceDef;
   const schema = resourceDef.schema;
 
+  const goToRef = useCallback<GoToRefCallback>(
+    (resourceId) => {
+      dispatchEditor({
+        type: "SELECT",
+        resourceId,
+        isRef: true,
+      });
+    },
+    [dispatchEditor]
+  );
   const PropComponents = useMemo(() => getPropComponents(ctx, resource), [ctx, resource]);
 
   const properties = Object.entries(schema).map(([propName, propDef]) =>
@@ -551,9 +565,29 @@ export function PropertiesPanel({ className, resource, goToRef }: PropertiesPane
     <div className={classNames("PropertiesPanel flex flex-column", className)}>
       <EditorHeader className="shrink-0 flex items-center gap-xxs" style={{ padding: "0 var(--sp-xs)" }}>
         <Icon color="surface" size="sm" src={CircleIC} />
-        <Text variant="b2" weight="semi-bold">
+        <Text className="grow truncate" variant="b2" weight="semi-bold">
           {resource.name ?? "Unnamed"}
         </Text>
+        {editorState.activeEntityHistorySize > 0 && (
+          <>
+            <IconButton
+              color="surface"
+              size="sm"
+              label="Go Back"
+              iconSrc={ArrowBackIC}
+              onClick={() => dispatchEditor({ type: "SELECT_BACKWARD" })}
+              disabled={editorState.activeEntityHistoryIndex === 0}
+            />
+            <IconButton
+              color="surface"
+              size="sm"
+              label="Go Forward"
+              iconSrc={ArrowForwardIC}
+              onClick={() => dispatchEditor({ type: "SELECT_FORWARD" })}
+              disabled={editorState.activeEntityHistoryIndex >= editorState.activeEntityHistorySize - 1}
+            />
+          </>
+        )}
       </EditorHeader>
       <div className="grow">
         <Scroll type="scroll">{properties}</Scroll>

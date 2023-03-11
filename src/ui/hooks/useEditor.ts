@@ -1,7 +1,7 @@
-import { RefObject, useCallback, useEffect, useState } from "react";
+import { RefObject, useEffect, useState } from "react";
 import { TreeViewRefApi } from "@thirdroom/manifold-editor-components";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 
-import { IMainThreadContext } from "../../engine/MainThread";
 import { useMainThreadContext } from "./useMainThread";
 import { getModule } from "../../engine/module/module.common";
 import {
@@ -16,71 +16,45 @@ import {
   setSelectedEntity,
 } from "../../engine/editor/editor.main";
 import { EditorNode } from "../../engine/editor/editor.common";
-import { NOOP } from "../../engine/config.common";
 import { ResourceModule, MainNode, getLocalResource } from "../../engine/resource/resource.main";
-import { MainThreadResource } from "../../engine/resource/resource.main";
 import kebabToPascalCase from "../../engine/utils/kebabToPascalCase";
+import { editorAtom, HierarchyTab, hierarchyTabAtom, resourceMenuAtom } from "../state/editor";
 import { LocalResourceInstance, ResourceDefinition } from "../../engine/resource/ResourceDefinition";
-
-export enum HierarchyTab {
-  Scenes = "Scenes",
-  Resources = "Resources",
-}
-
-export type ResourceOptions = { value: MainThreadResource; label: string }[];
+import { IMainThreadContext } from "../../engine/MainThread";
 interface EditorUIState {
   loading: boolean;
-  activeEntity: number;
-  selectedEntities: number[];
   scene?: EditorNode;
   resources?: EditorNode;
-  resourceOptions: ResourceOptions;
-  hierarchyTab: HierarchyTab;
-  resourceType: MainThreadResource;
-  focusEid?: number;
 }
 
-type UseEditor = EditorUIState & {
-  setHierarchyTab: (tab: HierarchyTab) => void;
-  setResourceType: (type: MainThreadResource) => void;
-  goToRef: (resourceId: number) => void;
-};
-
-export function useEditor(treeViewRef: RefObject<TreeViewRefApi>): UseEditor {
+export function useEditor(treeViewRef: RefObject<TreeViewRefApi>): EditorUIState {
   const mainThread = useMainThreadContext();
   const editor = getModule(mainThread, EditorModule);
   const [state, setState] = useState<EditorUIState>({
-    activeEntity: NOOP,
-    loading: true,
-    selectedEntities: [],
-    focusEid: undefined,
-    resourceOptions: [],
-    resourceType: MainNode,
-    hierarchyTab: HierarchyTab.Scenes,
+    loading: false,
+    scene: undefined,
+    resources: undefined,
   });
 
-  const setHierarchyTab = useCallback((hierarchyTab: HierarchyTab) => {
-    setState((prev) => ({
-      ...prev,
-      hierarchyTab,
+  const setHierarchyTab = useSetAtom(hierarchyTabAtom);
+  const setResourceMenu = useSetAtom(resourceMenuAtom);
+  const selectedResourceType = useAtomValue(resourceMenuAtom).selected;
+  const [editorState] = useAtom(editorAtom);
+
+  useEffect(() => {
+    const resources = buildResourceList(mainThread, selectedResourceType);
+
+    setState((state) => ({
+      ...state,
+      resources,
     }));
-  }, []);
+  }, [selectedResourceType, mainThread]);
 
-  const setResourceType = useCallback(
-    (resourceType: MainThreadResource) => {
-      const resources = buildResourceList(mainThread, resourceType);
-
-      setState((prev) => ({
-        ...prev,
-        resources,
-        resourceType,
-      }));
-    },
-    [mainThread]
-  );
-
-  const goToRef = useCallback(
-    (resourceId: number) => {
+  useEffect(() => {
+    if (editorState.activeEntityHistorySize === 0) {
+      setSelectedEntity(mainThread, editorState.activeEntity);
+    } else {
+      const resourceId = editorState.activeEntity;
       const resource = getLocalResource<LocalResourceInstance<ResourceDefinition, IMainThreadContext>>(
         mainThread,
         resourceId
@@ -93,20 +67,27 @@ export function useEditor(treeViewRef: RefObject<TreeViewRefApi>): UseEditor {
       const resourceType = resource.constructor;
 
       setSelectedEntity(mainThread, resourceId);
+      setHierarchyTab(HierarchyTab.Resources);
+      setResourceMenu({ selected: resourceType });
       setState((prev) => ({
         ...prev,
-        hierarchyTab: HierarchyTab.Resources,
-        resourceType,
         resources: buildResourceList(mainThread, resourceType),
       }));
 
       if (treeViewRef) {
-        // TODO: Figure out why this doesn't seem to be scrolling to the node properly
-        treeViewRef.current?.scrollToNode(resource.eid, "center");
+        setTimeout(() => {
+          treeViewRef.current?.scrollToNode(resource.eid, "center");
+        });
       }
-    },
-    [mainThread, treeViewRef]
-  );
+    }
+  }, [
+    mainThread,
+    editorState.activeEntity,
+    editorState.activeEntityHistorySize,
+    treeViewRef,
+    setResourceMenu,
+    setHierarchyTab,
+  ]);
 
   useEffect(() => {
     function onEditorLoaded({ activeEntity, selectedEntities }: EditorLoadedEvent) {
@@ -117,37 +98,26 @@ export function useEditor(treeViewRef: RefObject<TreeViewRefApi>): UseEditor {
         label: kebabToPascalCase(resourceConstructor.resourceDef.name),
       }));
       const resourceType = resourceOptions[0]?.value ?? MainNode;
-      const resources = buildResourceList(mainThread, resourceType);
 
+      setResourceMenu({
+        selected: resourceType,
+        options: resourceOptions,
+      });
       setState((state) => ({
         ...state,
         loading: false,
-        activeEntity,
-        selectedEntities,
-        resourceOptions,
-        resources,
-        resourceType,
+        resources: buildResourceList(mainThread, resourceType),
       }));
     }
 
     function onHierarchyChanged({ activeEntity, selectedEntities, scene }: HierarchyChangedEvent) {
       setState((state) => ({
         ...state,
-        loading: false,
-        activeEntity,
-        selectedEntities,
         scene,
       }));
     }
 
-    function onSelectionChanged({ activeEntity, selectedEntities }: SelectionChangedEvent) {
-      setState((state) => ({
-        ...state,
-        loading: false,
-        activeEntity,
-        selectedEntities,
-      }));
-    }
+    function onSelectionChanged({ activeEntity, selectedEntities }: SelectionChangedEvent) {}
 
     editor.eventEmitter.addListener(EditorEventType.EditorLoaded, onEditorLoaded);
     editor.eventEmitter.addListener(EditorEventType.HierarchyChanged, onHierarchyChanged);
@@ -160,7 +130,7 @@ export function useEditor(treeViewRef: RefObject<TreeViewRefApi>): UseEditor {
       editor.eventEmitter.removeListener(EditorEventType.HierarchyChanged, onHierarchyChanged);
       editor.eventEmitter.removeListener(EditorEventType.SelectionChanged, onSelectionChanged);
     };
-  }, [editor, mainThread]);
+  }, [editor, mainThread, setResourceMenu]);
 
-  return { ...state, setHierarchyTab, setResourceType, goToRef };
+  return { ...state };
 }
