@@ -38,6 +38,7 @@ export function SelectInput<T>({ before, options, disabled, value, onChange }: S
         <button
           className="SelectInput__button grow flex items-center gap-xxs"
           {...getToggleButtonProps()}
+          type="button"
           disabled={disabled}
         >
           <Text className="grow truncate" variant="b3">
