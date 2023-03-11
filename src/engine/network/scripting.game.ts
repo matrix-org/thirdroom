@@ -107,6 +107,12 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
   };
 }
 
+export function disposeWebSGNetworkModule(ctx: GameState) {
+  const websgNetwork = getModule(ctx, WebSGNetworkModule);
+  websgNetwork.inbound.length = 0;
+  websgNetwork.listening = false;
+}
+
 const messageView = createCursorView(new ArrayBuffer(10000));
 
 function createScriptMessage(ctx: GameState, packet: ArrayBuffer) {
