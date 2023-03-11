@@ -217,7 +217,12 @@ export function WorldView({ world }: WorldViewProps) {
             if (!message.uri) throw Error("Portal does not have valid matrix id/alias");
 
             const parsedUri = parseMatrixUri(message.uri);
+
             if (parsedUri instanceof URL) {
+              if (parsedUri.protocol === "ipsme:") {
+                return;
+              }
+
               window.location.href = parsedUri.href;
               return;
             }
