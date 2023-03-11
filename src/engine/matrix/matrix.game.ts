@@ -104,3 +104,9 @@ export function createMatrixWASMModule(ctx: GameState, wasmCtx: WASMModuleContex
     },
   };
 }
+
+export function disposeMatrixWASMModule(ctx: GameState) {
+  const matrixModule = getModule(ctx, MatrixModule);
+  matrixModule.listening = false;
+  matrixModule.inboundWidgetMessages.length = 0;
+}

@@ -3,8 +3,8 @@ import { addComponent, defineQuery, exitQuery } from "bitecs";
 import scriptingRuntimeWASMUrl from "./emscripten/build/scripting-runtime.wasm?url";
 import { createCursorView } from "../allocator/CursorView";
 import { GameState, RemoteResourceManager } from "../GameTypes";
-import { createMatrixWASMModule } from "../matrix/matrix.game";
-import { createWebSGNetworkModule } from "../network/scripting.game";
+import { createMatrixWASMModule, disposeMatrixWASMModule } from "../matrix/matrix.game";
+import { createWebSGNetworkModule, disposeWebSGNetworkModule } from "../network/scripting.game";
 import { RemoteScene } from "../resource/RemoteResources";
 import { createThirdroomModule } from "./thirdroom";
 import { createWASIModule } from "./wasi";
@@ -27,6 +27,7 @@ export interface Script {
   loaded: () => void;
   entered: () => void;
   update: (dt: number) => void;
+  dispose: () => void;
 }
 
 export const ScriptComponent = new Map<number, Script>();
@@ -54,6 +55,8 @@ export function ScriptingSystem(ctx: GameState) {
 
   for (let i = 0; i < removedEntities.length; i++) {
     const eid = removedEntities[i];
+    const script = ScriptComponent.get(eid)!;
+    script.dispose();
     ScriptComponent.delete(eid);
   }
 }
@@ -217,6 +220,10 @@ export async function loadScript(
       } else {
         throw new Error("update() can only be called from the Loaded or Entered state");
       }
+    },
+    dispose() {
+      disposeMatrixWASMModule(ctx);
+      disposeWebSGNetworkModule(ctx);
     },
   };
 
