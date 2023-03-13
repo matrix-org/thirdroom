@@ -1,5 +1,6 @@
 import { MouseEventHandler, useState } from "react";
 import { GroupCall, Platform, Room } from "@thirdroom/hydrogen-view-sdk";
+import { useAtomValue, useSetAtom } from "jotai";
 
 import { Avatar } from "../../../atoms/avatar/Avatar";
 import { AvatarOutline } from "../../../atoms/avatar/AvatarOutline";
@@ -17,12 +18,15 @@ import MicIC from "../../../../../res/ic/mic.svg";
 import MicOffIC from "../../../../../res/ic/mic-off.svg";
 import CallCrossIC from "../../../../../res/ic/call-cross.svg";
 import MoreHorizontalIC from "../../../../../res/ic/more-horizontal.svg";
+import MessageIC from "../../../../../res/ic/message.svg";
 import { useCallMute } from "../../../hooks/useCallMute";
 import { useMicrophoneState } from "../../../hooks/useMicrophoneState";
 import { usePermissionState } from "../../../hooks/usePermissionState";
 import { exceptionToString, RequestException, useStreamRequest } from "../../../hooks/useStreamRequest";
 import { AlertDialog } from "../dialogs/AlertDialog";
 import { Text } from "../../../atoms/text/Text";
+import { InviteDialog } from "../dialogs/InviteDialog";
+import { activeChatsAtom, openedChatAtom } from "../../../state/overlayChat";
 
 interface NowPlayingWorldProps {
   world: Room;
@@ -37,12 +41,15 @@ export function NowPlayingWorld({ world, activeCall, onExitWorld, platform }: No
   const [micException, setMicException] = useState<RequestException>();
   const [microphone, setMicrophone] = useMicrophoneState();
   const { mute: callMute, handleMute } = useCallMute(activeCall);
+  const setActiveChat = useSetAtom(activeChatsAtom);
+  const openedChatId = useAtomValue(openedChatAtom);
 
   if (callMute === microphone) {
     setMicrophone(!microphone);
   }
 
   const [isMemberDialog, setIsMemberDialog] = useState(false);
+  const [inviteDialog, setInviteDialog] = useState(false);
 
   return (
     <NowPlaying
@@ -62,6 +69,16 @@ export function NowPlayingWorld({ world, activeCall, onExitWorld, platform }: No
           <NowPlayingStatus status="connected">Connected</NowPlayingStatus>
           <NowPlayingTitle>{world.name || "Unnamed World"}</NowPlayingTitle>
         </>
+      }
+      options={
+        <Tooltip side="top" content={openedChatId === world.id ? "Minimize Chat" : "Open Chat"}>
+          <IconButton
+            onClick={() => setActiveChat({ type: openedChatId === world.id ? "MINIMIZE" : "OPEN", roomId: world.id })}
+            variant="surface-low"
+            label="Options"
+            iconSrc={MessageIC}
+          />
+        </Tooltip>
       }
       leftControls={
         <>
@@ -98,7 +115,18 @@ export function NowPlayingWorld({ world, activeCall, onExitWorld, platform }: No
           <Dialog open={isMemberDialog} onOpenChange={setIsMemberDialog}>
             <MemberListDialog room={world} requestClose={() => setIsMemberDialog(false)} />
           </Dialog>
-          <DropdownMenu content={<DropdownMenuItem onSelect={() => setIsMemberDialog(true)}>Members</DropdownMenuItem>}>
+
+          <Dialog open={inviteDialog} onOpenChange={setInviteDialog}>
+            <InviteDialog roomId={world.id} requestClose={() => setInviteDialog(false)} />
+          </Dialog>
+          <DropdownMenu
+            content={
+              <>
+                <DropdownMenuItem onSelect={() => setInviteDialog(true)}>Invite</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setIsMemberDialog(true)}>Members</DropdownMenuItem>
+              </>
+            }
+          >
             <IconButton variant="surface-low" label="Options" iconSrc={MoreHorizontalIC} />
           </DropdownMenu>
         </>
