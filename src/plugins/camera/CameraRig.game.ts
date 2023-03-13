@@ -1,4 +1,4 @@
-import { addComponent, defineComponent, defineQuery, exitQuery, hasComponent, Query } from "bitecs";
+import { addComponent, defineQuery, exitQuery, hasComponent, Query } from "bitecs";
 import { vec2, glMatrix as glm, quat, vec3 } from "gl-matrix";
 
 import { Axes, clamp } from "../../engine/component/math";
@@ -16,8 +16,8 @@ import {
 } from "../../engine/input/InputController";
 import { defineModule, getModule, Thread } from "../../engine/module/module.common";
 import { getRemoteResource, tryGetRemoteResource } from "../../engine/resource/resource.game";
-import { RemoteNode, removeObjectFromWorld } from "../../engine/resource/RemoteResources";
-import { addChild, findChild } from "../../engine/component/transform";
+import { addObjectToWorld, RemoteNode, removeObjectFromWorld } from "../../engine/resource/RemoteResources";
+import { addChild } from "../../engine/component/transform";
 import { createRemotePerspectiveCamera, getCamera } from "../../engine/camera/camera.game";
 import { ThirdPersonComponent } from "./../thirdroom/thirdroom.game";
 import { CameraRigMessage } from "./CameraRig.common";
@@ -56,7 +56,8 @@ export const CameraRigModule = defineModule<GameState, { orbiting: boolean }>({
 
 export const CameraRigAction = {
   LookMovement: "CameraRig/LookMovement",
-  Drag: "CameraRig/Drag",
+  ScreenPosition: "CameraRig/ScreenPosition",
+  LeftMouse: "CameraRig/LeftMouse",
   Zoom: "CameraRig/Zoom",
   ExitOrbit: "CameraRig/ExitOrbit",
 };
@@ -65,8 +66,8 @@ export const CameraRigActionMap: ActionMap = {
   id: "camera-rig",
   actionDefs: [
     {
-      id: "drag",
-      path: CameraRigAction.Drag,
+      id: "left-mouse",
+      path: CameraRigAction.LeftMouse,
       type: ActionType.Button,
       bindings: [
         {
@@ -116,7 +117,7 @@ export enum CameraRigType {
   Orbit,
   PointerLock,
 }
-export interface CameraRigPitch {
+export interface PitchRef {
   type: CameraRigType;
   target: number;
   pitch: number;
@@ -124,24 +125,41 @@ export interface CameraRigPitch {
   minAngle: number;
   sensitivity: number;
 }
-export interface CameraRigYaw {
+export interface YawRef {
   type: CameraRigType;
   target: number;
   sensitivity: number;
 }
-export interface CameraRigZoom {
+export interface ZoomRef {
   type: CameraRigType;
   target: number;
   min: number;
   max: number;
 }
+export interface OrbitAnchorRef {
+  target: number;
+}
 
-export const CameraRigPitch = new Map<number, CameraRigPitch>();
-export const CameraRigYaw = new Map<number, CameraRigYaw>();
-export const CameraRigZoom = new Map<number, CameraRigZoom>();
+// Components
+export const PitchRef = new Map<number, PitchRef>();
+export const YawRef = new Map<number, YawRef>();
+export const ZoomRef = new Map<number, ZoomRef>();
+export const OrbitAnchorRef = new Map<number, OrbitAnchorRef>();
 
-export const OrbitAnchor = defineComponent();
+// Queries
+export const pitchRefQuery = defineQuery([PitchRef]);
+export const exitPitchRefQuery = exitQuery(pitchRefQuery);
 
+export const yawRefQuery = defineQuery([YawRef]);
+export const exitYawRefQuery = exitQuery(yawRefQuery);
+
+export const zoomRefQuery = defineQuery([ZoomRef]);
+export const exitZoomRefQuery = exitQuery(zoomRefQuery);
+
+export const orbitAnchorQuery = defineQuery([OrbitAnchorRef]);
+export const exitOrbitAnchorQuery = exitQuery(orbitAnchorQuery);
+
+// Constants
 const DEFAULT_SENSITIVITY = 100;
 
 const ZOOM_MIN = 0.5;
@@ -154,7 +172,9 @@ export function startOrbit(ctx: GameState, nodeToOrbit: RemoteNode) {
   camRigModule.orbiting = true;
 
   const orbitAnchor = new RemoteNode(ctx.resourceManager);
-  addComponent(ctx.world, OrbitAnchor, orbitAnchor.eid);
+  addOrbitAnchor(ctx.world, orbitAnchor, nodeToOrbit);
+
+  addObjectToWorld(ctx, orbitAnchor);
 
   const controller = createInputController(input.defaultController);
   addInputController(ctx.world, input, controller, orbitAnchor.eid);
@@ -163,8 +183,6 @@ export function startOrbit(ctx: GameState, nodeToOrbit: RemoteNode) {
   const [camera] = addCameraRig(ctx, orbitAnchor, CameraRigType.Orbit);
 
   camera.position[2] = 6;
-
-  addChild(nodeToOrbit, orbitAnchor);
 
   ctx.worldResource.activeCameraNode = camera;
 
@@ -182,9 +200,6 @@ export function stopOrbit(ctx: GameState) {
   const node = tryGetRemoteResource<RemoteNode>(ctx, ourPlayer);
   embodyAvatar(ctx, physics, input, node);
 
-  const orbitAnchor = findChild(node, (child) => hasComponent(ctx.world, OrbitAnchor, child.eid));
-  if (orbitAnchor) removeObjectFromWorld(ctx, orbitAnchor);
-
   ctx.sendMessage(Thread.Main, { type: CameraRigMessage.StopOrbit });
 }
 
@@ -193,7 +208,7 @@ export function addCameraRig(
   node: RemoteNode,
   type: CameraRigType,
   anchorOffset?: vec3
-): [RemoteNode, CameraRigPitch, CameraRigYaw, CameraRigZoom] {
+): [RemoteNode, PitchRef, YawRef, ZoomRef] {
   // add camera anchor
   const cameraAnchor = new RemoteNode(ctx.resourceManager);
   cameraAnchor.name = "Camera Anchor";
@@ -218,8 +233,8 @@ export function addCameraRig(
 }
 
 export function addCameraRigPitchTarget(world: World, node: RemoteNode, target: RemoteNode, type: CameraRigType) {
-  addComponent(world, CameraRigPitch, node.eid);
-  const pitch: CameraRigPitch = {
+  addComponent(world, PitchRef, node.eid);
+  const pitch: PitchRef = {
     type,
     target: target.eid,
     pitch: 0,
@@ -227,43 +242,44 @@ export function addCameraRigPitchTarget(world: World, node: RemoteNode, target: 
     minAngle: -89,
     sensitivity: DEFAULT_SENSITIVITY,
   };
-  CameraRigPitch.set(node.eid, pitch);
+  PitchRef.set(node.eid, pitch);
   return pitch;
 }
 
 export function addCameraRigYawTarget(world: World, node: RemoteNode, target: RemoteNode, type: CameraRigType) {
-  addComponent(world, CameraRigYaw, node.eid);
-  const yaw: CameraRigYaw = {
+  addComponent(world, YawRef, node.eid);
+  const yaw: YawRef = {
     type,
     target: target.eid,
     sensitivity: DEFAULT_SENSITIVITY,
   };
-  CameraRigYaw.set(node.eid, yaw);
+  YawRef.set(node.eid, yaw);
   return yaw;
 }
 
 export function addCameraRigZoomTarget(world: World, node: RemoteNode, target: RemoteNode, type: CameraRigType) {
-  addComponent(world, CameraRigZoom, node.eid);
-  const zoom: CameraRigZoom = {
+  addComponent(world, ZoomRef, node.eid);
+  const zoom: ZoomRef = {
     type,
     target: target.eid,
     min: ZOOM_MIN,
     max: ZOOM_MAX,
   };
-  CameraRigZoom.set(node.eid, zoom);
+  ZoomRef.set(node.eid, zoom);
   return zoom;
 }
 
-export const cameraRigPitchQuery = defineQuery([CameraRigPitch, RemoteNode]);
-export const exitCameraRigPitchQuery = exitQuery(cameraRigPitchQuery);
+export function addOrbitAnchor(world: World, node: RemoteNode, target: RemoteNode) {
+  addComponent(world, OrbitAnchorRef, node.eid);
+  const anchor: OrbitAnchorRef = {
+    target: target.eid,
+  };
+  OrbitAnchorRef.set(node.eid, anchor);
+  node.position.set(target.position);
+  return anchor;
+}
 
-export const cameraRigYawQuery = defineQuery([CameraRigYaw, RemoteNode]);
-export const exitCameraRigYawQuery = exitQuery(cameraRigYawQuery);
-
-export const cameraRigZoomQuery = defineQuery([CameraRigZoom, RemoteNode]);
-export const exitCameraRigZoomQuery = exitQuery(cameraRigZoomQuery);
-
-function applyYaw(ctx: GameState, controller: InputController, rigYaw: CameraRigYaw) {
+function applyYaw(ctx: GameState, controller: InputController, rigYaw: YawRef) {
   const node = tryGetRemoteResource<RemoteNode>(ctx, rigYaw.target);
 
   const [lookX] = controller.actionStates.get(CameraRigAction.LookMovement) as vec2;
@@ -275,7 +291,7 @@ function applyYaw(ctx: GameState, controller: InputController, rigYaw: CameraRig
   }
 }
 
-function applyPitch(ctx: GameState, controller: InputController, rigPitch: CameraRigPitch) {
+function applyPitch(ctx: GameState, controller: InputController, rigPitch: PitchRef) {
   const node = tryGetRemoteResource<RemoteNode>(ctx, rigPitch.target);
 
   const [, lookY] = controller.actionStates.get(CameraRigAction.LookMovement) as vec2;
@@ -303,7 +319,7 @@ function applyPitch(ctx: GameState, controller: InputController, rigPitch: Camer
   }
 }
 
-function applyZoom(ctx: GameState, controller: InputController, rigZoom: CameraRigZoom) {
+function applyZoom(ctx: GameState, controller: InputController, rigZoom: ZoomRef) {
   const node = tryGetRemoteResource<RemoteNode>(ctx, rigZoom.target);
 
   const [, scrollY] = controller.actionStates.get(CameraRigAction.Zoom) as vec2;
@@ -317,11 +333,33 @@ function applyZoom(ctx: GameState, controller: InputController, rigZoom: CameraR
 export function CameraRigSystem(ctx: GameState) {
   const input = getModule(ctx, InputModule);
   const network = getModule(ctx, NetworkModule);
+  const camRigModule = getModule(ctx, CameraRigModule);
 
   if (network.authoritative && !isHost(network) && !network.clientSidePrediction) {
     return;
   }
 
+  // sync orbit anchor with their target's position
+  const orbitAnchors = orbitAnchorQuery(ctx.world);
+  for (let i = 0; i < orbitAnchors.length; i++) {
+    const eid = orbitAnchors[i];
+    const orbitAnchor = OrbitAnchorRef.get(eid)!;
+    const orbitAnchorNode = tryGetRemoteResource<RemoteNode>(ctx, eid);
+    const targetNode = getRemoteResource<RemoteNode>(ctx, orbitAnchor.target);
+
+    // if not orbiting anymore or target was removed, remove the orbit anchor
+    if (!camRigModule.orbiting || !targetNode) {
+      // if target removed, return control to the avatar
+      if (!targetNode) stopOrbit(ctx);
+      removeObjectFromWorld(ctx, orbitAnchorNode);
+      continue;
+    }
+
+    // otherwise set its position to the target
+    orbitAnchorNode.position.set(targetNode.position);
+  }
+
+  // stop orbiting if esc is pressed
   const controllers = inputControllerQuery(ctx.world);
   for (let i = 0; i < controllers.length; i++) {
     const eid = controllers[i];
@@ -332,38 +370,38 @@ export function CameraRigSystem(ctx: GameState) {
     }
   }
 
-  const pitchEntities = cameraRigPitchQuery(ctx.world);
+  const pitchEntities = pitchRefQuery(ctx.world);
   for (let i = 0; i < pitchEntities.length; i++) {
     const eid = pitchEntities[i];
-    const pitch = CameraRigPitch.get(eid)!;
+    const pitch = PitchRef.get(eid)!;
     const controller = tryGetInputController(input, eid);
 
-    const drag = controller.actionStates.get(CameraRigAction.Drag) as ButtonActionState;
-    if (pitch.type === CameraRigType.Orbit && !drag.held) {
+    const leftMouse = controller.actionStates.get(CameraRigAction.LeftMouse) as ButtonActionState;
+    if (pitch.type === CameraRigType.Orbit && !leftMouse.held) {
       continue;
     }
 
     applyPitch(ctx, controller, pitch);
   }
 
-  const yawEntities = cameraRigYawQuery(ctx.world);
+  const yawEntities = yawRefQuery(ctx.world);
   for (let i = 0; i < yawEntities.length; i++) {
     const eid = yawEntities[i];
-    const yaw = CameraRigYaw.get(eid)!;
+    const yaw = YawRef.get(eid)!;
     const controller = tryGetInputController(input, eid);
 
-    const drag = controller.actionStates.get(CameraRigAction.Drag) as ButtonActionState;
-    if (yaw.type === CameraRigType.Orbit && !drag.held) {
+    const leftMouse = controller.actionStates.get(CameraRigAction.LeftMouse) as ButtonActionState;
+    if (yaw.type === CameraRigType.Orbit && !leftMouse.held) {
       continue;
     }
 
     applyYaw(ctx, controller, yaw);
   }
 
-  const zoomEntities = cameraRigZoomQuery(ctx.world);
+  const zoomEntities = zoomRefQuery(ctx.world);
   for (let i = 0; i < zoomEntities.length; i++) {
     const eid = zoomEntities[i];
-    const zoom = CameraRigZoom.get(eid)!;
+    const zoom = ZoomRef.get(eid)!;
     const controller = tryGetInputController(input, eid);
 
     if (zoom.type === CameraRigType.PointerLock && !hasComponent(ctx.world, ThirdPersonComponent, eid)) {
@@ -373,9 +411,10 @@ export function CameraRigSystem(ctx: GameState) {
     applyZoom(ctx, controller, zoom);
   }
 
-  exitQueryCleanup(ctx, exitCameraRigPitchQuery, CameraRigPitch);
-  exitQueryCleanup(ctx, exitCameraRigYawQuery, CameraRigYaw);
-  exitQueryCleanup(ctx, exitCameraRigZoomQuery, CameraRigZoom);
+  exitQueryCleanup(ctx, exitPitchRefQuery, PitchRef);
+  exitQueryCleanup(ctx, exitYawRefQuery, YawRef);
+  exitQueryCleanup(ctx, exitZoomRefQuery, ZoomRef);
+  exitQueryCleanup(ctx, exitOrbitAnchorQuery, OrbitAnchorRef);
 }
 
 function exitQueryCleanup(ctx: GameState, query: Query, component: Map<number, any>) {
