@@ -40,6 +40,8 @@ import {
 import { Networked } from "../../engine/network/NetworkComponents";
 import { createDisposables } from "../../engine/utils/createDisposables";
 import { ThirdRoomMessageType } from "../thirdroom/thirdroom.common";
+import { sendInteractionMessage } from "../interaction/interaction.game";
+import { InteractableAction } from "../interaction/interaction.common";
 
 export const CameraRigModule = defineModule<GameState, { orbiting: boolean }>({
   name: "camera-rig-module",
@@ -126,7 +128,7 @@ export enum CameraRigType {
   Orbit,
   PointerLock,
 }
-export interface PitchRef {
+export interface PitchComponent {
   type: CameraRigType;
   target: number;
   pitch: number;
@@ -134,38 +136,38 @@ export interface PitchRef {
   minAngle: number;
   sensitivity: number;
 }
-export interface YawRef {
+export interface YawComponent {
   type: CameraRigType;
   target: number;
   sensitivity: number;
 }
-export interface ZoomRef {
+export interface ZoomComponent {
   type: CameraRigType;
   target: number;
   min: number;
   max: number;
 }
-export interface OrbitAnchorRef {
+export interface OrbitAnchor {
   target: number;
 }
 
 // Components
-export const PitchRef = new Map<number, PitchRef>();
-export const YawRef = new Map<number, YawRef>();
-export const ZoomRef = new Map<number, ZoomRef>();
-export const OrbitAnchorRef = new Map<number, OrbitAnchorRef>();
+export const PitchComponent = new Map<number, PitchComponent>();
+export const YawComponent = new Map<number, YawComponent>();
+export const ZoomComponent = new Map<number, ZoomComponent>();
+export const OrbitAnchor = new Map<number, OrbitAnchor>();
 
 // Queries
-export const pitchRefQuery = defineQuery([PitchRef]);
-export const exitPitchRefQuery = exitQuery(pitchRefQuery);
+export const pitchQuery = defineQuery([PitchComponent]);
+export const exitPitchQuery = exitQuery(pitchQuery);
 
-export const yawRefQuery = defineQuery([YawRef]);
-export const exitYawRefQuery = exitQuery(yawRefQuery);
+export const yawQuery = defineQuery([YawComponent]);
+export const exitYawQuery = exitQuery(yawQuery);
 
-export const zoomRefQuery = defineQuery([ZoomRef]);
-export const exitZoomRefQuery = exitQuery(zoomRefQuery);
+export const zoomQuery = defineQuery([ZoomComponent]);
+export const exitZoomQuery = exitQuery(zoomQuery);
 
-export const orbitAnchorQuery = defineQuery([OrbitAnchorRef]);
+export const orbitAnchorQuery = defineQuery([OrbitAnchor]);
 export const exitOrbitAnchorQuery = exitQuery(orbitAnchorQuery);
 
 // Constants
@@ -196,6 +198,8 @@ export function startOrbit(ctx: GameState, nodeToOrbit: RemoteNode) {
   ctx.worldResource.activeCameraNode = camera;
 
   ctx.sendMessage(Thread.Main, { type: CameraRigMessage.StartOrbit });
+
+  sendInteractionMessage(ctx, InteractableAction.Unfocus);
 }
 
 export function stopOrbit(ctx: GameState) {
@@ -204,6 +208,11 @@ export function stopOrbit(ctx: GameState) {
   const camRigModule = getModule(ctx, CameraRigModule);
 
   camRigModule.orbiting = false;
+
+  orbitAnchorQuery(ctx.world).forEach((eid) => {
+    const orbitAnchorNode = tryGetRemoteResource<RemoteNode>(ctx, eid);
+    removeObjectFromWorld(ctx, orbitAnchorNode);
+  });
 
   const ourPlayer = ourPlayerQuery(ctx.world)[0];
   const node = tryGetRemoteResource<RemoteNode>(ctx, ourPlayer);
@@ -217,7 +226,7 @@ export function addCameraRig(
   node: RemoteNode,
   type: CameraRigType,
   anchorOffset?: vec3
-): [RemoteNode, PitchRef, YawRef, ZoomRef] {
+): [RemoteNode, PitchComponent, YawComponent, ZoomComponent] {
   // add camera anchor
   const cameraAnchor = new RemoteNode(ctx.resourceManager);
   cameraAnchor.name = "Camera Anchor";
@@ -242,8 +251,8 @@ export function addCameraRig(
 }
 
 export function addCameraRigPitchTarget(world: World, node: RemoteNode, target: RemoteNode, type: CameraRigType) {
-  addComponent(world, PitchRef, node.eid);
-  const pitch: PitchRef = {
+  addComponent(world, PitchComponent, node.eid);
+  const pitch: PitchComponent = {
     type,
     target: target.eid,
     pitch: 0,
@@ -251,44 +260,44 @@ export function addCameraRigPitchTarget(world: World, node: RemoteNode, target: 
     minAngle: -89,
     sensitivity: DEFAULT_SENSITIVITY,
   };
-  PitchRef.set(node.eid, pitch);
+  PitchComponent.set(node.eid, pitch);
   return pitch;
 }
 
 export function addCameraRigYawTarget(world: World, node: RemoteNode, target: RemoteNode, type: CameraRigType) {
-  addComponent(world, YawRef, node.eid);
-  const yaw: YawRef = {
+  addComponent(world, YawComponent, node.eid);
+  const yaw: YawComponent = {
     type,
     target: target.eid,
     sensitivity: DEFAULT_SENSITIVITY,
   };
-  YawRef.set(node.eid, yaw);
+  YawComponent.set(node.eid, yaw);
   return yaw;
 }
 
 export function addCameraRigZoomTarget(world: World, node: RemoteNode, target: RemoteNode, type: CameraRigType) {
-  addComponent(world, ZoomRef, node.eid);
-  const zoom: ZoomRef = {
+  addComponent(world, ZoomComponent, node.eid);
+  const zoom: ZoomComponent = {
     type,
     target: target.eid,
     min: ZOOM_MIN,
     max: ZOOM_MAX,
   };
-  ZoomRef.set(node.eid, zoom);
+  ZoomComponent.set(node.eid, zoom);
   return zoom;
 }
 
 export function addOrbitAnchor(world: World, node: RemoteNode, target: RemoteNode) {
-  addComponent(world, OrbitAnchorRef, node.eid);
-  const anchor: OrbitAnchorRef = {
+  addComponent(world, OrbitAnchor, node.eid);
+  const anchor: OrbitAnchor = {
     target: target.eid,
   };
-  OrbitAnchorRef.set(node.eid, anchor);
+  OrbitAnchor.set(node.eid, anchor);
   node.position.set(target.position);
   return anchor;
 }
 
-function applyYaw(ctx: GameState, controller: InputController, rigYaw: YawRef) {
+function applyYaw(ctx: GameState, controller: InputController, rigYaw: YawComponent) {
   const node = tryGetRemoteResource<RemoteNode>(ctx, rigYaw.target);
 
   const [lookX] = controller.actionStates.get(CameraRigAction.LookMovement) as vec2;
@@ -300,7 +309,7 @@ function applyYaw(ctx: GameState, controller: InputController, rigYaw: YawRef) {
   }
 }
 
-function applyPitch(ctx: GameState, controller: InputController, rigPitch: PitchRef) {
+function applyPitch(ctx: GameState, controller: InputController, rigPitch: PitchComponent) {
   const node = tryGetRemoteResource<RemoteNode>(ctx, rigPitch.target);
 
   const [, lookY] = controller.actionStates.get(CameraRigAction.LookMovement) as vec2;
@@ -329,7 +338,7 @@ function applyPitch(ctx: GameState, controller: InputController, rigPitch: Pitch
 }
 
 const _v = vec3.create();
-function applyZoom(ctx: GameState, controller: InputController, rigZoom: ZoomRef) {
+function applyZoom(ctx: GameState, controller: InputController, rigZoom: ZoomComponent) {
   const node = tryGetRemoteResource<RemoteNode>(ctx, rigZoom.target);
 
   const [, scrollY] = controller.actionStates.get(CameraRigAction.Zoom) as vec2;
@@ -353,7 +362,7 @@ export function CameraRigSystem(ctx: GameState) {
   const orbitAnchors = orbitAnchorQuery(ctx.world);
   for (let i = 0; i < orbitAnchors.length; i++) {
     const eid = orbitAnchors[i];
-    const orbitAnchor = OrbitAnchorRef.get(eid)!;
+    const orbitAnchor = OrbitAnchor.get(eid)!;
     const orbitAnchorNode = tryGetRemoteResource<RemoteNode>(ctx, eid);
     const targetNode = getRemoteResource<RemoteNode>(ctx, orbitAnchor.target);
 
@@ -381,10 +390,10 @@ export function CameraRigSystem(ctx: GameState) {
     }
   }
 
-  const pitchEntities = pitchRefQuery(ctx.world);
+  const pitchEntities = pitchQuery(ctx.world);
   for (let i = 0; i < pitchEntities.length; i++) {
     const eid = pitchEntities[i];
-    const pitch = PitchRef.get(eid)!;
+    const pitch = PitchComponent.get(eid)!;
     const controller = tryGetInputController(input, eid);
 
     const leftMouse = controller.actionStates.get(CameraRigAction.LeftMouse) as ButtonActionState;
@@ -395,10 +404,10 @@ export function CameraRigSystem(ctx: GameState) {
     applyPitch(ctx, controller, pitch);
   }
 
-  const yawEntities = yawRefQuery(ctx.world);
+  const yawEntities = yawQuery(ctx.world);
   for (let i = 0; i < yawEntities.length; i++) {
     const eid = yawEntities[i];
-    const yaw = YawRef.get(eid)!;
+    const yaw = YawComponent.get(eid)!;
     const controller = tryGetInputController(input, eid);
 
     const leftMouse = controller.actionStates.get(CameraRigAction.LeftMouse) as ButtonActionState;
@@ -409,10 +418,10 @@ export function CameraRigSystem(ctx: GameState) {
     applyYaw(ctx, controller, yaw);
   }
 
-  const zoomEntities = zoomRefQuery(ctx.world);
+  const zoomEntities = zoomQuery(ctx.world);
   for (let i = 0; i < zoomEntities.length; i++) {
     const eid = zoomEntities[i];
-    const zoom = ZoomRef.get(eid)!;
+    const zoom = ZoomComponent.get(eid)!;
     const controller = tryGetInputController(input, eid);
 
     if (zoom.type === CameraRigType.PointerLock && !hasComponent(ctx.world, ThirdPersonComponent, eid)) {
@@ -422,10 +431,10 @@ export function CameraRigSystem(ctx: GameState) {
     applyZoom(ctx, controller, zoom);
   }
 
-  exitQueryCleanup(ctx, exitPitchRefQuery, PitchRef);
-  exitQueryCleanup(ctx, exitYawRefQuery, YawRef);
-  exitQueryCleanup(ctx, exitZoomRefQuery, ZoomRef);
-  exitQueryCleanup(ctx, exitOrbitAnchorQuery, OrbitAnchorRef);
+  exitQueryCleanup(ctx, exitPitchQuery, PitchComponent);
+  exitQueryCleanup(ctx, exitYawQuery, YawComponent);
+  exitQueryCleanup(ctx, exitZoomQuery, ZoomComponent);
+  exitQueryCleanup(ctx, exitOrbitAnchorQuery, OrbitAnchor);
 }
 
 function exitQueryCleanup(ctx: GameState, query: Query, component: Map<number, any>) {
