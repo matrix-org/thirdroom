@@ -60,7 +60,7 @@ import { InteractableAction, InteractionMessage, InteractionMessageType } from "
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
 import { XRAvatarRig } from "../../engine/input/WebXRAvatarRigSystem";
 import { UICanvasFocusMessage, UICanvasPressMessage, WebSGUIMessage } from "../../engine/ui/ui.common";
-import { CameraRigModule, ZoomRef, orbitAnchorQuery } from "../camera/CameraRig.game";
+import { CameraRigModule, ZoomComponent, orbitAnchorQuery, OrbitAnchor } from "../camera/CameraRig.game";
 import { GameRendererModuleState, RendererModule } from "../../engine/renderer/renderer.game";
 
 // TODO: importing from spawnables.game in this file induces a runtime error
@@ -367,7 +367,7 @@ export function InteractionSystem(ctx: GameState) {
 
   // TODO: refactor & make orbit handle multiple controllers
   if (camRigModule.orbiting) {
-    updateOrbitInteraction(ctx, input, renderer, physics, interaction);
+    updateOrbitInteraction(ctx, input, renderer, physics, interaction, camRigModule);
     return;
   }
 
@@ -415,13 +415,15 @@ function updateOrbitInteraction(
   input: GameInputModule,
   renderer: GameRendererModuleState,
   physics: PhysicsModuleState,
-  interaction: InteractionModuleState
+  interaction: InteractionModuleState,
+  camRigModule: { orbiting: boolean }
 ) {
   /**
    * Obtain relevant objects
    */
 
   const orbitAnchorEid = orbitAnchorQuery(ctx.world)[0];
+  const orbitAnchor = OrbitAnchor.get(orbitAnchorEid);
   const controller = getInputController(input, orbitAnchorEid);
 
   if (!controller) {
@@ -430,7 +432,7 @@ function updateOrbitInteraction(
   }
 
   // TODO: CameraRef
-  const zoom = ZoomRef.get(orbitAnchorEid)!;
+  const zoom = ZoomComponent.get(orbitAnchorEid)!;
   const cameraEid = zoom.target;
   const camera = tryGetRemoteResource<RemoteNode>(ctx, cameraEid);
 
@@ -475,6 +477,11 @@ function updateOrbitInteraction(
   const focusedEid = physics.handleToEid.get(hit.collider.handle);
   if (!focusedEid) {
     console.warn(`Could not find entity for physics handle ${hit.collider.handle}`);
+    return;
+  }
+
+  // ignore the object we are orbiting
+  if (camRigModule.orbiting && orbitAnchor?.target === focusedEid) {
     return;
   }
 
