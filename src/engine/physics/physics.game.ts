@@ -34,6 +34,7 @@ import {
   getWriteObjectBufferView,
 } from "../allocator/ObjectBufferView";
 import { createDisposables } from "../utils/createDisposables";
+import { getRotationNoAlloc } from "../utils/getRotationNoAlloc";
 
 export interface PhysicsModuleState {
   debugRender: boolean;
@@ -216,7 +217,7 @@ export function PhysicsSystem(ctx: GameState) {
     } else if (bodyType === RAPIER.RigidBodyType.KinematicPositionBased && !isPlayer) {
       updateMatrixWorld(node);
 
-      mat4.getRotation(_worldQuat, node.worldMatrix);
+      getRotationNoAlloc(_worldQuat, node.worldMatrix);
       _q.fromArray(_worldQuat);
       body.setNextKinematicRotation(_q);
       mat4.getTranslation(_worldVec3, node.worldMatrix);

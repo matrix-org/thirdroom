@@ -36,21 +36,40 @@ export interface MaterialCacheEntry {
 
 const defaultMaterialCache: MaterialCacheEntry[] = [];
 
-export const matchMaterial =
-  (mode: MeshPrimitiveMode, vertexColors: boolean, flatShading: boolean, useDerivativeTangents: boolean) =>
-  (cacheEntry: MaterialCacheEntry) =>
-    mode === cacheEntry.mode &&
-    vertexColors === cacheEntry.vertexColors &&
-    flatShading === cacheEntry.flatShading &&
-    useDerivativeTangents === cacheEntry.useDerivativeTangents;
+export function findCachedMaterial(
+  materialCache: MaterialCacheEntry[],
+  mode: MeshPrimitiveMode,
+  vertexColors: boolean,
+  flatShading: boolean,
+  useDerivativeTangents: boolean
+) {
+  for (let i = 0; i < materialCache.length; i++) {
+    const cacheEntry = materialCache[i];
+
+    if (
+      mode === cacheEntry.mode &&
+      vertexColors === cacheEntry.vertexColors &&
+      flatShading === cacheEntry.flatShading &&
+      useDerivativeTangents === cacheEntry.useDerivativeTangents
+    ) {
+      return cacheEntry;
+    }
+  }
+
+  return undefined;
+}
 
 export function getDefaultMaterialForMeshPrimitive(ctx: RenderThreadState, meshPrimitive: RenderMeshPrimitive) {
   const vertexColors = !!meshPrimitive.attributes[MeshPrimitiveAttributeIndex.COLOR_0];
   const flatShading = !meshPrimitive.attributes[MeshPrimitiveAttributeIndex.NORMAL];
   const useDerivativeTangents = !meshPrimitive.attributes[MeshPrimitiveAttributeIndex.TANGENT];
 
-  const cacheEntry = defaultMaterialCache.find(
-    matchMaterial(meshPrimitive.mode, vertexColors, flatShading, useDerivativeTangents)
+  const cacheEntry = findCachedMaterial(
+    defaultMaterialCache,
+    meshPrimitive.mode,
+    vertexColors,
+    flatShading,
+    useDerivativeTangents
   );
 
   if (cacheEntry) {

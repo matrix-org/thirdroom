@@ -17,7 +17,8 @@ import { playerShapeCastCollisionGroups } from "../physics/CollisionGroups";
 export interface IAnimationComponent {
   animations: RemoteAnimation[];
   mixer: AnimationMixer;
-  actions: Map<string, AnimationAction>;
+  actionMap: Map<string, AnimationAction>;
+  actions: AnimationAction[];
 }
 
 export enum AnimationClipType {
@@ -141,8 +142,10 @@ function syncBones(ctx: GameState) {
   return ctx;
 }
 
-function reduceClipActionWeights(actions: Map<string, AnimationAction>, amount: number) {
-  for (const action of actions.values()) {
+function reduceClipActionWeights(actions: AnimationAction[], amount: number) {
+  for (let i = 0; i < actions.length; i++) {
+    const action = actions[i];
+
     if (action.weight > 0) {
       action.weight -= amount;
     } else {
@@ -167,7 +170,8 @@ function synchronizeClipActions(actions: AnimationAction[]) {
 }
 
 function increaseClipActionWeights(actions: AnimationAction[], amount: number) {
-  for (const action of actions) {
+  for (let i = 0; i < actions.length; i++) {
+    const action = actions[i];
     action.enabled = true;
     if (action.weight < 1) {
       action.weight += amount;
@@ -219,56 +223,56 @@ function getClipActionsUsingVelocity(
   const actions: AnimationAction[] = [];
 
   if (linvel.y < -20) {
-    actions.push(animation.actions.get(AnimationClipType.Fall2)!);
+    actions.push(animation.actionMap.get(AnimationClipType.Fall2)!);
   } else if (jumping) {
-    actions.push(animation.actions.get(AnimationClipType.Fall1)!);
+    actions.push(animation.actionMap.get(AnimationClipType.Fall1)!);
   } else if (totalSpeed < idleThreshold) {
     if (turningLeft) {
-      actions.push(animation.actions.get(AnimationClipType.TurnLeft)!);
+      actions.push(animation.actionMap.get(AnimationClipType.TurnLeft)!);
     } else if (turningRight) {
-      actions.push(animation.actions.get(AnimationClipType.TurnRight)!);
+      actions.push(animation.actionMap.get(AnimationClipType.TurnRight)!);
     } else {
-      actions.push(animation.actions.get(AnimationClipType.Idle)!);
+      actions.push(animation.actionMap.get(AnimationClipType.Idle)!);
     }
   } else if (totalSpeed < walkThreshold) {
     if (strafingLeft) {
-      actions.push(animation.actions.get(AnimationClipType.StrafeLeft)!);
+      actions.push(animation.actionMap.get(AnimationClipType.StrafeLeft)!);
       actions[actions.length - 1].setEffectiveTimeScale(1);
     } else if (strafingRight) {
-      actions.push(animation.actions.get(AnimationClipType.StrafeRight)!);
+      actions.push(animation.actionMap.get(AnimationClipType.StrafeRight)!);
       actions[actions.length - 1].setEffectiveTimeScale(1);
     }
     if (movingForward) {
-      actions.push(animation.actions.get(AnimationClipType.Walk)!);
+      actions.push(animation.actionMap.get(AnimationClipType.Walk)!);
     } else if (movingBackward) {
       if (strafingLeft) {
-        actions[actions.length - 1] = animation.actions.get(AnimationClipType.StrafeRight)!;
+        actions[actions.length - 1] = animation.actionMap.get(AnimationClipType.StrafeRight)!;
         actions[actions.length - 1].setEffectiveTimeScale(-1);
       } else if (strafingRight) {
-        actions[actions.length - 1] = animation.actions.get(AnimationClipType.StrafeLeft)!;
+        actions[actions.length - 1] = animation.actionMap.get(AnimationClipType.StrafeLeft)!;
         actions[actions.length - 1].setEffectiveTimeScale(-1);
       }
-      actions.push(animation.actions.get(AnimationClipType.WalkBack)!);
+      actions.push(animation.actionMap.get(AnimationClipType.WalkBack)!);
     }
   } else {
     if (strafingLeft) {
-      actions.push(animation.actions.get(AnimationClipType.StrafeLeftRun)!);
+      actions.push(animation.actionMap.get(AnimationClipType.StrafeLeftRun)!);
       actions[actions.length - 1].setEffectiveTimeScale(1);
     } else if (strafingRight) {
-      actions.push(animation.actions.get(AnimationClipType.StrafeRightRun)!);
+      actions.push(animation.actionMap.get(AnimationClipType.StrafeRightRun)!);
       actions[actions.length - 1].setEffectiveTimeScale(1);
     }
     if (movingForward) {
-      actions.push(animation.actions.get(AnimationClipType.Run)!);
+      actions.push(animation.actionMap.get(AnimationClipType.Run)!);
     } else if (movingBackward) {
       if (strafingLeft) {
-        actions[actions.length - 1] = animation.actions.get(AnimationClipType.StrafeRightRun)!;
+        actions[actions.length - 1] = animation.actionMap.get(AnimationClipType.StrafeRightRun)!;
         actions[actions.length - 1].setEffectiveTimeScale(-1);
       } else if (strafingRight) {
-        actions[actions.length - 1] = animation.actions.get(AnimationClipType.StrafeLeftRun)!;
+        actions[actions.length - 1] = animation.actionMap.get(AnimationClipType.StrafeLeftRun)!;
         actions[actions.length - 1].setEffectiveTimeScale(-1);
       }
-      actions.push(animation.actions.get(AnimationClipType.RunBack)!);
+      actions.push(animation.actionMap.get(AnimationClipType.RunBack)!);
     }
   }
 

@@ -168,13 +168,13 @@ export const cameraPitchTargetQuery = defineQuery([FirstPersonCameraPitchTarget,
 export const cameraYawTargetQuery = defineQuery([FirstPersonCameraYawTarget, RemoteNode]);
 
 function applyYaw(ctx: GameState, controller: InputController, node: RemoteNode) {
-  const [lookX] = controller.actionStates.get(FirstPersonCameraActions.Look) as vec2;
-  const [snapX] = controller.actionStates.get(FirstPersonCameraActions.SnapTurn) as Float32Array;
+  const look = controller.actionStates.get(FirstPersonCameraActions.Look) as vec2;
+  const snap = controller.actionStates.get(FirstPersonCameraActions.SnapTurn) as Float32Array;
 
-  if (Math.abs(snapX) >= 0.5) {
+  if (Math.abs(snap[0]) >= 0.5) {
     if (FirstPersonCameraYawTarget.snapTurnDisabled[node.eid] === 0) {
       const quaternion = node.quaternion;
-      const snapDirection = snapX > 0 ? -1 : 1;
+      const snapDirection = snap[0] > 0 ? -1 : 1;
       const snapAngle = (Math.PI / 6) * snapDirection;
       quat.rotateY(quaternion, quaternion, snapAngle);
       FirstPersonCameraYawTarget.snapTurnDisabled[node.eid] = 1;
@@ -183,17 +183,17 @@ function applyYaw(ctx: GameState, controller: InputController, node: RemoteNode)
     FirstPersonCameraYawTarget.snapTurnDisabled[node.eid] = 0;
   }
 
-  if (Math.abs(lookX) >= 1) {
+  if (Math.abs(look[0]) >= 1) {
     const sensitivity = FirstPersonCameraYawTarget.sensitivity[node.eid] || 1;
     const quaternion = node.quaternion;
-    quat.rotateY(quaternion, quaternion, -(lookX / (1000 / (sensitivity || 1))) * ctx.dt);
+    quat.rotateY(quaternion, quaternion, -(look[0] / (1000 / (sensitivity || 1))) * ctx.dt);
   }
 }
 
 function applyPitch(ctx: GameState, controller: InputController, node: RemoteNode) {
-  const [, lookY] = controller.actionStates.get(FirstPersonCameraActions.Look) as vec2;
+  const look = controller.actionStates.get(FirstPersonCameraActions.Look) as vec2;
 
-  if (Math.abs(lookY) >= 1) {
+  if (Math.abs(look[1]) >= 1) {
     const eid = node.eid;
     let pitch = FirstPersonCameraPitchTarget.pitch[eid];
     const sensitivity = FirstPersonCameraPitchTarget.sensitivity[eid] || DEFAULT_SENSITIVITY;
@@ -201,7 +201,7 @@ function applyPitch(ctx: GameState, controller: InputController, node: RemoteNod
     const minAngle = FirstPersonCameraPitchTarget.minAngle[eid];
     const maxAngleRads = glm.toRadian(maxAngle || 89);
     const minAngleRads = glm.toRadian(minAngle || -89);
-    pitch -= (lookY / (1000 / (sensitivity || 1))) * ctx.dt;
+    pitch -= (look[1] / (1000 / (sensitivity || 1))) * ctx.dt;
 
     if (pitch > maxAngleRads) {
       pitch = maxAngleRads;

@@ -24,7 +24,7 @@ import { broadcastReliable } from "../network/outbound.game";
 import { createInformXRMode } from "../network/serialization.game";
 import { NetworkModule } from "../network/network.game";
 import { XRHeadComponent, XRControllerComponent } from "../../plugins/thirdroom/thirdroom.game";
-import { AvatarComponent } from "../../plugins/avatars/components";
+import { AvatarRef } from "../../plugins/avatars/components";
 
 export interface XRAvatarRig {
   prevLeftAssetPath?: string;
@@ -58,7 +58,7 @@ const xrAvatarRigExitQuery = exitQuery(xrAvatarRigQuery);
 
 const remoteXRControllerQuery = defineQuery([Networked, Not(Owned), XRControllerComponent]);
 const remoteXRHeadQuery = defineQuery([Networked, Not(Owned), XRHeadComponent]);
-const remoteAvatarQuery = defineQuery([Networked, Not(Owned), AvatarComponent]);
+const remoteAvatarQuery = defineQuery([Networked, Not(Owned), AvatarRef]);
 
 const _v = vec3.create();
 const _q = quat.create();
@@ -170,7 +170,7 @@ export function WebXRAvatarRigSystem(ctx: GameState) {
     const peerId = network.entityIdToPeerId.get(eid)!;
     const theirXRMode = network.peerIdToXRMode.get(peerId)!;
 
-    const avatarEid = AvatarComponent.eid[node.eid];
+    const avatarEid = AvatarRef.eid[node.eid];
     const avatar = tryGetRemoteResource<RemoteNode>(ctx, avatarEid);
 
     // regular avatar is hidden for XR participants

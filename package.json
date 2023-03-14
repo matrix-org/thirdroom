@@ -47,6 +47,7 @@
     "@thirdroom/hydrogen-view-sdk": "0.0.29",
     "@thirdroom/manifold-editor-components": "^0.0.5",
     "@thirdroom/ringbuffer": "^0.0.1",
+    "@thirdroom/three": "0.148.3",
     "@webxr-input-profiles/assets": "^1.0.13",
     "bitecs": "NateTheGreatt/bitECS",
     "classnames": "^2.3.1",

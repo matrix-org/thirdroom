@@ -26,7 +26,7 @@ import {
   FindResourceRetainersMessage,
 } from "./thirdroom.common";
 import { createNodeFromGLTFURI, loadDefaultGLTFScene, loadGLTF } from "../../engine/gltf/gltf.game";
-import { createRemotePerspectiveCamera, getCamera } from "../../engine/camera/camera.game";
+import { CameraRef, createRemotePerspectiveCamera, getCamera } from "../../engine/camera/camera.game";
 import { createPrefabEntity, PrefabType, registerPrefab } from "../../engine/prefab/prefab.game";
 import { addFlyControls, FlyControls } from "../FlyCharacterController";
 import { addRigidBody, PhysicsModule, PhysicsModuleState } from "../../engine/physics/physics.game";
@@ -85,7 +85,7 @@ import {
 } from "../../engine/resource/RemoteResources";
 import { CharacterControllerType, SceneCharacterControllerComponent } from "../CharacterController";
 import { addNametag } from "../nametags/nametags.game";
-import { AvatarComponent } from "../avatars/components";
+import { AvatarRef } from "../avatars/components";
 import { waitUntil } from "../../engine/utils/waitUntil";
 import { findResourceRetainerRoots, findResourceRetainers } from "../../engine/resource/findResourceRetainers";
 import { teleportEntity } from "../../engine/utils/teleportEntity";
@@ -139,6 +139,9 @@ const createAvatarRig =
     });
     addChild(cameraAnchor, camera);
 
+    addComponent(ctx.world, CameraRef, obj.eid);
+    CameraRef.eid[obj.eid] = camera.eid;
+
     addCameraPitchTargetComponent(ctx.world, cameraAnchor);
     addCameraYawTargetComponent(ctx.world, obj);
 
@@ -146,8 +149,8 @@ const createAvatarRig =
     addAvatarRigidBody(ctx, physics, obj);
     addInteractableComponent(ctx, physics, obj, InteractableType.Player);
 
-    addComponent(ctx.world, AvatarComponent, obj.eid);
-    AvatarComponent.eid[obj.eid] = rig.eid;
+    addComponent(ctx.world, AvatarRef, obj.eid);
+    AvatarRef.eid[obj.eid] = rig.eid;
 
     return obj;
   };
@@ -732,7 +735,7 @@ function swapToFirstPerson(ctx: GameState, node: RemoteNode) {
   avatar.visible = false;
 }
 
-export async function ThirdroomSystem(ctx: GameState) {
+export function ThirdroomSystem(ctx: GameState) {
   const input = getModule(ctx, InputModule);
   const physics = getModule(ctx, PhysicsModule);
 

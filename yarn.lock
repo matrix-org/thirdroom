@@ -1561,6 +1561,11 @@
   resolved "https://registry.yarnpkg.com/@thirdroom/ringbuffer/-/ringbuffer-0.0.1.tgz#9239f60ae79295b74b3baafa7aebcd0ed0cd96c5"
   integrity sha512-M7hkXsVMtkNkZzUc0arn8nUlHkg0sYBwaSYzzk471L7ycc3dOCVAv79IJCEd03Ko2KIruyok6iEvKI2L5eR/Sg==
 
+"@thirdroom/three@0.148.3":
+  version "0.148.3"
+  resolved "https://registry.yarnpkg.com/@thirdroom/three/-/three-0.148.3.tgz#5842f13cd5ae0a76db7c69621cd59f75768d9925"
+  integrity sha512-55ccG5yZcw28gyjNs/0WZF/EVMEU8zHDif2/r2wxjx66GlG8gPcZIxn84OoLc5//nduHm4jrnaC/KuP69YlpqQ==
+
 "@tootallnate/once@2":
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/@tootallnate/once/-/once-2.0.0.tgz#f544a148d3ab35801c1f633a7441fd87c2e484bf"

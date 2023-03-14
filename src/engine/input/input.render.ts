@@ -229,6 +229,18 @@ const out: InputComponentState = {
   state: 0,
 };
 
+function getInputSourceItem(inputSourceItems: XRInputSourceItem[], handedness: XRHandedness | undefined) {
+  for (let i = 0; i < inputSourceItems.length; i++) {
+    const inputSourceItem = inputSourceItems[i];
+
+    if (inputSourceItems[i].inputSource.handedness === handedness) {
+      return inputSourceItem;
+    }
+  }
+
+  return undefined;
+}
+
 export function UpdateXRInputSourcesSystem(ctx: RenderThreadState) {
   const inputModule = getModule(ctx, InputModule);
   const { inputSourceItems, inputRingBuffer } = inputModule;
@@ -256,9 +268,7 @@ export function UpdateXRInputSourcesSystem(ctx: RenderThreadState) {
   }
 
   if (inputModule.updateReferenceSpaceHand) {
-    const inputSourceItem = inputSourceItems.find(
-      (item) => item.inputSource.handedness === inputModule.updateReferenceSpaceHand
-    );
+    const inputSourceItem = getInputSourceItem(inputSourceItems, inputModule.updateReferenceSpaceHand);
 
     const raySpace = inputSourceItem?.inputSource.targetRaySpace;
 
