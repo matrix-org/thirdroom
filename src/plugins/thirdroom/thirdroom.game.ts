@@ -419,6 +419,7 @@ async function onEnterWorld(ctx: GameState, message: EnterWorldMessage) {
 }
 
 function onExitWorld(ctx: GameState, message: ExitWorldMessage) {
+  disposeWorld(ctx.worldResource);
   ctx.sendMessage<ExitedWorldMessage>(Thread.Main, {
     type: ThirdRoomMessageType.ExitedWorld,
   });
@@ -488,6 +489,7 @@ async function onGLTFViewerLoadGLTF(ctx: GameState, message: GLTFViewerLoadGLTFM
 }
 
 function disposeWorld(worldResource: RemoteWorld) {
+  console.log("===== disposeWorld ======");
   worldResource.activeCameraNode = undefined;
   worldResource.activeAvatarNode = undefined;
   worldResource.environment = undefined;
@@ -495,7 +497,7 @@ function disposeWorld(worldResource: RemoteWorld) {
 }
 
 async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, fileMap?: Map<string, string>) {
-  disposeWorld(ctx.worldResource);
+  // disposeWorld(ctx.worldResource);
 
   const transientScene = new RemoteScene(ctx.resourceManager, {
     name: "Transient Scene",
