@@ -2152,6 +2152,40 @@ static JSValue js_has_physics_body(JSContext *ctx, JSValueConst this_val, int ar
   return JS_NewBool(ctx, result);
 }
 
+static JSValue js_start_orbit(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  node_id_t node_id;
+
+  if (JS_ToUint32(ctx, &node_id, argv[0]) == -1) {
+    return JS_EXCEPTION;
+  }
+
+  int32_t result = websg_start_orbit(node_id);
+
+  if (result == -1) {
+    JS_ThrowInternalError(ctx, "WebSG: Error starting orbit.");
+    return JS_EXCEPTION;
+  }
+
+  return JS_NewBool(ctx, result);
+}
+
+static JSValue js_stop_orbit(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  node_id_t node_id;
+
+  if (JS_ToUint32(ctx, &node_id, argv[0]) == -1) {
+    return JS_EXCEPTION;
+  }
+
+  int32_t result = websg_stop_orbit();
+
+  if (result == -1) {
+    JS_ThrowInternalError(ctx, "WebSG: Error stopping orbit.");
+    return JS_EXCEPTION;
+  }
+
+  return JS_NewBool(ctx, result);
+}
+
 void js_define_websg_api(JSContext *ctx, JSValue *target) {
   JSValue websg = JS_NewObject(ctx);
 
@@ -2724,6 +2758,21 @@ void js_define_websg_api(JSContext *ctx, JSValue *target) {
     websg,
     "hasPhysicsBody",
     JS_NewCFunction(ctx, js_has_physics_body, "hasPhysicsBody", 1)
+  );
+
+  // Orbit Controls
+
+  JS_SetPropertyStr(
+    ctx,
+    websg,
+    "startOrbit",
+    JS_NewCFunction(ctx, js_start_orbit, "startOrbit", 1)
+  );
+  JS_SetPropertyStr(
+    ctx,
+    websg,
+    "stopOrbit",
+    JS_NewCFunction(ctx, js_stop_orbit, "stopOrbit", 1)
   );
 
   js_define_websg_network_api(ctx, &websg);
