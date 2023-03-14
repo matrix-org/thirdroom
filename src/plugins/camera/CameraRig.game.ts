@@ -1,5 +1,5 @@
 import { addComponent, defineQuery, exitQuery, hasComponent, Query } from "bitecs";
-import { vec2, glMatrix as glm, quat, vec3 } from "gl-matrix";
+import { vec2, glMatrix as glm, quat, vec3, mat4 } from "gl-matrix";
 
 import { Axes, clamp } from "../../engine/component/math";
 import { GameState, World } from "../../engine/GameTypes";
@@ -328,6 +328,7 @@ function applyPitch(ctx: GameState, controller: InputController, rigPitch: Pitch
   }
 }
 
+const _v = vec3.create();
 function applyZoom(ctx: GameState, controller: InputController, rigZoom: ZoomRef) {
   const node = tryGetRemoteResource<RemoteNode>(ctx, rigZoom.target);
 
@@ -365,7 +366,8 @@ export function CameraRigSystem(ctx: GameState) {
     }
 
     // otherwise set its position to the target
-    orbitAnchorNode.position.set(targetNode.position);
+    mat4.getTranslation(_v, targetNode.worldMatrix);
+    vec3.copy(orbitAnchorNode.position, _v);
   }
 
   // stop orbiting if esc is pressed
