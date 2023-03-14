@@ -14,7 +14,7 @@ import {
   setActiveInputController,
   tryGetInputController,
 } from "../../engine/input/InputController";
-import { defineModule, getModule, Thread } from "../../engine/module/module.common";
+import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
 import { getRemoteResource, tryGetRemoteResource } from "../../engine/resource/resource.game";
 import { addObjectToWorld, RemoteNode, removeObjectFromWorld } from "../../engine/resource/RemoteResources";
 import { addChild } from "../../engine/component/transform";
@@ -38,6 +38,8 @@ import {
   readFloat32,
 } from "../../engine/allocator/CursorView";
 import { Networked } from "../../engine/network/NetworkComponents";
+import { createDisposables } from "../../engine/utils/createDisposables";
+import { ThirdRoomMessageType } from "../thirdroom/thirdroom.common";
 
 export const CameraRigModule = defineModule<GameState, { orbiting: boolean }>({
   name: "camera-rig-module",
@@ -51,6 +53,13 @@ export const CameraRigModule = defineModule<GameState, { orbiting: boolean }>({
 
     const network = getModule(ctx, NetworkModule);
     registerInboundMessageHandler(network, NetworkAction.UpdateCamera, deserializeUpdateCamera);
+
+    const module = getModule(ctx, CameraRigModule);
+    return createDisposables([
+      registerMessageHandler(ctx, ThirdRoomMessageType.ExitWorld, () => {
+        module.orbiting = false;
+      }),
+    ]);
   },
 });
 

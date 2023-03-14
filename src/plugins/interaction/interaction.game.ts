@@ -10,7 +10,12 @@ import { maxEntities, MAX_OBJECT_CAP, NOOP } from "../../engine/config.common";
 import { GameState } from "../../engine/GameTypes";
 import { enableActionMap } from "../../engine/input/ActionMappingSystem";
 import { GameInputModule, InputModule } from "../../engine/input/input.game";
-import { tryGetInputController, InputController, inputControllerQuery } from "../../engine/input/InputController";
+import {
+  tryGetInputController,
+  InputController,
+  inputControllerQuery,
+  getInputController,
+} from "../../engine/input/InputController";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
 import { isHost } from "../../engine/network/network.common";
 import {
@@ -46,12 +51,16 @@ import { AudioEmitterType, InteractableType } from "../../engine/resource/schema
 import { createDisposables } from "../../engine/utils/createDisposables";
 import { clamp } from "../../engine/utils/interpolation";
 import { PortalComponent } from "../portals/portals.game";
-import { SetObjectCapMessage, SetObjectCapMessageType } from "../spawnables/spawnables.common";
+import {
+  ObjectCapReachedMessageType,
+  SetObjectCapMessage,
+  SetObjectCapMessageType,
+} from "../spawnables/spawnables.common";
 import { InteractableAction, InteractionMessage, InteractionMessageType } from "./interaction.common";
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
 import { XRAvatarRig } from "../../engine/input/WebXRAvatarRigSystem";
 import { UICanvasFocusMessage, UICanvasPressMessage, WebSGUIMessage } from "../../engine/ui/ui.common";
-import { CameraRigModule, ZoomRef, orbitAnchorQuery, startOrbit } from "../camera/CameraRig.game";
+import { CameraRigModule, ZoomRef, orbitAnchorQuery } from "../camera/CameraRig.game";
 import { GameRendererModuleState, RendererModule } from "../../engine/renderer/renderer.game";
 
 // TODO: importing from spawnables.game in this file induces a runtime error
@@ -413,7 +422,12 @@ function updateOrbitInteraction(
    */
 
   const orbitAnchorEid = orbitAnchorQuery(ctx.world)[0];
-  const controller = tryGetInputController(input, orbitAnchorEid);
+  const controller = getInputController(input, orbitAnchorEid);
+
+  if (!controller) {
+    console.warn("Controller not found for eid", orbitAnchorEid);
+    return;
+  }
 
   // TODO: CameraRef
   const zoom = ZoomRef.get(orbitAnchorEid)!;
@@ -676,28 +690,27 @@ function updateGrabThrow(
       } else if (shapecastHit.toi <= Interactable.interactionDistance[node.eid]) {
         if (grabPressed) {
           if (Interactable.type[node.eid] === InteractableType.Grabbable) {
-            startOrbit(ctx, node);
-            // playOneShotAudio(ctx, interaction.clickEmitter?.sources[0] as RemoteAudioSource);
-            // const ownedEnts = network.authoritative ? networkedQuery(ctx.world) : ownedNetworkedQuery(ctx.world);
-            // if (ownedEnts.length > interaction.maxObjCap && !hasComponent(ctx.world, Owned, node.eid)) {
-            //   // do nothing if we hit the max obj cap
-            //   ctx.sendMessage(Thread.Main, {
-            //     type: ObjectCapReachedMessageType,
-            //   });
-            // } else {
-            //   // otherwise attempt to take ownership
-            //   const newEid = takeOwnership(ctx, network, node);
-            //   if (newEid !== NOOP) {
-            //     addComponent(ctx.world, GrabComponent, rig.eid);
-            //     GrabComponent.grabbedEntity[rig.eid] = newEid;
-            //     heldEntity = newEid;
-            //     if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, newEid);
-            //   } else {
-            //     addComponent(ctx.world, GrabComponent, rig.eid);
-            //     GrabComponent.grabbedEntity[rig.eid] = eid;
-            //     if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, eid);
-            //   }
-            // }
+            playOneShotAudio(ctx, interaction.clickEmitter?.sources[0] as RemoteAudioSource);
+            const ownedEnts = network.authoritative ? networkedQuery(ctx.world) : ownedNetworkedQuery(ctx.world);
+            if (ownedEnts.length > interaction.maxObjCap && !hasComponent(ctx.world, Owned, node.eid)) {
+              // do nothing if we hit the max obj cap
+              ctx.sendMessage(Thread.Main, {
+                type: ObjectCapReachedMessageType,
+              });
+            } else {
+              // otherwise attempt to take ownership
+              const newEid = takeOwnership(ctx, network, node);
+              if (newEid !== NOOP) {
+                addComponent(ctx.world, GrabComponent, rig.eid);
+                GrabComponent.grabbedEntity[rig.eid] = newEid;
+                heldEntity = newEid;
+                if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, newEid);
+              } else {
+                addComponent(ctx.world, GrabComponent, rig.eid);
+                GrabComponent.grabbedEntity[rig.eid] = eid;
+                if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, eid);
+              }
+            }
           } else if (Interactable.type[node.eid] === InteractableType.Interactable) {
             playOneShotAudio(ctx, interaction.clickEmitter?.sources[0] as RemoteAudioSource);
 
