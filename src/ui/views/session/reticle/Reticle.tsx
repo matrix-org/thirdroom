@@ -1,16 +1,21 @@
 import classNames from "classnames";
 
 import { InteractableType } from "../../../../engine/resource/schema";
-import { ActiveEntityState } from "../world/WorldView";
+import { useMainThreadContext } from "../../../hooks/useMainThread";
+import { useMemoizedState } from "../../../hooks/useMemoizedState";
+import { useMouseDown } from "../../../hooks/useMouseDown";
+import { InteractionState, useWorldInteraction } from "../../../hooks/useWorldInteraction";
 
 import "./Reticle.css";
 
-interface IReticleProps {
-  activeEntity?: ActiveEntityState;
-  mouseDown: boolean;
-}
+export function Reticle() {
+  const mainThread = useMainThreadContext();
+  const mouseDown = useMouseDown(mainThread.canvas);
 
-export function Reticle({ activeEntity, mouseDown }: IReticleProps) {
+  const [activeEntity, setActiveEntity] = useMemoizedState<InteractionState | undefined>();
+
+  useWorldInteraction(mainThread, setActiveEntity);
+
   return (
     <div
       className={classNames("Reticle", {
