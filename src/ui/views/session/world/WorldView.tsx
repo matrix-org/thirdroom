@@ -11,7 +11,6 @@ import { useEvent } from "../../../hooks/useEvent";
 import "./WorldView.css";
 import { EditorView } from "../editor/EditorView";
 import { Reticle } from "../reticle/Reticle";
-import { EntityTooltip } from "../entity-tooltip/EntityTooltip";
 import { Nametags } from "../nametags/Nametags";
 import { useMainThreadContext } from "../../../hooks/useMainThread";
 import { registerMessageHandler } from "../../../../engine/module/module.common";
@@ -22,7 +21,6 @@ import { createDisposables } from "../../../../engine/utils/createDisposables";
 import { ObjectCapReachedMessage, ObjectCapReachedMessageType } from "../../../../plugins/spawnables/spawnables.common";
 import { useCalls } from "../../../hooks/useCalls";
 import { useRoomCall } from "../../../hooks/useRoomCall";
-import { InteractableType } from "../../../../engine/resource/schema";
 import { useWebXRSession } from "../../../hooks/useWebXRSession";
 import { worldChatVisibilityAtom } from "../../../state/worldChatVisibility";
 import { overlayVisibilityAtom } from "../../../state/overlayVisibility";
@@ -30,14 +28,7 @@ import { worldAtom } from "../../../state/world";
 import { HotbarControls, WorldControls } from "./WorldControls";
 import { WorldOnboarding } from "./WorldOnboarding";
 import { useLocalStorage } from "../../../hooks/useLocalStorage";
-
-export interface ActiveEntityState {
-  interactableType: InteractableType;
-  name: string;
-  held: boolean;
-  peerId?: string;
-  ownerId?: string;
-}
+import { WorldInteraction } from "./WorldInteraction";
 
 const SHOW_NAMES_STORE = "showNames";
 interface WorldViewProps {
@@ -171,7 +162,7 @@ export function WorldView({ world }: WorldViewProps) {
       {!("isBeingCreated" in world) && <Nametags room={world} show={showNames && !overlayVisible} />}
 
       {!overlayVisible && showNames && activeCall && (
-        <EntityTooltip session={session} world={world} activeCall={activeCall} />
+        <WorldInteraction session={session} world={world} activeCall={activeCall} />
       )}
       {!overlayVisible && <Reticle />}
 
