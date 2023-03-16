@@ -491,7 +491,6 @@ async function onGLTFViewerLoadGLTF(ctx: GameState, message: GLTFViewerLoadGLTFM
 }
 
 function disposeWorld(worldResource: RemoteWorld) {
-  console.log("===== disposeWorld ======");
   worldResource.activeCameraNode = undefined;
   worldResource.activeAvatarNode = undefined;
   worldResource.environment = undefined;
@@ -499,7 +498,7 @@ function disposeWorld(worldResource: RemoteWorld) {
 }
 
 async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, fileMap?: Map<string, string>) {
-  // disposeWorld(ctx.worldResource);
+  disposeWorld(ctx.worldResource);
 
   const transientScene = new RemoteScene(ctx.resourceManager, {
     name: "Transient Scene",

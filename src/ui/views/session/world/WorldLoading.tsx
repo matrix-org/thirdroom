@@ -96,11 +96,11 @@ function useLoadWorld() {
 function useEnterWorld(entered: boolean) {
   const mainThread = useMainThreadContext();
   const { session, platform, client } = useHydrogen(true);
-  const networkInterfaceDisposerRef = useRef<() => void>();
+  const networkInterfaceDisposerRef = useRef<(entered: boolean) => void>();
 
   useEffect(() => {
     if (!entered) {
-      networkInterfaceDisposerRef.current?.();
+      networkInterfaceDisposerRef.current?.(entered);
     }
   }, [entered]);
 
