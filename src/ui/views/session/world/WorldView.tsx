@@ -512,7 +512,7 @@ export function WorldView({ world }: WorldViewProps) {
       {!overlayVisible && showNames && activeEntity && (
         <EntityTooltip activeEntity={activeEntity} portalProcess={portalProcess} />
       )}
-      {!overlayVisible && <Reticle activeEntity={activeEntity} mouseDown={mouseDown} />}
+      {!overlayVisible && !camRigModule.orbiting && <Reticle activeEntity={activeEntity} mouseDown={mouseDown} />}
       <div className="WorldView__toast-container">
         <div className={classNames("WorldView__toast", { "WorldView__toast--shown": toastShown })}>
           <Text variant="b2" color="world" weight="semi-bold">
