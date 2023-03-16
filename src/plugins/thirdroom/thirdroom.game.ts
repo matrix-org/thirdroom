@@ -158,6 +158,8 @@ export const XRRayComponent = defineComponent();
 
 const createXRHead = (input: GameInputModule, physics: PhysicsModuleState) => (ctx: GameState, options?: any) => {
   const node = createNodeFromGLTFURI(ctx, `/gltf/headset.glb`);
+  node.scale.set([0.75, 0.75, 0.75]);
+  node.position.set([0, 0, 0.1]);
 
   const obj = createRemoteObject(ctx, node);
   addComponent(ctx.world, XRHeadComponent, obj.eid);
