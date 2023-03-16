@@ -1,7 +1,7 @@
 import { addComponent, defineQuery, exitQuery, hasComponent, Query } from "bitecs";
 import { vec2, glMatrix as glm, quat, vec3, mat4 } from "gl-matrix";
 
-import { Axes, clamp } from "../../engine/component/math";
+import { Axes, clamp, DEG2RAD } from "../../engine/component/math";
 import { GameState, World } from "../../engine/GameTypes";
 import { enableActionMap } from "../../engine/input/ActionMappingSystem";
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
@@ -176,7 +176,13 @@ const DEFAULT_SENSITIVITY = 100;
 const ZOOM_MIN = 0.5;
 const ZOOM_MAX = 10;
 
-export function startOrbit(ctx: GameState, nodeToOrbit: RemoteNode) {
+interface CameraRigOptions {
+  pitch: number;
+  yaw: number;
+  zoom: number;
+}
+
+export function startOrbit(ctx: GameState, nodeToOrbit: RemoteNode, options?: CameraRigOptions) {
   const input = getModule(ctx, InputModule);
   const camRigModule = getModule(ctx, CameraRigModule);
 
@@ -191,9 +197,22 @@ export function startOrbit(ctx: GameState, nodeToOrbit: RemoteNode) {
   addInputController(ctx.world, input, controller, orbitAnchor.eid);
   setActiveInputController(input, orbitAnchor.eid);
 
-  const [camera] = addCameraRig(ctx, orbitAnchor, CameraRigType.Orbit);
+  const [camera, pitch, yaw, zoom] = addCameraRig(ctx, orbitAnchor, CameraRigType.Orbit);
 
-  camera.position[2] = 6;
+  if (options && options.pitch) {
+    const pitchTarget = tryGetRemoteResource<RemoteNode>(ctx, pitch.target);
+    setPitch(pitchTarget, pitch, -options.pitch * DEG2RAD);
+  }
+  if (options && options.yaw) {
+    const yawTarget = tryGetRemoteResource<RemoteNode>(ctx, yaw.target);
+    setYaw(yawTarget, -options.yaw * DEG2RAD);
+  }
+  if (options && options.zoom) {
+    const zoomTarget = tryGetRemoteResource<RemoteNode>(ctx, zoom.target);
+    setZoom(zoomTarget, zoom, options.zoom);
+  } else {
+    camera.position[2] = 6;
+  }
 
   ctx.worldResource.activeCameraNode = camera;
 
@@ -297,6 +316,11 @@ export function addOrbitAnchor(world: World, node: RemoteNode, target: RemoteNod
   return anchor;
 }
 
+function setYaw(node: RemoteNode, value: number) {
+  const quaternion = node.quaternion;
+  quat.rotateY(quaternion, quaternion, -value);
+}
+
 function applyYaw(ctx: GameState, controller: InputController, rigYaw: YawComponent) {
   const node = tryGetRemoteResource<RemoteNode>(ctx, rigYaw.target);
 
@@ -304,9 +328,24 @@ function applyYaw(ctx: GameState, controller: InputController, rigYaw: YawCompon
 
   if (Math.abs(lookX) >= 1) {
     const sensitivity = rigYaw.sensitivity || 1;
-    const quaternion = node.quaternion;
-    quat.rotateY(quaternion, quaternion, -(lookX / (1000 / (sensitivity || 1))) * ctx.dt);
+    const newYaw = (lookX / (1000 / (sensitivity || 1))) * ctx.dt;
+    setYaw(node, newYaw);
   }
+}
+
+function setPitch(node: RemoteNode, rigPitch: PitchComponent, value: number) {
+  const maxAngle = rigPitch.maxAngle;
+  const minAngle = rigPitch.minAngle;
+  const maxAngleRads = glm.toRadian(maxAngle);
+  const minAngleRads = glm.toRadian(minAngle);
+  if (value > maxAngleRads) {
+    value = maxAngleRads;
+  } else if (value < minAngleRads) {
+    value = minAngleRads;
+  }
+
+  rigPitch.pitch = value;
+  quat.setAxisAngle(node.quaternion, Axes.X, value);
 }
 
 function applyPitch(ctx: GameState, controller: InputController, rigPitch: PitchComponent) {
@@ -316,28 +355,19 @@ function applyPitch(ctx: GameState, controller: InputController, rigPitch: Pitch
 
   if (Math.abs(lookY) >= 1) {
     const sensitivity = rigPitch.sensitivity;
-    const maxAngle = rigPitch.maxAngle;
-    const minAngle = rigPitch.minAngle;
-    const maxAngleRads = glm.toRadian(maxAngle);
-    const minAngleRads = glm.toRadian(minAngle);
 
     let pitch = rigPitch.pitch;
 
     pitch -= (lookY / (1000 / (sensitivity || 1))) * ctx.dt;
 
-    if (pitch > maxAngleRads) {
-      pitch = maxAngleRads;
-    } else if (pitch < minAngleRads) {
-      pitch = minAngleRads;
-    }
-
-    rigPitch.pitch = pitch;
-
-    quat.setAxisAngle(node.quaternion, Axes.X, pitch);
+    setPitch(node, rigPitch, pitch);
   }
 }
 
-const _v = vec3.create();
+function setZoom(node: RemoteNode, rigZoom: ZoomComponent, value: number) {
+  node.position[2] = clamp(value, rigZoom.min, rigZoom.max);
+}
+
 function applyZoom(ctx: GameState, controller: InputController, rigZoom: ZoomComponent) {
   const node = tryGetRemoteResource<RemoteNode>(ctx, rigZoom.target);
 
@@ -345,10 +375,11 @@ function applyZoom(ctx: GameState, controller: InputController, rigZoom: ZoomCom
 
   if (Math.abs(scrollY) > 0) {
     node.position[2] -= scrollY / 1000;
-    node.position[2] = clamp(node.position[2], rigZoom.min, rigZoom.max);
+    setZoom(node, rigZoom, node.position[2]);
   }
 }
 
+const _v = vec3.create();
 export function CameraRigSystem(ctx: GameState) {
   const input = getModule(ctx, InputModule);
   const network = getModule(ctx, NetworkModule);

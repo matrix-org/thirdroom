@@ -1302,9 +1302,18 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
       return node && hasComponent(ctx.world, RigidBody, node.eid) ? 1 : 0;
     },
-    start_orbit(nodeId: number) {
+    start_orbit(nodeId: number, propsPtr: number) {
+      moveCursorView(wasmCtx.cursorView, propsPtr);
+      const pitch = readFloat32(wasmCtx.cursorView);
+      const yaw = readFloat32(wasmCtx.cursorView);
+      const zoom = readFloat32(wasmCtx.cursorView);
+
+      const options = { pitch, yaw, zoom };
+
       const node = getScriptResource(wasmCtx, RemoteNode, nodeId)!;
-      startOrbit(ctx, node);
+
+      startOrbit(ctx, node, options);
+
       return node;
     },
     stop_orbit() {

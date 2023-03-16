@@ -396,7 +396,13 @@ import_websg(has_physics_body) int32_t websg_has_physics_body(node_id_t node_id)
  * Orbiting
 */
 
-import_websg(start_orbit) int32_t websg_start_orbit(node_id_t node_id);
+typedef struct CameraRigOptions {
+  float_t pitch;
+  float_t yaw;
+  float_t zoom;
+} CameraRigOptions;
+
+import_websg(start_orbit) int32_t websg_start_orbit(node_id_t node_id, CameraRigOptions *options);
 import_websg(stop_orbit) int32_t websg_stop_orbit();
 
 
