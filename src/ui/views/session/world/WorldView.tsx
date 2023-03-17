@@ -509,7 +509,7 @@ export function WorldView({ world }: WorldViewProps) {
           </Dialog>
         </>
       )}
-      {!overlayVisible && showNames && activeEntity && (
+      {!overlayVisible && !camRigModule.orbiting && showNames && activeEntity && (
         <EntityTooltip activeEntity={activeEntity} portalProcess={portalProcess} />
       )}
       {!overlayVisible && !camRigModule.orbiting && <Reticle activeEntity={activeEntity} mouseDown={mouseDown} />}
