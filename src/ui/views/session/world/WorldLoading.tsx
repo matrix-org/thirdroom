@@ -50,7 +50,7 @@ function useWorldLoadingProgress(): [() => void, WorldLoadProgress] {
   return [reset, loadProgress];
 }
 
-function useLoadWorld() {
+function useLoadWorld(networkInterfaceDisposerRef: React.MutableRefObject<(() => void) | undefined>) {
   const { session } = useHydrogen(true);
   const mainThread = useMainThreadContext();
 
@@ -74,6 +74,8 @@ function useLoadWorld() {
       }
 
       try {
+        networkInterfaceDisposerRef.current?.();
+
         await loadWorld(mainThread, sceneUrl, scriptUrl);
         await setActiveMatrixRoom(mainThread, session, roomId);
 
@@ -87,22 +89,15 @@ function useLoadWorld() {
         throw new Error(err?.message ?? "Unknown error loading world.");
       }
     },
-    [mainThread, session]
+    [mainThread, session, networkInterfaceDisposerRef]
   );
 
   return loadWorldCallback;
 }
 
-function useEnterWorld(entered: boolean) {
+function useEnterWorld(networkInterfaceDisposerRef: React.MutableRefObject<(() => void) | undefined>) {
   const mainThread = useMainThreadContext();
   const { session, platform, client } = useHydrogen(true);
-  const networkInterfaceDisposerRef = useRef<(entered: boolean) => void>();
-
-  useEffect(() => {
-    if (!entered) {
-      networkInterfaceDisposerRef.current?.(entered);
-    }
-  }, [entered]);
 
   const connectGroupCall = useCallback(
     async (world: Room) => {
@@ -159,14 +154,14 @@ function useEnterWorld(entered: boolean) {
         groupCall.setMuted(muteSettings.toggleMicrophone());
       }
     },
-    [session, mainThread, client, connectGroupCall]
+    [session, networkInterfaceDisposerRef, mainThread, client, connectGroupCall]
   );
 
   return enterWorldCallback;
 }
 
 export function WorldLoading({ roomId, reloadId }: { roomId?: string; reloadId?: string }) {
-  const [{ worldId, entered }, setWorld] = useAtom(worldAtom);
+  const [{ worldId, entered, loading }, setWorld] = useAtom(worldAtom);
   const [overlayVisible, setOverlayVisibility] = useAtom(overlayVisibilityAtom);
   const selectWorld = useSetAtom(overlayWorldAtom);
   const { session } = useHydrogen(true);
@@ -179,6 +174,16 @@ export function WorldLoading({ roomId, reloadId }: { roomId?: string; reloadId?:
   const [creator, setCreator] = useState<string>();
   const mainThread = useMainThreadContext();
 
+  const networkInterfaceDisposerRef = useRef<() => void>();
+  const enterWorld = useEnterWorld(networkInterfaceDisposerRef);
+  const loadWorld = useLoadWorld(networkInterfaceDisposerRef);
+
+  useEffect(() => {
+    if (!entered && !loading) {
+      networkInterfaceDisposerRef.current?.();
+    }
+  }, [entered, loading]);
+
   useEffect(() => {
     if (roomId && prevRoomId !== roomId) {
       setOverlayVisibility(false);
@@ -188,9 +193,6 @@ export function WorldLoading({ roomId, reloadId }: { roomId?: string; reloadId?:
       setOverlayVisibility(true);
     }
   }, [roomId, prevRoomId, setOverlayVisibility]);
-
-  const loadWorld = useLoadWorld();
-  const enterWorld = useEnterWorld(entered);
 
   useEffect(() => {
     if (!overlayVisible && roomId && session.rooms.get(roomId)) {

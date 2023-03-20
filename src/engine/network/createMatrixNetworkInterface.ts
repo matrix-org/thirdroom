@@ -26,7 +26,7 @@ export async function createMatrixNetworkInterface(
   client: Client,
   powerLevels: PowerLevels,
   groupCall: GroupCall
-): Promise<(entered: boolean) => void> {
+): Promise<() => void> {
   if (!client.session) {
     throw new Error("You must initialize the client session before creating the network interface");
   }
@@ -194,10 +194,10 @@ export async function createMatrixNetworkInterface(
     }
   }
 
-  return (entered: boolean) => {
+  return () => {
     disconnect(ctx);
 
-    if (entered) exitWorld(ctx);
+    exitWorld(ctx);
 
     setLocalMediaStream(ctx, undefined);
 
