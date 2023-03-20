@@ -1,6 +1,6 @@
 // @refresh reset
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Navigate, Outlet, useLocation, useMatch, useNavigate } from "react-router-dom";
+import { Navigate, Outlet, useLocation, useMatch } from "react-router-dom";
 import {
   Platform,
   Segment,
@@ -16,6 +16,8 @@ import {
   OIDCLoginMethod,
   ILoginMethod,
   ISessionInfo,
+  FeatureSet,
+  FeatureFlag,
 } from "@thirdroom/hydrogen-view-sdk";
 import downloadSandboxPath from "@thirdroom/hydrogen-view-sdk/download-sandbox.html?url";
 import workerPath from "@thirdroom/hydrogen-view-sdk/main.js?url";
@@ -142,7 +144,7 @@ function initHydrogen() {
   })();
 
   const config = { ...configData };
-  config.oidc.clientConfigs["https://id.thirdroom.io/realms/thirdroom/"] = {
+  config.staticOidcClients["https://id.thirdroom.io/realms/thirdroom/"] = {
     client_id: oidcClientId,
     uris: oidcUris,
     guestKeycloakIdpHint: "guest",
@@ -157,7 +159,7 @@ function initHydrogen() {
   const navigation = new Navigation(allowsChild);
   platform.setNavigation(navigation);
 
-  const client = new Client(platform, { deviceName: "Third Room" });
+  const client = new Client(platform, new FeatureSet(FeatureFlag.Calls), { deviceName: "Third Room" });
 
   hydrogenInstance = {
     client,
@@ -224,7 +226,7 @@ async function waitToLoadClient(client: Client) {
   const loadStatus = client.loadStatus.get();
 
   if (loadStatus === LoadStatus.Error || loadStatus === LoadStatus.LoginFailed) {
-    throw new Error(loginFailureToMsg(client.loginFailure));
+    throw new Error(loginFailureToMsg(client.loginFailure || client.loadError));
   }
 }
 
@@ -245,6 +247,7 @@ async function loadClient(client: Client, sessionId: string): Promise<Session | 
     localStorage.clear();
   } catch (error) {
     localStorage.clear();
+    console.error(error);
     throw error;
   }
   return undefined;
@@ -274,7 +277,7 @@ async function getOidcLoginMethod(platform: Platform, urlCreator: URLRouter, sta
   return new OIDCLoginMethod({
     oidcApi: new OidcApi({
       issuer,
-      clientConfigs: platform.config.oidc.clientConfigs,
+      staticClients: platform.config.staticClients,
       clientId,
       urlCreator,
       request: platform.request,
@@ -295,12 +298,10 @@ function useOidcComplete(
   urlRouter: URLRouter,
   login: (loginMethod: ILoginMethod) => Promise<void>
 ) {
-  const navigate = useNavigate();
   const completeOidc = async (state: string, code: string) => {
     const loginMethod = await getOidcLoginMethod(platform, urlRouter, state, code);
     if (!loginMethod) return;
     login(loginMethod);
-    navigate("/");
   };
   const location = useLocation();
 
@@ -340,7 +341,9 @@ function useSession(client: Client, platform: Platform, urlRouter: URLRouter) {
   } = useAsyncCallback<(loginMethod: ILoginMethod) => Promise<void>, void>(
     async (loginMethod) => {
       await client.startWithLogin(loginMethod);
+      console.log("a");
       sessionRef.current = await loadClient(client, client.sessionId);
+      console.log(sessionRef.current);
     },
     [client]
   );

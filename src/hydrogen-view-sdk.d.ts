@@ -397,15 +397,17 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     expires_in?: number;
   };
   type IssuerUri = string;
-  interface ClientConfig {
+
+  export interface OidcClientConfig {
     client_id: string;
-    client_secret?: string;
-    uris: string[];
   }
+
+  export type StaticOidcClientsConfig = Record<IssuerUri, OidcClientConfig>;
+
   export class OidcApi {
     constructor(options: {
       issuer: string;
-      clientConfigs: Record<IssuerUri, ClientConfig>;
+      staticClients: Record<IssuerUri, ClientConfig>;
       request: RequestFunction;
       encoding: any;
       crypto: any;
@@ -948,6 +950,20 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     token?: (loginToken: string) => ILoginMethod;
   }
 
+  export enum FeatureFlag {
+    Calls = 1 << 0,
+    CrossSigning = 1 << 1,
+  }
+
+  export class FeatureSet {
+    constructor(public readonly flags?: number) {}
+    withFeature(flag: FeatureFlag): FeatureSet;
+    withoutFeature(flag: FeatureFlag): FeatureSet;
+    isFeatureEnabled(flag: FeatureFlag): boolean;
+    get calls(): boolean;
+    get crossSigning(): boolean;
+  }
+
   export interface ClientOptions {
     deviceName?: string;
   }
@@ -961,8 +977,9 @@ declare module "@thirdroom/hydrogen-view-sdk" {
 
     loadStatus: ObservableValue<LoadStatus>;
 
-    constructor(platform: Platform, options?: ClientOptions);
+    constructor(platform: Platform, features?: FeatureSet, options?: ClientOptions);
     get loginFailure(): LoginFailure;
+    get loadError(): string;
 
     startWithExistingSession(sessionId: string): Promise<void>;
 
