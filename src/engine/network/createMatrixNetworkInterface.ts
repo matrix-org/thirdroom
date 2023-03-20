@@ -39,8 +39,11 @@ export async function createMatrixNetworkInterface(
 
   const userId = client.session.userId;
 
+  console.log(`NET: Creating Matrix Network Interface. userId: ${userId} getting initial host id...`);
   const initialHostId = await getInitialHost(userId);
+  console.log(`NET: got initialHostId ${initialHostId} isHost: ${initialHostId === userId} joining world...`);
   await joinWorld(userId, initialHostId === userId);
+  console.log(`NET: joinWorld finished`);
 
   function getInitialHost(userId: string): Promise<string> {
     // Of the all group call members find the one whose member event is oldest
@@ -140,16 +143,21 @@ export async function createMatrixNetworkInterface(
     if (isHost) setHost(ctx, userId);
     setPeerId(ctx, userId);
     setLocalMediaStream(ctx, groupCall.localMedia?.userMedia);
+
+    console.log("NET: joinWorld entering world...");
+
     await enterWorld(ctx);
 
     unsubscibeMembersObservable = groupCall.members.subscribe({
       onAdd(_key, member) {
         if (member.isConnected && member.dataChannel) {
+          console.log(`NET: onAdd ${member.userId}`);
           updateHost(userId);
           addPeer(ctx, member.userId, member.dataChannel, member.remoteMedia?.userMedia);
         }
       },
       onRemove(_key, member) {
+        console.log(`NET: onRemove ${member.userId}`);
         updateHost(userId);
         removePeer(ctx, member.userId);
       },
@@ -158,15 +166,34 @@ export async function createMatrixNetworkInterface(
       },
       onUpdate(_key, member) {
         if (member.isConnected && member.dataChannel && !hasPeer(ctx, member.userId)) {
+          console.log(`NET: onUpdate ${member.userId}`);
           updateHost(userId);
           addPeer(ctx, member.userId, member.dataChannel, member.remoteMedia?.userMedia);
+        } else {
+          console.log(
+            `NET: couldn't update peer ${
+              member.userId
+            }. isConnected: ${!!member.isConnected} dataChannel: ${!!member.dataChannel} hasPeer: ${hasPeer(
+              ctx,
+              member.userId
+            )}`
+          );
         }
       },
     });
 
+    console.log("NET: joinWorld entered world. Connecting to initial members...");
+
     for (const [, member] of groupCall.members) {
       if (member.isConnected && member.dataChannel) {
+        console.log(`NET: addPeer ${member.userId}`);
         addPeer(ctx, member.userId, member.dataChannel, member.remoteMedia?.userMedia);
+      } else {
+        console.log(
+          `NET: couldn't add peer ${
+            member.userId
+          }. isConnected: ${!!member.isConnected} dataChannel: ${!!member.dataChannel} `
+        );
       }
     }
   }
@@ -180,6 +207,12 @@ export async function createMatrixNetworkInterface(
       .filter((member) => member.isConnected && member.dataChannel);
 
     if (sortedConnectedMembers.length === 0 || isOlderThanLocalHost(groupCall, sortedConnectedMembers[0])) {
+      if (sortedConnectedMembers.length === 0) {
+        console.log(`NET: setHost ${userId} reason: no connected members`, { sortedConnectedMembers });
+      } else {
+        console.log(`NET: setHost ${userId} reason: older than localhost`, { sortedConnectedMembers });
+      }
+
       setHost(ctx, userId);
     } else {
       // TODO: use powerlevels to determine host
@@ -191,10 +224,12 @@ export async function createMatrixNetworkInterface(
         return a.eventTimestamp! > b.eventTimestamp ? 1 : -1;
       })[0];
       setHost(ctx, hostMember.userId);
+      console.log(`NET: setHost ${userId} reason: first sorted connected members`, { sortedConnectedMembers });
     }
   }
 
   return () => {
+    console.log(`NET: disconnect`);
     disconnect(ctx);
 
     exitWorld(ctx);
