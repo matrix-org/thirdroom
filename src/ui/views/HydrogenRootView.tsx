@@ -151,7 +151,7 @@ function initHydrogen() {
   };
 
   const options = {
-    development: false, //import.meta.env.DEV,
+    development: import.meta.env.DEV,
   };
 
   const platform = new Platform({ container, assetPaths, config, options });
