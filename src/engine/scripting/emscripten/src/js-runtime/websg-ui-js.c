@@ -51,7 +51,7 @@ static JSValue js_create_ui_canvas(JSContext *ctx, JSValueConst this_val, int ar
     props->pixel_density = (float_t)pixel_density;
   }
 
-  ui_canvas_id_t canvas_id = websg_ui_create_canvas(props);
+  ui_canvas_id_t canvas_id = websg_create_ui_canvas(props);
 
   if (canvas_id == 0) {
     JS_ThrowInternalError(ctx, "WebSG UI: Error creating UI canvas.");

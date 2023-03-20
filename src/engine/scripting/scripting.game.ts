@@ -10,7 +10,6 @@ import { createThirdroomModule } from "./thirdroom";
 import { createWASIModule } from "./wasi";
 import { WASMModuleContext } from "./WASMModuleContext";
 import { createWebSGModule } from "./websg";
-import { createWebSGUIModule } from "../ui/ui.game";
 
 export enum ScriptState {
   Uninitialized,
@@ -112,7 +111,6 @@ export async function loadScript(
     matrix: createMatrixWASMModule(ctx, wasmCtx),
     websg: createWebSGModule(ctx, wasmCtx),
     websg_network: createWebSGNetworkModule(ctx, wasmCtx),
-    websg_ui: createWebSGUIModule(ctx, wasmCtx),
     thirdroom: createThirdroomModule(ctx, wasmCtx),
   };
 

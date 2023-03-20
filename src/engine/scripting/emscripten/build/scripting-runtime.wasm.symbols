@@ -93,7 +93,7 @@
 92:websg_network_get_packet_size
 93:websg_network_receive
 94:websg_network_broadcast
-95:websg_ui_create_canvas
+95:websg_create_ui_canvas
 96:websg_node_set_ui_canvas
 97:websg_ui_canvas_set_root
 98:websg_ui_canvas_set_width
