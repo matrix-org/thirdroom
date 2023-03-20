@@ -29,7 +29,6 @@ const baseWorldAtom = atom<WorldState>({
 export const worldAtom = atom<WorldState, [WorldAction], void>(
   (get) => get(baseWorldAtom),
   (get, set, action) => {
-    console.log(action);
     if (action.type === "LOAD") {
       set(baseWorldAtom, {
         worldId: action.roomId,
