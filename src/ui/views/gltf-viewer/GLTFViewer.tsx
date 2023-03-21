@@ -18,16 +18,11 @@ import { Text } from "../../atoms/text/Text";
 import "./GLTFViewer.css";
 import { HydrogenContext } from "../../hooks/useHydrogen";
 import { EntityTooltip } from "../session/entity-tooltip/EntityTooltip";
-import { ActiveEntityState } from "../session/world/WorldView";
-import {
-  InteractableAction,
-  InteractionMessage,
-  InteractionMessageType,
-} from "../../../plugins/interaction/interaction.common";
-import { IMainThreadContext } from "../../../engine/MainThread";
+import { InteractableAction } from "../../../plugins/interaction/interaction.common";
 import { InteractableType } from "../../../engine/resource/schema";
 import { Reticle } from "../session/reticle/Reticle";
-import { useMouseDown } from "../../hooks/useMouseDown";
+import { InteractionState, useWorldInteraction } from "../../hooks/useWorldInteraction";
+import { getMxIdUsername } from "../../utils/matrixUtils";
 
 export default function GLTFViewer() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -188,8 +183,7 @@ function GLTFViewerUI() {
   const mainThread = useMainThreadContext();
   const [editorEnabled, setEditorEnabled] = useState(false);
   const [statsEnabled, setStatsEnabled] = useState(false);
-  const [activeEntity, setActiveEntity] = useState<ActiveEntityState | undefined>();
-  const mouseDown = useMouseDown(mainThread.canvas);
+  const [activeEntity, setActiveEntity] = useState<InteractionState | undefined>();
 
   useKeyDown((e) => {
     if (e.code === "Backquote") {
@@ -200,55 +194,44 @@ function GLTFViewerUI() {
     }
   }, []);
 
-  useEffect(() => {
-    const onInteraction = async (ctx: IMainThreadContext, message: InteractionMessage) => {
-      const interactableType = message.interactableType;
+  const handleInteraction = useCallback(
+    (interaction?: InteractionState) => {
+      if (!interaction) return setActiveEntity(undefined);
+      const { interactableType, action, peerId } = interaction;
 
-      if (!interactableType || message.action === InteractableAction.Unfocus) {
-        setActiveEntity(undefined);
-      } else if (
-        message.interactableType === InteractableType.Grabbable ||
-        message.interactableType === InteractableType.Interactable
-      ) {
-        setActiveEntity({
-          interactableType,
-          name: message.name || "Object",
-          held: message.held || false,
-          ownerId: message.ownerId,
-        });
-      } else if (message.interactableType === InteractableType.Player) {
-        if (message.action === InteractableAction.Grab) {
-          console.log("Interacted with player", message);
-        } else {
-          setActiveEntity({
-            interactableType,
-            name: message.peerId || "Player",
-            peerId: message.peerId,
-            held: false,
-          });
+      if (action === InteractableAction.Grab) {
+        if (interactableType === InteractableType.Player && typeof peerId === "string") {
+          console.log("Interacted with player", interaction);
+          document.exitPointerLock();
+          return;
         }
-      } else if (message.interactableType === InteractableType.Portal) {
-        if (message.action === InteractableAction.Grab) {
-          console.log("Interacted with portal", message);
-        } else {
-          setActiveEntity({
-            interactableType,
-            name: message.uri || "Portal",
-            held: false,
-          });
+        if (interactableType === InteractableType.Portal) {
+          console.log("Interacted with portal", interaction);
+          return;
         }
       }
-    };
 
-    return registerMessageHandler(mainThread, InteractionMessageType, onInteraction);
-  }, [mainThread]);
+      if (interactableType === InteractableType.Player) {
+        const entity: InteractionState = {
+          ...interaction,
+          name: peerId ? getMxIdUsername(peerId) : "Player",
+        };
+        setActiveEntity(entity);
+      }
+
+      setActiveEntity(interaction);
+    },
+    [setActiveEntity]
+  );
+
+  useWorldInteraction(mainThread, handleInteraction);
 
   return (
     <>
       <Stats statsEnabled={statsEnabled} />
       {editorEnabled && <EditorView />}
       {activeEntity && <EntityTooltip activeEntity={activeEntity} portalProcess={{ joining: false }} />}
-      <Reticle activeEntity={activeEntity} mouseDown={mouseDown} />
+      <Reticle />
     </>
   );
 }

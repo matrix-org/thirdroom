@@ -17,6 +17,7 @@ import { Dialog } from "../../../../atoms/dialog/Dialog";
 import { MemberListDialog } from "../../dialogs/MemberListDialog";
 import { useDialog } from "../../../../hooks/useDialog";
 import { OverlayWindow, overlayWindowAtom } from "../../../../state/overlayWindow";
+import { activeChatsAtom } from "../../../../state/overlayChat";
 
 interface WorldSelectorProps {
   isSelected: boolean;
@@ -29,6 +30,7 @@ interface WorldSelectorProps {
 
 export function WorldSelector({ isSelected, onSelect, room, groupCall, platform, session }: WorldSelectorProps) {
   const setOverlayWindow = useSetAtom(overlayWindowAtom);
+  const setActiveChat = useSetAtom(activeChatsAtom);
   const [focused, setFocused] = useState(false);
   const {
     open: openMember,
@@ -82,6 +84,9 @@ export function WorldSelector({ isSelected, onSelect, room, groupCall, platform,
             onOpenChange={setFocused}
             content={
               <>
+                <DropdownMenuItem onSelect={() => setActiveChat({ type: "OPEN", roomId: room.id })}>
+                  Chat
+                </DropdownMenuItem>
                 <DropdownMenuItem onSelect={openInviteDialog}>Invite</DropdownMenuItem>
                 <DropdownMenuItem onSelect={openMemberDialog}>Members</DropdownMenuItem>
                 <DropdownMenuItem
