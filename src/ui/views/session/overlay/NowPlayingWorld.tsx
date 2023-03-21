@@ -27,6 +27,7 @@ import { AlertDialog } from "../dialogs/AlertDialog";
 import { Text } from "../../../atoms/text/Text";
 import { InviteDialog } from "../dialogs/InviteDialog";
 import { activeChatsAtom, openedChatAtom } from "../../../state/overlayChat";
+import { OverlayWindow, overlayWindowAtom } from "../../../state/overlayWindow";
 
 interface NowPlayingWorldProps {
   world: Room;
@@ -43,6 +44,7 @@ export function NowPlayingWorld({ world, activeCall, onExitWorld, platform }: No
   const { mute: callMute, handleMute } = useCallMute(activeCall);
   const setActiveChat = useSetAtom(activeChatsAtom);
   const openedChatId = useAtomValue(openedChatAtom);
+  const setOverlayWindow = useSetAtom(overlayWindowAtom);
 
   if (callMute === microphone) {
     setMicrophone(!microphone);
@@ -124,6 +126,16 @@ export function NowPlayingWorld({ world, activeCall, onExitWorld, platform }: No
               <>
                 <DropdownMenuItem onSelect={() => setInviteDialog(true)}>Invite</DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => setIsMemberDialog(true)}>Members</DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() =>
+                    setOverlayWindow({
+                      type: OverlayWindow.WorldSettings,
+                      roomId: world.id,
+                    })
+                  }
+                >
+                  Settings
+                </DropdownMenuItem>
               </>
             }
           >
