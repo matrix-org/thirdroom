@@ -14,7 +14,11 @@
 #include "./console-js.h"
 #include "./matrix-js.h"
 #include "./thirdroom-js.h"
+#include "./js-utils.h"
 #include "./websg-js.h"
+#include "./websg-world-js.h"
+#include "./websg-scene-js.h"
+#include "./websg-node-js.h"
 
 /**
  * Global State
@@ -46,8 +50,25 @@ export int32_t websg_initialize() {
   JSValue global = JS_GetGlobalObject(ctx);
   js_define_console_api(ctx, &global);
   js_define_websg_api(ctx, &global);
+  js_define_websg_world(ctx);
+  js_define_websg_scene(ctx);
+  js_define_websg_node(ctx);
   js_define_thirdroom_api(ctx, &global);
   js_define_matrix_api(ctx, &global);
+
+  WebSGContext *websg = js_malloc(ctx, sizeof(WebSGContext));
+  websg->scenes = JS_NewObject(ctx);
+  JS_SetContextOpaque(ctx, websg);
+
+  JSValue world = js_new_websg_world(ctx);
+
+  if (JS_IsException(world)) {
+    js_log_error(ctx, &world);
+    JS_FreeValue(ctx, world);
+    return -1;
+  }
+
+  JS_SetPropertyStr(ctx, global, "world", world);
 
   int32_t source_len = thirdroom_get_js_source_size();
   char *source = js_malloc(ctx, source_len); // TODO: can we free this after JS_Eval?

@@ -2,6 +2,7 @@
 #include "./quickjs/cutils.h"
 #include "./quickjs/quickjs.h"
 #include "./js-utils.h"
+#include "../websg.h"
 
 void *get_typed_array_data(JSContext *ctx, JSValue *value, size_t byte_length) {
   size_t view_byte_offset;
@@ -24,4 +25,16 @@ void *get_typed_array_data(JSContext *ctx, JSValue *value, size_t byte_length) {
   data += view_byte_offset;
 
   return (void *)data;
+}
+
+void js_set_opaque_id(JSValue obj, uint32_t id) {
+  JS_SetOpaque(obj, (void *)id);
+}
+
+uint32_t js_get_own_opaque_id(JSValue obj, JSClassID class_id) {
+  return (uint32_t) JS_GetOpaque(obj, class_id);
+}
+
+uint32_t js_get_opaque_id(JSContext *ctx, JSValue obj, JSClassID class_id) {
+  return (uint32_t) JS_GetOpaque2(ctx, obj, class_id);
 }
