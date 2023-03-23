@@ -1,7 +1,7 @@
 import { addComponent, defineQuery, exitQuery, hasComponent, Query } from "bitecs";
 import { vec2, glMatrix as glm, quat, vec3, mat4 } from "gl-matrix";
 
-import { Axes, clamp, DEG2RAD } from "../../engine/component/math";
+import { Axes, clamp } from "../../engine/component/math";
 import { GameState, World } from "../../engine/GameTypes";
 import { enableActionMap } from "../../engine/input/ActionMappingSystem";
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
@@ -71,6 +71,7 @@ export const CameraRigAction = {
   LeftMouse: "CameraRig/LeftMouse",
   Zoom: "CameraRig/Zoom",
   ExitOrbit: "CameraRig/ExitOrbit",
+  Translate: "CameraRig/Translate",
 };
 
 export const CameraRigActionMap: ActionMap = {
@@ -121,6 +122,21 @@ export const CameraRigActionMap: ActionMap = {
         },
       ],
     },
+
+    {
+      id: "move",
+      path: CameraRigAction.Translate,
+      type: ActionType.Vector2,
+      bindings: [
+        {
+          type: BindingType.DirectionalButtons,
+          up: "Keyboard/KeyW",
+          down: "Keyboard/KeyS",
+          left: "Keyboard/KeyA",
+          right: "Keyboard/KeyD",
+        },
+      ],
+    },
   ],
 };
 
@@ -149,6 +165,7 @@ export interface ZoomComponent {
 }
 export interface OrbitAnchor {
   target: number;
+  translation: vec3;
 }
 
 // Components
@@ -201,11 +218,11 @@ export function startOrbit(ctx: GameState, nodeToOrbit: RemoteNode, options?: Ca
 
   if (options && options.pitch) {
     const pitchTarget = tryGetRemoteResource<RemoteNode>(ctx, pitch.target);
-    setPitch(pitchTarget, pitch, -options.pitch * DEG2RAD);
+    setPitch(pitchTarget, pitch, -options.pitch);
   }
   if (options && options.yaw) {
     const yawTarget = tryGetRemoteResource<RemoteNode>(ctx, yaw.target);
-    setYaw(yawTarget, -options.yaw * DEG2RAD);
+    setYaw(yawTarget, -options.yaw);
   }
   if (options && options.zoom) {
     const zoomTarget = tryGetRemoteResource<RemoteNode>(ctx, zoom.target);
@@ -310,6 +327,7 @@ export function addOrbitAnchor(world: World, node: RemoteNode, target: RemoteNod
   addComponent(world, OrbitAnchor, node.eid);
   const anchor: OrbitAnchor = {
     target: target.eid,
+    translation: vec3.create(),
   };
   OrbitAnchor.set(node.eid, anchor);
   node.position.set(target.position);
@@ -396,6 +414,7 @@ export function CameraRigSystem(ctx: GameState) {
     const orbitAnchor = OrbitAnchor.get(eid)!;
     const orbitAnchorNode = tryGetRemoteResource<RemoteNode>(ctx, eid);
     const targetNode = getRemoteResource<RemoteNode>(ctx, orbitAnchor.target);
+    const controller = tryGetInputController(input, eid);
 
     // if not orbiting anymore or target was removed, remove the orbit anchor
     if (!camRigModule.orbiting || !targetNode) {
@@ -405,8 +424,17 @@ export function CameraRigSystem(ctx: GameState) {
       continue;
     }
 
-    // otherwise set its position to the target
+    const translate = controller.actionStates.get(CameraRigAction.Translate) as vec2;
+    // apply rotation
+    vec3.set(_v, translate[0], 0, -translate[1]);
+    vec3.transformQuat(_v, _v, orbitAnchorNode.quaternion);
+
+    orbitAnchor.translation[0] += _v[0] / 100;
+    orbitAnchor.translation[2] += _v[2] / 100;
+
+    // otherwise set its position to the target, plus any offset translations
     mat4.getTranslation(_v, targetNode.worldMatrix);
+    vec3.add(_v, _v, orbitAnchor.translation);
     vec3.copy(orbitAnchorNode.position, _v);
   }
 
