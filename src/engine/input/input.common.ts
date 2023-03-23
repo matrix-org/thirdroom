@@ -152,6 +152,8 @@ export interface InputComponentState {
   button: number; // 0 to 1
   xAxis: number; // -1 to 1
   yAxis: number; // -1 to 1
+  zAxis: number; // -Infinity to Infinity
+  wAxis: number; // -Infinity to Infinity
   // Component specific state
   // For XRInput this is XRInputComponentStateValue
   // For MouseInput this is the buttons bitmask

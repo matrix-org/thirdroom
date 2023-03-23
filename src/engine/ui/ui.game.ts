@@ -11,7 +11,6 @@ import { defineModule, getModule, registerMessageHandler } from "../module/modul
 import { dynamicObjectCollisionGroups } from "../physics/CollisionGroups";
 import { addRigidBody, PhysicsModule, PhysicsModuleState } from "../physics/physics.game";
 import {
-  createRemoteObject,
   RemoteAudioSource,
   RemoteNode,
   RemoteUIButton,
@@ -519,8 +518,6 @@ export function createUICanvasNode(
 
   const node = new RemoteNode(ctx.resourceManager, { uiCanvas });
 
-  const obj = createRemoteObject(ctx, node);
-
   // add rigidbody for interactable UI
   const rigidBodyDesc = RAPIER.RigidBodyDesc.kinematicPositionBased();
   const rigidBody = physics.physicsWorld.createRigidBody(rigidBodyDesc);
@@ -528,11 +525,11 @@ export function createUICanvasNode(
     .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS)
     .setCollisionGroups(dynamicObjectCollisionGroups);
   physics.physicsWorld.createCollider(colliderDesc, rigidBody);
-  addRigidBody(ctx, obj, rigidBody);
+  addRigidBody(ctx, node, rigidBody);
 
-  addInteractableComponent(ctx, physics, obj, InteractableType.UI);
+  addInteractableComponent(ctx, physics, node, InteractableType.UI);
 
-  return obj;
+  return node;
 }
 
 function removeUIFlexFromLinkedList(parent: RemoteUIFlex, child: RemoteUIFlex) {

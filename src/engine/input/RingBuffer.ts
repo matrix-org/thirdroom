@@ -25,7 +25,7 @@ export interface InputRingBuffer extends RingBuffer<Float32ArrayConstructor> {
   view: CursorView;
 }
 
-const numElements = 6;
+const numElements = 8;
 
 export const RING_BUFFER_MAX = 1024 * numElements;
 
@@ -50,6 +50,8 @@ export function enqueueInputRingBuffer(
   button: number,
   xAxis: number,
   yAxis: number,
+  zAxis: number,
+  wAxis: number,
   state: number
 ) {
   const { view } = irb;
@@ -60,6 +62,8 @@ export function enqueueInputRingBuffer(
   writeFloat32(view, button);
   writeFloat32(view, xAxis);
   writeFloat32(view, yAxis);
+  writeFloat32(view, zAxis);
+  writeFloat32(view, wAxis);
   writeUint32(view, state);
 
   if (availableWrite(irb) < BYTE_LENGTH) {
@@ -83,6 +87,8 @@ export function dequeueInputRingBuffer(irb: InputRingBuffer, out: InputComponent
   out.button = readFloat32(view);
   out.xAxis = readFloat32(view);
   out.yAxis = readFloat32(view);
+  out.zAxis = readFloat32(view);
+  out.wAxis = readFloat32(view);
   out.state = readUint32(view);
 
   return sliceCursorView(view);

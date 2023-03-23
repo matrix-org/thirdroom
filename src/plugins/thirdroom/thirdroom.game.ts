@@ -44,7 +44,6 @@ import {
   InputController,
   inputControllerQuery,
 } from "../../engine/input/InputController";
-import { addCameraPitchTargetComponent, addCameraYawTargetComponent } from "../FirstPersonCamera";
 import { addInteractableComponent, GRAB_DISTANCE, removeInteractableComponent } from "../interaction/interaction.game";
 import { embodyAvatar } from "../../engine/network/serialization.game";
 import { addScriptComponent, loadScript, Script, ScriptComponent } from "../../engine/scripting/scripting.game";
@@ -76,11 +75,8 @@ import {
   RemoteScene,
   RemoteTexture,
   RemoteWorld,
-  createRemoteObject,
   addObjectToWorld,
   removeObjectFromWorld,
-  getObjectPrivateRoot,
-  RemoteObject,
   RemoteMaterial,
 } from "../../engine/resource/RemoteResources";
 import { CharacterControllerType, SceneCharacterControllerComponent } from "../CharacterController";
@@ -93,6 +89,7 @@ import { getAvatar } from "../avatars/getAvatar";
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
 import { createLineMesh } from "../../engine/mesh/mesh.game";
 import { RemoteResource } from "../../engine/resource/RemoteResourceClass";
+import { addCameraRig, CameraRigType } from "../camera/CameraRig.game";
 
 type ThirdRoomModuleState = {};
 
@@ -109,8 +106,10 @@ const createAvatarRig =
   (input: GameInputModule, physics: PhysicsModuleState) => (ctx: GameState, options: AvatarOptions) => {
     const spawnPoints = spawnPointQuery(ctx.world);
 
+    const container = new RemoteNode(ctx.resourceManager);
     const rig = createNodeFromGLTFURI(ctx, "/gltf/full-animation-rig.glb");
-    const obj = createRemoteObject(ctx, rig);
+
+    addChild(container, rig);
 
     quat.fromEuler(rig.quaternion, 0, 180, 0);
 
@@ -119,37 +118,21 @@ const createAvatarRig =
       ctx.worldResource.environment!.publicScene!.eid
     )?.type;
     if (characterControllerType === CharacterControllerType.Fly || spawnPoints.length === 0) {
-      addFlyControls(ctx, obj.eid);
+      addFlyControls(ctx, container.eid);
     } else {
-      addKinematicControls(ctx, obj.eid);
+      addKinematicControls(ctx, container.eid);
     }
 
-    const privateRoot = getObjectPrivateRoot(obj);
+    addCameraRig(ctx, container, CameraRigType.PointerLock, [0, AVATAR_HEIGHT - AVATAR_CAMERA_OFFSET, 0]);
 
-    const cameraAnchor = new RemoteNode(ctx.resourceManager);
-    cameraAnchor.name = "Avatar Camera Anchor";
+    addAvatarController(ctx, input, container.eid);
+    addAvatarRigidBody(ctx, physics, container);
+    addInteractableComponent(ctx, physics, container, InteractableType.Player);
 
-    cameraAnchor.position[1] = AVATAR_HEIGHT - AVATAR_CAMERA_OFFSET;
+    addComponent(ctx.world, AvatarComponent, container.eid);
+    AvatarComponent.eid[container.eid] = rig.eid;
 
-    addChild(privateRoot, cameraAnchor);
-
-    const camera = new RemoteNode(ctx.resourceManager, {
-      name: "Avatar Camera",
-      camera: createRemotePerspectiveCamera(ctx),
-    });
-    addChild(cameraAnchor, camera);
-
-    addCameraPitchTargetComponent(ctx.world, cameraAnchor);
-    addCameraYawTargetComponent(ctx.world, obj);
-
-    addAvatarController(ctx, input, obj.eid);
-    addAvatarRigidBody(ctx, physics, obj);
-    addInteractableComponent(ctx, physics, obj, InteractableType.Player);
-
-    addComponent(ctx.world, AvatarComponent, obj.eid);
-    AvatarComponent.eid[obj.eid] = rig.eid;
-
-    return obj;
+    return container;
   };
 
 export const XRControllerComponent = defineComponent();
@@ -161,10 +144,9 @@ const createXRHead = (input: GameInputModule, physics: PhysicsModuleState) => (c
   node.scale.set([0.75, 0.75, 0.75]);
   node.position.set([0, 0, 0.1]);
 
-  const obj = createRemoteObject(ctx, node);
-  addComponent(ctx.world, XRHeadComponent, obj.eid);
+  addComponent(ctx.world, XRHeadComponent, node.eid);
 
-  return obj;
+  return node;
 };
 
 export function createXRRay(ctx: GameState, options: any) {
@@ -185,28 +167,25 @@ export function createXRRay(ctx: GameState, options: any) {
   });
   node.position[2] = 0.1;
 
-  const obj = createRemoteObject(ctx, node);
-  addComponent(ctx.world, XRRayComponent, obj.eid);
+  addComponent(ctx.world, XRRayComponent, node.eid);
 
-  return obj;
+  return node;
 }
 
 const createXRHandLeft = (input: GameInputModule, physics: PhysicsModuleState) => (ctx: GameState, options?: any) => {
   const node = createNodeFromGLTFURI(ctx, `/gltf/controller-left.glb`);
 
-  const obj = createRemoteObject(ctx, node);
-  addComponent(ctx.world, XRControllerComponent, obj.eid);
+  addComponent(ctx.world, XRControllerComponent, node.eid);
 
-  return obj;
+  return node;
 };
 
 const createXRHandRight = (input: GameInputModule, physics: PhysicsModuleState) => (ctx: GameState, options?: any) => {
   const node = createNodeFromGLTFURI(ctx, `/gltf/controller-right.glb`);
 
-  const obj = createRemoteObject(ctx, node);
-  addComponent(ctx.world, XRControllerComponent, obj.eid);
+  addComponent(ctx.world, XRControllerComponent, node.eid);
 
-  return obj;
+  return node;
 };
 
 const tempSpawnPoints: RemoteNode[] = [];
@@ -295,20 +274,10 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
     addChild(ctx.worldResource.persistentScene, oobCollider);
 
     collisionHandlers.push((eid1: number, eid2: number, handle1: number, handle2: number) => {
-      let objectEid: number | undefined;
-      let floorHandle: number | undefined;
+      const objectEid = handle1 !== rigidBody.handle ? eid1 : handle2 !== rigidBody.handle ? eid2 : undefined;
+      const floorHandle = handle1 === rigidBody.handle ? handle1 : handle2 === rigidBody.handle ? handle2 : undefined;
 
-      if (hasComponent(ctx.world, RemoteObject, eid1)) {
-        objectEid = eid1;
-        floorHandle = handle2;
-      } else if (hasComponent(ctx.world, RemoteObject, eid2)) {
-        objectEid = eid2;
-        floorHandle = handle1;
-      } else {
-        return;
-      }
-
-      if (floorHandle !== rigidBody.handle) {
+      if (floorHandle === undefined || objectEid === undefined) {
         return;
       }
 
@@ -658,7 +627,7 @@ function loadRemotePlayerRig(
   // TODO: we only want to remove interactable for the other connected players' entities so they can't focus their own avatar, but we want to keep them interactable for the host's entity
   removeInteractableComponent(ctx, physics, rig);
 
-  addNametag(ctx, AVATAR_HEIGHT, rig, peerId);
+  addNametag(ctx, AVATAR_HEIGHT + AVATAR_HEIGHT / 3, rig, peerId);
 
   associatePeerWithEntity(network, peerId, rig.eid);
 
@@ -712,13 +681,13 @@ function swapToPlayerRig(ctx: GameState, physics: PhysicsModuleState, node: Remo
   addComponent(ctx.world, KinematicControls, node.eid);
 }
 
-const ThirdPersonComponent = defineComponent();
+export const ThirdPersonComponent = defineComponent();
 
 function swapToThirdPerson(ctx: GameState, node: RemoteNode) {
   addComponent(ctx.world, ThirdPersonComponent, node.eid);
   const camera = getCamera(ctx, node);
   camera.position[2] = 2;
-  camera.parent!.position[0] = 0.8;
+  camera.parent!.position[0] = 0.4;
 
   const avatar = getAvatar(ctx, node);
   avatar.visible = true;

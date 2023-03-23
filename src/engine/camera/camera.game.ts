@@ -2,8 +2,7 @@ import { mat4, vec3, glMatrix } from "gl-matrix";
 
 import { findChild } from "../component/transform";
 import { GameState, RemoteResourceManager } from "../GameTypes";
-import { getModule } from "../module/module.common";
-import { RendererModule } from "../renderer/renderer.game";
+import { GameRendererModuleState } from "../renderer/renderer.game";
 import { getRemoteResources } from "../resource/resource.game";
 import { RemoteCamera, RemoteNode } from "../resource/RemoteResources";
 import { CameraType } from "../resource/schema";
@@ -29,24 +28,39 @@ export function createRemotePerspectiveCamera(
   });
 }
 
-const _pm = mat4.create();
 const _icm = mat4.create();
-export function projectPerspective(ctx: GameState, cameraNode: RemoteNode, v3: vec3) {
+const _v = vec3.create();
+export function projectPerspective(renderer: GameRendererModuleState, cameraNode: RemoteNode, v3: vec3) {
   if (!cameraNode.camera) {
     throw new Error("no active camera found to project with");
   }
 
   const cameraMatrix = cameraNode.worldMatrix;
-  const projectionMatrix = calculateProjectionMatrix(ctx, cameraNode.camera as RemoteCamera);
+  const projectionMatrix = calculateProjectionMatrix(renderer, cameraNode.camera as RemoteCamera);
   const cameraMatrixWorldInverse = mat4.invert(_icm, cameraMatrix);
-  const v = vec3.clone(v3);
+  const v = vec3.copy(_v, v3);
   vec3.transformMat4(v, v3, cameraMatrixWorldInverse);
   vec3.transformMat4(v, v, projectionMatrix);
   return v;
 }
 
-export function calculateProjectionMatrix(ctx: GameState, camera: RemoteCamera) {
-  const renderer = getModule(ctx, RendererModule);
+export function unproject(renderer: GameRendererModuleState, cameraNode: RemoteNode, v3: vec3) {
+  if (!cameraNode.camera) {
+    throw new Error("no active camera found to unproject with");
+  }
+
+  const projectionMatrix = calculateProjectionMatrix(renderer, cameraNode.camera);
+  const projectionMatrixInverse = mat4.invert(projectionMatrix, projectionMatrix);
+
+  const v = vec3.copy(_v, v3);
+  vec3.transformMat4(v, v3, projectionMatrixInverse);
+  vec3.transformMat4(v, v, cameraNode.worldMatrix);
+
+  return v;
+}
+
+const _pm = mat4.create();
+export function calculateProjectionMatrix(renderer: GameRendererModuleState, camera: RemoteCamera) {
   const { znear: near, zfar: far, yfov: fov } = camera;
 
   const zoom = 1;
