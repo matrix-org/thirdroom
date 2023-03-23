@@ -2161,33 +2161,38 @@ static JSValue js_start_orbit(JSContext *ctx, JSValueConst this_val, int argc, J
 
   CameraRigOptions *options = js_malloc(ctx, sizeof(CameraRigOptions));
 
-  JSValue pitch_val = JS_GetPropertyStr(ctx, argv[1], "pitch");
-  if (!JS_IsUndefined(pitch_val)) {
-    double_t pitch;
-    if (JS_ToFloat64(ctx, &pitch, pitch_val) == -1) {
-      return JS_EXCEPTION;
-    }
-    options->pitch = (float_t)pitch;
-  }
+  if (!JS_IsUndefined(argv[1])) { 
 
-  JSValue yaw_val = JS_GetPropertyStr(ctx, argv[1], "yaw");
-  if (!JS_IsUndefined(yaw_val)) {
-    double_t yaw;
-    if (JS_ToFloat64(ctx, &yaw, yaw_val) == -1) {
-      return JS_EXCEPTION;
+    JSValue pitch_val = JS_GetPropertyStr(ctx, argv[1], "pitch");
+    if (!JS_IsUndefined(pitch_val)) {
+      double_t pitch;
+      if (JS_ToFloat64(ctx, &pitch, pitch_val) == -1) {
+        return JS_EXCEPTION;
+      }
+      options->pitch = (float_t)pitch;
     }
-    options->yaw = (float_t)yaw;
-  }
 
-  JSValue zoom_val = JS_GetPropertyStr(ctx, argv[1], "zoom");
-  if (!JS_IsUndefined(zoom_val)) {
-    double_t zoom;
-    if (JS_ToFloat64(ctx, &zoom, zoom_val) == -1) {
-      return JS_EXCEPTION;
+    JSValue yaw_val = JS_GetPropertyStr(ctx, argv[1], "yaw");
+    if (!JS_IsUndefined(yaw_val)) {
+      double_t yaw;
+      if (JS_ToFloat64(ctx, &yaw, yaw_val) == -1) {
+        return JS_EXCEPTION;
+      }
+      options->yaw = (float_t)yaw;
     }
-    options->zoom = (float_t)zoom;
-  }
+
+    JSValue zoom_val = JS_GetPropertyStr(ctx, argv[1], "zoom");
+    if (!JS_IsUndefined(zoom_val)) {
+      double_t zoom;
+      if (JS_ToFloat64(ctx, &zoom, zoom_val) == -1) {
+        return JS_EXCEPTION;
+      }
+      options->zoom = (float_t)zoom;
+    }
   
+  }
+
+
   int32_t result = websg_start_orbit(node_id, options);
 
   if (result == -1) {
