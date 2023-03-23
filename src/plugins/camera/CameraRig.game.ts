@@ -42,6 +42,8 @@ import { createDisposables } from "../../engine/utils/createDisposables";
 import { ThirdRoomMessageType } from "../thirdroom/thirdroom.common";
 import { sendInteractionMessage } from "../interaction/interaction.game";
 import { InteractableAction } from "../interaction/interaction.common";
+import { getXRMode } from "../../engine/renderer/renderer.game";
+import { XRMode } from "../../engine/renderer/renderer.common";
 
 export const CameraRigModule = defineModule<GameState, { orbiting: boolean }>({
   name: "camera-rig-module",
@@ -200,6 +202,11 @@ interface CameraRigOptions {
 }
 
 export function startOrbit(ctx: GameState, nodeToOrbit: RemoteNode, options?: CameraRigOptions) {
+  const xrMode = getXRMode(ctx);
+  if (xrMode !== XRMode.None) {
+    return;
+  }
+
   const input = getModule(ctx, InputModule);
   const camRigModule = getModule(ctx, CameraRigModule);
 
@@ -239,6 +246,11 @@ export function startOrbit(ctx: GameState, nodeToOrbit: RemoteNode, options?: Ca
 }
 
 export function stopOrbit(ctx: GameState) {
+  const xrMode = getXRMode(ctx);
+  if (xrMode !== XRMode.None) {
+    return;
+  }
+
   const input = getModule(ctx, InputModule);
   const physics = getModule(ctx, PhysicsModule);
   const camRigModule = getModule(ctx, CameraRigModule);
