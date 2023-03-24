@@ -1,13 +1,13 @@
-#ifndef __websg_vector3_js_h
-#define __websg_vector3_js_h
+#ifndef __websg_quaternion_js_h
+#define __websg_quaternion_js_h
 #include <math.h>
 #include "./quickjs/quickjs.h"
 
-static JSClassID websg_vector3_class_id;
+static JSClassID websg_quaternion_class_id;
 
-void js_websg_define_vector3(JSContext *ctx);
+void js_websg_define_quaternion(JSContext *ctx);
 
-int js_websg_define_vector3_prop(
+int js_websg_define_quaternion_prop(
   JSContext *ctx,
   JSValue obj,
   const char *name,

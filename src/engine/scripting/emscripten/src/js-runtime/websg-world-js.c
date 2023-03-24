@@ -5,6 +5,10 @@
 #include "./js-utils.h"
 #include "./websg-world-js.h"
 #include "./websg-scene-js.h"
+#include "./websg-node-js.h"
+#include "./websg-mesh-js.h"
+#include "./websg-light-js.h"
+#include "./websg-collider-js.h"
 
 static JSClassDef websg_world_class = {
   "WebSGWorld"
@@ -53,11 +57,37 @@ static JSValue js_websg_world_find_scene_by_name(JSContext *ctx, JSValueConst th
   return js_websg_get_scene_by_id(ctx, scene_id);
 }
 
+static JSValue js_websg_world_find_node_by_name(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+
+  size_t length;
+  const char* name = JS_ToCStringLen(ctx, &length, argv[0]);
+
+  if (name == NULL) {
+    return JS_EXCEPTION;
+  }
+
+  node_id_t node_id = websg_node_find_by_name(name, length);
+
+  if (node_id == 0) {
+    return JS_UNDEFINED;
+  }
+
+  return js_websg_get_node_by_id(ctx, node_id);
+}
+
 
 static const JSCFunctionListEntry websg_world_proto_funcs[] = {
   JS_CGETSET_DEF("environment", js_websg_world_get_environment, js_websg_world_set_environment),
   JS_CFUNC_DEF("createScene", 0, js_websg_create_scene),
+  JS_CFUNC_DEF("createNode", 0, js_websg_create_node),
+  JS_CFUNC_DEF("createMesh", 1, js_websg_create_mesh),
+  JS_CFUNC_DEF("createLight", 1, js_websg_create_light),
+  JS_CFUNC_DEF("createCollider", 1, js_websg_create_collider),
   JS_CFUNC_DEF("findSceneByName", 1, js_websg_find_scene_by_name),
+  JS_CFUNC_DEF("findNodeByName", 1, js_websg_find_node_by_name),
+  JS_CFUNC_DEF("findMeshByName", 1, js_websg_find_mesh_by_name),
+  JS_CFUNC_DEF("findLightByName", 1, js_websg_find_light_by_name),
+  JS_CFUNC_DEF("findColliderByName", 1, js_websg_find_collider_by_name),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "WebSGWorld", JS_PROP_CONFIGURABLE),
 };
 

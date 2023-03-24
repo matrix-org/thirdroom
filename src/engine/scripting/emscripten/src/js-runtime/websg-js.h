@@ -4,4 +4,10 @@
 
 void js_define_websg_api(JSContext *ctx, JSValue *target);
 
+MeshPrimitiveAttribute get_primitive_attribute_from_atom(JSAtom atom);
+
+ColliderType get_collider_type_from_atom(JSAtom atom);
+
+LightType get_light_type_from_atom(JSAtom atom);
+
 #endif

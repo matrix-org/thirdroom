@@ -18,11 +18,11 @@ import {
   GLTFHubsComponents,
   GLTFLink,
   GLTFPortal,
-  GLTFColliderRef,
   GLTFTilesRenderer,
   GLTFCharacterController,
   GLTFAnimationChannel,
   GLTFAnimationSampler,
+  GLTFNode,
 } from "./GLTF";
 import { fetchWithProgress } from "../utils/fetchWithProgress.game";
 import {
@@ -362,6 +362,7 @@ async function loadGLTFJSON(
 export interface GLTFLoaderOptions {
   audioOutput?: AudioEmitterOutput;
   createDefaultMeshColliders?: boolean;
+  rootIsStatic?: boolean;
 }
 
 /**
@@ -376,6 +377,7 @@ export type GLTFLoaderContext = {
   nodeToObject3D: Map<RemoteNode, Object3D>;
   tempCache: Map<string, GLTFSubresourceCache>;
   postLoadCallbacks: GLTFPostLoadCallback[];
+  useMXStatic: boolean;
 } & GLTFLoaderOptions;
 
 const createGLTFLoaderContext = (
@@ -390,6 +392,7 @@ const createGLTFLoaderContext = (
   nodeToObject3D: new Map(),
   tempCache: new Map(),
   postLoadCallbacks: [],
+  useMXStatic: (options?.rootIsStatic && resource.root.extensionsUsed?.includes("MX_static")) || false,
   ...options,
 });
 
@@ -807,9 +810,9 @@ const tempPosition = vec3.create();
 const tempRotation = quat.create();
 const tempScale = vec3.create();
 
-async function loadGLTFCollider(loaderCtx: GLTFLoaderContext, node: RemoteNode, extension: GLTFColliderRef) {
+async function loadGLTFColliderAndRigidBody(loaderCtx: GLTFLoaderContext, node: RemoteNode, nodeDef: GLTFNode) {
   const { resource, ctx } = loaderCtx;
-  const colliderIndex = extension.collider;
+  const colliderIndex = nodeDef.extensions?.OMI_collider?.collider;
 
   if (colliderIndex === undefined) {
     console.warn(`No collider on node "${node.name}"`);
@@ -880,9 +883,38 @@ async function loadGLTFCollider(loaderCtx: GLTFLoaderContext, node: RemoteNode, 
     return;
   }
 
-  const rigidBodyDesc = RAPIER.RigidBodyDesc.fixed();
+  let rigidBodyDesc: RAPIER.RigidBodyDesc;
+
+  if (nodeDef.extensions?.OMI_physics_body) {
+    const { type, mass, linearVelocity, angularVelocity } = nodeDef.extensions.OMI_physics_body;
+
+    if (type === "static") {
+      rigidBodyDesc = RAPIER.RigidBodyDesc.fixed();
+    } else if (type === "kinematic") {
+      rigidBodyDesc = RAPIER.RigidBodyDesc.kinematicPositionBased();
+    } else if (type === "rigid") {
+      rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic();
+
+      if (linearVelocity) {
+        rigidBodyDesc.setLinvel(linearVelocity[0], linearVelocity[1], linearVelocity[2]);
+      }
+
+      if (angularVelocity) {
+        rigidBodyDesc.setAngvel(new RAPIER.Vector3(angularVelocity[0], angularVelocity[1], angularVelocity[2]));
+      }
+    } else {
+      console.warn(`Unsupported physics body type: "${type}"`);
+      return;
+    }
+
+    colliderDesc.setMass(mass || 1);
+  } else {
+    rigidBodyDesc = RAPIER.RigidBodyDesc.fixed();
+  }
+
   rigidBodyDesc.setTranslation(tempPosition[0], tempPosition[1], tempPosition[2]);
   rigidBodyDesc.setRotation(new RAPIER.Quaternion(tempRotation[0], tempRotation[1], tempRotation[2], tempRotation[3]));
+
   const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
 
   colliderDesc.setCollisionGroups(staticRigidBodyCollisionGroups);
@@ -908,9 +940,8 @@ function loadGLTFPortal({ ctx }: GLTFLoaderContext, node: RemoteNode, extension:
 const loadGLTFNode = createInstancedSubresourceLoader(
   "node",
   (root) => root.nodes,
-  async (
-    loaderCtx,
-    {
+  async (loaderCtx, nodeDef, index) => {
+    const {
       name,
       translation,
       rotation,
@@ -920,11 +951,9 @@ const loadGLTFNode = createInstancedSubresourceLoader(
       camera: cameraIndex,
       mesh: meshIndex,
       skin: skinIndex,
-      weights,
       extensions,
-    },
-    index
-  ) => {
+    } = nodeDef;
+
     const resource = loaderCtx.resource;
 
     let children: RemoteNode[] | undefined;
@@ -1008,7 +1037,7 @@ const loadGLTFNode = createInstancedSubresourceLoader(
       }
 
       if (extensions?.OMI_collider) {
-        await loadGLTFCollider(loaderCtx, node, extensions.OMI_collider);
+        await loadGLTFColliderAndRigidBody(loaderCtx, node, nodeDef);
       }
 
       if (extensions?.MX_tiles_renderer) {
@@ -1021,6 +1050,19 @@ const loadGLTFNode = createInstancedSubresourceLoader(
 
       if (extensions?.MX_portal) {
         loadGLTFPortal(loaderCtx, node, extensions.MX_portal);
+      }
+
+      if (extensions?.MX_static) {
+        node.isStatic = loaderCtx.useMXStatic;
+      }
+
+      if (extensions?.MX_lights_shadows) {
+        const { castShadow, receiveShadow } = extensions.MX_lights_shadows;
+        node.castShadow = castShadow;
+        node.receiveShadow = receiveShadow;
+      } else {
+        node.castShadow = false;
+        node.receiveShadow = false;
       }
     });
 

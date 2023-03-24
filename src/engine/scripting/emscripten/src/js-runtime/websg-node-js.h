@@ -5,6 +5,11 @@
 
 static JSClassID websg_node_class_id;
 
+typedef struct WebSGNodeData {
+  node_id_t node_id;
+  JSValue interactable;
+} WebSGNodeData;
+
 void js_define_websg_node(JSContext *ctx);
 
 JSValue js_websg_create_node(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);

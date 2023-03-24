@@ -61,6 +61,7 @@ static const JSCFunctionListEntry js_websg_vector3_proto_funcs[] = {
   JS_CGETSET_MAGIC_DEF("x", js_websg_vector3_get, js_websg_vector3_set, 0),
   JS_CGETSET_MAGIC_DEF("y", js_websg_vector3_get, js_websg_vector3_set, 1),
   JS_CGETSET_MAGIC_DEF("z", js_websg_vector3_get, js_websg_vector3_set, 2),
+  JS_PROP_INT32_DEF("length", 3, JS_PROP_ENUMERABLE),
 };
 
 void js_websg_define_vector3(JSContext *ctx) {

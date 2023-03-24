@@ -1041,6 +1041,10 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       return 0;
     },
+    light_find_by_name(namePtr: number, byteLength: number) {
+      const light = getScriptResourceByNamePtr(ctx, wasmCtx, RemoteLight, namePtr, byteLength);
+      return light ? light.eid : 0;
+    },
     create_light(type: number) {
       if (LightType[type] === undefined) {
         console.error("WebSG: Invalid light type.");
@@ -1194,6 +1198,10 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       }
 
       return interactable.released ? 1 : 0;
+    },
+    collider_find_by_name(namePtr: number, byteLength: number) {
+      const collider = getScriptResourceByNamePtr(ctx, wasmCtx, RemoteCollider, namePtr, byteLength);
+      return collider ? collider.eid : 0;
     },
     create_collider(colliderPropsPtr: number) {
       moveCursorView(wasmCtx.cursorView, colliderPropsPtr);

@@ -25,7 +25,7 @@ export interface Script {
   initialize: () => void;
   loaded: () => void;
   entered: () => void;
-  update: (dt: number) => void;
+  update: (dt: number, time: number) => void;
   dispose: () => void;
 }
 
@@ -47,7 +47,8 @@ export function ScriptingSystem(ctx: GameState) {
   for (let i = 0; i < entities.length; i++) {
     const eid = entities[i];
     const script = ScriptComponent.get(eid)!;
-    script.update(ctx.dt);
+    // TODO: Use a networked global time variable instead of elapsed
+    script.update(ctx.dt, ctx.elapsed / 1000);
   }
 
   const removedEntities = scriptExitQuery(ctx.world);
@@ -200,14 +201,14 @@ export async function loadScript(
 
       this.state = ScriptState.Entered;
     },
-    update(dt: number) {
+    update(dt: number, time: number) {
       if (this.state === ScriptState.Error) {
         return;
       }
 
       if (this.state === ScriptState.Loaded || this.state === ScriptState.Entered) {
         if (websgUpdate) {
-          const result = websgUpdate(dt);
+          const result = websgUpdate(dt, time);
 
           if (result < 0) {
             console.error(`Script update callback failed with code: ${result}`);

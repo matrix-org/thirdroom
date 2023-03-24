@@ -27,14 +27,11 @@ void *get_typed_array_data(JSContext *ctx, JSValue *value, size_t byte_length) {
   return (void *)data;
 }
 
-void js_set_opaque_id(JSValue obj, uint32_t id) {
-  JS_SetOpaque(obj, (void *)id);
-}
-
-uint32_t js_get_own_opaque_id(JSValue obj, JSClassID class_id) {
-  return (uint32_t) JS_GetOpaque(obj, class_id);
-}
-
-uint32_t js_get_opaque_id(JSContext *ctx, JSValue obj, JSClassID class_id) {
-  return (uint32_t) JS_GetOpaque2(ctx, obj, class_id);
+void init_websg_context(JSContext *ctx) {
+  WebSGContext *websg = js_malloc(ctx, sizeof(WebSGContext));
+  websg->scenes = JS_NewObject(ctx);
+  websg->nodes = JS_NewObject(ctx);
+  websg->meshes = JS_NewObject(ctx);
+  websg->lights = JS_NewObject(ctx);
+  JS_SetContextOpaque(ctx, websg);
 }

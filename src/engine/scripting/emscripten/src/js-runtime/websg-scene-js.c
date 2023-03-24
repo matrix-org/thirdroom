@@ -109,31 +109,7 @@ void js_define_websg_scene(JSContext *ctx) {
   JS_SetClassProto(ctx, websg_scene_class_id, scene_proto);
 }
 
-JSValue js_websg_create_scene(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
-  scene_id_t scene_id = websg_create_scene();
-
-  if (scene_id == 0) {
-    JS_ThrowInternalError(ctx, "WebSG: Couldn't create scene.");
-    return JS_EXCEPTION;
-  }
-
-  JSValue scene = JS_NewObjectClass(ctx, websg_scene_class_id);
-
-  if (JS_IsException(scene)) {
-    return scene;
-  }
-
-  js_set_opaque_id(scene, scene_id);
-
-  WebSGContext *websg = JS_GetContextOpaque(ctx);
-
-  JS_SetPropertyUint32(ctx, websg->scenes, scene_id, scene);
-
-  return scene;
-}
-
 JSValue js_websg_find_scene_by_name(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
-
   size_t length;
   const char* name = JS_ToCStringLen(ctx, &length, argv[0]);
 
@@ -150,6 +126,32 @@ JSValue js_websg_find_scene_by_name(JSContext *ctx, JSValueConst this_val, int a
   return js_websg_get_scene_by_id(ctx, scene_id);
 }
 
+JSValue js_websg_new_scene_instance(JSContext *ctx, WebSGContext *websg, scene_id_t scene_id) {
+  JSValue scene = JS_NewObjectClass(ctx, websg_scene_class_id);
+
+  if (JS_IsException(scene)) {
+    return scene;
+  }
+
+  js_set_opaque_id(scene, scene_id);
+
+  JS_SetPropertyUint32(ctx, websg->scenes, scene_id, JS_DupValue(ctx, scene));
+  
+  return scene;
+}
+
+JSValue js_websg_create_scene(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
+  WebSGContext *websg = JS_GetContextOpaque(ctx);
+
+  scene_id_t scene_id = websg_create_scene();
+
+  if (scene_id == 0) {
+    JS_ThrowInternalError(ctx, "WebSG: Couldn't create scene.");
+    return JS_EXCEPTION;
+  }
+
+  return js_websg_new_scene_instance(ctx, websg, scene_id);
+}
 
 JSValue js_websg_get_scene_by_id(JSContext *ctx, scene_id_t scene_id) {
   WebSGContext *websg = JS_GetContextOpaque(ctx);
@@ -160,15 +162,5 @@ JSValue js_websg_get_scene_by_id(JSContext *ctx, scene_id_t scene_id) {
     return JS_DupValue(ctx, scene);
   }
 
-  scene = JS_NewObjectClass(ctx, websg_scene_class_id);
-
-  if (JS_IsException(scene)) {
-    return scene;
-  }
-
-  js_set_opaque_id(scene, scene_id);
-
-  JS_SetPropertyUint32(ctx, websg->scenes, scene_id, scene);
-  
-  return JS_DupValue(ctx, scene);
+  return js_websg_new_scene_instance(ctx, websg, scene_id);
 }

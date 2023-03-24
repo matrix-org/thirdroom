@@ -318,6 +318,7 @@ typedef enum LightType {
   LightType_Spot,
 } LightType;
 
+import_websg(light_find_by_name) light_id_t websg_light_find_by_name(const char *name, uint32_t length);
 import_websg(create_light) light_id_t websg_create_light(LightType type);
 import_websg(light_get_color) int32_t websg_light_get_color(light_id_t light_id, float_t *color);
 import_websg(light_set_color) int32_t websg_light_set_color(light_id_t light_id, float_t *color);
@@ -370,6 +371,7 @@ typedef struct ColliderProps {
 } ColliderProps;
 
 import_websg(create_collider) collider_id_t websg_create_collider(ColliderProps *props);
+import_websg(collider_find_by_name) collider_id_t websg_collider_find_by_name(const char *name, uint32_t length);
 
 /**
  * PhysicsBody

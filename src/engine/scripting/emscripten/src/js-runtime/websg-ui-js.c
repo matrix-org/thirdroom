@@ -7,8 +7,6 @@
 #include "../websg-ui.h"
 #include "./websg-ui-js.h"
 
-#include <emscripten/console.h>
-
 /*************
  * UI Canvas *
  ************/

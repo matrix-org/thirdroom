@@ -515,6 +515,7 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
   const environmentGLTFResource = await loadGLTF(ctx, url, { fileMap, resourceManager });
   const environmentScene = (await loadDefaultGLTFScene(ctx, environmentGLTFResource, {
     createDefaultMeshColliders: true,
+    rootIsStatic: true,
   })) as RemoteScene;
 
   if (!environmentScene.reflectionProbe || !environmentScene.backgroundTexture) {
@@ -547,12 +548,6 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
   });
 
   await waitForCurrentSceneToRender(ctx);
-
-  if (ctx.worldResource.environment) {
-    traverse(ctx.worldResource.environment.publicScene, (node) => {
-      node.isStatic = true;
-    });
-  }
 
   const spawnPoints = getSpawnPoints(ctx);
 

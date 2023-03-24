@@ -16,9 +16,14 @@
 #include "./thirdroom-js.h"
 #include "./js-utils.h"
 #include "./websg-js.h"
+#include "./websg-vector3-js.h"
+#include "./websg-quaternion-js.h"
+#include "./websg-matrix4-js.h"
 #include "./websg-world-js.h"
 #include "./websg-scene-js.h"
 #include "./websg-node-js.h"
+#include "./websg-mesh-js.h"
+#include "./websg-light-js.h"
 
 /**
  * Global State
@@ -49,16 +54,18 @@ export int32_t websg_initialize() {
 
   JSValue global = JS_GetGlobalObject(ctx);
   js_define_console_api(ctx, &global);
+  init_websg_context(ctx);
   js_define_websg_api(ctx, &global);
+  js_websg_define_vector3(ctx);
+  js_websg_define_quaternion(ctx);
+  js_websg_define_matrix4(ctx);
   js_define_websg_world(ctx);
   js_define_websg_scene(ctx);
   js_define_websg_node(ctx);
+  js_define_websg_mesh(ctx);
+  js_define_websg_light(ctx);
   js_define_thirdroom_api(ctx, &global);
   js_define_matrix_api(ctx, &global);
-
-  WebSGContext *websg = js_malloc(ctx, sizeof(WebSGContext));
-  websg->scenes = JS_NewObject(ctx);
-  JS_SetContextOpaque(ctx, websg);
 
   JSValue world = js_new_websg_world(ctx);
 
@@ -153,7 +160,7 @@ export int32_t websg_enter() {
   return ret;
 }
 
-export int32_t websg_update(float_t dt) {
+export int32_t websg_update(float_t dt, float_t time) {
   JSValue global = JS_GetGlobalObject(ctx);
 
   JSValue updateFn = JS_GetProperty(ctx, global, onUpdateAtom);
@@ -178,8 +185,18 @@ export int32_t websg_update(float_t dt) {
     return -1;
   }
 
-  JSValueConst args[] = { dtVal };
-  JSValue val = JS_Call(ctx, updateFn, JS_UNDEFINED, 1, args);
+  JSValue timeVal = JS_NewFloat64(ctx, time);
+
+  if (JS_IsException(timeVal)) {
+    JSValue error = JS_GetException(ctx);
+    js_log_error(ctx, &error);
+    JS_FreeValue(ctx, error);
+    JS_FreeValue(ctx, timeVal);
+    return -1;
+  }
+
+  JSValueConst args[] = { dtVal, timeVal };
+  JSValue val = JS_Call(ctx, updateFn, JS_UNDEFINED, 2, args);
 
   JS_FreeValue(ctx, updateFn);
 

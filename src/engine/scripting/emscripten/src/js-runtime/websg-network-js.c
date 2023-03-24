@@ -6,8 +6,6 @@
 #include "../websg-network.h"
 #include "./websg-network-js.h"
 
-#include <emscripten/console.h>
-
 static JSValue js_listen(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
   if (websg_network_listen() == 0) {
     return JS_UNDEFINED;

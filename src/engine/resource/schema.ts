@@ -259,7 +259,6 @@ export const LightResource = defineResource("light", ResourceType.Light, {
   color: PropType.rgb({ default: [1, 1, 1], script: true }),
   intensity: PropType.f32({ default: 1, script: true }),
   range: PropType.f32({ default: 1, script: true }),
-  castShadow: PropType.bool({ default: true, script: true }),
   innerConeAngle: PropType.f32({ default: 1, script: true }),
   outerConeAngle: PropType.f32({ default: 1, script: true }),
 });
@@ -510,6 +509,7 @@ export enum ColliderType {
 }
 
 export const ColliderResource = defineResource("collider", ResourceType.Collider, {
+  name: PropType.string({ default: "Collider", script: true }),
   type: PropType.enum(ColliderType, { required: true, mutable: false }),
   isTrigger: PropType.bool({ mutable: false }),
   size: PropType.vec3({ mutable: false }),
@@ -564,6 +564,8 @@ export const NodeResource = defineResource("node", ResourceType.Node, {
   uiCanvas: PropType.ref(UICanvasResource, { script: true }),
   collider: PropType.ref(ColliderResource, { script: true }),
   physicsBody: PropType.ref(PhysicsBodyResource, { script: true }),
+  castShadow: PropType.bool({ default: true, script: true }),
+  receiveShadow: PropType.bool({ default: true, script: true }),
 });
 
 export enum AnimationSamplerInterpolation {
