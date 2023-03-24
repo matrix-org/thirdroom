@@ -23,7 +23,6 @@ import { createPrefabEntity, PrefabType, registerPrefab } from "../../engine/pre
 import { tryGetRemoteResource } from "../../engine/resource/resource.game";
 import {
   addObjectToWorld,
-  createRemoteObject,
   RemoteAudioData,
   RemoteAudioEmitter,
   RemoteAudioSource,
@@ -313,8 +312,6 @@ function createBall(
     mesh: createSphereMesh(ctx, size, material),
   });
 
-  const obj = createRemoteObject(ctx, node);
-
   const physicsWorld = physics.physicsWorld;
 
   const rigidBodyDesc = kinematic ? RAPIER.RigidBodyDesc.kinematicPositionBased() : RAPIER.RigidBodyDesc.dynamic();
@@ -329,8 +326,8 @@ function createBall(
 
   physicsWorld.createCollider(colliderDesc, rigidBody);
 
-  addRigidBody(ctx, obj, rigidBody);
-  addInteractableComponent(ctx, physics, obj, InteractableType.Grabbable);
+  addRigidBody(ctx, node, rigidBody);
+  addInteractableComponent(ctx, physics, node, InteractableType.Grabbable);
 
   const audioEmitter = new RemoteAudioEmitter(ctx.resourceManager, {
     type: AudioEmitterType.Positional,
@@ -343,11 +340,11 @@ function createBall(
     ],
   });
 
-  obj.audioEmitter = audioEmitter;
+  node.audioEmitter = audioEmitter;
 
-  module.hitAudioEmitters.set(obj.eid, audioEmitter);
+  module.hitAudioEmitters.set(node.eid, audioEmitter);
 
-  return obj;
+  return node;
 }
 
 function createCrate(
@@ -361,11 +358,10 @@ function createCrate(
   const { physicsWorld } = physics;
 
   const node = createNodeFromGLTFURI(ctx, "/gltf/sci_fi_crate.glb");
-  const obj = createRemoteObject(ctx, node);
 
   const halfSize = size / 2;
 
-  obj.scale.set([size, size, size]);
+  node.scale.set([size, size, size]);
 
   const hitAudioSource = new RemoteAudioSource(ctx.resourceManager, {
     audio: crateAudioData,
@@ -378,9 +374,9 @@ function createCrate(
     sources: [hitAudioSource],
   });
 
-  obj.audioEmitter = audioEmitter;
+  node.audioEmitter = audioEmitter;
 
-  module.hitAudioEmitters.set(obj.eid, audioEmitter);
+  module.hitAudioEmitters.set(node.eid, audioEmitter);
 
   const rigidBodyDesc = kinematic ? RAPIER.RigidBodyDesc.kinematicPositionBased() : RAPIER.RigidBodyDesc.dynamic();
 
@@ -392,10 +388,10 @@ function createCrate(
 
   physicsWorld.createCollider(colliderDesc, rigidBody);
 
-  addRigidBody(ctx, obj, rigidBody);
+  addRigidBody(ctx, node, rigidBody);
 
-  addInteractableComponent(ctx, physics, obj, InteractableType.Grabbable);
-  return obj;
+  addInteractableComponent(ctx, physics, node, InteractableType.Grabbable);
+  return node;
 }
 
 function onSetObjectCap(ctx: GameState, message: SetObjectCapMessage) {

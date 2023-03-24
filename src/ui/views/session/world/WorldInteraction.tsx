@@ -14,6 +14,9 @@ import { InteractionState, useWorldInteraction } from "../../../hooks/useWorldIn
 import { Dialog } from "../../../atoms/dialog/Dialog";
 import { EntityTooltip } from "../entity-tooltip/EntityTooltip";
 import { MemberListDialog } from "../dialogs/MemberListDialog";
+import { getModule } from "../../../../engine/module/module.common";
+import { CameraRigModule } from "../../../../plugins/camera/CameraRig.main";
+import { Reticle } from "../reticle/Reticle";
 
 export interface IPortalProcess {
   joining?: boolean;
@@ -23,11 +26,13 @@ export interface IPortalProcess {
 interface WorldInteractionProps {
   session: Session;
   world: Room;
-  activeCall: GroupCall;
+  activeCall?: GroupCall;
 }
 
 export function WorldInteraction({ session, world, activeCall }: WorldInteractionProps) {
   const mainThread = useMainThreadContext();
+  const camRigModule = getModule(mainThread, CameraRigModule);
+
   const [activeEntity, setActiveEntity] = useMemoizedState<InteractionState | undefined>();
   const [portalProcess, setPortalProcess] = useMemoizedState<IPortalProcess>({});
   const [members, setMembers] = useState(false);
@@ -113,8 +118,6 @@ export function WorldInteraction({ session, world, activeCall }: WorldInteractio
 
   useWorldInteraction(mainThread, handleInteraction);
 
-  if (!activeEntity) return null;
-
   return (
     <div>
       {!("isBeingCreated" in world) && (
@@ -122,7 +125,10 @@ export function WorldInteraction({ session, world, activeCall }: WorldInteractio
           <MemberListDialog room={world} requestClose={() => setMembers(false)} />
         </Dialog>
       )}
-      <EntityTooltip activeEntity={activeEntity} portalProcess={portalProcess} />
+      {!camRigModule.orbiting && <Reticle />}
+      {activeEntity && !camRigModule.orbiting && (
+        <EntityTooltip activeEntity={activeEntity} portalProcess={portalProcess} />
+      )}
     </div>
   );
 }

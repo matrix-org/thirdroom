@@ -58,6 +58,7 @@ import {
 } from "../physics/physics.game";
 import { getModule } from "../module/module.common";
 import { createMesh } from "../mesh/mesh.game";
+import { startOrbit, stopOrbit } from "../../plugins/camera/CameraRig.game";
 
 export function getScriptResource<T extends RemoteResourceConstructor>(
   wasmCtx: WASMModuleContext,
@@ -1300,6 +1301,24 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
     has_physics_body(nodeId: number) {
       const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
       return node && hasComponent(ctx.world, RigidBody, node.eid) ? 1 : 0;
+    },
+    start_orbit(nodeId: number, propsPtr: number) {
+      moveCursorView(wasmCtx.cursorView, propsPtr);
+      const pitch = readFloat32(wasmCtx.cursorView);
+      const yaw = readFloat32(wasmCtx.cursorView);
+      const zoom = readFloat32(wasmCtx.cursorView);
+
+      const options = { pitch, yaw, zoom };
+
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId)!;
+
+      startOrbit(ctx, node, options);
+
+      return node;
+    },
+    stop_orbit() {
+      stopOrbit(ctx);
+      return 0;
     },
   };
 }

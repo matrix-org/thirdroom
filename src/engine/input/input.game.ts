@@ -12,7 +12,8 @@ import {
   SharedXRInputSource,
   UpdateXRInputSourcesMessage,
 } from "./input.common";
-import { InputController, createInputController, InputControllerComponent } from "./InputController";
+import { InputController, createInputController } from "./InputController";
+import { InputControllerComponent } from "./InputControllerComponent";
 import { ARActionMap, XRAvatarRig } from "./WebXRAvatarRigSystem";
 
 /*********

@@ -61,7 +61,7 @@ export function NametagSystem(ctx: GameState) {
 
       // projection to camera space
       const nametagWorldPosition = mat4.getTranslation(_v, anchorNode.worldMatrix);
-      const projected = projectPerspective(ctx, ctx.worldResource.activeCameraNode, nametagWorldPosition);
+      const projected = projectPerspective(renderer, ctx.worldResource.activeCameraNode, nametagWorldPosition);
 
       const dist = vec3.dist(nametagWorldPosition, ourWorldPosition);
 
