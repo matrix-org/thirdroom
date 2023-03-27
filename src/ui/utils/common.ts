@@ -121,3 +121,7 @@ export function convertRGBA(
     convertAlpha?.(rgba[3]) ?? rgba[3],
   ]);
 }
+
+export function inputFocused(): boolean {
+  return document.activeElement?.tagName.toLowerCase() === "input";
+}

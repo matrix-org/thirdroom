@@ -3,6 +3,7 @@ import { Outlet } from "react-router-dom";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { useAtomValue, useSetAtom } from "jotai";
+import { KBarProvider } from "kbar";
 
 import "./SessionView.css";
 import { useInitMainThreadContext, MainThreadContextProvider } from "../../hooks/useMainThread";
@@ -16,6 +17,15 @@ import { useHydrogen } from "../../hooks/useHydrogen";
 import config from "../../../../config.json";
 import { overlayWorldAtom } from "../../state/overlayWorld";
 import { overlayVisibilityAtom } from "../../state/overlayVisibility";
+import { CmdPanel, defaultActions } from "./cmd-panel/CmdPanel";
+import { useAccountManagementAction, useTechPreviewAction, useUserProfileAction } from "./cmd-panel/actions";
+
+function RegisterKBarActions() {
+  useUserProfileAction();
+  useAccountManagementAction();
+  useTechPreviewAction();
+  return null;
+}
 
 export default function SessionView() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -35,18 +45,27 @@ export default function SessionView() {
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <div className="SessionView">
-        <canvas className="SessionView__viewport" ref={canvasRef} />
-        {mainThread ? (
-          <MainThreadContextProvider value={mainThread}>
-            <Outlet />
-            {overlayVisible && <Overlay />}
-            <StatusBar />
-          </MainThreadContextProvider>
-        ) : (
-          <LoadingScreen message="Initializing engine..." />
-        )}
-      </div>
+      <KBarProvider
+        actions={defaultActions}
+        options={{
+          disableScrollbarManagement: true,
+        }}
+      >
+        <CmdPanel />
+        <RegisterKBarActions />
+        <div className="SessionView">
+          <canvas className="SessionView__viewport" ref={canvasRef} />
+          {mainThread ? (
+            <MainThreadContextProvider value={mainThread}>
+              <Outlet />
+              {overlayVisible && <Overlay />}
+              <StatusBar />
+            </MainThreadContextProvider>
+          ) : (
+            <LoadingScreen message="Initializing engine..." />
+          )}
+        </div>
+      </KBarProvider>
     </DndProvider>
   );
 }

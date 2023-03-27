@@ -1,4 +1,4 @@
-import { forwardRef, useCallback, useEffect, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useState } from "react";
 import { GroupCall, Room, Session } from "@thirdroom/hydrogen-view-sdk";
 import classNames from "classnames";
 
@@ -15,12 +15,6 @@ import CrossIC from "../../../../../res/ic/cross.svg";
 import HelpIC from "../../../../../res/ic/help.svg";
 import XRIC from "../../../../../res/ic/xr.svg";
 import { Text } from "../../../atoms/text/Text";
-import { usePermissionState } from "../../../hooks/usePermissionState";
-import { useMicrophoneState } from "../../../hooks/useMicrophoneState";
-import { useHydrogen } from "../../../hooks/useHydrogen";
-import { exceptionToString, RequestException, useStreamRequest } from "../../../hooks/useStreamRequest";
-import { AlertDialog } from "../dialogs/AlertDialog";
-import { useCallMute } from "../../../hooks/useCallMute";
 import { useWorldAction } from "../../../hooks/useWorldAction";
 import { NametagsEnableMessage, NametagsEnableMessageType } from "../../../../plugins/nametags/nametags.common";
 import { Thread } from "../../../../engine/module/module.common";
@@ -33,6 +27,9 @@ import { ShortcutUI } from "./ShortcutUI";
 import { MemberListDialog } from "../dialogs/MemberListDialog";
 import { setLocalStorageItem } from "../../../hooks/useLocalStorage";
 import { useKeyDown } from "../../../hooks/useKeyDown";
+import { manageMuteRequest, MicExceptionDialog, useMuteButton } from "../../components/MuteButtonProvider";
+import { inputFocused } from "../../../utils/common";
+import { useDisableInput } from "../../../hooks/useDisableInput";
 
 export function HotbarControls() {
   return (
@@ -53,39 +50,19 @@ export function HotbarControls() {
 
 const MuteButton = forwardRef<HTMLButtonElement, { activeCall?: GroupCall; showToast: (text: string) => void }>(
   ({ activeCall, showToast }, ref) => {
-    const { platform } = useHydrogen(true);
-    const micPermission = usePermissionState("microphone");
-    const requestStream = useStreamRequest(platform, micPermission);
-    const [micException, setMicException] = useState<RequestException>();
-    const [microphone, setMicrophone] = useMicrophoneState();
-    const { mute: callMute, handleMute } = useCallMute(activeCall);
-    if (callMute === microphone) {
-      setMicrophone(!microphone);
-    }
+    const { mute, requestStream, handleMute, micException, setMicException } = useMuteButton(activeCall);
 
     return (
       <>
-        {micException && (
-          <AlertDialog
-            open={!!micException}
-            title="Microphone"
-            content={<Text variant="b2">{exceptionToString(micException)}</Text>}
-            requestClose={() => setMicException(undefined)}
-          />
-        )}
-        <Tooltip content={callMute ? "Unmute" : "Mute"}>
+        <MicExceptionDialog micException={micException} setMicException={setMicException} />
+        <Tooltip content={mute ? "Unmute" : "Mute"}>
           <IconButton
             variant="world"
             label="Mic"
-            iconSrc={callMute ? MicOffIC : MicIC}
+            iconSrc={mute ? MicOffIC : MicIC}
             onClick={() => {
-              showToast(!callMute ? "Microphone Muted" : "Microphone Unmuted");
-              handleMute(async () => {
-                const [stream, exception] = await requestStream(true, false);
-                if (stream) return stream;
-                setMicException(exception);
-                return undefined;
-              });
+              showToast(!mute ? "Microphone Muted" : "Microphone Unmuted");
+              handleMute(async () => manageMuteRequest(requestStream, setMicException));
             }}
             ref={ref}
           />
@@ -118,7 +95,6 @@ export function WorldControls({
 }) {
   const mainThread = useMainThreadContext();
   const { exitWorld } = useWorldAction(session);
-  const muteBtnRef = useRef<HTMLButtonElement | null>(null);
 
   const [showActiveMembers, setShowActiveMembers] = useState<boolean>(false);
   const [shortcutUI, setShortcutUI] = useState(false);
@@ -141,33 +117,16 @@ export function WorldControls({
 
   useKeyDown(
     (e) => {
-      const inputFocused = document.activeElement?.tagName.toLowerCase() === "input";
-      if (inputFocused) return;
+      if (inputFocused()) return;
 
       if (e.altKey && e.code === "KeyL") {
         exitWorld();
       }
-      if (e.altKey && e.code === "KeyX" && isWebXRSupported) {
-        enterXR();
-      }
-      if (e.code === "KeyM" && muteBtnRef.current !== null) {
-        muteBtnRef.current.click();
-      }
-
-      if (e.code === "KeyN") {
-        toggleShowNames();
-      }
-      if (e.code === "KeyP") {
-        document.exitPointerLock();
-        toggleShowActiveMembers();
-      }
-      if (e.code === "Slash") {
-        e.preventDefault();
-        toggleShortcutUI();
-      }
     },
     [enterXR, isWebXRSupported]
   );
+
+  useDisableInput(shortcutUI || showActiveMembers);
 
   return (
     <div className={classNames(className, "flex")}>
@@ -228,13 +187,7 @@ export function WorldControls({
       </div>
       {activeCall && (
         <div className="flex flex-column items-center">
-          <MuteButton
-            showToast={showToast}
-            activeCall={activeCall}
-            ref={(ref) => {
-              muteBtnRef.current = ref;
-            }}
-          />
+          <MuteButton showToast={showToast} activeCall={activeCall} />
           <Text variant="b3" color="world" weight="bold">
             M
           </Text>
