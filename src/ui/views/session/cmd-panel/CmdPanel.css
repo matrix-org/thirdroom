@@ -1,0 +1,33 @@
+.CmdPanel__positioner {
+  z-index: 9999;
+  background-color: #00000033;
+}
+
+.CmdPanel {
+  max-width: 400px;
+  width: 100vw;
+  background-color: var(--bg-surface);
+  border-radius: var(--br-md);
+  box-shadow: var(--bs-dialog);
+  overflow: hidden;
+}
+
+.CmdPanel__search-input {
+  border: none;
+  appearance: none;
+  background-color: transparent;
+  width: 100%;
+  font-size: var(--fs-b1);
+  letter-spacing: var(--ls-b1);
+  line-height: var(--lh-b1);
+  padding: var(--sp-sm) var(--sp-md);
+  color: var(--tc-surface);
+
+  &:focus {
+    outline: none !important;
+  }
+}
+
+#kbar-listbox:not(:empty) {
+  margin-bottom: var(--sp-lg);
+}
