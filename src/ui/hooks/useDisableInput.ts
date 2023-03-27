@@ -2,6 +2,7 @@ import { useEffect } from "react";
 
 import { InputModule } from "../../engine/input/input.main";
 import { getModule } from "../../engine/module/module.common";
+import { CameraRigModule } from "../../plugins/camera/CameraRig.main";
 import { useMainThreadContext } from "./useMainThread";
 
 export function useDisableInput(state = true) {
@@ -13,8 +14,9 @@ export function useDisableInput(state = true) {
     }
 
     const inputModule = getModule(mainThread, InputModule);
+    const cameraRigModule = getModule(mainThread, CameraRigModule);
 
-    if (inputModule.disableInputStack.length === 0) {
+    if (inputModule.disableInputStack.length === 0 && !cameraRigModule.orbiting) {
       document.exitPointerLock();
     }
 
@@ -29,7 +31,7 @@ export function useDisableInput(state = true) {
         inputModule.disableInputStack.splice(index, 1);
       }
 
-      if (inputModule.disableInputStack.length === 0) {
+      if (inputModule.disableInputStack.length === 0 && !cameraRigModule.orbiting) {
         mainThread.canvas.requestPointerLock();
       }
     };
