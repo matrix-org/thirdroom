@@ -34,6 +34,7 @@ import { BadgeWrapper } from "../../../atoms/badge/BadgeWrapper";
 import { NotificationBadge } from "../../../atoms/badge/NotificationBadge";
 import { useAnimationFrame } from "../nametags/Nametags";
 import { setPowerLevel } from "../../../utils/matrixUtils";
+import { PowerLevelSelector } from "./PowerLevelSelector";
 
 interface MemberListDialogProps {
   room: Room;
@@ -65,15 +66,17 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
 
   const { active, invited, joined, leaved, banned } = useRoomMembers(room) ?? {};
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [changeUserIdPL, setChangeUserIdPL] = useState<string>();
 
   const isWorld = room.type === "org.matrix.msc3815.world";
   const filteredJoined = joined?.filter((member) => !active?.find((m) => m.userId === member.userId));
 
-  const { canDoAction, getPowerLevel } = usePowerLevels(room);
+  const { canDoAction, getPowerLevel, canSendStateEvent } = usePowerLevels(room);
   const myPL = getPowerLevel(session.userId);
   const canInvite = canDoAction("invite", myPL);
   const canKick = canDoAction("kick", myPL);
   const canBan = canDoAction("ban", myPL);
+  const canChangePL = canSendStateEvent("m.room.power_levels", myPL);
 
   const [activeCat, setActiveCat] = useState(true);
   const [joinedCat, setJoinedCat] = useState(true);
@@ -86,9 +89,6 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
   const kick = (roomId: string, userId: string) => session.hsApi.kick(roomId, userId);
   const ban = (roomId: string, userId: string) => session.hsApi.ban(roomId, userId);
   const unban = (roomId: string, userId: string) => session.hsApi.unban(roomId, userId);
-  const makeMember = (roomId: string, userId: string) => setPowerLevel(session, roomId, userId, 0);
-  const makeMod = (roomId: string, userId: string) => setPowerLevel(session, roomId, userId, 50);
-  const makeAdmin = (roomId: string, userId: string) => setPowerLevel(session, roomId, userId, 100);
 
   const engine = useMainThreadContext();
   const toggleMute = (userId: string) => toggleMutePeer(engine, userId);
@@ -123,6 +123,13 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
         Ignore
       </DropdownMenuItem>,
     ];
+    if (canChangePL && myPL > userPL) {
+      menuItems.push(
+        <DropdownMenuItem key="change-pl" onSelect={() => setChangeUserIdPL(userId)}>
+          Change Power Level
+        </DropdownMenuItem>
+      );
+    }
     switch (membership) {
       case "join":
         if (canKick && myPL > userPL)
@@ -137,23 +144,6 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
               Ban
             </DropdownMenuItem>
           );
-        if (myPL === 100) {
-          menuItems.push(
-            <DropdownMenuItem key="make-member" disabled={userPL === 0} onSelect={() => makeMember(room.id, userId)}>
-              Make Member
-            </DropdownMenuItem>
-          );
-          menuItems.push(
-            <DropdownMenuItem key="make-mod" disabled={userPL === 50} onSelect={() => makeMod(room.id, userId)}>
-              Make Moderator
-            </DropdownMenuItem>
-          );
-          menuItems.push(
-            <DropdownMenuItem key="make-admin" disabled={userPL === 100} onSelect={() => makeAdmin(room.id, userId)}>
-              Make Admin
-            </DropdownMenuItem>
-          );
-        }
         break;
       case "ban":
         if (canKick && myPL > userPL)
@@ -209,7 +199,7 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
               {name}
             </Text>
             <Text className="truncate" color="surface-low" variant="b3">
-              {userId}
+              {`${userId} • PL: ${getPowerLevel(userId)}`}
             </Text>
           </>
         }
@@ -227,6 +217,22 @@ export function MemberListDialog({ room, requestClose }: MemberListDialogProps) 
 
   return (
     <>
+      <Dialog open={!!changeUserIdPL} onOpenChange={() => setChangeUserIdPL(undefined)}>
+        <Header
+          left={<HeaderTitle size="lg">Power Level Selector</HeaderTitle>}
+          right={<IconButton iconSrc={CrossIC} onClick={() => setChangeUserIdPL(undefined)} label="Close" />}
+        />
+        {changeUserIdPL && (
+          <PowerLevelSelector
+            value={getPowerLevel(changeUserIdPL)}
+            max={myPL}
+            onSelect={(newPL) => {
+              setPowerLevel(session, room.id, changeUserIdPL, newPL);
+              setChangeUserIdPL(undefined);
+            }}
+          />
+        )}
+      </Dialog>
       <Header
         left={<HeaderTitle size="lg">Members</HeaderTitle>}
         right={
