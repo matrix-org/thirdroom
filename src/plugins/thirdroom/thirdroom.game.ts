@@ -226,7 +226,9 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
       registerMessageHandler(ctx, ThirdRoomMessageType.FindResourceRetainers, onFindResourceRetainers),
     ];
 
-    await loadGLTF(ctx, "/gltf/full-animation-rig.glb");
+    loadGLTF(ctx, "/gltf/full-animation-rig.glb").catch((error) => {
+      console.error("Error loading avatar:", error);
+    });
 
     registerPrefab(ctx, {
       name: "avatar",
