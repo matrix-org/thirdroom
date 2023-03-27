@@ -225,6 +225,8 @@ export function setFromLocalMatrix(node: RemoteNode, localMatrix: mat4) {
 export function traverse(node: RemoteNode | RemoteScene, callback: (child: RemoteNode) => unknown | false) {
   let curChild;
 
+  if (!node) return;
+
   if (node.resourceType === ResourceType.Node) {
     const processChildren = callback(node);
 

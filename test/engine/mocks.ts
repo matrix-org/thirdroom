@@ -7,13 +7,7 @@ import { NetworkModule } from "../../src/engine/network/network.game";
 import { RendererModule } from "../../src/engine/renderer/renderer.game";
 import { PhysicsModule } from "../../src/engine/physics/physics.game";
 import { createRemoteResourceManager, ResourceModule } from "../../src/engine/resource/resource.game";
-import {
-  RemoteNode,
-  RemoteScene,
-  RemoteWorld,
-  RemoteEnvironment,
-  createRemoteObject,
-} from "../../src/engine/resource/RemoteResources";
+import { RemoteNode, RemoteScene, RemoteWorld, RemoteEnvironment } from "../../src/engine/resource/RemoteResources";
 import { addChild } from "../../src/engine/component/transform";
 import { MatrixModule } from "../../src/engine/matrix/matrix.game";
 import { WebSGNetworkModule } from "../../src/engine/network/scripting.game";
@@ -23,7 +17,7 @@ export function registerDefaultPrefabs(ctx: GameState) {
     name: "test-prefab",
     type: PrefabType.Object,
     create: () => {
-      return createRemoteObject(ctx, new RemoteNode(ctx.resourceManager));
+      return new RemoteNode(ctx.resourceManager);
     },
   });
 }

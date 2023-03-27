@@ -226,6 +226,8 @@ const out: InputComponentState = {
   button: 0,
   xAxis: 0,
   yAxis: 0,
+  zAxis: 0,
+  wAxis: 0,
   state: 0,
 };
 
@@ -320,6 +322,8 @@ export function UpdateXRInputSourcesSystem(ctx: RenderThreadState) {
               out.button,
               out.xAxis,
               out.yAxis,
+              out.zAxis,
+              out.wAxis,
               out.state
             )
           ) {

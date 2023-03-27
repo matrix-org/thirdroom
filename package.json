@@ -57,6 +57,7 @@
     "gl-matrix": "^3.4.3",
     "immer": "^9.0.12",
     "jotai": "^2.0.2",
+    "kbar": "^0.1.0-beta.40",
     "ktx-parse": "^0.4.5",
     "meshoptimizer": "^0.18.1",
     "murmurhash-js": "^1.0.0",

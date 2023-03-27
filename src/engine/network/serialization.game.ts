@@ -555,7 +555,7 @@ export async function deserializeInformPlayerNetworkId(data: NetPipeData) {
 
   // if not our own avatar, add nametag
   if (peerId !== network.peerId) {
-    addNametag(ctx, AVATAR_HEIGHT, peerNode, peerId);
+    addNametag(ctx, AVATAR_HEIGHT + AVATAR_HEIGHT / 3, peerNode, peerId);
   }
 
   // if our own avatar

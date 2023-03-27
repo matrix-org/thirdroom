@@ -38,6 +38,7 @@ import { overlayWorldAtom } from "../../../state/overlayWorld";
 import { SidebarTab, sidebarTabAtom } from "../../../state/sidebarTab";
 import { OverlayWindow, overlayWindowAtom } from "../../../state/overlayWindow";
 import { worldAtom } from "../../../state/world";
+import { useDisableInput } from "../../../hooks/useDisableInput";
 
 export function Overlay() {
   const { session, platform } = useHydrogen(true);
@@ -60,6 +61,8 @@ export function Overlay() {
   const overlayWindow = useAtomValue(overlayWindowAtom);
   const groupCalls = new Map<string, GroupCall>();
   Array.from(calls).flatMap(([, groupCall]) => groupCalls.set(groupCall.roomId, groupCall));
+
+  useDisableInput();
 
   const isChatOpen = selectedChat || selectedChatInvite;
   return (

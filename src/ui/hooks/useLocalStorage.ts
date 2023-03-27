@@ -11,7 +11,9 @@ function getLocalStorageItem<T>(key: string, defaultValue: T): T {
   }
 }
 
-export function useLocalStorage<T>(key: string, defaultValue: T): [T, (value: T | ((previousValue: T) => T)) => void] {
+export type setLocalStorageItem<T> = (value: T | ((previousValue: T) => T)) => void;
+
+export function useLocalStorage<T>(key: string, defaultValue: T): [T, setLocalStorageItem<T>] {
   const [storedValue, setStoredValue] = useState(() => getLocalStorageItem(key, defaultValue));
 
   useEffect(() => {
