@@ -16,7 +16,11 @@ export function useDisableInput(state = true) {
     const inputModule = getModule(mainThread, InputModule);
     const cameraRigModule = getModule(mainThread, CameraRigModule);
 
-    if (inputModule.disableInputStack.length === 0 && !cameraRigModule.orbiting) {
+    if (
+      inputModule.disableInputStack.length === 0 &&
+      !cameraRigModule.orbiting &&
+      document.pointerLockElement === mainThread.canvas
+    ) {
       document.exitPointerLock();
     }
 
@@ -31,7 +35,7 @@ export function useDisableInput(state = true) {
         inputModule.disableInputStack.splice(index, 1);
       }
 
-      if (inputModule.disableInputStack.length === 0 && !cameraRigModule.orbiting) {
+      if (inputModule.disableInputStack.length === 0 && !cameraRigModule.orbiting && mainThread.canvas.isConnected) {
         mainThread.canvas.requestPointerLock();
       }
     };

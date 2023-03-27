@@ -2,7 +2,6 @@ import { GroupCall, Room } from "@thirdroom/hydrogen-view-sdk";
 import { useSetAtom } from "jotai";
 import { useRegisterActions } from "kbar";
 import { useCallback, useState } from "react";
-import { useNavigate } from "react-router-dom";
 
 import { Thread } from "../../../../engine/module/module.common";
 import { NametagsEnableMessage, NametagsEnableMessageType } from "../../../../plugins/nametags/nametags.common";
@@ -14,6 +13,7 @@ import { Scroll } from "../../../atoms/scroll/Scroll";
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { useMainThreadContext } from "../../../hooks/useMainThread";
 import { OverlayWindow, overlayWindowAtom } from "../../../state/overlayWindow";
+import { overlayVisibilityAtom } from "../../../state/overlayVisibility";
 import { manageMuteRequest, MicExceptionDialog, useMuteButton } from "../../components/MuteButtonProvider";
 import { MemberListDialog } from "../dialogs/MemberListDialog";
 import { ShortcutUI } from "../world/ShortcutUI";
@@ -28,6 +28,7 @@ enum ActionSection {
 
 export const useUserProfileAction = () => {
   const setOverlayWindow = useSetAtom(overlayWindowAtom);
+  const setOverlayVisibilityAtom = useSetAtom(overlayVisibilityAtom);
 
   useRegisterActions(
     [
@@ -39,7 +40,10 @@ export const useUserProfileAction = () => {
         section: ActionSection.Global,
         icon: undefined,
         subtitle: undefined,
-        perform: () => setOverlayWindow({ type: OverlayWindow.UserProfile }),
+        perform: () => {
+          setOverlayVisibilityAtom(true);
+          setOverlayWindow({ type: OverlayWindow.UserProfile });
+        },
         parent: undefined,
       },
     ],
@@ -70,7 +74,6 @@ export const useAccountManagementAction = () => {
 };
 
 export const useTechPreviewAction = () => {
-  const navigate = useNavigate();
   useRegisterActions(
     [
       {
@@ -81,7 +84,9 @@ export const useTechPreviewAction = () => {
         section: ActionSection.Global,
         icon: undefined,
         subtitle: undefined,
-        perform: () => navigate("/preview"),
+        perform: () => {
+          document.location = "/preview";
+        },
         parent: undefined,
       },
     ],
