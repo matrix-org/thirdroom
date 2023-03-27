@@ -1,0 +1,12 @@
+.SearchResultCategory {
+  padding: var(--sp-xs) var(--sp-md);
+}
+
+.SearchResultItem {
+  padding: var(--sp-xs) var(--sp-md);
+  border-left: 2px solid transparent;
+}
+.SearchResultItem--active {
+  border-left-color: var(--tc-surface);
+  background-color: var(--bg-surface-low);
+}

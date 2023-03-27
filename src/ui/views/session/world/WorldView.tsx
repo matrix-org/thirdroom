@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Room } from "@thirdroom/hydrogen-view-sdk";
 import classNames from "classnames";
 import { useAtom, useAtomValue } from "jotai";
+import { useKBar, VisualState } from "kbar";
 
 import { WorldChat } from "../world-chat/WorldChat";
 import { Stats } from "../stats/Stats";
@@ -29,6 +30,18 @@ import { HotbarControls, WorldControls } from "./WorldControls";
 import { WorldOnboarding } from "./WorldOnboarding";
 import { useLocalStorage } from "../../../hooks/useLocalStorage";
 import { WorldInteraction } from "./WorldInteraction";
+import {
+  EnterWebXRAction,
+  MembersDialogAction,
+  MuteButtonAction,
+  ShortcutDialogAction,
+  useToggleEditorAction,
+  useTogglePhysicsDebugAction,
+  useToggleNamesAction,
+  useToggleStatsAction,
+} from "../cmd-panel/actions";
+import { inputFocused } from "../../../utils/common";
+import { useDisableInput } from "../../../hooks/useDisableInput";
 
 const SHOW_NAMES_STORE = "showNames";
 interface WorldViewProps {
@@ -52,6 +65,14 @@ export function WorldView({ world }: WorldViewProps) {
   const [showNames, setShowNames] = useLocalStorage(SHOW_NAMES_STORE, true);
   const { isWebXRSupported, enterXR, isPresenting } = useWebXRSession();
 
+  const { kbarVisible } = useKBar((state) => ({ kbarVisible: state.visualState !== VisualState.hidden }));
+  useDisableInput(kbarVisible);
+
+  useToggleNamesAction(showNames, setShowNames, showToast);
+  useToggleEditorAction(setEditorEnabled);
+  useTogglePhysicsDebugAction();
+  useToggleStatsAction(setStatsEnabled);
+
   useEffect(() => {
     const onObjectCapReached = (ctx: IMainThreadContext, message: ObjectCapReachedMessage) => {
       showToast("Maximum number of objects reached.");
@@ -67,8 +88,6 @@ export function WorldView({ world }: WorldViewProps) {
 
   useKeyDown(
     (e) => {
-      const inputFocused = document.activeElement?.tagName.toLowerCase() === "input";
-
       if (e.key === "Escape" && camRigModule.orbiting) {
         return;
       }
@@ -80,7 +99,7 @@ export function WorldView({ world }: WorldViewProps) {
           return;
         }
 
-        if (inputFocused) return;
+        if (inputFocused()) return;
 
         if (editorEnabled) {
           mainThread.canvas?.requestPointerLock();
@@ -99,21 +118,12 @@ export function WorldView({ world }: WorldViewProps) {
         }
       }
 
-      if (inputFocused) return;
+      if (inputFocused()) return;
 
       if (e.key === "Enter" && !overlayVisible && !worldChatVisible) {
         if (document.activeElement !== document.body) return;
         document.exitPointerLock();
         setWorldChatVisibility(true);
-        return;
-      }
-
-      if (e.code === "Backquote") {
-        setEditorEnabled((enabled) => !enabled);
-        return;
-      }
-      if (e.code === "KeyS" && e.shiftKey && e.ctrlKey) {
-        setStatsEnabled((enabled) => !enabled);
         return;
       }
     },
@@ -142,6 +152,11 @@ export function WorldView({ world }: WorldViewProps) {
 
   return (
     <div className="WorldView">
+      <MuteButtonAction activeCall={activeCall} showToast={showToast} />
+      <MembersDialogAction world={world} />
+      <ShortcutDialogAction />
+      {isWebXRSupported && <EnterWebXRAction enter={enterXR} />}
+
       <WorldOnboarding world={world} />
       <Stats statsEnabled={statsEnabled} />
       <div className={classNames("WorldView__chat flex", { "WorldView__chat--open": worldChatVisible })}>
