@@ -6,10 +6,9 @@ interface PowerLevelSelectorProps {
   value: number;
   max: number;
   onSelect: (value: number) => void;
-  requestClose?: () => void;
 }
 
-export function PowerLevelSelector({ value, max, onSelect, requestClose }: PowerLevelSelectorProps) {
+export function PowerLevelSelector({ value, max, onSelect }: PowerLevelSelectorProps) {
   const handleSubmit = (powerLevel: number) => {
     if (!powerLevel) return;
     onSelect(powerLevel);
@@ -27,7 +26,6 @@ export function PowerLevelSelector({ value, max, onSelect, requestClose }: Power
           mdStep={1}
           smStep={5}
           lgStep={10}
-          name="powerLevel"
           placeholder="Power level"
           autoComplete="off"
           required
