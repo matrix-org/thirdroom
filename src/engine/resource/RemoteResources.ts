@@ -1,7 +1,6 @@
-import { addComponent, defineComponent, hasComponent } from "bitecs";
 import { AnimationClip } from "three";
 
-import { addChild, getLastSibling } from "../component/transform";
+import { getLastSibling } from "../component/transform";
 import { GameState } from "../GameTypes";
 import { defineRemoteResourceClass } from "./RemoteResourceClass";
 import {
@@ -221,13 +220,7 @@ export class RemoteWorld extends defineRemoteResourceClass(WorldResource) {
   declare activeRightControllerNode: RemoteNode | undefined;
 }
 
-export const RemoteObject = defineComponent();
-
 export function addObjectToWorld(ctx: GameState, object: RemoteNode) {
-  if (!hasComponent(ctx.world, RemoteObject, object.eid)) {
-    throw new Error(`Node is not a RemoteObject`);
-  }
-
   const worldResource = ctx.worldResource;
   const firstNode = worldResource.firstNode;
 
@@ -241,10 +234,6 @@ export function addObjectToWorld(ctx: GameState, object: RemoteNode) {
 }
 
 export function removeObjectFromWorld(ctx: GameState, object: RemoteNode) {
-  if (!hasComponent(ctx.world, RemoteObject, object.eid)) {
-    throw new Error(`Node is not a RemoteObject`);
-  }
-
   object.addRef();
 
   const worldResource = ctx.worldResource;
@@ -277,20 +266,4 @@ export function removeObjectFromWorld(ctx: GameState, object: RemoteNode) {
   object.firstChild = undefined;
 
   object.removeRef();
-}
-
-export function createRemoteObject(ctx: GameState, publicRoot: RemoteNode, privateRoot?: RemoteNode) {
-  const root = new RemoteNode(ctx.resourceManager);
-  addComponent(ctx.world, RemoteObject, root.eid);
-  addChild(root, privateRoot || new RemoteNode(ctx.resourceManager, { name: "Private Root" }));
-  addChild(root, publicRoot);
-  return root;
-}
-
-export function getObjectPrivateRoot(root: RemoteNode): RemoteNode {
-  return root.firstChild!;
-}
-
-export function getObjectPublicRoot(root: RemoteNode): RemoteNode {
-  return root.firstChild!.nextSibling!;
 }

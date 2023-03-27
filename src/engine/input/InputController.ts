@@ -7,6 +7,7 @@ import { initializeActionMap } from "./ActionMappingSystem";
 import { GameInputModule } from "./input.game";
 import { InputRingBuffer, createInputRingBuffer, RING_BUFFER_MAX } from "./RingBuffer";
 import { ActionDefinition, ActionMap, ActionState } from "./ActionMap";
+import { InputControllerComponent } from "./InputControllerComponent";
 
 export interface InputController {
   inputRingBuffer: InputRingBuffer;
@@ -51,7 +52,6 @@ export const createInputController = (props?: InputControllerProps): InputContro
   return controller;
 };
 
-export const InputControllerComponent = new Map<number, InputController>();
 export const inputControllerQuery = defineQuery([InputControllerComponent]);
 export const exitedInputControllerQuery = exitQuery(inputControllerQuery);
 

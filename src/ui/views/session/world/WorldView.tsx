@@ -10,10 +10,9 @@ import { useKeyDown } from "../../../hooks/useKeyDown";
 import { useEvent } from "../../../hooks/useEvent";
 import "./WorldView.css";
 import { EditorView } from "../editor/EditorView";
-import { Reticle } from "../reticle/Reticle";
 import { Nametags } from "../nametags/Nametags";
 import { useMainThreadContext } from "../../../hooks/useMainThread";
-import { registerMessageHandler } from "../../../../engine/module/module.common";
+import { getModule, registerMessageHandler } from "../../../../engine/module/module.common";
 import { useToast } from "../../../hooks/useToast";
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { IMainThreadContext } from "../../../../engine/MainThread";
@@ -25,6 +24,7 @@ import { useWebXRSession } from "../../../hooks/useWebXRSession";
 import { worldChatVisibilityAtom } from "../../../state/worldChatVisibility";
 import { overlayVisibilityAtom } from "../../../state/overlayVisibility";
 import { worldAtom } from "../../../state/world";
+import { CameraRigModule } from "../../../../plugins/camera/CameraRig.main";
 import { HotbarControls, WorldControls } from "./WorldControls";
 import { WorldOnboarding } from "./WorldOnboarding";
 import { useLocalStorage } from "../../../hooks/useLocalStorage";
@@ -58,7 +58,7 @@ export function WorldView({ world }: WorldViewProps) {
 
   const { toastShown, toastContent, showToast } = useToast();
 
-  const engine = useMainThreadContext();
+  const camRigModule = getModule(mainThread, CameraRigModule);
   const [showNames, setShowNames] = useLocalStorage(SHOW_NAMES_STORE, true);
   const { isWebXRSupported, enterXR, isPresenting } = useWebXRSession();
 
@@ -72,15 +72,19 @@ export function WorldView({ world }: WorldViewProps) {
     };
 
     const disposables = createDisposables([
-      registerMessageHandler(engine, ObjectCapReachedMessageType, onObjectCapReached),
+      registerMessageHandler(mainThread, ObjectCapReachedMessageType, onObjectCapReached),
     ]);
     return () => {
       disposables();
     };
-  }, [engine, showToast]);
+  }, [mainThread, showToast]);
 
   useKeyDown(
     (e) => {
+      if (e.key === "Escape" && camRigModule.orbiting) {
+        return;
+      }
+
       if (e.key === "Escape") {
         if (worldChatVisible) {
           mainThread.canvas?.requestPointerLock();
@@ -124,7 +128,8 @@ export function WorldView({ world }: WorldViewProps) {
     (e) => {
       if (isWorldEntered === false) return;
 
-      mainThread.canvas?.requestPointerLock();
+      if (!camRigModule.orbiting) mainThread.canvas?.requestPointerLock();
+
       if (worldChatVisible) setWorldChatVisibility(false);
       if (overlayVisible) setOverlayVisibility(false);
     },
@@ -169,10 +174,7 @@ export function WorldView({ world }: WorldViewProps) {
       {world && editorEnabled && <EditorView />}
       {!("isBeingCreated" in world) && <Nametags room={world} show={showNames && !overlayVisible} />}
 
-      {!overlayVisible && showNames && activeCall && (
-        <WorldInteraction session={session} world={world} activeCall={activeCall} />
-      )}
-      {!overlayVisible && <Reticle />}
+      {!overlayVisible && <WorldInteraction session={session} world={world} activeCall={activeCall} />}
 
       <div className="WorldView__toast-container">
         <div className={classNames("WorldView__toast", { "WorldView__toast--shown": toastShown })}>
