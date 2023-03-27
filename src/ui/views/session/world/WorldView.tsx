@@ -35,6 +35,7 @@ import {
   MuteButtonAction,
   ShortcutDialogAction,
   useToggleEditorAction,
+  useTogglePhysicsDebugAction,
   useToggleNamesAction,
   useToggleStatsAction,
 } from "../cmd-panel/actions";
@@ -64,6 +65,7 @@ export function WorldView({ world }: WorldViewProps) {
 
   useToggleNamesAction(showNames, setShowNames, showToast);
   useToggleEditorAction(setEditorEnabled);
+  useTogglePhysicsDebugAction();
   useToggleStatsAction(setStatsEnabled);
 
   useEffect(() => {

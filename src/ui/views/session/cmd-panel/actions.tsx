@@ -18,6 +18,7 @@ import { manageMuteRequest, MicExceptionDialog, useMuteButton } from "../../comp
 import { MemberListDialog } from "../dialogs/MemberListDialog";
 import { ShortcutUI } from "../world/ShortcutUI";
 import CrossIC from "../../../../../res/ic/cross.svg";
+import { togglePhysicsDebug } from "../../../../plugins/thirdroom/thirdroom.main";
 
 enum ActionSection {
   Global = "Global",
@@ -229,6 +230,28 @@ export const useToggleEditorAction = (setOpen: (value: boolean | ((value: boolea
       },
     ],
     []
+  );
+};
+
+export const useTogglePhysicsDebugAction = () => {
+  const mainThread = useMainThreadContext();
+
+  useRegisterActions(
+    [
+      {
+        id: "physics-debug",
+        name: "Toggle Physics Debug",
+        keywords: "physics debug",
+        section: ActionSection.World,
+        icon: undefined,
+        subtitle: undefined,
+        perform: () => {
+          togglePhysicsDebug(mainThread);
+        },
+        parent: undefined,
+      },
+    ],
+    [mainThread]
   );
 };
 
