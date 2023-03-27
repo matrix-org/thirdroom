@@ -48,7 +48,8 @@ function defineProp<S extends Schema>(
       get(this: LocalResource) {
         const index = this.manager.readBufferIndex;
         const arr = this.u32Views[index];
-        const resources = [];
+        const resources = this.refArrays[propName];
+        resources.length = 0;
 
         for (let i = offset; i < offset + size; i++) {
           if (arr[i] === 0) {
@@ -70,7 +71,8 @@ function defineProp<S extends Schema>(
       get(this: LocalResource) {
         const index = this.manager.readBufferIndex;
         const arr = this.u32Views[index];
-        const resources = [];
+        const resources = this.refArrays[propName];
+        resources.length = 0;
 
         for (let i = offset; i < offset + size; i++) {
           if (arr[i]) {
@@ -142,6 +144,7 @@ export function defineLocalResourceClass<
     this.f32Views = [new Float32Array(buffers[0]), new Float32Array(buffers[1]), new Float32Array(buffers[2])];
 
     this.vecViews = [];
+    this.refArrays = {};
 
     for (const propName in schema) {
       const prop = schema[propName];
@@ -152,6 +155,8 @@ export function defineLocalResourceClass<
           new prop.arrayType(buffers[1], prop.byteOffset, prop.size),
           new prop.arrayType(buffers[2], prop.byteOffset, prop.size),
         ]);
+      } else if (prop.type === "refArray" || prop.type === "refMap") {
+        this.refArrays[propName] = [];
       }
     }
   }

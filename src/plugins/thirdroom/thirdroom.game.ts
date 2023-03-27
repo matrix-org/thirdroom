@@ -81,7 +81,7 @@ import {
 } from "../../engine/resource/RemoteResources";
 import { CharacterControllerType, SceneCharacterControllerComponent } from "../CharacterController";
 import { addNametag } from "../nametags/nametags.game";
-import { AvatarComponent } from "../avatars/components";
+import { AvatarRef } from "../avatars/components";
 import { waitUntil } from "../../engine/utils/waitUntil";
 import { findResourceRetainerRoots, findResourceRetainers } from "../../engine/resource/findResourceRetainers";
 import { teleportEntity } from "../../engine/utils/teleportEntity";
@@ -129,8 +129,8 @@ const createAvatarRig =
     addAvatarRigidBody(ctx, physics, container);
     addInteractableComponent(ctx, physics, container, InteractableType.Player);
 
-    addComponent(ctx.world, AvatarComponent, container.eid);
-    AvatarComponent.eid[container.eid] = rig.eid;
+    addComponent(ctx.world, AvatarRef, container.eid);
+    AvatarRef.eid[container.eid] = rig.eid;
 
     return container;
   };
@@ -705,7 +705,7 @@ function swapToFirstPerson(ctx: GameState, node: RemoteNode) {
   avatar.visible = false;
 }
 
-export async function ThirdroomSystem(ctx: GameState) {
+export function ThirdroomSystem(ctx: GameState) {
   const input = getModule(ctx, InputModule);
   const physics = getModule(ctx, PhysicsModule);
 

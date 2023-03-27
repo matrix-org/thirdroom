@@ -231,6 +231,39 @@ function updateYogaNode(child: RenderUIFlex) {
   child.yogaNode.setJustifyContent(Yoga.JUSTIFY_FLEX_START);
 }
 
+function disposeYogaNode(child: RenderUIFlex) {
+  if (child.yogaNode) {
+    Yoga.Node.destroy(child.yogaNode);
+  }
+}
+
+function updateYogaNodeRecursive(child: RenderUIFlex, i: number) {
+  child.yogaNode = Yoga.Node.create();
+
+  // if not root
+  if (child.parent) {
+    // attach to parent
+    child.parent.yogaNode.insertChild(child.yogaNode, i);
+  }
+
+  updateYogaNode(child);
+}
+
+function drawNodeRecursive(
+  uiCanvas: RenderUICanvas,
+  ctx2d: OffscreenCanvasRenderingContext2D,
+  loadingImages: Set<RenderImage>,
+  loadingText: Set<RenderUIText>
+) {
+  // draw root
+  drawNode(ctx2d, loadingImages, loadingText, uiCanvas.root);
+
+  // draw children
+  traverseUIFlex(uiCanvas.root, (child) => {
+    drawNode(ctx2d, loadingImages, loadingText, child);
+  });
+}
+
 export function updateNodeUICanvas(ctx: RenderThreadState, scene: Scene, node: RenderNode) {
   const currentUICanvasResourceId = node.currentUICanvasResourceId;
   const nextUICanvasResourceId = node.uiCanvas?.eid || 0;
@@ -240,11 +273,7 @@ export function updateNodeUICanvas(ctx: RenderThreadState, scene: Scene, node: R
     // teardown
     if (node.uiCanvas.root) {
       if (node.uiCanvas.root.yogaNode) Yoga.Node.destroy(node.uiCanvas.root.yogaNode);
-      traverseUIFlex(node.uiCanvas.root, (child) => {
-        if (child.yogaNode) {
-          Yoga.Node.destroy(child.yogaNode);
-        }
-      });
+      traverseUIFlex(node.uiCanvas.root, disposeYogaNode);
     }
     if (node.uiCanvasMesh) {
       scene.remove(node.uiCanvasMesh);
@@ -273,17 +302,7 @@ export function updateNodeUICanvas(ctx: RenderThreadState, scene: Scene, node: R
     updateYogaNode(uiCanvas.root);
 
     // traverse root, create & update yoga nodes
-    traverseUIFlex(uiCanvas.root, (child, i) => {
-      child.yogaNode = Yoga.Node.create();
-
-      // if not root
-      if (child.parent) {
-        // attach to parent
-        child.parent.yogaNode.insertChild(child.yogaNode, i);
-      }
-
-      updateYogaNode(child);
-    });
+    traverseUIFlex(uiCanvas.root, updateYogaNodeRecursive);
 
     uiCanvas.canvasTexture = new CanvasTexture(uiCanvas.canvas);
 
@@ -307,14 +326,7 @@ export function updateNodeUICanvas(ctx: RenderThreadState, scene: Scene, node: R
     // calculate layout
     uiCanvas.root.yogaNode.calculateLayout(uiCanvas.root.width, uiCanvas.root.height, Yoga.DIRECTION_LTR);
 
-    // draw root
-    drawNode(ctx2d, loadingImages, loadingText, uiCanvas.root);
-
-    // draw children
-    traverseUIFlex(uiCanvas.root, (child) => {
-      drawNode(ctx2d, loadingImages, loadingText, child);
-    });
-
+    drawNodeRecursive(uiCanvas, ctx2d, loadingImages, loadingText);
     (node.uiCanvasMesh.material as MeshBasicMaterial & { map: Texture }).map.needsUpdate = true;
 
     // only stop rendering when all images have loaded

@@ -85,6 +85,7 @@ import {
   InitializeAudioStateMessage,
 } from "./audio.common";
 import { createObjectTripleBuffer, getWriteObjectBufferView } from "../allocator/ObjectBufferView";
+import { getRotationNoAlloc } from "../utils/getRotationNoAlloc";
 
 /*********
  * Types *
@@ -312,15 +313,19 @@ function updateAudioDatas(ctx: IMainThreadContext, audioModule: MainAudioModule)
 
       audioData.loadStatus = LoadStatus.Loading;
 
-      loadAudioData(audioModule, audioData, abortController.signal)
+      // Prevent creating a new anonymous function every frame by only having
+      // _audioData in scope on the frame when the loadStatus is uninitialized
+      const _audioData = audioData;
+
+      loadAudioData(audioModule, _audioData, abortController.signal)
         .then((data) => {
-          if (audioData.loadStatus === LoadStatus.Loaded) {
+          if (_audioData.loadStatus === LoadStatus.Loaded) {
             throw new Error("Attempted to load a resource that has already been loaded.");
           }
 
-          if (audioData.loadStatus !== LoadStatus.Disposed) {
-            audioData.data = data;
-            audioData.loadStatus = LoadStatus.Loaded;
+          if (_audioData.loadStatus !== LoadStatus.Disposed) {
+            _audioData.data = data;
+            _audioData.loadStatus = LoadStatus.Loaded;
           }
         })
         .catch((error) => {
@@ -328,7 +333,7 @@ function updateAudioDatas(ctx: IMainThreadContext, audioModule: MainAudioModule)
             return;
           }
 
-          audioData.loadStatus = LoadStatus.Error;
+          _audioData.loadStatus = LoadStatus.Error;
         });
     }
   }
@@ -583,6 +588,18 @@ function stopAudio(audioSource: MainAudioSource, audioData: HTMLAudioElement | A
   audioSource.canAutoPlay = false;
 }
 
+function findSource(sources: MainAudioSource[], sourceEid: number) {
+  for (let i = 0; i < sources.length; i++) {
+    const source = sources[i];
+
+    if (source.eid === sourceEid) {
+      return source;
+    }
+  }
+
+  return undefined;
+}
+
 function updateAudioEmitters(ctx: IMainThreadContext, audioModule: MainAudioModule) {
   const localAudioEmitters = getLocalResources(ctx, MainAudioEmitter);
 
@@ -598,7 +615,7 @@ function updateAudioEmitters(ctx: IMainThreadContext, audioModule: MainAudioModu
     for (let j = activeSources.length - 1; j >= 0; j--) {
       const activeSource = activeSources[j];
 
-      if (!nextSources.some((source) => activeSource.eid === source.eid)) {
+      if (!findSource(nextSources, activeSource.eid)) {
         try {
           activeSource.gainNode!.disconnect(audioEmitter.inputGain!);
         } catch {}
@@ -610,7 +627,7 @@ function updateAudioEmitters(ctx: IMainThreadContext, audioModule: MainAudioModu
     for (let j = 0; j < nextSources.length; j++) {
       const nextSource = nextSources[j];
 
-      const source = activeSources.find((s) => s.eid === nextSource.eid);
+      const source = findSource(activeSources, nextSource.eid);
 
       if (!source) {
         activeSources.push(nextSource);
@@ -648,7 +665,7 @@ function setAudioListenerTransform(ctx: IMainThreadContext, audioModule: MainAud
     return;
   }
 
-  mat4.getRotation(tempRotation, worldMatrix);
+  getRotationNoAlloc(tempRotation, worldMatrix);
   vec3.set(tempOrientation, 0, 0, -1);
   vec3.transformQuat(tempOrientation, tempOrientation, tempRotation);
 
@@ -721,7 +738,7 @@ export function updateNodeAudioEmitter(ctx: IMainThreadContext, audioModule: Mai
 
   if (isNaN(tempPosition[0])) return;
 
-  mat4.getRotation(tempRotation, node.worldMatrix);
+  getRotationNoAlloc(tempRotation, node.worldMatrix);
   vec3.set(tempOrientation, 0, 0, -1);
   vec3.transformQuat(tempOrientation, tempOrientation, tempRotation);
 

@@ -223,6 +223,8 @@ export const createLocalResourceModule = <ThreadContext extends ConsumerThreadCo
 
     resourceModule.resourceLoaders.set(resourceDef.name, loadLocalResource);
 
+    resourceModule.resourcesByType.set(resourceDef.name, []);
+
     return () => {
       resourceModule.resourceLoaders.delete(resourceDef.name);
     };
@@ -283,7 +285,9 @@ export const createLocalResourceModule = <ThreadContext extends ConsumerThreadCo
     }
 
     // Then drain all of the messages postMessages containing create resource data
-    for (const message of drainResourceMessages()) {
+    const messages = drainResourceMessages();
+    for (let i = 0; i < messages.length; i++) {
+      const message = messages[i];
       createResourceMessages.push(message);
     }
 

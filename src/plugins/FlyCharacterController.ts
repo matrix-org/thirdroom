@@ -1,5 +1,5 @@
 import { addComponent, defineQuery } from "bitecs";
-import { mat4, quat, vec3 } from "gl-matrix";
+import { quat, vec3 } from "gl-matrix";
 import RAPIER from "@dimforge/rapier3d-compat";
 import { Quaternion, Vector3 } from "three";
 
@@ -14,6 +14,7 @@ import { defineModule, getModule } from "../engine/module/module.common";
 import { tryGetRemoteResource } from "../engine/resource/resource.game";
 import { RemoteNode } from "../engine/resource/RemoteResources";
 import { RigidBody } from "../engine/physics/physics.game";
+import { getRotationNoAlloc } from "../engine/utils/getRotationNoAlloc";
 
 type FlyCharacterControllerModuleState = {};
 
@@ -105,7 +106,7 @@ function applyFlyControls(
 
   updateMatrixWorld(camera);
 
-  mat4.getRotation(cameraWorldRotation, camera.worldMatrix);
+  getRotationNoAlloc(cameraWorldRotation, camera.worldMatrix);
   vec3.transformQuat(velocityVec, velocityVec, cameraWorldRotation);
   vec3.normalize(velocityVec, velocityVec);
   vec3.scale(velocityVec, velocityVec, ctx.dt * speed * boostModifier);

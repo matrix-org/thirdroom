@@ -234,15 +234,19 @@ export function updateImageResources(ctx: RenderThreadState) {
 
       renderImage.loadStatus = LoadStatus.Loading;
 
-      loadRenderImageData(rendererModule, renderImage, abortController.signal)
+      // Prevent creating a new anonymous function every frame by only having
+      // _renderImage in scope on the frame when the loadStatus is uninitialized
+      const _renderImage = renderImage;
+
+      loadRenderImageData(rendererModule, _renderImage, abortController.signal)
         .then((imageData) => {
-          if (renderImage.loadStatus === LoadStatus.Loaded) {
+          if (_renderImage.loadStatus === LoadStatus.Loaded) {
             throw new Error("Attempted to load a resource that has already been loaded.");
           }
 
-          if (renderImage.loadStatus !== LoadStatus.Disposed) {
-            renderImage.imageData = imageData;
-            renderImage.loadStatus = LoadStatus.Loaded;
+          if (_renderImage.loadStatus !== LoadStatus.Disposed) {
+            _renderImage.imageData = imageData;
+            _renderImage.loadStatus = LoadStatus.Loaded;
           }
         })
         .catch((error) => {
@@ -250,7 +254,7 @@ export function updateImageResources(ctx: RenderThreadState) {
             return;
           }
 
-          renderImage.loadStatus = LoadStatus.Error;
+          _renderImage.loadStatus = LoadStatus.Error;
         });
     }
   }
@@ -389,18 +393,20 @@ export function updateTextureResources(ctx: RenderThreadState) {
     if (renderTexture.loadStatus === LoadStatus.Uninitialized && renderTexture.source.imageData) {
       const abortController = new AbortController();
 
-      renderTexture.abortController = abortController;
+      const _renderTexture = renderTexture;
 
-      renderTexture.loadStatus = LoadStatus.Loading;
+      _renderTexture.abortController = abortController;
 
-      loadRenderTexture(ktx2Loader, renderTexture, renderTexture.source.imageData, renderTexture.texture)
+      _renderTexture.loadStatus = LoadStatus.Loading;
+
+      loadRenderTexture(ktx2Loader, _renderTexture, _renderTexture.source.imageData!, _renderTexture.texture!)
         .then(() => {
-          if (renderTexture.loadStatus === LoadStatus.Loaded) {
+          if (_renderTexture.loadStatus === LoadStatus.Loaded) {
             throw new Error("Attempted to load a resource that has already been loaded.");
           }
 
-          if (renderTexture.loadStatus !== LoadStatus.Disposed) {
-            renderTexture.loadStatus = LoadStatus.Loaded;
+          if (_renderTexture.loadStatus !== LoadStatus.Disposed) {
+            _renderTexture.loadStatus = LoadStatus.Loaded;
           }
         })
         .catch((error) => {
@@ -408,7 +414,7 @@ export function updateTextureResources(ctx: RenderThreadState) {
             return;
           }
 
-          renderTexture.loadStatus = LoadStatus.Error;
+          _renderTexture.loadStatus = LoadStatus.Error;
         });
     }
   }
