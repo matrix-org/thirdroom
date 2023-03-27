@@ -29,6 +29,7 @@ import { setLocalStorageItem } from "../../../hooks/useLocalStorage";
 import { useKeyDown } from "../../../hooks/useKeyDown";
 import { manageMuteRequest, MicExceptionDialog, useMuteButton } from "../../components/MuteButtonProvider";
 import { inputFocused } from "../../../utils/common";
+import { useDisableInput } from "../../../hooks/useDisableInput";
 
 export function HotbarControls() {
   return (
@@ -124,6 +125,8 @@ export function WorldControls({
     },
     [enterXR, isWebXRSupported]
   );
+
+  useDisableInput(shortcutUI || showActiveMembers);
 
   return (
     <div className={classNames(className, "flex")}>

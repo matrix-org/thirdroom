@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Room } from "@thirdroom/hydrogen-view-sdk";
 import classNames from "classnames";
 import { useAtom, useAtomValue } from "jotai";
+import { useKBar, VisualState } from "kbar";
 
 import { WorldChat } from "../world-chat/WorldChat";
 import { Stats } from "../stats/Stats";
@@ -40,6 +41,7 @@ import {
   useToggleStatsAction,
 } from "../cmd-panel/actions";
 import { inputFocused } from "../../../utils/common";
+import { useDisableInput } from "../../../hooks/useDisableInput";
 
 const SHOW_NAMES_STORE = "showNames";
 interface WorldViewProps {
@@ -62,6 +64,9 @@ export function WorldView({ world }: WorldViewProps) {
   const camRigModule = getModule(mainThread, CameraRigModule);
   const [showNames, setShowNames] = useLocalStorage(SHOW_NAMES_STORE, true);
   const { isWebXRSupported, enterXR, isPresenting } = useWebXRSession();
+
+  const { kbarVisible } = useKBar((state) => ({ kbarVisible: state.visualState !== VisualState.hidden }));
+  useDisableInput(kbarVisible);
 
   useToggleNamesAction(showNames, setShowNames, showToast);
   useToggleEditorAction(setEditorEnabled);

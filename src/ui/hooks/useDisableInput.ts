@@ -1,0 +1,37 @@
+import { useEffect } from "react";
+
+import { InputModule } from "../../engine/input/input.main";
+import { getModule } from "../../engine/module/module.common";
+import { useMainThreadContext } from "./useMainThread";
+
+export function useDisableInput(state = true) {
+  const mainThread = useMainThreadContext();
+
+  useEffect(() => {
+    if (!state) {
+      return;
+    }
+
+    const inputModule = getModule(mainThread, InputModule);
+
+    if (inputModule.disableInputStack.length === 0) {
+      document.exitPointerLock();
+    }
+
+    const stackId = inputModule.nextStackId++;
+
+    inputModule.disableInputStack.push(stackId);
+
+    return () => {
+      const index = inputModule.disableInputStack.indexOf(stackId);
+
+      if (index !== -1) {
+        inputModule.disableInputStack.splice(index, 1);
+      }
+
+      if (inputModule.disableInputStack.length === 0) {
+        mainThread.canvas.requestPointerLock();
+      }
+    };
+  }, [state, mainThread]);
+}

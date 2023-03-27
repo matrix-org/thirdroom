@@ -19,6 +19,7 @@ import { MemberListDialog } from "../dialogs/MemberListDialog";
 import { ShortcutUI } from "../world/ShortcutUI";
 import CrossIC from "../../../../../res/ic/cross.svg";
 import { togglePhysicsDebug } from "../../../../plugins/thirdroom/thirdroom.main";
+import { useDisableInput } from "../../../hooks/useDisableInput";
 
 enum ActionSection {
   Global = "Global",
@@ -155,6 +156,8 @@ export const useToggleNamesAction = (
 export const MembersDialogAction = ({ world }: { world: Room }) => {
   const [showActiveMembers, setShowActiveMembers] = useState<boolean>(false);
 
+  useDisableInput(showActiveMembers);
+
   useRegisterActions(
     [
       {
@@ -198,6 +201,8 @@ export const ShortcutDialogAction = () => {
     ],
     []
   );
+
+  useDisableInput(shortcutUI);
 
   return (
     <Dialog open={shortcutUI} onOpenChange={setShortcutUI}>
