@@ -36,7 +36,7 @@ import {
   ShortcutDialogAction,
   useToggleEditorAction,
   useToggleNamesAction,
-  useToggleStatesAction,
+  useToggleStatsAction,
 } from "../cmd-panel/actions";
 import { inputFocused } from "../../../utils/common";
 
@@ -64,7 +64,7 @@ export function WorldView({ world }: WorldViewProps) {
 
   useToggleNamesAction(showNames, setShowNames, showToast);
   useToggleEditorAction(setEditorEnabled);
-  useToggleStatesAction(setStatsEnabled);
+  useToggleStatsAction(setStatsEnabled);
 
   useEffect(() => {
     const onObjectCapReached = (ctx: IMainThreadContext, message: ObjectCapReachedMessage) => {

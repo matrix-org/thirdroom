@@ -232,14 +232,14 @@ export const useToggleEditorAction = (setOpen: (value: boolean | ((value: boolea
   );
 };
 
-export const useToggleStatesAction = (setOpen: (value: boolean | ((value: boolean) => boolean)) => void) => {
+export const useToggleStatsAction = (setOpen: (value: boolean | ((value: boolean) => boolean)) => void) => {
   useRegisterActions(
     [
       {
-        id: "states",
-        name: "Toggle States",
+        id: "stats",
+        name: "Toggle Stats",
         shortcut: ["Shift+Control+S"],
-        keywords: "states",
+        keywords: "stats",
         section: ActionSection.World,
         icon: undefined,
         subtitle: undefined,
