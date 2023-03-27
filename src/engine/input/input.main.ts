@@ -10,6 +10,8 @@ import { CameraRigModule } from "../../plugins/camera/CameraRig.main";
  ********/
 
 export interface MainInputModule {
+  nextStackId: number;
+  disableInputStack: number[];
   inputRingBuffer: InputRingBuffer;
 }
 
@@ -32,11 +34,14 @@ export const InputModule = defineModule<IMainThreadContext, MainInputModule>({
     });
 
     return {
+      nextStackId: 0,
+      disableInputStack: [],
       inputRingBuffer,
     };
   },
   init(ctx) {
-    const { inputRingBuffer: irb } = getModule(ctx, InputModule);
+    const inputModule = getModule(ctx, InputModule);
+    const { inputRingBuffer: irb } = inputModule;
     const camRigModule = getModule(ctx, CameraRigModule);
     const { canvas } = ctx;
 
@@ -52,6 +57,10 @@ export const InputModule = defineModule<IMainThreadContext, MainInputModule>({
       wAxis: number,
       state: number
     ) {
+      if (inputModule.disableInputStack.length > 0) {
+        return;
+      }
+
       const orbiting = camRigModule.orbiting;
       const pointerLocked = document.pointerLockElement !== null;
       if (!pointerLocked && !orbiting) {
