@@ -6,8 +6,17 @@
 #include "./websg-js.h"
 #include "./websg-collider-js.h"
 
+static void js_websg_collider_finalizer(JSRuntime *rt, JSValue val) {
+  WebSGColliderData *collider_data = JS_GetOpaque(val, websg_collider_class_id);
+
+  if (collider_data) {
+    js_free_rt(rt, collider_data);
+  }
+}
+
 static JSClassDef websg_collider_class = {
-  "WebSGCollider"
+  "WebSGCollider",
+  .finalizer = js_websg_collider_finalizer
 };
 
 static const JSCFunctionListEntry websg_collider_proto_funcs[] = {
@@ -46,7 +55,9 @@ JSValue js_websg_new_collider_instance(JSContext *ctx, WebSGContext *websg, coll
     return collider;
   }
 
-  js_set_opaque_id(collider, collider_id);
+  WebSGColliderData *collider_data = js_mallocz(ctx, sizeof(WebSGColliderData));
+  collider_data->collider_id = collider_id;
+  JS_SetOpaque(collider, collider_data);
 
   JS_SetPropertyUint32(ctx, websg->colliders, collider_id, JS_DupValue(ctx, collider));
   

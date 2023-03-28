@@ -25,13 +25,13 @@ static JSValue js_websg_world_get_environment(JSContext *ctx, JSValueConst this_
 }
 
 static JSValue js_websg_world_set_environment(JSContext *ctx, JSValueConst this_val, JSValueConst environment) {
-  scene_id_t scene_id = js_get_opaque_id(ctx, environment, websg_scene_class_id);
+  WebSGSceneData *scene_data = JS_GetOpaque(environment, websg_scene_class_id);
 
-  if (!scene_id) {
+  if (scene_data == NULL) {
     return JS_EXCEPTION;
   }
 
-  if (websg_set_environment_scene(scene_id) == -1) {
+  if (websg_set_environment_scene(scene_data->scene_id) == -1) {
     JS_ThrowInternalError(ctx, "WebSG: Couldn't set environment scene.");
     return JS_EXCEPTION;
   }
@@ -81,6 +81,7 @@ static const JSCFunctionListEntry websg_world_proto_funcs[] = {
   JS_CFUNC_DEF("createScene", 0, js_websg_create_scene),
   JS_CFUNC_DEF("createNode", 0, js_websg_create_node),
   JS_CFUNC_DEF("createMesh", 1, js_websg_create_mesh),
+  JS_CFUNC_DEF("createBoxMesh", 1, js_websg_create_box_mesh),
   JS_CFUNC_DEF("createLight", 1, js_websg_create_light),
   JS_CFUNC_DEF("createCollider", 1, js_websg_create_collider),
   JS_CFUNC_DEF("findSceneByName", 1, js_websg_find_scene_by_name),

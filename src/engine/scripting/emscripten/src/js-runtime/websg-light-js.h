@@ -3,6 +3,10 @@
 #include "../websg.h"
 #include "./quickjs/quickjs.h"
 
+typedef struct WebSGLightData {
+  light_id_t light_id;
+} WebSGLightData;
+
 static JSClassID websg_light_class_id;
 
 void js_define_websg_light(JSContext *ctx);

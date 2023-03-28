@@ -6,8 +6,17 @@
 #include "./websg-js.h"
 #include "./websg-light-js.h"
 
+static void js_websg_light_finalizer(JSRuntime *rt, JSValue val) {
+  WebSGLightData *light_data = JS_GetOpaque(val, websg_light_class_id);
+
+  if (light_data) {
+    js_free_rt(rt, light_data);
+  }
+}
+
 static JSClassDef websg_light_class = {
-  "WebSGLight"
+  "WebSGLight",
+  .finalizer = js_websg_light_finalizer
 };
 
 static const JSCFunctionListEntry websg_light_proto_funcs[] = {
@@ -46,7 +55,9 @@ JSValue js_websg_new_light_instance(JSContext *ctx, WebSGContext *websg, light_i
     return light;
   }
 
-  js_set_opaque_id(light, light_id);
+  WebSGLightData *light_data = js_mallocz(ctx, sizeof(WebSGLightData));
+  light_data->light_id = light_id;
+  JS_SetOpaque(light, light_data);
 
   JS_SetPropertyUint32(ctx, websg->lights, light_id, JS_DupValue(ctx, light));
   

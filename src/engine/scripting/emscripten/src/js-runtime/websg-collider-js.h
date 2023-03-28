@@ -3,6 +3,11 @@
 #include "../websg.h"
 #include "./quickjs/quickjs.h"
 
+typedef struct WebSGColliderData {
+  collider_id_t collider_id;
+} WebSGColliderData;
+
+
 static JSClassID websg_collider_class_id;
 
 void js_define_websg_collider(JSContext *ctx);

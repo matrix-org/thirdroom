@@ -4,8 +4,17 @@
 #include "./websg-node-js.h"
 #include "./websg-interactable-js.h"
 
+static void js_websg_interactable_finalizer(JSRuntime *rt, JSValue val) {
+  WebSGInteractableData *interactable_data = JS_GetOpaque(val, websg_interactable_class_id);
+
+  if (interactable_data) {
+    js_free_rt(rt, interactable_data);
+  }
+}
+
 static JSClassDef websg_interactable_class = {
   "WebSGInteractable",
+  .finalizer = js_websg_interactable_finalizer
 };
 
 static const JSCFunctionListEntry websg_interactable_proto_funcs[] = {

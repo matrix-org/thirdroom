@@ -23,6 +23,7 @@
 #include "./websg-scene-js.h"
 #include "./websg-node-js.h"
 #include "./websg-mesh-js.h"
+#include "./websg-mesh-primitive-js.h"
 #include "./websg-light-js.h"
 
 /**
@@ -63,6 +64,7 @@ export int32_t websg_initialize() {
   js_define_websg_scene(ctx);
   js_define_websg_node(ctx);
   js_define_websg_mesh(ctx);
+  js_define_websg_mesh_primitive(ctx);
   js_define_websg_light(ctx);
   js_define_thirdroom_api(ctx, &global);
   js_define_matrix_api(ctx, &global);

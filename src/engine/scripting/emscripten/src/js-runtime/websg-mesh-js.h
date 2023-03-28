@@ -5,9 +5,15 @@
 
 static JSClassID websg_mesh_class_id;
 
+typedef struct WebSGMeshData {
+  mesh_id_t mesh_id;
+} WebSGMeshData;
+
 void js_define_websg_mesh(JSContext *ctx);
 
 JSValue js_websg_create_mesh(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
+
+JSValue js_websg_create_box_mesh(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 
 JSValue js_websg_find_mesh_by_name(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 

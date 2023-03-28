@@ -14,8 +14,18 @@
 #include "./websg-quaternion-js.h"
 #include "./websg-matrix4-js.h"
 
+static void js_websg_node_finalizer(JSRuntime *rt, JSValue val) {
+  WebSGNodeData *node_data = JS_GetOpaque(val, websg_node_class_id);
+
+  if (node_data) {
+    JS_FreeValueRT(rt, node_data->interactable);
+    js_free_rt(rt, node_data);
+  }
+}
+
 static JSClassDef websg_node_class = {
-  "WebSGNode"
+  "WebSGNode",
+  .finalizer = js_websg_node_finalizer
 };
 
 static JSValue js_websg_node_add_child(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
@@ -23,13 +33,13 @@ static JSValue js_websg_node_add_child(JSContext *ctx, JSValueConst this_val, in
 
   node_id_t node_id = node_data->node_id;
 
-  node_id_t child_id = js_get_opaque_id(ctx, argv[0], websg_node_class_id);
+  WebSGNodeData *child_data = JS_GetOpaque2(ctx, argv[0], websg_node_class_id);
 
-  if (!node_id) {
+  if (child_data == NULL) {
     return JS_EXCEPTION;
   }
 
-  if (websg_node_add_child(node_id, child_id) == -1) {
+  if (websg_node_add_child(node_id, child_data->node_id) == -1) {
     JS_ThrowInternalError(ctx, "WebSG: Couldn't add child node.");
     return JS_EXCEPTION;
   }
@@ -174,13 +184,13 @@ static JSValue js_websg_node_get_mesh(JSContext *ctx, JSValueConst this_val) {
 static JSValue js_websg_node_set_mesh(JSContext *ctx, JSValueConst this_val, JSValueConst arg) {
   WebSGNodeData *node_data = JS_GetOpaque(this_val, websg_node_class_id);
 
-  mesh_id_t mesh_id = js_get_opaque_id(ctx, arg, websg_mesh_class_id);
+  WebSGMeshData *mesh_data = JS_GetOpaque2(ctx, arg, websg_mesh_class_id);
 
-  if (!mesh_id) {
+  if (mesh_data == NULL) {
     return JS_EXCEPTION;
   }
 
-  if (websg_node_set_mesh(node_data->node_id, mesh_id) == -1) {
+  if (websg_node_set_mesh(node_data->node_id, mesh_data->mesh_id) == -1) {
     JS_ThrowInternalError(ctx, "WebSG: Couldn't set mesh.");
     return JS_EXCEPTION;
   }
@@ -197,13 +207,13 @@ static JSValue js_websg_node_get_light(JSContext *ctx, JSValueConst this_val) {
 static JSValue js_websg_node_set_light(JSContext *ctx, JSValueConst this_val, JSValueConst arg) {
   WebSGNodeData *node_data = JS_GetOpaque(this_val, websg_node_class_id);
 
-  light_id_t light_id = js_get_opaque_id(ctx, arg, websg_light_class_id);
+  WebSGLightData *light_data = JS_GetOpaque2(ctx, arg, websg_light_class_id);
 
-  if (!light_id) {
+  if (light_data == NULL) {
     return JS_EXCEPTION;
   }
 
-  if (websg_node_set_light(node_data->node_id, light_id) == -1) {
+  if (websg_node_set_light(node_data->node_id, light_data->light_id) == -1) {
     JS_ThrowInternalError(ctx, "WebSG: Couldn't set light.");
     return JS_EXCEPTION;
   }
@@ -220,13 +230,13 @@ static JSValue js_websg_node_get_collider(JSContext *ctx, JSValueConst this_val)
 static JSValue js_websg_node_set_collider(JSContext *ctx, JSValueConst this_val, JSValueConst arg) {
   WebSGNodeData *node_data = JS_GetOpaque(this_val, websg_node_class_id);
 
-  collider_id_t collider_id = js_get_opaque_id(ctx, arg, websg_collider_class_id);
+  WebSGColliderData *collider_data = JS_GetOpaque2(ctx, arg, websg_collider_class_id);
 
-  if (!collider_id) {
+  if (collider_data == NULL) {
     return JS_EXCEPTION;
   }
 
-  if (websg_node_set_collider(node_data->node_id, collider_id) == -1) {
+  if (websg_node_set_collider(node_data->node_id, collider_data->collider_id) == -1) {
     JS_ThrowInternalError(ctx, "WebSG: Couldn't set collider.");
     return JS_EXCEPTION;
   }

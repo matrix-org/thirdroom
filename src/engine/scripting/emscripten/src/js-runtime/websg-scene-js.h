@@ -3,6 +3,10 @@
 #include "../websg.h"
 #include "./quickjs/quickjs.h"
 
+typedef struct WebSGSceneData {
+scene_id_t scene_id;
+} WebSGSceneData;
+
 static JSClassID websg_scene_class_id;
 
 void js_define_websg_scene(JSContext *ctx);

@@ -3,7 +3,7 @@ import { quat, vec3 } from "gl-matrix";
 import RAPIER from "@dimforge/rapier3d-compat";
 
 import { SpawnPoint } from "../../engine/component/SpawnPoint";
-import { addChild, traverse } from "../../engine/component/transform";
+import { addChild } from "../../engine/component/transform";
 import { GameState } from "../../engine/GameTypes";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
 import { associatePeerWithEntity, GameNetworkState, NetworkModule } from "../../engine/network/network.game";

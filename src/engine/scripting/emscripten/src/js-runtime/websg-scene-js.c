@@ -7,8 +7,17 @@
 #include "./websg-node-js.h"
 #include "./websg-node-iterator-js.h"
 
+static void js_websg_scene_finalizer(JSRuntime *rt, JSValue val) {
+  WebSGSceneData *scene_data = JS_GetOpaque(val, websg_scene_class_id);
+
+  if (scene_data) {
+    js_free_rt(rt, scene_data);
+  }
+}
+
 static JSClassDef websg_scene_class = {
-  "WebSGScene"
+  "WebSGScene",
+  .finalizer = js_websg_scene_finalizer
 };
 
 static JSValue js_websg_scene_add_node(
@@ -17,15 +26,15 @@ static JSValue js_websg_scene_add_node(
   int argc,
   JSValueConst *argv
 ) {
-  scene_id_t scene_id = js_get_own_opaque_id(this_val, websg_scene_class_id);
+  WebSGSceneData *scene_data = JS_GetOpaque(this_val, websg_scene_class_id);
 
-  node_id_t node_id = js_get_opaque_id(ctx, argv[0], websg_node_class_id);
+  WebSGNodeData *node_data = JS_GetOpaque2(ctx, argv[0], websg_node_class_id);
 
-  if (!node_id) {
+  if (node_data == NULL) {
     return JS_EXCEPTION;
   }
 
-  if (websg_scene_add_node(scene_id, node_id) == -1) {
+  if (websg_scene_add_node(scene_data->scene_id, node_data->node_id) == -1) {
     JS_ThrowInternalError(ctx, "WebSG: Couldn't add node to scene.");
     return JS_EXCEPTION;
   }
@@ -39,15 +48,15 @@ static JSValue js_websg_scene_remove_node(
   int argc,
   JSValueConst *argv
 ) {
-  scene_id_t scene_id = js_get_own_opaque_id(this_val, websg_scene_class_id);
+  WebSGSceneData *scene_data = JS_GetOpaque(this_val, websg_scene_class_id);
 
-  node_id_t node_id = js_get_opaque_id(ctx, argv[0], websg_node_class_id);
+  WebSGNodeData *node_data = JS_GetOpaque2(ctx, argv[0], websg_node_class_id);
 
-  if (!node_id) {
+  if (node_data == NULL) {
     return JS_EXCEPTION;
   }
 
-  if (websg_scene_remove_node(scene_id, node_id) == -1) {
+  if (websg_scene_remove_node(scene_data->scene_id, node_data->node_id) == -1) {
     JS_ThrowInternalError(ctx, "WebSG: Couldn't remove node from scene.");
     return JS_EXCEPTION;
   }
@@ -56,9 +65,9 @@ static JSValue js_websg_scene_remove_node(
 }
 
 static JSValue js_websg_scene_nodes(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
-  scene_id_t scene_id = js_get_own_opaque_id(this_val, websg_scene_class_id);
+  WebSGSceneData *scene_data = JS_GetOpaque(this_val, websg_scene_class_id);
 
-  int32_t count = websg_scene_get_node_count(scene_id);
+  int32_t count = websg_scene_get_node_count(scene_data->scene_id);
 
   if (count == -1) {
     JS_ThrowInternalError(ctx, "WebSG: Error getting scene node count.");
@@ -67,7 +76,7 @@ static JSValue js_websg_scene_nodes(JSContext *ctx, JSValueConst this_val, int a
 
   node_id_t *nodes = js_malloc(ctx, sizeof(node_id_t) * count);
 
-  if (websg_scene_get_nodes(scene_id, nodes, count) == -1) {
+  if (websg_scene_get_nodes(scene_data->scene_id, nodes, count) == -1) {
     JS_ThrowInternalError(ctx, "WebSG: Error getting scene nodes.");
     return JS_EXCEPTION;
   }
@@ -76,7 +85,7 @@ static JSValue js_websg_scene_nodes(JSContext *ctx, JSValueConst this_val, int a
 }
 
 static JSValue js_websg_scene_get_node(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
-  scene_id_t scene_id = js_get_own_opaque_id(this_val, websg_scene_class_id);
+  WebSGSceneData *scene_data = JS_GetOpaque(this_val, websg_scene_class_id);
 
   uint32_t index;
 
@@ -84,7 +93,7 @@ static JSValue js_websg_scene_get_node(JSContext *ctx, JSValueConst this_val, in
     return JS_EXCEPTION;
   }
 
-  node_id_t node_id = websg_scene_get_node(scene_id, index);
+  node_id_t node_id = websg_scene_get_node(scene_data->scene_id, index);
 
   if (node_id == 0) {
     return JS_UNDEFINED;
@@ -133,7 +142,10 @@ JSValue js_websg_new_scene_instance(JSContext *ctx, WebSGContext *websg, scene_i
     return scene;
   }
 
-  js_set_opaque_id(scene, scene_id);
+  WebSGSceneData *scene_data = js_mallocz(ctx, sizeof(WebSGSceneData));
+  scene_data->scene_id = scene_id;
+
+  JS_SetOpaque(scene, scene_data);
 
   JS_SetPropertyUint32(ctx, websg->scenes, scene_id, JS_DupValue(ctx, scene));
   
