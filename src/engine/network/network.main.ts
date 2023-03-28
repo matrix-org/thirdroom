@@ -91,7 +91,6 @@ const onIncomingMessage =
   };
 
 function onPeerLeft(mainThread: IMainThreadContext, peerId: string) {
-  console.log("onPeerLeft", peerId);
   const network = getModule(mainThread, NetworkModule);
   const { reliableChannels, unreliableChannels } = network;
   const reliableChannel = reliableChannels.get(peerId);

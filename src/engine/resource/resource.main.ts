@@ -68,7 +68,6 @@ export class MainNametag extends defineLocalResourceClass(NametagResource) {
   load(ctx: IMainThreadContext) {
     const audioModule = getModule(ctx, AudioModule);
     const nametags = getLocalResources(ctx, MainNametag);
-    console.log("===== LOADING NAMETAG", this, nametags);
     audioModule.eventEmitter.emit("nametags-changed", [...nametags, this]);
   }
 
@@ -76,7 +75,6 @@ export class MainNametag extends defineLocalResourceClass(NametagResource) {
     super.dispose(ctx);
     const audioModule = getModule(ctx, AudioModule);
     const nametags = getLocalResources(ctx, MainNametag);
-    console.log("===== DISPOSING NAMETAG", this, nametags);
     audioModule.eventEmitter.emit("nametags-changed", [...nametags]);
   }
 }
