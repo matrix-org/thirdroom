@@ -15,7 +15,6 @@ import CrossIC from "../../../../../res/ic/cross.svg";
 import HelpIC from "../../../../../res/ic/help.svg";
 import XRIC from "../../../../../res/ic/xr.svg";
 import { Text } from "../../../atoms/text/Text";
-import { useWorldAction } from "../../../hooks/useWorldAction";
 import { NametagsEnableMessage, NametagsEnableMessageType } from "../../../../plugins/nametags/nametags.common";
 import { Thread } from "../../../../engine/module/module.common";
 import { useMainThreadContext } from "../../../hooks/useMainThread";
@@ -30,6 +29,7 @@ import { useKeyDown } from "../../../hooks/useKeyDown";
 import { manageMuteRequest, MicExceptionDialog, useMuteButton } from "../../components/MuteButtonProvider";
 import { inputFocused } from "../../../utils/common";
 import { useDisableInput } from "../../../hooks/useDisableInput";
+import { useWorldLoader } from "../../../hooks/useWorldLoader";
 
 export function HotbarControls() {
   return (
@@ -94,7 +94,7 @@ export function WorldControls({
   setShowNames: setLocalStorageItem<boolean>;
 }) {
   const mainThread = useMainThreadContext();
-  const { exitWorld } = useWorldAction(session);
+  const { exitWorld } = useWorldLoader();
 
   const [showActiveMembers, setShowActiveMembers] = useState<boolean>(false);
   const [shortcutUI, setShortcutUI] = useState(false);

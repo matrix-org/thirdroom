@@ -122,6 +122,7 @@ export function Nametags({ room, show }: { room: Room; show: boolean }) {
   const [nametags, setNametags] = useState<MainNametag[]>([]);
 
   const onNametagsChanged = useCallback((nametags: MainNametag[]) => {
+    console.log("onNametagsChanged", nametags);
     setNametags([...nametags]);
   }, []);
 

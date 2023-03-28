@@ -91,6 +91,7 @@ const onIncomingMessage =
   };
 
 function onPeerLeft(mainThread: IMainThreadContext, peerId: string) {
+  console.log("onPeerLeft", peerId);
   const network = getModule(mainThread, NetworkModule);
   const { reliableChannels, unreliableChannels } = network;
   const reliableChannel = reliableChannels.get(peerId);
@@ -118,6 +119,21 @@ function onPeerLeft(mainThread: IMainThreadContext, peerId: string) {
 /*******
  * API *
  ******/
+
+export function reconnectPeers(ctx: IMainThreadContext) {
+  const network = getModule(ctx, NetworkModule);
+  const { reliableChannels } = network;
+  for (const [peerId] of reliableChannels) {
+    ctx.sendMessage(Thread.Game, {
+      type: NetworkMessageType.RemovePeerId,
+      peerId,
+    });
+    ctx.sendMessage(Thread.Game, {
+      type: NetworkMessageType.AddPeerId,
+      peerId,
+    });
+  }
+}
 
 export function connectToTestNet(mainThread: IMainThreadContext) {
   const network = getModule(mainThread, NetworkModule);
@@ -208,6 +224,11 @@ export function addPeer(
   const audio = getModule(mainThread, AudioModule);
   const { reliableChannels, unreliableChannels } = network;
 
+  if (reliableChannels.has(peerId)) {
+    console.warn("peer already added", peerId);
+    return;
+  }
+
   if (dataChannel.ordered) reliableChannels.set(peerId, dataChannel);
   else unreliableChannels.set(peerId, dataChannel);
 
@@ -287,26 +308,46 @@ export function MainThreadNetworkSystem(ctx: IMainThreadContext) {
 
   while (availableRead(network.outgoingReliableRingBuffer)) {
     dequeueNetworkRingBuffer(network.outgoingReliableRingBuffer, ringOut);
-    const peer = network.reliableChannels.get(ringOut.peerId);
-    if (peer) peer.send(ringOut.packet);
-    else if (ringOut.broadcast)
+    if (ringOut.broadcast) {
       network.reliableChannels.forEach((peer) => {
-        if (peer.readyState === "open") {
-          peer.send(ringOut.packet);
+        if (peer.readyState !== "open") {
+          console.error("peer's reliable channel is not open");
+          return;
         }
+
+        peer.send(ringOut.packet);
       });
+    } else {
+      const peer = network.reliableChannels.get(ringOut.peerId);
+      if (!peer) {
+        console.error("peer's reliable channel not found", ringOut.peerId);
+        continue;
+      }
+
+      peer.send(ringOut.packet);
+    }
   }
 
   while (availableRead(network.outgoingUnreliableRingBuffer)) {
     dequeueNetworkRingBuffer(network.outgoingUnreliableRingBuffer, ringOut);
     // TODO: add unreliable channels
-    const peer = network.reliableChannels.get(ringOut.peerId);
-    if (peer) peer.send(ringOut.packet);
-    else if (ringOut.broadcast)
+    if (ringOut.broadcast) {
       network.reliableChannels.forEach((peer) => {
-        if (peer.readyState === "open") {
-          peer.send(ringOut.packet);
+        if (peer.readyState !== "open") {
+          console.error("peer's unreliable channel is not open");
+          return;
         }
+
+        peer.send(ringOut.packet);
       });
+    } else {
+      const peer = network.reliableChannels.get(ringOut.peerId);
+      if (!peer) {
+        console.error("peer's unreliable channel is not found", ringOut.peerId);
+        continue;
+      }
+
+      peer.send(ringOut.packet);
+    }
   }
 }

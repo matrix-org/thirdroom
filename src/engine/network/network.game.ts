@@ -204,13 +204,13 @@ const onRemovePeerId = (ctx: GameState, message: RemovePeerIdMessage) => {
     }
 
     // remove this peer's avatar entity
-    const eid = network.peerIdToEntityId.get(peerId);
-    const node = eid ? getRemoteResource<RemoteNode>(ctx, eid) : undefined;
+    // const eid = network.peerIdToEntityId.get(peerId);
+    // const node = eid ? getRemoteResource<RemoteNode>(ctx, eid) : undefined;
 
-    if (eid && node) {
-      network.entityIdToPeerId.delete(eid);
-      removeObjectFromWorld(ctx, node);
-    }
+    // if (eid && node) {
+    //   network.entityIdToPeerId.delete(eid);
+    //   removeObjectFromWorld(ctx, node);
+    // }
 
     network.peers.splice(peerArrIndex, 1);
   } else {

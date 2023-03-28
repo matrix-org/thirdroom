@@ -324,10 +324,15 @@ export function deserializeCreates(input: NetPipeData) {
     const nid = readUint32(v);
     const prefabName = readString(v);
     const existingEntity = network.networkIdToEntityId.get(nid);
-    if (existingEntity) continue;
+    if (existingEntity) {
+      console.warn(
+        `attempted to deserialize the creation of an already existing entity - nid:${nid}; eid:${existingEntity}; prefab:${prefabName}`
+      );
+      continue;
+    }
 
     const obj = createRemoteNetworkedEntity(ctx, network, nid, prefabName);
-    console.info("deserializing creation - nid", nid, "eid", obj.eid, "prefab", prefabName);
+    console.info(`deserializing creation - nid:${nid}; eid:${obj.eid}; prefab:${prefabName}`);
   }
   return input;
 }

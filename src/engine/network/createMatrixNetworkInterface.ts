@@ -1,9 +1,14 @@
 import { Client, GroupCall, Member, PowerLevels, SubscriptionHandle } from "@thirdroom/hydrogen-view-sdk";
+import { atom } from "jotai";
 
-import { enterWorld, exitWorld } from "../../plugins/thirdroom/thirdroom.main";
+import { exitWorld } from "../../plugins/thirdroom/thirdroom.main";
 import { setLocalMediaStream } from "../audio/audio.main";
 import { IMainThreadContext } from "../MainThread";
 import { addPeer, disconnect, hasPeer, removePeer, setHost, setPeerId } from "./network.main";
+
+export interface MatrixNetworkInterface {
+  dispose: () => void;
+}
 
 function memberComparator(a: Member, b: Member): number {
   if (a.eventTimestamp === b.eventTimestamp) {
@@ -26,7 +31,7 @@ export async function createMatrixNetworkInterface(
   client: Client,
   powerLevels: PowerLevels,
   groupCall: GroupCall
-): Promise<() => void> {
+): Promise<MatrixNetworkInterface> {
   if (!client.session) {
     throw new Error("You must initialize the client session before creating the network interface");
   }
@@ -139,8 +144,6 @@ export async function createMatrixNetworkInterface(
   async function joinWorld(userId: string, isHost: boolean) {
     if (isHost) setHost(ctx, userId);
     setPeerId(ctx, userId);
-    setLocalMediaStream(ctx, groupCall.localMedia?.userMedia);
-    await enterWorld(ctx);
 
     unsubscibeMembersObservable = groupCall.members.subscribe({
       onAdd(_key, member) {
@@ -194,17 +197,21 @@ export async function createMatrixNetworkInterface(
     }
   }
 
-  return () => {
-    disconnect(ctx);
+  return {
+    dispose: () => {
+      disconnect(ctx);
 
-    exitWorld(ctx);
+      exitWorld(ctx);
 
-    setLocalMediaStream(ctx, undefined);
+      setLocalMediaStream(ctx, undefined);
 
-    if (unsubscibeMembersObservable) {
-      unsubscibeMembersObservable();
-    }
+      if (unsubscibeMembersObservable) {
+        unsubscibeMembersObservable();
+      }
 
-    groupCall.leave();
+      groupCall.leave();
+    },
   };
 }
+
+export const matrixNetworkInterfaceAtom = atom<MatrixNetworkInterface | undefined>(undefined);
