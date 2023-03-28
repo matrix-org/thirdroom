@@ -37,20 +37,21 @@ export function useWorldLoader(): WorldLoader {
   const { session, platform, client } = useHydrogen(true);
   const mainThread = useMainThreadContext();
   const [matrixNetworkInterface, setMatrixNetworkInterface] = useAtom(matrixNetworkInterfaceAtom);
-  const [{ entered }, setWorld] = useAtom(worldAtom);
+  const [{ worldId, entered }, setWorld] = useAtom(worldAtom);
 
   const exitWorldCallback = useCallback(async () => {
-    if (!entered) {
+    if (!entered || !worldId) {
       console.warn("cannot exit world when world is not entered");
       return;
     }
 
-    disposeActiveMatrixRoom(mainThread);
     matrixNetworkInterface?.dispose();
+
+    disposeActiveMatrixRoom(mainThread);
 
     setWorld({ type: "CLOSE" });
     navigate("/");
-  }, [setWorld, navigate, matrixNetworkInterface, mainThread, entered]);
+  }, [setWorld, navigate, matrixNetworkInterface, mainThread, entered, worldId]);
 
   const loadWorldCallback = useCallback(
     async (world: Room, content: Content) => {
@@ -174,7 +175,7 @@ export function useWorldLoader(): WorldLoader {
         throw err;
       }
     },
-    [session, mainThread, client, connectGroupCall, navigate, setMatrixNetworkInterface, setWorld]
+    [session, mainThread, connectGroupCall, navigate, client, setMatrixNetworkInterface, setWorld]
   );
 
   const reloadWorldCallback = useCallback(
@@ -188,10 +189,12 @@ export function useWorldLoader(): WorldLoader {
       await enterWorld(mainThread);
 
       setWorld({ type: "ENTER" });
+      const worldAlias = roomIdToAlias(session.rooms, world.id);
+      navigate(`/world/${worldAlias ?? world.id}`);
 
       reconnectPeers(mainThread);
     },
-    [loadWorldCallback, setWorld, mainThread]
+    [loadWorldCallback, setWorld, mainThread, navigate, session.rooms]
   );
 
   return {

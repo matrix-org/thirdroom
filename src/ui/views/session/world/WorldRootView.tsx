@@ -39,6 +39,8 @@ export default function WorldRootView() {
   const { loadWorld, enterWorld, reloadWorld } = useWorldLoader();
   const [, setOverlayVisibility] = useAtom(overlayVisibilityAtom);
 
+  const reloadObservableRef = useRef<ObservedStateKeyValue | undefined>(undefined);
+
   useEffect(() => {
     if (worldId && session.rooms.get(worldId)) {
       selectWorld(worldId);
@@ -46,20 +48,18 @@ export default function WorldRootView() {
   }, [selectWorld, worldId, session.rooms]);
 
   useEffect(() => {
-    const shouldBeVisible = !loading && !entered;
-    setOverlayVisibility(shouldBeVisible);
+    setOverlayVisibility(!loading && !entered);
   }, [setOverlayVisibility, entered, loading]);
 
   useEffect(() => {
     setError(undefined);
-    let observableHandle: ObservedStateKeyValue;
 
-    if (!world) return;
+    if (!world || loading) return;
 
     const handleLoad = async (event: StateEvent | undefined) => {
       const content = event?.content;
 
-      if (loading || !world || !content) {
+      if (loading || !content) {
         return;
       }
 
@@ -79,9 +79,9 @@ export default function WorldRootView() {
     };
 
     world.observeStateTypeAndKey("org.matrix.msc3815.world", "").then(async (observable) => {
-      if (!isMounted() || !observable) return;
+      if (!isMounted() || reloadObservableRef.current) return;
 
-      observableHandle = observable;
+      reloadObservableRef.current = observable;
       observable.subscribe(handleLoad);
 
       // on first render, trigger load
@@ -92,7 +92,10 @@ export default function WorldRootView() {
     });
 
     return () => {
-      if (observableHandle) observableHandle.unsubscribe(handleLoad);
+      if (reloadObservableRef.current) {
+        reloadObservableRef.current.unsubscribe(handleLoad);
+        reloadObservableRef.current = undefined;
+      }
     };
   }, [
     session,

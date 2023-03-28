@@ -6,7 +6,7 @@ import { InputModule } from "../input/input.game";
 import { getModule } from "../module/module.common";
 import { trimHistory } from "../utils/Historian";
 import { isHost } from "./network.common";
-import { GameNetworkState, NetworkModule } from "./network.game";
+import { GameNetworkState, NetworkModule, ownedPlayerQuery } from "./network.game";
 import { NetworkAction } from "./NetworkAction";
 import { dequeueNetworkRingBuffer } from "./RingBuffer";
 import { NetPipeData, readMetadata } from "./serialization.game";
@@ -54,10 +54,8 @@ const processNetworkMessage = (ctx: GameState, peerId: string, msg: ArrayBuffer)
 };
 
 const ringOut = { packet: new ArrayBuffer(0), peerId: "", broadcast: false };
-const processNetworkMessages = (state: GameState) => {
+const processNetworkMessages = (state: GameState, network: GameNetworkState) => {
   try {
-    const network = getModule(state, NetworkModule);
-
     while (availableRead(network.incomingReliableRingBuffer)) {
       dequeueNetworkRingBuffer(network.incomingReliableRingBuffer, ringOut);
       const { peerId, packet } = ringOut;
@@ -102,6 +100,16 @@ export const registerInboundMessageHandler = (
   network.messageHandlers[type] = cb;
 };
 
-export function InboundNetworkSystem(state: GameState) {
-  processNetworkMessages(state);
+export function InboundNetworkSystem(ctx: GameState) {
+  const network = getModule(ctx, NetworkModule);
+
+  // only recieve updates when:
+  // - we have connected peers
+  // - player rig has spawned
+  const haveConnectedPeers = network.peers.length > 0;
+  const spawnedPlayerRig = ownedPlayerQuery(ctx.world).length > 0;
+
+  if (haveConnectedPeers && spawnedPlayerRig) {
+    processNetworkMessages(ctx, network);
+  }
 }
