@@ -13,7 +13,8 @@ import "./WorldLoading.css";
 import { Button } from "../../../atoms/button/Button";
 import { WorldPreviewCard } from "../../components/world-preview-card/WorldPreviewCard";
 import { overlayVisibilityAtom } from "../../../state/overlayVisibility";
-import { useWorldLoader } from "../../../hooks/useWorldLoader";
+import { useWorldNavigator } from "../../../hooks/useWorldNavigator";
+import { useHydrogen } from "../../../hooks/useHydrogen";
 
 interface WorldLoadProgress {
   loaded: number;
@@ -42,7 +43,9 @@ export function WorldLoading({ world, loading, error }: { world: Room; loading: 
   const [overlayVisible] = useAtom(overlayVisibilityAtom);
   const [resetLoadProgress, loadProgress] = useWorldLoadingProgress();
   const [creator, setCreator] = useState<string>();
-  const { enterWorld } = useWorldLoader();
+  const { session } = useHydrogen(true);
+  const { navigateEnterWorld } = useWorldNavigator(session);
+
   useEffect(() => {
     resetLoadProgress();
   }, [resetLoadProgress, loading]);
@@ -64,15 +67,21 @@ export function WorldLoading({ world, loading, error }: { world: Room; loading: 
 
   return (
     <>
-      {error && (
-        <div className="WorldLoading flex justify-center">
-          <WorldPreviewCard
-            title={world.name ?? world.canonicalAlias ?? "Unknown World"}
-            desc={error.message}
-            options={<Button onClick={() => enterWorld(world, { reload: true })}>Reload</Button>}
-          />
-        </div>
-      )}
+      <div className="WorldLoading flex justify-center">
+        <WorldPreviewCard
+          title={world.name ?? world.canonicalAlias ?? "Unknown World"}
+          // desc={error.message}
+          options={
+            <Button
+              onClick={() => {
+                navigateEnterWorld(world, { reload: true });
+              }}
+            >
+              Reload
+            </Button>
+          }
+        />
+      </div>
       {loading && (
         <div className="WorldLoading flex justify-center">
           <WorldPreviewCard

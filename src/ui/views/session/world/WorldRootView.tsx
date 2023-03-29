@@ -6,6 +6,7 @@ import { useLocation, useParams } from "react-router-dom";
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { useIsMounted } from "../../../hooks/useIsMounted";
 import { useRoom } from "../../../hooks/useRoom";
+import { useWorldPath } from "../../../hooks/useWorld";
 import { useWorldLoader } from "../../../hooks/useWorldLoader";
 import { overlayVisibilityAtom } from "../../../state/overlayVisibility";
 import { overlayWorldAtom } from "../../../state/overlayWorld";
@@ -48,6 +49,24 @@ export default function WorldRootView() {
   const { loadWorld, enterWorld, reloadWorld } = useWorldLoader();
   const reloadObservableRef = useRef<ObservedStateKeyValue | undefined>(undefined);
   const selectWorld = useSetAtom(overlayWorldAtom);
+  const [roomId, reloadId] = useWorldPath();
+
+  /**
+   * Re-select, load, and enter into the world in which a load attempt was made but errored out
+   */
+  useEffect(() => {
+    if (roomId && reloadId && navigatedWorld) {
+      selectWorld(roomId);
+
+      (async () => {
+        const content = await getWorldContent(navigatedWorld);
+        if (!content) return;
+
+        await loadWorld(navigatedWorld, content);
+        await enterWorld(navigatedWorld);
+      })();
+    }
+  }, [roomId, reloadId, selectWorld, navigatedWorld, enterWorld, loadWorld]);
 
   /**
    * Selects the world we are entered into for display in the overlay
