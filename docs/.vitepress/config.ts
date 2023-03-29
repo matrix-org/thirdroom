@@ -4,6 +4,8 @@ import { defineConfig } from "vitepress";
 export default defineConfig({
   title: "Third Room",
   description: "Documentation for Third Room",
+  base: "/docs",
+  outDir: "../dist/docs",
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     nav: [
