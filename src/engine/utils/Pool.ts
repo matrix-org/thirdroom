@@ -4,14 +4,14 @@ export interface Pool<T> {
   dispose?: Function;
 }
 
-export const createPool = <T>(create: () => T, dispose: (item: T) => void): Pool<T> => ({
+export const createPool = <T>(create: () => T, dispose?: (item: T) => void): Pool<T> => ({
   create,
   dispose,
   free: [],
 });
 
-export const obtainFromPool = <T>(pool: Pool<T>) => {
-  if (pool.free.length) return pool.free.shift();
+export const obtainFromPool = <T>(pool: Pool<T>): T => {
+  if (pool.free.length) return pool.free.shift() as T;
   return pool.create();
 };
 

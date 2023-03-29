@@ -376,10 +376,17 @@ export function updateNodeMesh(ctx: RenderThreadState, node: RenderNode) {
   }
 
   if (!node.meshPrimitiveObjects) {
-    node.meshPrimitiveObjects = node.mesh.primitives.map((primitive) =>
-      createMeshPrimitiveObject(ctx, node, primitive)
-    );
-    rendererModule.scene.add(...node.meshPrimitiveObjects);
+    const primitives = node.mesh.primitives;
+    const meshPrimitiveObjects = [];
+
+    for (let i = 0; i < primitives.length; i++) {
+      const primitive = primitives[i];
+      const obj = createMeshPrimitiveObject(ctx, node, primitive);
+      meshPrimitiveObjects.push(obj);
+      rendererModule.scene.add(obj);
+    }
+
+    node.meshPrimitiveObjects = meshPrimitiveObjects;
   }
 
   if (node.meshPrimitiveObjects) {
@@ -411,7 +418,11 @@ export function updateNodeMesh(ctx: RenderThreadState, node: RenderNode) {
       updateTransformFromNode(ctx, node, primitiveObject);
 
       if (node.skin) {
-        for (const joint of node.skin.joints) {
+        const joints = node.skin.joints;
+
+        for (let i = 0; i < joints.length; i++) {
+          const joint = joints[i];
+
           if (joint.bone) {
             updateTransformFromNode(ctx, joint, joint.bone);
           }

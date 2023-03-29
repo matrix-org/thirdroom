@@ -2320,7 +2320,11 @@ binary-extensions@^2.0.0:
 
 bitecs@NateTheGreatt/bitECS:
   version "0.3.38"
-  resolved "https://codeload.github.com/NateTheGreatt/bitECS/tar.gz/5e8bf7a3b874bd1d76a60cba350938bd3e770c79"
+  resolved "https://codeload.github.com/NateTheGreatt/bitECS/tar.gz/c53f23f51046bc6db0030c2d13b3cb736d3d525b"
+
+bitecs@NateTheGreatt/bitECS#enter_exit_gc_opt:
+  version "0.3.38"
+  resolved "https://codeload.github.com/NateTheGreatt/bitECS/tar.gz/d1fbef48e5dfa53023d33896f663d1505ef431fd"
 
 brace-expansion@^1.1.7:
   version "1.1.11"
@@ -6154,10 +6158,10 @@ text-table@^0.2.0:
   resolved "https://registry.yarnpkg.com/text-table/-/text-table-0.2.0.tgz#7f5ee823ae805207c00af2df4a84ec3fcfa570b4"
   integrity sha512-N+8UisAXDGk8PFXP4HAzVR9nbfmVJ3zYLAWiTIoqC5v5isinhr+r5uaO8+7r3BMfuNIufIsA7RdpVgacC2cSpw==
 
-"three@npm:@thirdroom/three@^0.148.2":
-  version "0.148.2"
-  resolved "https://registry.yarnpkg.com/@thirdroom/three/-/three-0.148.2.tgz#059f99490c07f6ea9d82097a1b3da800f60a972a"
-  integrity sha512-cZMkrmLOmcqcN6iXTsYC94uBuhZzRCUJvFsfYR7xvRzxexTNi/mMrf+ZMhDNYw8soGZbMF92tXMOSBjiRQmWKA==
+"three@npm:@thirdroom/three@^0.148.3":
+  version "0.148.3"
+  resolved "https://registry.yarnpkg.com/@thirdroom/three/-/three-0.148.3.tgz#5842f13cd5ae0a76db7c69621cd59f75768d9925"
+  integrity sha512-55ccG5yZcw28gyjNs/0WZF/EVMEU8zHDif2/r2wxjx66GlG8gPcZIxn84OoLc5//nduHm4jrnaC/KuP69YlpqQ==
 
 through@^2.3.4:
   version "2.3.8"

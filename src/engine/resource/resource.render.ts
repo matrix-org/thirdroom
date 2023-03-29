@@ -36,9 +36,9 @@ import {
   getAccessorArrayView,
 } from "../accessor/accessor.common";
 import {
+  findCachedMaterial,
   getDefaultMaterialForMeshPrimitive,
   isPhysicalMaterial,
-  matchMaterial,
   MaterialCacheEntry,
   patchMaterial,
   PrimitiveMaterial,
@@ -182,7 +182,7 @@ export class RenderMaterial extends defineLocalResourceClass(MaterialResource) {
     const flatShading = !meshPrimitive.attributes[MeshPrimitiveAttributeIndex.NORMAL];
     const useDerivativeTangents = !meshPrimitive.attributes[MeshPrimitiveAttributeIndex.TANGENT];
 
-    const cacheEntry = this.materialCache.find(matchMaterial(mode, vertexColors, flatShading, useDerivativeTangents));
+    const cacheEntry = findCachedMaterial(this.materialCache, mode, vertexColors, flatShading, useDerivativeTangents);
 
     if (cacheEntry) {
       if (meshPrimitive.materialObj !== cacheEntry.material) {

@@ -1,3 +1,3 @@
 import { defineComponent, Types } from "bitecs";
 
-export const AvatarComponent = defineComponent({ eid: Types.eid });
+export const AvatarRef = defineComponent({ eid: Types.eid });

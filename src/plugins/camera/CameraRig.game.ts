@@ -18,7 +18,7 @@ import { defineModule, getModule, registerMessageHandler, Thread } from "../../e
 import { getRemoteResource, tryGetRemoteResource } from "../../engine/resource/resource.game";
 import { addObjectToWorld, RemoteNode, removeObjectFromWorld } from "../../engine/resource/RemoteResources";
 import { addChild } from "../../engine/component/transform";
-import { createRemotePerspectiveCamera, getCamera } from "../../engine/camera/camera.game";
+import { CameraRef, createRemotePerspectiveCamera, getCamera } from "../../engine/camera/camera.game";
 import { ThirdPersonComponent } from "./../thirdroom/thirdroom.game";
 import { CameraRigMessage } from "./CameraRig.common";
 import { ourPlayerQuery } from "../../engine/component/Player";
@@ -286,6 +286,9 @@ export function addCameraRig(
     camera: createRemotePerspectiveCamera(ctx),
   });
 
+  addComponent(ctx.world, CameraRef, node.eid);
+  CameraRef.eid[node.eid] = camera.eid;
+
   // add hierarchy
   addChild(node, cameraAnchor);
   addChild(cameraAnchor, camera);
@@ -354,11 +357,11 @@ function setYaw(node: RemoteNode, value: number) {
 function applyYaw(ctx: GameState, controller: InputController, rigYaw: YawComponent) {
   const node = tryGetRemoteResource<RemoteNode>(ctx, rigYaw.target);
 
-  const [lookX] = controller.actionStates.get(CameraRigAction.LookMovement) as vec2;
+  const look = controller.actionStates.get(CameraRigAction.LookMovement) as vec2;
 
-  if (Math.abs(lookX) >= 1) {
+  if (Math.abs(look[0]) >= 1) {
     const sensitivity = rigYaw.sensitivity || 1;
-    const newYaw = (lookX / (1000 / (sensitivity || 1))) * ctx.dt;
+    const newYaw = (look[0] / (1000 / (sensitivity || 1))) * ctx.dt;
     setYaw(node, newYaw);
   }
 }
@@ -381,14 +384,14 @@ function setPitch(node: RemoteNode, rigPitch: PitchComponent, value: number) {
 function applyPitch(ctx: GameState, controller: InputController, rigPitch: PitchComponent) {
   const node = tryGetRemoteResource<RemoteNode>(ctx, rigPitch.target);
 
-  const [, lookY] = controller.actionStates.get(CameraRigAction.LookMovement) as vec2;
+  const look = controller.actionStates.get(CameraRigAction.LookMovement) as vec2;
 
-  if (Math.abs(lookY) >= 1) {
+  if (Math.abs(look[1]) >= 1) {
     const sensitivity = rigPitch.sensitivity;
 
     let pitch = rigPitch.pitch;
 
-    pitch -= (lookY / (1000 / (sensitivity || 1))) * ctx.dt;
+    pitch -= (look[1] / (1000 / (sensitivity || 1))) * ctx.dt;
 
     setPitch(node, rigPitch, pitch);
   }
@@ -401,10 +404,10 @@ function setZoom(node: RemoteNode, rigZoom: ZoomComponent, value: number) {
 function applyZoom(ctx: GameState, controller: InputController, rigZoom: ZoomComponent) {
   const node = tryGetRemoteResource<RemoteNode>(ctx, rigZoom.target);
 
-  const [, scrollY] = controller.actionStates.get(CameraRigAction.Zoom) as vec2;
+  const scroll = controller.actionStates.get(CameraRigAction.Zoom) as vec2;
 
-  if (Math.abs(scrollY) > 0) {
-    node.position[2] -= scrollY / 1000;
+  if (Math.abs(scroll[1]) > 0) {
+    node.position[2] -= scroll[1] / 1000;
     setZoom(node, rigZoom, node.position[2]);
   }
 }
@@ -547,7 +550,8 @@ export function createUpdateCameraMessage(ctx: GameState, eid: number, camera: n
 }
 
 function deserializeUpdateCamera(data: NetPipeData) {
-  const [ctx, view] = data;
+  const ctx = data[0];
+  const view = data[1];
 
   // TODO: put network ref in the net pipe data
   const network = getModule(ctx, NetworkModule);

@@ -35,6 +35,7 @@ import randomRange from "../../engine/utils/randomRange";
 import { addInteractableComponent } from "../interaction/interaction.game";
 import { ObjectCapReachedMessageType, SetObjectCapMessage, SetObjectCapMessageType } from "./spawnables.common";
 import { XRAvatarRig } from "../../engine/input/WebXRAvatarRigSystem";
+import { getRotationNoAlloc } from "../../engine/utils/getRotationNoAlloc";
 
 const { abs, floor, random } = Math;
 
@@ -436,13 +437,23 @@ export const SpawnableSystem = (ctx: GameState) => {
   }
 };
 
+const pressedActions: ActionDefinition[] = [];
+
 export const updateSpawnables = (
   ctx: GameState,
   { actionsDefs: actions, maxObjCap }: SpawnablesModuleState,
   controller: InputController,
   spawnFrom: RemoteNode
 ) => {
-  const pressedActions = actions.filter((a) => (controller.actionStates.get(a.path) as ButtonActionState)?.pressed);
+  pressedActions.length = 0;
+
+  for (let i = 0; i < actions.length; i++) {
+    const action = actions[i];
+
+    if ((controller.actionStates.get(action.path) as ButtonActionState)?.pressed) {
+      pressedActions.push(action);
+    }
+  }
 
   if (pressedActions.length) {
     // bounce out of the system if we hit the max object cap
@@ -457,7 +468,9 @@ export const updateSpawnables = (
     }
   }
 
-  for (const action of pressedActions) {
+  for (let i = 0; i < pressedActions.length; i++) {
+    const action = pressedActions[i];
+
     const prefab = createPrefabEntity(ctx, action.id);
     const eid = prefab.eid;
 
@@ -466,7 +479,7 @@ export const updateSpawnables = (
 
     mat4.getTranslation(prefab.position, spawnFrom.worldMatrix);
 
-    mat4.getRotation(_spawnWorldQuat, spawnFrom.worldMatrix);
+    getRotationNoAlloc(_spawnWorldQuat, spawnFrom.worldMatrix);
     const direction = vec3.set(_direction, 0, 0, -1);
     vec3.transformQuat(direction, direction, _spawnWorldQuat);
 
@@ -525,7 +538,7 @@ export const updateSpawnablesXR = (
 
   mat4.getTranslation(prefab.position, spawnFrom.worldMatrix);
 
-  mat4.getRotation(_spawnWorldQuat, spawnFrom.worldMatrix);
+  getRotationNoAlloc(_spawnWorldQuat, spawnFrom.worldMatrix);
   const direction = vec3.set(_direction, 0, 0, -1);
   vec3.transformQuat(direction, direction, _spawnWorldQuat);
 

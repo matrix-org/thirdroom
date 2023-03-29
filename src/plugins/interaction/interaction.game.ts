@@ -60,6 +60,7 @@ import { InteractableAction, InteractionMessage, InteractionMessageType } from "
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
 import { XRAvatarRig } from "../../engine/input/WebXRAvatarRigSystem";
 import { UICanvasFocusMessage, UICanvasPressMessage, WebSGUIMessage } from "../../engine/ui/ui.common";
+import { getRotationNoAlloc } from "../../engine/utils/getRotationNoAlloc";
 import { CameraRigModule, ZoomComponent, orbitAnchorQuery, OrbitAnchor } from "../camera/CameraRig.game";
 import { GameRendererModuleState, RendererModule } from "../../engine/renderer/renderer.game";
 
@@ -516,7 +517,7 @@ function updateOrbitInteraction(
 function updateFocus(ctx: GameState, physics: PhysicsModuleState, rig: RemoteNode, focusingNode: RemoteNode) {
   // raycast outward from focusing node
   const worldMatrix = focusingNode.worldMatrix;
-  mat4.getRotation(_worldQuat, worldMatrix);
+  getRotationNoAlloc(_worldQuat, worldMatrix);
 
   const target = vec3.set(_target, 0, 0, -1);
   vec3.transformQuat(target, target, _worldQuat);
@@ -542,8 +543,10 @@ function updateFocus(ctx: GameState, physics: PhysicsModuleState, rig: RemoteNod
 
   // if there's no hit, clear focus
   if (!hit) {
-    if (hasComponent(ctx.world, FocusComponent, rig.eid)) removeComponent(ctx.world, FocusComponent, rig.eid, true);
-    sendInteractionMessage(ctx, InteractableAction.Unfocus);
+    if (hasComponent(ctx.world, FocusComponent, rig.eid)) {
+      removeComponent(ctx.world, FocusComponent, rig.eid, true);
+      sendInteractionMessage(ctx, InteractableAction.Unfocus);
+    }
     return;
   }
 
@@ -630,7 +633,7 @@ function updateGrabThrow(
   if (heldEntity && throwPressed) {
     removeComponent(ctx.world, GrabComponent, rig.eid, true);
 
-    mat4.getRotation(_worldQuat, grabbingNode.worldMatrix);
+    getRotationNoAlloc(_worldQuat, grabbingNode.worldMatrix);
     const direction = vec3.set(_direction, 0, 0, -1);
     vec3.transformQuat(direction, direction, _worldQuat);
     vec3.scale(direction, direction, THROW_FORCE);
@@ -664,7 +667,7 @@ function updateGrabThrow(
   } else {
     // raycast outward from camera
     const cameraMatrix = grabbingNode.worldMatrix;
-    mat4.getRotation(_worldQuat, cameraMatrix);
+    getRotationNoAlloc(_worldQuat, cameraMatrix);
 
     const target = vec3.set(_target, 0, 0, -1);
     vec3.transformQuat(target, target, _worldQuat);
@@ -787,7 +790,7 @@ function updateGrabThrow(
     const target = _target;
     mat4.getTranslation(target, grabbingNode.worldMatrix);
 
-    mat4.getRotation(_worldQuat, grabbingNode.worldMatrix);
+    getRotationNoAlloc(_worldQuat, grabbingNode.worldMatrix);
     const direction = vec3.set(_direction, 0, 0, 1);
     vec3.transformQuat(direction, direction, _worldQuat);
 
@@ -820,7 +823,7 @@ function updateGrabThrowXR(
 ) {
   // raycast outward from node
   const nodeMatrix = grabbingNode.worldMatrix;
-  mat4.getRotation(_worldQuat, nodeMatrix);
+  getRotationNoAlloc(_worldQuat, nodeMatrix);
 
   const target = vec3.set(_target, 0, 0, -1);
   vec3.transformQuat(target, target, _worldQuat);
@@ -929,7 +932,7 @@ function updateGrabThrowXR(
     const target = _target;
     mat4.getTranslation(target, grabbingNode.worldMatrix);
 
-    mat4.getRotation(_worldQuat, grabbingNode.worldMatrix);
+    getRotationNoAlloc(_worldQuat, grabbingNode.worldMatrix);
     const direction = vec3.set(_direction, 0, 0, 1);
     vec3.transformQuat(direction, direction, _worldQuat);
     vec3.scale(direction, direction, 0.5);

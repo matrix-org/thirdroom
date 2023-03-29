@@ -45,7 +45,9 @@ export function updateTileRenderers(ctx: RenderThreadState, nodes: RenderNode[],
     return;
   }
 
-  for (const node of nodes) {
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i];
+
     const tilesRenderer = node.tilesRendererObject;
 
     if (!tilesRenderer) {

@@ -12,6 +12,7 @@ import { grabShapeCastCollisionGroups } from "../../engine/physics/CollisionGrou
 import { PhysicsModule, RigidBody } from "../../engine/physics/physics.game";
 import { RemoteNode } from "../../engine/resource/RemoteResources";
 import { tryGetRemoteResource } from "../../engine/resource/resource.game";
+import { getRotationNoAlloc } from "../../engine/utils/getRotationNoAlloc";
 
 export enum RaycastShape {
   Line,
@@ -73,7 +74,7 @@ export function XRInteractionSystem(ctx: GameState) {
     origin.y = _rayPosePosition[1];
     origin.z = _rayPosePosition[1];
 
-    mat4.getRotation(_rayPoseRotation, controllerPoses.rayPose);
+    getRotationNoAlloc(_rayPoseRotation, controllerPoses.rayPose);
     vec3.transformQuat(_rayDirection, vec3.set(_rayDirection, 0, 0, 1), _rayPoseRotation);
     const dir = raycaster.ray.dir;
     dir.x = _rayDirection[0];

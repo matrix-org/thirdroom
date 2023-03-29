@@ -63,7 +63,7 @@ import {
 } from "../resource/RemoteResources";
 import { AVATAR_HEIGHT } from "../../plugins/avatars/common";
 import { XRMode } from "../renderer/renderer.common";
-import { AvatarComponent } from "../../plugins/avatars/components";
+import { AvatarRef } from "../../plugins/avatars/components";
 import { addXRAvatarRig } from "../input/WebXRAvatarRigSystem";
 
 export type NetPipeData = [GameState, CursorView, string];
@@ -624,7 +624,7 @@ export function embodyAvatar(ctx: GameState, physics: PhysicsModuleState, input:
 
   // hide our avatar
   try {
-    const avatarEid = AvatarComponent.eid[node.eid];
+    const avatarEid = AvatarRef.eid[node.eid];
     const avatar = tryGetRemoteResource<RemoteNode>(ctx, avatarEid);
     avatar.visible = false;
   } catch {}
