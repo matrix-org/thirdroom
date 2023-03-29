@@ -55,8 +55,7 @@ const GLTFViewer = lazy(() => import("./views/gltf-viewer/GLTFViewer"));
 const AssetPipeline = lazy(() => import("./views/asset-pipeline/AssetPipeline"));
 const SessionView = lazy(() => import("./views/session/SessionView"));
 const WorldRootView = lazy(() => import("./views/session/world/WorldRootView"));
-const LoadRootView = lazy(() => import("./views/session/world/LoadRootView"));
-const ThumbnailRootView = lazy(() => import("./views/session/world/ThumbnailRootView"));
+const MainMenuRootView = lazy(() => import("./views/session/world/MainMenuRootView"));
 
 export function App() {
   return (
@@ -87,24 +86,6 @@ export function App() {
               </Suspense>
             }
           >
-            {/* load world by id */}
-            <Route
-              path="load/:worldId"
-              element={
-                <Suspense fallback={<></>}>
-                  <LoadRootView />
-                </Suspense>
-              }
-            />
-            {/* load world by alias */}
-            <Route
-              path="load/"
-              element={
-                <Suspense fallback={<></>}>
-                  <LoadRootView />
-                </Suspense>
-              }
-            />
             {/* enter world by id */}
             <Route
               path="world/:worldId"
@@ -127,7 +108,7 @@ export function App() {
               path="/"
               element={
                 <Suspense fallback={<></>}>
-                  <ThumbnailRootView />
+                  <MainMenuRootView />
                 </Suspense>
               }
             />

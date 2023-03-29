@@ -37,7 +37,7 @@ export function WorldInteraction({ session, world, activeCall }: WorldInteractio
   const [portalProcess, setPortalProcess] = useMemoizedState<IPortalProcess>({});
   const [members, setMembers] = useState(false);
 
-  const { navigateExitWorld, navigateLoadWorld } = useWorldNavigator(session);
+  const { navigateExitWorld, navigateEnterWorld } = useWorldNavigator(session);
   const selectWorld = useSetAtom(overlayWorldAtom);
   const isMounted = useIsMounted();
 
@@ -77,7 +77,7 @@ export function WorldInteraction({ session, world, activeCall }: WorldInteractio
             selectWorld(roomId);
 
             navigateExitWorld();
-            navigateLoadWorld(newWorld);
+            navigateEnterWorld(newWorld);
           });
 
           return;
@@ -92,7 +92,7 @@ export function WorldInteraction({ session, world, activeCall }: WorldInteractio
           selectWorld(roomId);
 
           navigateExitWorld();
-          navigateLoadWorld(newWorld);
+          navigateEnterWorld(newWorld);
           return;
         }
       } catch (err) {
@@ -103,7 +103,7 @@ export function WorldInteraction({ session, world, activeCall }: WorldInteractio
         unSubStatusObserver?.();
       };
     },
-    [session, selectWorld, navigateExitWorld, navigateLoadWorld, isMounted, setPortalProcess]
+    [session, selectWorld, navigateExitWorld, navigateEnterWorld, isMounted, setPortalProcess]
   );
 
   const handleInteraction = useCallback(

@@ -11,23 +11,6 @@ export function useWorldNavigator(session: Session) {
   const navigate = useNavigate();
   const { exitWorld } = useWorldLoader();
 
-  const navigateLoadWorld = useCallback(
-    (
-      world: Room,
-      options?: {
-        reload?: boolean;
-      }
-    ) => {
-      const { reload } = options ?? {};
-
-      const worldAlias = roomIdToAlias(session.rooms, world.id);
-      const reloadPath = reload ? `?reload=${++worldReloadId}` : "";
-
-      navigate(`/load/${worldAlias ?? world.id}${reloadPath}`);
-    },
-    [session.rooms, navigate]
-  );
-
   const navigateEnterWorld = useCallback(
     (
       world: Room,
@@ -51,7 +34,6 @@ export function useWorldNavigator(session: Session) {
   }, [navigate, exitWorld]);
 
   return {
-    navigateLoadWorld,
     navigateEnterWorld,
     navigateExitWorld,
   };

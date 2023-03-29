@@ -172,9 +172,6 @@ export function useWorldLoader(): WorldLoader {
     async (world: Room, content: Content) => {
       console.warn("=== reloadWorldCallback() ===");
 
-      const groupCall = getWorldGroupCall(session, world);
-      if (!groupCall) return;
-
       setWorld({ type: "LOAD", roomId: world.id });
 
       disposeActiveMatrixRoom(mainThread);
@@ -189,7 +186,7 @@ export function useWorldLoader(): WorldLoader {
 
       reconnectPeers(mainThread);
     },
-    [loadWorldCallback, setWorld, mainThread, session]
+    [loadWorldCallback, setWorld, mainThread]
   );
 
   return {

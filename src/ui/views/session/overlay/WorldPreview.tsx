@@ -108,13 +108,13 @@ function EnterWorldButton({ room }: { room: Room }) {
   const [needsUpdate, setNeedsUpdate] = useState(false);
   const [loading, setLoading] = useState(false);
   const { exitWorld } = useWorldLoader();
-  const { navigateLoadWorld } = useWorldNavigator(session);
+  const { navigateEnterWorld } = useWorldNavigator(session);
 
   const { checkForUpdate, updateScene } = useUpdateScene(session, room);
 
   const handleLoadWorld = async () => {
     exitWorld();
-    navigateLoadWorld(room);
+    navigateEnterWorld(room);
   };
 
   const handleEnterWorld = async (checkUpdate = false) => {

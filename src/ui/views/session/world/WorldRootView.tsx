@@ -1,15 +1,12 @@
-import { ObservedStateKeyValue, StateEvent, SubscriptionHandle } from "@thirdroom/hydrogen-view-sdk";
+import { ObservedStateKeyValue, Room, StateEvent, SubscriptionHandle } from "@thirdroom/hydrogen-view-sdk";
 import { useAtom } from "jotai";
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
 
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { useIsMounted } from "../../../hooks/useIsMounted";
-import { useMainThreadContext } from "../../../hooks/useMainThread";
 import { useRoom } from "../../../hooks/useRoom";
-import { useWorldPath } from "../../../hooks/useWorld";
 import { useWorldLoader } from "../../../hooks/useWorldLoader";
-import { useWorldNavigator } from "../../../hooks/useWorldNavigator";
 import { overlayVisibilityAtom } from "../../../state/overlayVisibility";
 import { worldAtom } from "../../../state/world";
 import { aliasToRoomId } from "../../../utils/matrixUtils";
@@ -35,19 +32,20 @@ function useFirstRender() {
   return firstRender;
 }
 
+async function getWorldContent(world: Room) {
+  const stateEvent = await world.getStateEvent("org.matrix.msc3815.world");
+  return stateEvent?.event.content;
+}
+
 export default function WorldRootView() {
-  const { session } = useHydrogen(true);
   const [{ worldId, entered, loading }] = useAtom(worldAtom);
   const navigatedWorld = useNavigatedWorld();
   const firstRender = useFirstRender();
   const isMounted = useIsMounted();
   const [error, setError] = useState<Error>();
-  const mainThread = useMainThreadContext();
-  const [, reloadId] = useWorldPath();
   const [, setOverlayVisibility] = useAtom(overlayVisibilityAtom);
-  const { loadWorld, enterWorld, exitWorld, reloadWorld } = useWorldLoader();
+  const { loadWorld, enterWorld, reloadWorld } = useWorldLoader();
   const reloadObservableRef = useRef<ObservedStateKeyValue | undefined>(undefined);
-  const { navigateLoadWorld, navigateExitWorld } = useWorldNavigator(session);
 
   useEffect(() => {
     setOverlayVisibility(!loading && !entered);
@@ -57,11 +55,16 @@ export default function WorldRootView() {
    * First time load via url
    */
   useEffect(() => {
-    if (firstRender && !entered && !loading && navigatedWorld) {
-      navigateExitWorld();
-      navigateLoadWorld(navigatedWorld);
+    if (firstRender && navigatedWorld && !entered && !loading) {
+      (async () => {
+        const content = await getWorldContent(navigatedWorld);
+        if (!content) return;
+
+        await loadWorld(navigatedWorld, content);
+        await enterWorld(navigatedWorld);
+      })();
     }
-  }, [firstRender, loading, entered, navigatedWorld, navigateLoadWorld, navigateExitWorld]);
+  }, [firstRender, loading, entered, navigatedWorld, enterWorld, loadWorld]);
 
   /**
    * Reloading via state update
@@ -101,21 +104,7 @@ export default function WorldRootView() {
         dispose?.();
       }
     };
-  }, [
-    worldId,
-    navigatedWorld,
-    reloadId,
-    isMounted,
-    mainThread,
-    loadWorld,
-    enterWorld,
-    exitWorld,
-    navigateLoadWorld,
-    navigateExitWorld,
-    entered,
-    loading,
-    reloadWorld,
-  ]);
+  }, [worldId, navigatedWorld, isMounted, entered, loading, reloadWorld]);
 
   return (
     <>
