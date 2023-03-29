@@ -203,15 +203,6 @@ const onRemovePeerId = (ctx: GameState, message: RemovePeerIdMessage) => {
       }
     }
 
-    // remove this peer's avatar entity
-    // const eid = network.peerIdToEntityId.get(peerId);
-    // const node = eid ? getRemoteResource<RemoteNode>(ctx, eid) : undefined;
-
-    // if (eid && node) {
-    //   network.entityIdToPeerId.delete(eid);
-    //   removeObjectFromWorld(ctx, node);
-    // }
-
     network.peers.splice(peerArrIndex, 1);
   } else {
     console.warn(`cannot remove peerId ${peerId}, does not exist in peer list`);
