@@ -67,22 +67,24 @@ export function WorldLoading({ world, loading, error }: { world: Room; loading: 
 
   return (
     <>
-      <div className="WorldLoading flex justify-center">
-        <WorldPreviewCard
-          title={world.name ?? world.canonicalAlias ?? "Unknown World"}
-          // desc={error.message}
-          options={
-            <Button
-              onClick={() => {
-                navigateEnterWorld(world, { reload: true });
-              }}
-            >
-              Reload
-            </Button>
-          }
-        />
-      </div>
-      {loading && (
+      {error && (
+        <div className="WorldLoading flex justify-center">
+          <WorldPreviewCard
+            title={world.name ?? world.canonicalAlias ?? "Unknown World"}
+            // desc={error.message}
+            options={
+              <Button
+                onClick={() => {
+                  navigateEnterWorld(world, { reload: true });
+                }}
+              >
+                Reload
+              </Button>
+            }
+          />
+        </div>
+      )}
+      {!error && loading && (
         <div className="WorldLoading flex justify-center">
           <WorldPreviewCard
             title={world.name ?? world.canonicalAlias ?? "Unknown World"}
