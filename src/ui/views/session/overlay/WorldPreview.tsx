@@ -21,7 +21,6 @@ import { useAsyncCallback } from "../../../hooks/useAsyncCallback";
 import { useUpdateScene } from "../../../hooks/useUpdateScene";
 import { overlayWorldAtom } from "../../../state/overlayWorld";
 import { worldAtom } from "../../../state/world";
-import { useWorldLoader } from "../../../hooks/useWorldLoader";
 import { useWorldNavigator } from "../../../hooks/useWorldNavigator";
 
 interface InviteWorldPreviewProps {
