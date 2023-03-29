@@ -424,7 +424,7 @@ JSValue js_websg_get_node_by_id(JSContext *ctx, WebSGWorldData *world_data, node
  * World Methods
  **/
 
-JSValue js_websg_create_node(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
+JSValue js_websg_world_create_node(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
   WebSGWorldData *world_data = JS_GetOpaque(this_val, js_websg_world_class_id);
 
   node_id_t node_id = websg_create_node();
@@ -437,7 +437,7 @@ JSValue js_websg_create_node(JSContext *ctx, JSValue this_val, int argc, JSValue
   return js_websg_new_node_instance(ctx, world_data, node_id);
 }
 
-JSValue js_websg_find_node_by_name(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+JSValue js_websg_world_find_node_by_name(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
   WebSGWorldData *world_data = JS_GetOpaque(this_val, js_websg_world_class_id);
 
   size_t length;

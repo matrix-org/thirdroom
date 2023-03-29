@@ -1,7 +1,3 @@
-let verticalPlatform;
-let horizontalPlatform;
-let spinner;
-
 function lerp(out, a, b, t) {
   let ax = a[0];
   let ay = a[1];
@@ -14,19 +10,46 @@ function lerp(out, a, b, t) {
   return out;
 }
 
+function fromEuler(out, x, y, z) {
+  let halfToRad = Math.PI / 360;
+  x *= halfToRad;
+  z *= halfToRad;
+  y *= halfToRad;
+
+  let sx = Math.sin(x);
+  let cx = Math.cos(x);
+  let sy = Math.sin(y);
+  let cy = Math.cos(y);
+  let sz = Math.sin(z);
+  let cz = Math.cos(z);
+
+  out[0] = sx * cy * cz + cx * sy * sz;
+  out[1] = cx * sy * cz - sx * cy * sz;
+  out[2] = cx * cy * sz + sx * sy * cz;
+  out[3] = cx * cy * cz - sx * sy * sz;
+
+  return out;
+}
+
+let verticalPlatform;
+let horizontalPlatform;
+let spinner;
+
 onload = () => {
   verticalPlatform = world.findNodeByName("VerticalPlatform");
   horizontalPlatform = world.findNodeByName("HorizontalPlatform");
   spinner = world.findNodeByName("Spinner");
 };
 
-const verticalPlatformStartPos = [-7.398, 2.866, 2.025];
-const verticalPlatformEndPos = [-7.398, 0.246, 2.025];
+const verticalPlatformStartPos = [7.398, 2.866, 2.025];
+const verticalPlatformEndPos = [7.398, 0.246, 2.025];
 
-const horizontalPlatformStartPos = [-11.56, 2.866, 2.025];
-const horizontalPlatformEndPos = [-18.07, 2.866, 2.025];
+const horizontalPlatformStartPos = [11.56, 2.866, 2.025];
+const horizontalPlatformEndPos = [18.07, 2.866, 2.025];
 
 onupdate = (dt, time) => {
-  lerp(cube.position, verticalPlatformStartPos, verticalPlatformEndPos, Math.sin(time));
-  cube.position[1] = Math.sin(time) + 2;
+  const t = (Math.sin(time) + 1) / 2;
+  lerp(verticalPlatform.position, verticalPlatformStartPos, verticalPlatformEndPos, t);
+  lerp(horizontalPlatform.position, horizontalPlatformStartPos, horizontalPlatformEndPos, t);
+  fromEuler(spinner.quaternion, 90, 0, 30 * time);
 };

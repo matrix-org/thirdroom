@@ -2322,10 +2322,6 @@ bitecs@NateTheGreatt/bitECS:
   version "0.3.38"
   resolved "https://codeload.github.com/NateTheGreatt/bitECS/tar.gz/c53f23f51046bc6db0030c2d13b3cb736d3d525b"
 
-bitecs@NateTheGreatt/bitECS#enter_exit_gc_opt:
-  version "0.3.38"
-  resolved "https://codeload.github.com/NateTheGreatt/bitECS/tar.gz/d1fbef48e5dfa53023d33896f663d1505ef431fd"
-
 brace-expansion@^1.1.7:
   version "1.1.11"
   resolved "https://registry.yarnpkg.com/brace-expansion/-/brace-expansion-1.1.11.tgz#3c7fcbf529d87226f3d2f52b966ff5271eb441dd"

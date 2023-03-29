@@ -94,7 +94,7 @@ void js_websg_define_world(JSContext *ctx, JSValue websg) {
   );
 }
 
-JSValue js_new_websg_world(JSContext *ctx) {
+JSValue js_websg_new_world(JSContext *ctx) {
   JSValue world = JS_NewObjectClass(ctx, js_websg_world_class_id);
 
   if (JS_IsException(world)) {

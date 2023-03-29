@@ -139,7 +139,7 @@ JSValue js_websg_get_collider_by_id(JSContext *ctx, WebSGWorldData *world_data, 
  * World Methods
  **/
 
-JSValue js_create_collider(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+JSValue js_websg_world_create_collider(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
   WebSGWorldData *world_data = JS_GetOpaque(this_val, js_websg_world_class_id);
   
   ColliderProps *props = js_mallocz(ctx, sizeof(ColliderProps));
@@ -218,7 +218,7 @@ JSValue js_create_collider(JSContext *ctx, JSValueConst this_val, int argc, JSVa
   return js_websg_new_collider_instance(ctx, world_data, collider_id);
 }
 
-JSValue js_websg_find_collider_by_name(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+JSValue js_websg_world_find_collider_by_name(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
   WebSGWorldData *world_data = JS_GetOpaque(this_val, js_websg_world_class_id);
 
   size_t length;
