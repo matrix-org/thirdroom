@@ -28,7 +28,6 @@ import { WorldSettings } from "../world-settings/WorldSettings";
 import { RoomListNotifications } from "../sidebar/RoomListNotifications";
 import { NowPlayingWorld } from "./NowPlayingWorld";
 import { NowPlayingControls } from "./NowPlayingControls";
-import { useWorldAction } from "../../../hooks/useWorldAction";
 import { useCalls } from "../../../hooks/useCalls";
 import { useRoomCall } from "../../../hooks/useRoomCall";
 import { DiscoverView } from "../discover/DiscoverView";
@@ -39,6 +38,7 @@ import { SidebarTab, sidebarTabAtom } from "../../../state/sidebarTab";
 import { OverlayWindow, overlayWindowAtom } from "../../../state/overlayWindow";
 import { worldAtom } from "../../../state/world";
 import { useDisableInput } from "../../../hooks/useDisableInput";
+import { useWorldNavigator } from "../../../hooks/useWorldNavigator";
 
 export function Overlay() {
   const { session, platform } = useHydrogen(true);
@@ -54,7 +54,7 @@ export function Overlay() {
   const repositoryRoom = useRoom(session, config.repositoryRoomIdOrAlias);
 
   const activeCall = useRoomCall(calls, worldId);
-  const { exitWorld } = useWorldAction(session);
+  const { navigateExitWorld } = useWorldNavigator(session);
   const world = useRoom(session, isWorldEntered ? worldId : undefined);
   const selectedChat = useRoom(session, openedChatId);
   const selectedChatInvite = useInvite(session, openedChatId);
@@ -82,7 +82,12 @@ export function Overlay() {
               }
               footer={
                 world && activeCall ? (
-                  <NowPlayingWorld world={world} activeCall={activeCall} onExitWorld={exitWorld} platform={platform} />
+                  <NowPlayingWorld
+                    world={world}
+                    activeCall={activeCall}
+                    onExitWorld={navigateExitWorld}
+                    platform={platform}
+                  />
                 ) : (
                   <NowPlayingControls />
                 )

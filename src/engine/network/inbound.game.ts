@@ -6,7 +6,7 @@ import { InputModule } from "../input/input.game";
 import { getModule } from "../module/module.common";
 import { trimHistory } from "../utils/Historian";
 import { isHost } from "./network.common";
-import { GameNetworkState, NetworkModule } from "./network.game";
+import { GameNetworkState, NetworkModule, ownedPlayerQuery } from "./network.game";
 import { NetworkAction } from "./NetworkAction";
 import { dequeueNetworkRingBuffer } from "./RingBuffer";
 import { NetPipeData, readMetadata } from "./serialization.game";
@@ -54,30 +54,38 @@ const processNetworkMessage = (ctx: GameState, peerId: string, msg: ArrayBuffer)
 };
 
 const ringOut = { packet: new ArrayBuffer(0), peerId: "", broadcast: false };
-// const arr: [string, ArrayBuffer][] = [];
-const processNetworkMessages = (state: GameState) => {
+const processNetworkMessages = (state: GameState, network: GameNetworkState) => {
   try {
-    const network = getModule(state, NetworkModule);
-
     while (availableRead(network.incomingReliableRingBuffer)) {
       dequeueNetworkRingBuffer(network.incomingReliableRingBuffer, ringOut);
-      if (ringOut.peerId && ringOut.packet) {
-        // arr.unshift([ringOut.peerId, ringOut.packet]);
-        processNetworkMessage(state, ringOut.peerId, ringOut.packet);
+      const { peerId, packet } = ringOut;
+      if (!peerId) {
+        console.error("unable to process reliable network message, peerId undefined");
+        continue;
       }
+      if (!packet) {
+        console.error("unable to process reliable network message, packet undefined");
+        continue;
+      }
+
+      processNetworkMessage(state, ringOut.peerId, ringOut.packet);
     }
 
     while (availableRead(network.incomingUnreliableRingBuffer)) {
       dequeueNetworkRingBuffer(network.incomingUnreliableRingBuffer, ringOut);
-      if (ringOut.peerId && ringOut.packet) {
-        processNetworkMessage(state, ringOut.peerId, ringOut.packet);
-      }
-    }
 
-    // while (arr.length) {
-    //   const a = arr.shift();
-    //   if (a) processNetworkMessage(state, a[0], a[1]);
-    // }
+      const { peerId, packet } = ringOut;
+      if (!peerId) {
+        console.error("unable to process unreliable network message, peerId undefined");
+        continue;
+      }
+      if (!packet) {
+        console.error("unable to process unreliable network message, packet undefined");
+        continue;
+      }
+
+      processNetworkMessage(state, ringOut.peerId, ringOut.packet);
+    }
   } catch (e) {
     console.error(e);
   }
@@ -92,6 +100,16 @@ export const registerInboundMessageHandler = (
   network.messageHandlers[type] = cb;
 };
 
-export function InboundNetworkSystem(state: GameState) {
-  processNetworkMessages(state);
+export function InboundNetworkSystem(ctx: GameState) {
+  const network = getModule(ctx, NetworkModule);
+
+  // only recieve updates when:
+  // - we have connected peers
+  // - player rig has spawned
+  const haveConnectedPeers = network.peers.length > 0;
+  const spawnedPlayerRig = ownedPlayerQuery(ctx.world).length > 0;
+
+  if (haveConnectedPeers && spawnedPlayerRig) {
+    processNetworkMessages(ctx, network);
+  }
 }
