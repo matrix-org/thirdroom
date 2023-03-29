@@ -1,14 +1,15 @@
-import { ReactNode, MouseEvent } from "react";
+import { ReactNode, MouseEvent, CSSProperties } from "react";
 import classNames from "classnames";
 
 import { Text } from "../text/Text";
 
 import "./Button.css";
 export type ButtonVariant = "primary" | "secondary" | "danger";
-export type ButtonFill = "solid" | "outline";
+export type ButtonFill = "solid" | "outline" | "none";
 export type ButtonSize = "xs" | "sm" | "md" | "lg" | "xl" | "xxl";
 interface IButton {
   className?: string;
+  style?: CSSProperties;
   variant?: ButtonVariant;
   fill?: ButtonFill;
   size?: ButtonSize;
@@ -21,6 +22,7 @@ interface IButton {
 
 export function Button({
   className,
+  style,
   variant = "primary",
   fill = "solid",
   size = "md",
@@ -52,7 +54,7 @@ export function Button({
   } else renderChild = children;
 
   return (
-    <button id={id} className={btnClass} type={type} onClick={onClick} disabled={disabled}>
+    <button id={id} className={btnClass} style={style} type={type} onClick={onClick} disabled={disabled}>
       {renderChild}
     </button>
   );
