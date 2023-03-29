@@ -15,7 +15,6 @@
 #include "./matrix4.h"
 #include "./mesh-primitive.h"
 #include "./mesh.h"
-#include "./network.h"
 #include "./node.h"
 #include "./physics-body.h"
 #include "./quaternion.h"
@@ -38,7 +37,6 @@ void js_define_websg_api(JSContext *ctx) {
   js_websg_define_matrix4(ctx, websg);
   js_websg_define_mesh_primitive(ctx, websg);
   js_websg_define_mesh(ctx, websg);
-  js_websg_define_network(ctx, websg);
   js_websg_define_node(ctx, websg);
   js_websg_define_physics_body(ctx, websg);
   js_websg_define_quaternion(ctx, websg);

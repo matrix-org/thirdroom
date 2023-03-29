@@ -307,6 +307,12 @@ import_websg(material_set_base_color_texture) int32_t websg_material_set_base_co
 );
 
 /**
+ * Texture
+ **/
+
+import_websg(texture_find_by_name) texture_id_t websg_texture_find_by_name(const char *name, uint32_t length);
+
+/**
  * Light
  **/
 

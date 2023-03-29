@@ -10,6 +10,7 @@ typedef struct WebSGNodeData {
   WebSGWorldData *world_data;
   node_id_t node_id;
   JSValue interactable;
+  JSValue physics_body;
 } WebSGNodeData;
 
 void js_websg_define_node(JSContext *ctx, JSValue websg);

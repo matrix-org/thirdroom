@@ -1041,6 +1041,10 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       return 0;
     },
+    texture_find_by_name(namePtr: number, byteLength: number) {
+      const texture = getScriptResourceByNamePtr(ctx, wasmCtx, RemoteTexture, namePtr, byteLength);
+      return texture ? texture.eid : 0;
+    },
     light_find_by_name(namePtr: number, byteLength: number) {
       const light = getScriptResourceByNamePtr(ctx, wasmCtx, RemoteLight, namePtr, byteLength);
       return light ? light.eid : 0;

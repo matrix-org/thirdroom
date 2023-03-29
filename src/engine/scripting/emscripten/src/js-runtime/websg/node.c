@@ -8,6 +8,7 @@
 #include "./light.h"
 #include "./collider.h"
 #include "./interactable.h"
+#include "./physics-body.h"
 #include "./node-iterator.h"
 #include "./vector3.h"
 #include "./quaternion.h"
@@ -18,6 +19,7 @@ static void js_websg_node_finalizer(JSRuntime *rt, JSValue val) {
 
   if (node_data) {
     JS_FreeValueRT(rt, node_data->interactable);
+    JS_FreeValueRT(rt, node_data->physics_body);
     js_free_rt(rt, node_data);
   }
 }
@@ -307,6 +309,9 @@ static const JSCFunctionListEntry js_websg_node_proto_funcs[] = {
   JS_CGETSET_DEF("interactable", js_websg_node_get_interactable, NULL),
   JS_CFUNC_DEF("addInteractable", 1, js_websg_node_add_interactable),
   JS_CFUNC_DEF("removeInteractable", 0, js_websg_node_remove_interactable),
+  JS_CGETSET_DEF("physicsBody", js_websg_node_get_physics_body, NULL),
+  JS_CFUNC_DEF("addPhysicsBody", 1, js_websg_node_add_physics_body),
+  JS_CFUNC_DEF("removePhysicsBody", 0, js_websg_node_remove_physics_body),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "WebSGNode", JS_PROP_CONFIGURABLE),
 };
 
@@ -393,6 +398,7 @@ JSValue js_websg_new_node_instance(JSContext *ctx, WebSGWorldData *world_data, n
   node_data->world_data = world_data;
   node_data->node_id = node_id;
   node_data->interactable = js_websg_init_node_interactable(ctx, node_id);
+  node_data->physics_body = js_websg_init_node_physics_body(ctx, node_id);
   JS_SetOpaque(node, node_data);
 
   JS_SetPropertyUint32(ctx, world_data->nodes, node_id, JS_DupValue(ctx, node));

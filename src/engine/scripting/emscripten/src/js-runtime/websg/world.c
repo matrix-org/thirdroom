@@ -20,17 +20,19 @@ static JSClassDef js_websg_world_class = {
 };
 
 static JSValue js_websg_world_get_environment(JSContext *ctx, JSValueConst this_val) {
+  WebSGWorldData *world_data = JS_GetOpaque(this_val, js_websg_world_class_id);
+
   scene_id_t scene_id = websg_get_environment_scene();
 
   if (scene_id == 0) {
     return JS_UNDEFINED;
   }
 
-  return js_websg_get_scene_by_id(ctx, scene_id);
+  return js_websg_get_scene_by_id(ctx, world_data, scene_id);
 }
 
-static JSValue js_websg_world_set_environment(JSContext *ctx, JSValueConst this_val, JSValueConst environment) {
-  WebSGSceneData *scene_data = JS_GetOpaque(environment, websg_scene_class_id);
+static JSValue js_websg_world_set_environment(JSContext *ctx, JSValueConst this_val, JSValueConst arg) {
+  WebSGSceneData *scene_data = JS_GetOpaque(arg, js_websg_scene_class_id);
 
   if (scene_data == NULL) {
     return JS_EXCEPTION;
@@ -46,21 +48,21 @@ static JSValue js_websg_world_set_environment(JSContext *ctx, JSValueConst this_
 
 static const JSCFunctionListEntry js_websg_world_proto_funcs[] = {
   JS_CGETSET_DEF("environment", js_websg_world_get_environment, js_websg_world_set_environment),
-  JS_CFUNC_DEF("createAccessor", 1, js_websg_create_accessor),
-  JS_CFUNC_DEF("findAccessorByName", 1, js_websg_find_accessor_by_name),
-  JS_CFUNC_DEF("createCollider", 1, js_websg_create_collider),
-  JS_CFUNC_DEF("findColliderByName", 1, js_websg_find_collider_by_name),
-  JS_CFUNC_DEF("createLight", 1, js_websg_create_light),
-  JS_CFUNC_DEF("findLightByName", 1, js_websg_find_light_by_name),
-  JS_CFUNC_DEF("createMaterial", 1, js_websg_create_material),
-  JS_CFUNC_DEF("findMaterialByName", 1, js_websg_find_material_by_name),
-  JS_CFUNC_DEF("createMesh", 1, js_websg_create_mesh),
-  JS_CFUNC_DEF("createBoxMesh", 1, js_websg_create_box_mesh),
-  JS_CFUNC_DEF("findMeshByName", 1, js_websg_find_mesh_by_name),
-  JS_CFUNC_DEF("createNode", 0, js_websg_create_node),
-  JS_CFUNC_DEF("findNodeByName", 1, js_websg_find_node_by_name),
-  JS_CFUNC_DEF("createScene", 0, js_websg_create_scene),
-  JS_CFUNC_DEF("findSceneByName", 1, js_websg_find_scene_by_name),
+  JS_CFUNC_DEF("createAccessor", 1, js_websg_world_create_accessor),
+  JS_CFUNC_DEF("findAccessorByName", 1, js_websg_world_find_accessor_by_name),
+  JS_CFUNC_DEF("createCollider", 1, js_websg_world_create_collider),
+  JS_CFUNC_DEF("findColliderByName", 1, js_websg_world_find_collider_by_name),
+  JS_CFUNC_DEF("createLight", 1, js_websg_world_create_light),
+  JS_CFUNC_DEF("findLightByName", 1, js_websg_world_find_light_by_name),
+  JS_CFUNC_DEF("createMaterial", 1, js_websg_world_create_material),
+  JS_CFUNC_DEF("findMaterialByName", 1, js_websg_world_find_material_by_name),
+  JS_CFUNC_DEF("createMesh", 1, js_websg_world_create_mesh),
+  JS_CFUNC_DEF("createBoxMesh", 1, js_websg_world_create_box_mesh),
+  JS_CFUNC_DEF("findMeshByName", 1, js_websg_world_find_mesh_by_name),
+  JS_CFUNC_DEF("createNode", 0, js_websg_world_create_node),
+  JS_CFUNC_DEF("findNodeByName", 1, js_websg_world_find_node_by_name),
+  JS_CFUNC_DEF("createScene", 0, js_websg_world_create_scene),
+  JS_CFUNC_DEF("findSceneByName", 1, js_websg_world_find_scene_by_name),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "World", JS_PROP_CONFIGURABLE),
 };
 
