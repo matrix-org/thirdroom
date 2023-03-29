@@ -6,11 +6,6 @@ import { PhysicsModule, PhysicsSystem } from "./physics/physics.game";
 import { NetworkExitWorldQueueSystem, NetworkModule } from "./network/network.game";
 import { ActionMapHistorianSystem, ActionMappingSystem } from "./input/ActionMappingSystem";
 import {
-  FirstPersonCameraModule,
-  FirstPersonCameraSystem,
-  NetworkedFirstPersonCameraSystem,
-} from "../plugins/FirstPersonCamera";
-import {
   KinematicCharacterControllerModule,
   KinematicCharacterControllerSystem,
   SendClientPosition,
@@ -58,6 +53,7 @@ import { XRInteractionSystem } from "../plugins/interaction/XRInteractionSystem"
 import { MatrixModule } from "./matrix/matrix.game";
 import { WebSGNetworkModule } from "./network/scripting.game";
 import { WebSGUIModule } from "./ui/ui.game";
+import { CameraRigModule, CameraRigSystem, NetworkedCameraSystem } from "../plugins/camera/CameraRig.game";
 
 export default defineConfig<GameState>({
   modules: [
@@ -72,7 +68,7 @@ export default defineConfig<GameState>({
     RendererModule,
     ThirdRoomModule,
     MatrixModule,
-    FirstPersonCameraModule,
+    CameraRigModule,
     KinematicCharacterControllerModule,
     FlyCharacterControllerModule,
     InteractionModule,
@@ -90,7 +86,8 @@ export default defineConfig<GameState>({
 
     InboundNetworkSystem,
 
-    FirstPersonCameraSystem,
+    CameraRigSystem,
+
     KinematicCharacterControllerSystem,
     // ClientSidePredictionSystem,
     FlyControllerSystem,
@@ -122,7 +119,7 @@ export default defineConfig<GameState>({
     EditorStateSystem,
     //EditorSelectionSystem,
 
-    NetworkedFirstPersonCameraSystem,
+    NetworkedCameraSystem,
     OutboundNetworkSystem,
     NetworkExitWorldQueueSystem,
 

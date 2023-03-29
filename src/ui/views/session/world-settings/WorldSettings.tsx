@@ -117,16 +117,18 @@ export function WorldSettings({ roomId }: WorldSettingsProps) {
         name: newName,
       });
     }
+
     if (sceneInfo.mxc || previewInfo.mxc || maxObjectCap !== maxObjectCapRef.current || scriptInfo.mxc) {
       Promise.all([room.getStateEvent("m.world"), room.getStateEvent("org.matrix.msc3815.world")]).then(
         ([oldEvent, event]) => {
           const oldContent = oldEvent?.event?.content;
           const content = event?.event?.content;
+          const existingScriptUrl = event?.event.content.script_url;
           session.hsApi.sendState(room.id, "org.matrix.msc3815.world", "", {
             max_member_object_cap: maxObjectCap,
             scene_url: sceneInfo.mxc ?? (content?.scene_url || oldContent?.scene_url),
             scene_preview_url: previewInfo.mxc ?? (content?.scene_preview_url || oldContent?.scene_preview_url),
-            script_url: scriptInfo.mxc,
+            script_url: scriptInfo.mxc || existingScriptUrl,
           });
         }
       );

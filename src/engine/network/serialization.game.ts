@@ -63,7 +63,7 @@ import {
 } from "../resource/RemoteResources";
 import { AVATAR_HEIGHT } from "../../plugins/avatars/common";
 import { XRMode } from "../renderer/renderer.common";
-import { AvatarComponent } from "../../plugins/avatars/components";
+import { AvatarRef } from "../../plugins/avatars/components";
 import { addXRAvatarRig } from "../input/WebXRAvatarRigSystem";
 
 export type NetPipeData = [GameState, CursorView, string];
@@ -324,10 +324,15 @@ export function deserializeCreates(input: NetPipeData) {
     const nid = readUint32(v);
     const prefabName = readString(v);
     const existingEntity = network.networkIdToEntityId.get(nid);
-    if (existingEntity) continue;
+    if (existingEntity) {
+      console.warn(
+        `attempted to deserialize the creation of an already existing entity - nid:${nid}; eid:${existingEntity}; prefab:${prefabName}`
+      );
+      continue;
+    }
 
     const obj = createRemoteNetworkedEntity(ctx, network, nid, prefabName);
-    console.info("deserializing creation - nid", nid, "eid", obj.eid, "prefab", prefabName);
+    console.info(`deserializing creation - nid:${nid}; eid:${obj.eid}; prefab:${prefabName}`);
   }
   return input;
 }
@@ -555,7 +560,7 @@ export async function deserializeInformPlayerNetworkId(data: NetPipeData) {
 
   // if not our own avatar, add nametag
   if (peerId !== network.peerId) {
-    addNametag(ctx, AVATAR_HEIGHT, peerNode, peerId);
+    addNametag(ctx, AVATAR_HEIGHT + AVATAR_HEIGHT / 3, peerNode, peerId);
   }
 
   // if our own avatar
@@ -619,7 +624,7 @@ export function embodyAvatar(ctx: GameState, physics: PhysicsModuleState, input:
 
   // hide our avatar
   try {
-    const avatarEid = AvatarComponent.eid[node.eid];
+    const avatarEid = AvatarRef.eid[node.eid];
     const avatar = tryGetRemoteResource<RemoteNode>(ctx, avatarEid);
     avatar.visible = false;
   } catch {}

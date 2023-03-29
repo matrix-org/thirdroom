@@ -80,6 +80,7 @@ import { CharacterControllerType, SceneCharacterControllerComponent } from "../.
 import { loadGLTFAnimationClip } from "./animation.three";
 import { AnimationComponent, BoneComponent } from "../animation/animation.game";
 import { RemoteResource } from "../resource/RemoteResourceClass";
+import { getRotationNoAlloc } from "../utils/getRotationNoAlloc";
 
 /**
  * GLTFResource stores references to all of the resources loaded from a glTF file.
@@ -594,16 +595,19 @@ async function loadGLTFSceneAnimations(loaderCtx: GLTFLoaderContext, remoteScene
 
     const animations = await Promise.all(animationDefs.map((v, i) => loadGLTFAnimation(loaderCtx, i)));
     const mixer = new AnimationMixer(rootObj);
-    const actions = new Map<string, AnimationAction>();
+    const actionMap = new Map<string, AnimationAction>();
+    const actions: AnimationAction[] = [];
     for (const animation of animations) {
       const action = mixer.clipAction(animation.clip as AnimationClip).play();
       action.enabled = false;
-      actions.set(animation.name, action);
+      actionMap.set(animation.name, action);
+      actions.push(action);
     }
     addComponent(world, AnimationComponent, remoteSceneOrNode.eid);
     AnimationComponent.set(remoteSceneOrNode.eid, {
       animations,
       mixer,
+      actionMap,
       actions,
     });
   }
@@ -836,7 +840,7 @@ async function loadGLTFColliderAndRigidBody(loaderCtx: GLTFLoaderContext, node: 
 
   const worldMatrix = node.worldMatrix;
   mat4.getTranslation(tempPosition, worldMatrix);
-  mat4.getRotation(tempRotation, worldMatrix);
+  getRotationNoAlloc(tempRotation, worldMatrix);
   mat4.getScaling(tempScale, worldMatrix);
 
   let colliderDesc: ColliderDesc;
@@ -972,7 +976,7 @@ const loadGLTFNode = createInstancedSubresourceLoader(
     if (matrix) {
       node.localMatrix.set(matrix);
       mat4.getTranslation(node.position, node.localMatrix);
-      mat4.getRotation(node.quaternion, node.localMatrix);
+      getRotationNoAlloc(node.quaternion, node.localMatrix);
       mat4.getScaling(node.scale, node.localMatrix);
     } else {
       if (translation) node.position.set(translation);

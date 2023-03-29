@@ -1,8 +1,8 @@
-import { addComponent, defineComponent, defineQuery, hasComponent } from "bitecs";
+import { addComponent, defineComponent, defineQuery, Types } from "bitecs";
 import { mat4, vec3 } from "gl-matrix";
 import { radToDeg } from "three/src/math/MathUtils";
 
-import { addChild, findChild } from "../../engine/component/transform";
+import { addChild } from "../../engine/component/transform";
 import { getForwardVector, getPitch, getYaw } from "../../engine/component/math";
 import { GameState } from "../../engine/GameTypes";
 import { defineModule, getModule, registerMessageHandler } from "../../engine/module/module.common";
@@ -36,6 +36,8 @@ function onNametagsEnabledMessage(ctx: GameState, message: NametagsEnableMessage
 
 export const NametagAnchor = defineComponent();
 
+export const NametagRef = defineComponent({ eid: Types.eid });
+
 const nametagAnchorQuery = defineQuery([NametagAnchor]);
 
 const _v = vec3.create();
@@ -61,7 +63,7 @@ export function NametagSystem(ctx: GameState) {
 
       // projection to camera space
       const nametagWorldPosition = mat4.getTranslation(_v, anchorNode.worldMatrix);
-      const projected = projectPerspective(ctx, ctx.worldResource.activeCameraNode, nametagWorldPosition);
+      const projected = projectPerspective(renderer, ctx.worldResource.activeCameraNode, nametagWorldPosition);
 
       const dist = vec3.dist(nametagWorldPosition, ourWorldPosition);
 
@@ -106,11 +108,14 @@ export function addNametag(ctx: GameState, height: number, node: RemoteNode, lab
   });
   addComponent(ctx.world, NametagAnchor, nametag.eid);
   addChild(node, nametag);
+  addComponent(ctx.world, NametagRef, node.eid);
+  NametagRef.eid[node.eid] = nametag.eid;
   return nametag;
 }
 
 export function getNametag(ctx: GameState, parent: RemoteNode) {
-  const nametag = findChild(parent, (child) => hasComponent(ctx.world, NametagAnchor, child.eid));
-  if (!nametag) throw new Error("avatar not found for entity " + parent.eid);
+  const nametagEid = NametagRef.eid[parent.eid];
+  if (!nametagEid) throw new Error(`NametagRef not found on node "${parent.name}"`);
+  const nametag = tryGetRemoteResource<RemoteNode>(ctx, nametagEid);
   return nametag;
 }

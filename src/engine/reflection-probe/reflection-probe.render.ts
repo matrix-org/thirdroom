@@ -4,6 +4,7 @@ import { getModule } from "../module/module.common";
 import { RendererModule, RendererModuleState, RenderThreadState } from "../renderer/renderer.render";
 import { LoadStatus } from "../resource/resource.common";
 import { getLocalResources, RenderNode, RenderScene } from "../resource/resource.render";
+import { createPool, obtainFromPool, releaseToPool } from "../utils/Pool";
 import { ReflectionProbe } from "./ReflectionProbe";
 
 const tempReflectionProbes: ReflectionProbe[] = [];
@@ -236,8 +237,18 @@ export function updateNodeReflections(
   }
 }
 
+interface Intersection {
+  textureArrayIndex: number;
+  intersectionVolume: number;
+}
+
 const tempIntersectionBox = new Box3();
 const intersectionSize = new Vector3();
+const intersections: Intersection[] = [];
+
+const intersectionPool = createPool(() => ({ textureArrayIndex: 0, intersectionVolume: 0 }));
+
+const intersectionComparator = (a: Intersection, b: Intersection) => b.intersectionVolume - a.intersectionVolume;
 
 function setReflectionProbeParams(
   primitiveBoundingBox: Box3,
@@ -246,8 +257,7 @@ function setReflectionProbeParams(
   reflectionProbeParams: Vector3
 ) {
   reflectionProbeParams.set(0, 0, 0);
-
-  const intersections = [];
+  intersections.length = 0;
 
   // Accumulate all intersecting reflection probe volumes
   for (let i = 0; i < reflectionProbes.length; i++) {
@@ -258,12 +268,15 @@ function setReflectionProbeParams(
       tempIntersectionBox.intersect(reflectionProbe.box);
       tempIntersectionBox.getSize(intersectionSize);
       const intersectionVolume = intersectionSize.x * intersectionSize.y * intersectionSize.z;
-      intersections.push({ textureArrayIndex: reflectionProbe.resource.textureArrayIndex, intersectionVolume });
+      const intersection = obtainFromPool(intersectionPool);
+      intersection.textureArrayIndex = reflectionProbe.resource.textureArrayIndex;
+      intersection.intersectionVolume = intersectionVolume;
+      intersections.push(intersection);
     }
   }
 
   // Sort intersections in descending order (largest intersection volume first)
-  intersections.sort((a, b) => b.intersectionVolume - a.intersectionVolume);
+  intersections.sort(intersectionComparator);
 
   primitiveBoundingBox.getSize(boundingBoxSize);
   const boundingBoxVolume = boundingBoxSize.x * boundingBoxSize.y * boundingBoxSize.z;
@@ -283,4 +296,9 @@ function setReflectionProbeParams(
           intersections[0].intersectionVolume /
             (intersections[0].intersectionVolume + intersections[1].intersectionVolume) || 0
   );
+
+  for (let i = 0; i < intersections.length; i++) {
+    const intersection = intersections[i];
+    releaseToPool(intersectionPool, intersection);
+  }
 }

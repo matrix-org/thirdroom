@@ -5,6 +5,7 @@ import { editorAtom } from "./editor";
 interface WorldState {
   worldId: string | undefined;
   entered: boolean;
+  loading: boolean;
 }
 
 type WorldAction =
@@ -22,6 +23,7 @@ type WorldAction =
 const baseWorldAtom = atom<WorldState>({
   worldId: undefined,
   entered: false,
+  loading: false,
 });
 
 export const worldAtom = atom<WorldState, [WorldAction], void>(
@@ -31,6 +33,7 @@ export const worldAtom = atom<WorldState, [WorldAction], void>(
       set(baseWorldAtom, {
         worldId: action.roomId,
         entered: false,
+        loading: true,
       });
       return;
     }
@@ -38,6 +41,7 @@ export const worldAtom = atom<WorldState, [WorldAction], void>(
       set(baseWorldAtom, {
         worldId: get(baseWorldAtom).worldId,
         entered: true,
+        loading: false,
       });
       return;
     }
@@ -45,6 +49,7 @@ export const worldAtom = atom<WorldState, [WorldAction], void>(
       set(baseWorldAtom, {
         worldId: undefined,
         entered: false,
+        loading: false,
       });
       set(editorAtom, { type: "RESET" });
     }

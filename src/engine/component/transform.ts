@@ -4,6 +4,7 @@ import { GameState } from "../GameTypes";
 import { ResourceType } from "../resource/schema";
 import { RemoteNode, RemoteScene } from "../resource/RemoteResources";
 import { defaultUp, tempVec3, tempMat4, tempQuat } from "./math";
+import { getRotationNoAlloc } from "../utils/getRotationNoAlloc";
 
 export function getLastChild(parent: RemoteNode | RemoteScene): RemoteNode | undefined {
   let cursor = parent.resourceType === ResourceType.Node ? parent.firstChild : parent.firstNode;
@@ -205,10 +206,10 @@ export function lookAt(node: RemoteNode, targetVec: vec3, upVec: vec3 = defaultU
 
   const parent = node.parent;
 
-  mat4.getRotation(node.quaternion, tempMat4);
+  getRotationNoAlloc(node.quaternion, tempMat4);
 
   if (parent) {
-    mat4.getRotation(tempQuat, parent.worldMatrix);
+    getRotationNoAlloc(tempQuat, parent.worldMatrix);
     quat.invert(tempQuat, tempQuat);
     quat.mul(node.quaternion, tempQuat, node.quaternion);
   }
@@ -217,12 +218,14 @@ export function lookAt(node: RemoteNode, targetVec: vec3, upVec: vec3 = defaultU
 export function setFromLocalMatrix(node: RemoteNode, localMatrix: mat4) {
   node.localMatrix.set(localMatrix);
   mat4.getTranslation(node.position, localMatrix);
-  mat4.getRotation(node.quaternion, localMatrix);
+  getRotationNoAlloc(node.quaternion, localMatrix);
   mat4.getScaling(node.scale, localMatrix);
 }
 
 export function traverse(node: RemoteNode | RemoteScene, callback: (child: RemoteNode) => unknown | false) {
   let curChild;
+
+  if (!node) return;
 
   if (node.resourceType === ResourceType.Node) {
     const processChildren = callback(node);

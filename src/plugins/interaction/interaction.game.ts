@@ -4,13 +4,18 @@ import { vec3, mat4, quat, vec2 } from "gl-matrix";
 import { Quaternion, Vector3, Vector4 } from "three";
 
 import { playOneShotAudio } from "../../engine/audio/audio.game";
-import { getCamera } from "../../engine/camera/camera.game";
+import { getCamera, unproject } from "../../engine/camera/camera.game";
 import { OurPlayer } from "../../engine/component/Player";
 import { maxEntities, MAX_OBJECT_CAP, NOOP } from "../../engine/config.common";
 import { GameState } from "../../engine/GameTypes";
 import { enableActionMap } from "../../engine/input/ActionMappingSystem";
-import { InputModule } from "../../engine/input/input.game";
-import { tryGetInputController, InputController, inputControllerQuery } from "../../engine/input/InputController";
+import { GameInputModule, InputModule } from "../../engine/input/input.game";
+import {
+  tryGetInputController,
+  InputController,
+  inputControllerQuery,
+  getInputController,
+} from "../../engine/input/InputController";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
 import { isHost } from "../../engine/network/network.common";
 import {
@@ -34,7 +39,6 @@ import { PhysicsModule, PhysicsModuleState, RigidBody } from "../../engine/physi
 import { Prefab } from "../../engine/prefab/prefab.game";
 import { addResourceRef, getRemoteResource, tryGetRemoteResource } from "../../engine/resource/resource.game";
 import {
-  getObjectPublicRoot,
   RemoteAudioData,
   RemoteAudioEmitter,
   RemoteAudioSource,
@@ -56,6 +60,9 @@ import { InteractableAction, InteractionMessage, InteractionMessageType } from "
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
 import { XRAvatarRig } from "../../engine/input/WebXRAvatarRigSystem";
 import { UICanvasFocusMessage, UICanvasPressMessage, WebSGUIMessage } from "../../engine/ui/ui.common";
+import { getRotationNoAlloc } from "../../engine/utils/getRotationNoAlloc";
+import { CameraRigModule, ZoomComponent, orbitAnchorQuery, OrbitAnchor } from "../camera/CameraRig.game";
+import { GameRendererModuleState, RendererModule } from "../../engine/renderer/renderer.game";
 
 // TODO: importing from spawnables.game in this file induces a runtime error
 // import { SpawnablesModule } from "../spawnables/spawnables.game";
@@ -236,6 +243,18 @@ const InteractionActionMap: ActionMap = {
       ],
       networked: true,
     },
+    {
+      id: "screen-position",
+      path: "ScreenPosition",
+      type: ActionType.Vector2,
+      bindings: [
+        {
+          type: BindingType.Axes,
+          x: "Mouse/screenX",
+          y: "Mouse/screenY",
+        },
+      ],
+    },
   ],
 };
 
@@ -333,6 +352,8 @@ export function InteractionSystem(ctx: GameState) {
   const physics = getModule(ctx, PhysicsModule);
   const input = getModule(ctx, InputModule);
   const interaction = getModule(ctx, InteractionModule);
+  const camRigModule = getModule(ctx, CameraRigModule);
+  const renderer = getModule(ctx, RendererModule);
 
   // scripts add InteractableResource to a node, add the interactable component
   // TODO: replace with addInteractable via WebSG API
@@ -343,6 +364,12 @@ export function InteractionSystem(ctx: GameState) {
   const remoteUIBtnEntities = remoteUIButtonQuery(ctx.world);
   for (let i = 0; i < remoteUIBtnEntities.length; i++) {
     addInteractableForScripts(ctx, physics, remoteUIBtnEntities, i);
+  }
+
+  // TODO: refactor & make orbit handle multiple controllers
+  if (camRigModule.orbiting) {
+    updateOrbitInteraction(ctx, input, renderer, physics, interaction, camRigModule);
+    return;
   }
 
   const rigs = inputControllerQuery(ctx.world);
@@ -384,19 +411,122 @@ export function InteractionSystem(ctx: GameState) {
   }
 }
 
+function updateOrbitInteraction(
+  ctx: GameState,
+  input: GameInputModule,
+  renderer: GameRendererModuleState,
+  physics: PhysicsModuleState,
+  interaction: InteractionModuleState,
+  camRigModule: { orbiting: boolean }
+) {
+  /**
+   * Obtain relevant objects
+   */
+
+  const orbitAnchorEid = orbitAnchorQuery(ctx.world)[0];
+  const orbitAnchor = OrbitAnchor.get(orbitAnchorEid);
+  const controller = getInputController(input, orbitAnchorEid);
+
+  if (!controller) {
+    console.warn("Controller not found for eid", orbitAnchorEid);
+    return;
+  }
+
+  // TODO: CameraRef
+  const zoom = ZoomComponent.get(orbitAnchorEid)!;
+  const cameraEid = zoom.target;
+  const camera = tryGetRemoteResource<RemoteNode>(ctx, cameraEid);
+
+  /**
+   * Raycast
+   */
+
+  // set source at focusing node's position
+  mat4.getTranslation(_source, camera.worldMatrix);
+
+  // set target at mouse screenspace, unproject, subtract source, then normalize
+  const screenPosition = controller.actionStates.get("ScreenPosition") as vec2;
+  const x = (screenPosition[0] / renderer.canvasWidth) * 2 - 1;
+  const y = -(screenPosition[1] / renderer.canvasHeight) * 2 + 1;
+  vec3.set(_target, x, y, 0.5);
+  vec3.copy(_target, unproject(renderer, camera, _target));
+  vec3.sub(_target, _target, _source);
+  vec3.normalize(_target, _target);
+
+  vec3.scale(_target, _target, MAX_FOCUS_DISTANCE * 100);
+
+  const s = _s.fromArray(_source);
+  const t = _t.fromArray(_target);
+
+  shapeCastPosition.copy(s);
+
+  const hit = physics.physicsWorld.castShape(
+    shapeCastPosition,
+    shapeCastRotation,
+    t,
+    colliderShape,
+    10.0,
+    true,
+    0,
+    focusShapeCastCollisionGroups
+  );
+
+  if (!hit) {
+    return;
+  }
+
+  const focusedEid = physics.handleToEid.get(hit.collider.handle);
+  if (!focusedEid) {
+    console.warn(`Could not find entity for physics handle ${hit.collider.handle}`);
+    return;
+  }
+
+  // ignore the object we are orbiting
+  if (camRigModule.orbiting && orbitAnchor?.target === focusedEid) {
+    return;
+  }
+
+  const focusedNode = tryGetRemoteResource<RemoteNode>(ctx, focusedEid);
+
+  /**
+   * Interaction
+   */
+
+  const grabBtn = controller.actionStates.get("Grab") as ButtonActionState;
+
+  if (!grabBtn.pressed) {
+    return;
+  }
+
+  const interactable = focusedNode.interactable;
+
+  if (interactable) {
+    interactable.pressed = true;
+    interactable.released = false;
+    interactable.held = true;
+  }
+
+  if (Interactable.type[focusedNode.eid] === InteractableType.Interactable) {
+    playOneShotAudio(ctx, interaction.clickEmitter?.sources[0] as RemoteAudioSource);
+  } else if (Interactable.type[focusedNode.eid] === InteractableType.UI) {
+    const projectedHit = projectHitOntoCanvas(ctx, hit, focusedNode);
+    notifyUICanvasPressed(ctx, projectedHit, focusedNode);
+  }
+}
+
 function updateFocus(ctx: GameState, physics: PhysicsModuleState, rig: RemoteNode, focusingNode: RemoteNode) {
-  // raycast outward from camera
-  const cameraMatrix = focusingNode.worldMatrix;
-  mat4.getRotation(_worldQuat, cameraMatrix);
+  // raycast outward from focusing node
+  const worldMatrix = focusingNode.worldMatrix;
+  getRotationNoAlloc(_worldQuat, worldMatrix);
 
   const target = vec3.set(_target, 0, 0, -1);
   vec3.transformQuat(target, target, _worldQuat);
   vec3.scale(target, target, MAX_FOCUS_DISTANCE);
 
-  const source = mat4.getTranslation(_source, cameraMatrix);
+  const source = mat4.getTranslation(_source, worldMatrix);
 
-  const s: Vector3 = _s.fromArray(source);
-  const t: Vector3 = _t.fromArray(target);
+  const s = _s.fromArray(source);
+  const t = _t.fromArray(target);
 
   shapeCastPosition.copy(s);
 
@@ -413,8 +543,10 @@ function updateFocus(ctx: GameState, physics: PhysicsModuleState, rig: RemoteNod
 
   // if there's no hit, clear focus
   if (!hit) {
-    removeComponent(ctx.world, FocusComponent, rig.eid, true);
-    sendInteractionMessage(ctx, InteractableAction.Unfocus);
+    if (hasComponent(ctx.world, FocusComponent, rig.eid)) {
+      removeComponent(ctx.world, FocusComponent, rig.eid, true);
+      sendInteractionMessage(ctx, InteractableAction.Unfocus);
+    }
     return;
   }
 
@@ -435,7 +567,7 @@ function updateFocus(ctx: GameState, physics: PhysicsModuleState, rig: RemoteNod
       addComponent(ctx.world, FocusComponent, rig.eid);
       FocusComponent.focusedEntity[rig.eid] = eid;
 
-      // only update react UI if it's our player
+      // only update react UI if it's our player or it's our orbit
       const ourPlayer = hasComponent(ctx.world, OurPlayer, rig.eid);
       if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Focus, eid);
     }
@@ -501,7 +633,7 @@ function updateGrabThrow(
   if (heldEntity && throwPressed) {
     removeComponent(ctx.world, GrabComponent, rig.eid, true);
 
-    mat4.getRotation(_worldQuat, grabbingNode.worldMatrix);
+    getRotationNoAlloc(_worldQuat, grabbingNode.worldMatrix);
     const direction = vec3.set(_direction, 0, 0, -1);
     vec3.transformQuat(direction, direction, _worldQuat);
     vec3.scale(direction, direction, THROW_FORCE);
@@ -535,7 +667,7 @@ function updateGrabThrow(
   } else {
     // raycast outward from camera
     const cameraMatrix = grabbingNode.worldMatrix;
-    mat4.getRotation(_worldQuat, cameraMatrix);
+    getRotationNoAlloc(_worldQuat, cameraMatrix);
 
     const target = vec3.set(_target, 0, 0, -1);
     vec3.transformQuat(target, target, _worldQuat);
@@ -569,7 +701,6 @@ function updateGrabThrow(
         if (grabPressed) {
           if (Interactable.type[node.eid] === InteractableType.Grabbable) {
             playOneShotAudio(ctx, interaction.clickEmitter?.sources[0] as RemoteAudioSource);
-
             const ownedEnts = network.authoritative ? networkedQuery(ctx.world) : ownedNetworkedQuery(ctx.world);
             if (ownedEnts.length > interaction.maxObjCap && !hasComponent(ctx.world, Owned, node.eid)) {
               // do nothing if we hit the max obj cap
@@ -579,7 +710,6 @@ function updateGrabThrow(
             } else {
               // otherwise attempt to take ownership
               const newEid = takeOwnership(ctx, network, node);
-
               if (newEid !== NOOP) {
                 addComponent(ctx.world, GrabComponent, rig.eid);
                 GrabComponent.grabbedEntity[rig.eid] = newEid;
@@ -660,7 +790,7 @@ function updateGrabThrow(
     const target = _target;
     mat4.getTranslation(target, grabbingNode.worldMatrix);
 
-    mat4.getRotation(_worldQuat, grabbingNode.worldMatrix);
+    getRotationNoAlloc(_worldQuat, grabbingNode.worldMatrix);
     const direction = vec3.set(_direction, 0, 0, 1);
     vec3.transformQuat(direction, direction, _worldQuat);
 
@@ -693,7 +823,7 @@ function updateGrabThrowXR(
 ) {
   // raycast outward from node
   const nodeMatrix = grabbingNode.worldMatrix;
-  mat4.getRotation(_worldQuat, nodeMatrix);
+  getRotationNoAlloc(_worldQuat, nodeMatrix);
 
   const target = vec3.set(_target, 0, 0, -1);
   vec3.transformQuat(target, target, _worldQuat);
@@ -802,7 +932,7 @@ function updateGrabThrowXR(
     const target = _target;
     mat4.getTranslation(target, grabbingNode.worldMatrix);
 
-    mat4.getRotation(_worldQuat, grabbingNode.worldMatrix);
+    getRotationNoAlloc(_worldQuat, grabbingNode.worldMatrix);
     const direction = vec3.set(_direction, 0, 0, 1);
     vec3.transformQuat(direction, direction, _worldQuat);
     vec3.scale(direction, direction, 0.5);
@@ -825,13 +955,7 @@ function updateGrabThrowXR(
 }
 
 function notifyUICanvasPressed(ctx: GameState, hitPoint: vec3, node: RemoteNode) {
-  let uiCanvas;
-  try {
-    uiCanvas = getObjectPublicRoot(node).uiCanvas!;
-  } catch (e) {
-    uiCanvas = node.uiCanvas;
-  }
-
+  const uiCanvas = node.uiCanvas;
   ctx.sendMessage<UICanvasPressMessage>(Thread.Render, {
     type: WebSGUIMessage.CanvasPress,
     hitPoint,
@@ -840,13 +964,7 @@ function notifyUICanvasPressed(ctx: GameState, hitPoint: vec3, node: RemoteNode)
 }
 
 function notifyUICanvasFocus(ctx: GameState, hitPoint: vec3, node: RemoteNode) {
-  let uiCanvas;
-  try {
-    uiCanvas = getObjectPublicRoot(node).uiCanvas!;
-  } catch (e) {
-    uiCanvas = node.uiCanvas;
-  }
-
+  const uiCanvas = node.uiCanvas;
   ctx.sendMessage<UICanvasFocusMessage>(Thread.Render, {
     type: WebSGUIMessage.CanvasFocus,
     hitPoint,

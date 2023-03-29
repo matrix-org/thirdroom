@@ -23,7 +23,6 @@ import { createPrefabEntity, PrefabType, registerPrefab } from "../../engine/pre
 import { tryGetRemoteResource } from "../../engine/resource/resource.game";
 import {
   addObjectToWorld,
-  createRemoteObject,
   RemoteAudioData,
   RemoteAudioEmitter,
   RemoteAudioSource,
@@ -36,6 +35,7 @@ import randomRange from "../../engine/utils/randomRange";
 import { addInteractableComponent } from "../interaction/interaction.game";
 import { ObjectCapReachedMessageType, SetObjectCapMessage, SetObjectCapMessageType } from "./spawnables.common";
 import { XRAvatarRig } from "../../engine/input/WebXRAvatarRigSystem";
+import { getRotationNoAlloc } from "../../engine/utils/getRotationNoAlloc";
 
 const { abs, floor, random } = Math;
 
@@ -313,8 +313,6 @@ function createBall(
     mesh: createSphereMesh(ctx, size, material),
   });
 
-  const obj = createRemoteObject(ctx, node);
-
   const physicsWorld = physics.physicsWorld;
 
   const rigidBodyDesc = kinematic ? RAPIER.RigidBodyDesc.kinematicPositionBased() : RAPIER.RigidBodyDesc.dynamic();
@@ -329,8 +327,8 @@ function createBall(
 
   physicsWorld.createCollider(colliderDesc, rigidBody);
 
-  addRigidBody(ctx, obj, rigidBody);
-  addInteractableComponent(ctx, physics, obj, InteractableType.Grabbable);
+  addRigidBody(ctx, node, rigidBody);
+  addInteractableComponent(ctx, physics, node, InteractableType.Grabbable);
 
   const audioEmitter = new RemoteAudioEmitter(ctx.resourceManager, {
     type: AudioEmitterType.Positional,
@@ -343,11 +341,11 @@ function createBall(
     ],
   });
 
-  obj.audioEmitter = audioEmitter;
+  node.audioEmitter = audioEmitter;
 
-  module.hitAudioEmitters.set(obj.eid, audioEmitter);
+  module.hitAudioEmitters.set(node.eid, audioEmitter);
 
-  return obj;
+  return node;
 }
 
 function createCrate(
@@ -361,11 +359,10 @@ function createCrate(
   const { physicsWorld } = physics;
 
   const node = createNodeFromGLTFURI(ctx, "/gltf/sci_fi_crate.glb");
-  const obj = createRemoteObject(ctx, node);
 
   const halfSize = size / 2;
 
-  obj.scale.set([size, size, size]);
+  node.scale.set([size, size, size]);
 
   const hitAudioSource = new RemoteAudioSource(ctx.resourceManager, {
     audio: crateAudioData,
@@ -378,9 +375,9 @@ function createCrate(
     sources: [hitAudioSource],
   });
 
-  obj.audioEmitter = audioEmitter;
+  node.audioEmitter = audioEmitter;
 
-  module.hitAudioEmitters.set(obj.eid, audioEmitter);
+  module.hitAudioEmitters.set(node.eid, audioEmitter);
 
   const rigidBodyDesc = kinematic ? RAPIER.RigidBodyDesc.kinematicPositionBased() : RAPIER.RigidBodyDesc.dynamic();
 
@@ -392,10 +389,10 @@ function createCrate(
 
   physicsWorld.createCollider(colliderDesc, rigidBody);
 
-  addRigidBody(ctx, obj, rigidBody);
+  addRigidBody(ctx, node, rigidBody);
 
-  addInteractableComponent(ctx, physics, obj, InteractableType.Grabbable);
-  return obj;
+  addInteractableComponent(ctx, physics, node, InteractableType.Grabbable);
+  return node;
 }
 
 function onSetObjectCap(ctx: GameState, message: SetObjectCapMessage) {
@@ -440,13 +437,23 @@ export const SpawnableSystem = (ctx: GameState) => {
   }
 };
 
+const pressedActions: ActionDefinition[] = [];
+
 export const updateSpawnables = (
   ctx: GameState,
   { actionsDefs: actions, maxObjCap }: SpawnablesModuleState,
   controller: InputController,
   spawnFrom: RemoteNode
 ) => {
-  const pressedActions = actions.filter((a) => (controller.actionStates.get(a.path) as ButtonActionState)?.pressed);
+  pressedActions.length = 0;
+
+  for (let i = 0; i < actions.length; i++) {
+    const action = actions[i];
+
+    if ((controller.actionStates.get(action.path) as ButtonActionState)?.pressed) {
+      pressedActions.push(action);
+    }
+  }
 
   if (pressedActions.length) {
     // bounce out of the system if we hit the max object cap
@@ -461,7 +468,9 @@ export const updateSpawnables = (
     }
   }
 
-  for (const action of pressedActions) {
+  for (let i = 0; i < pressedActions.length; i++) {
+    const action = pressedActions[i];
+
     const prefab = createPrefabEntity(ctx, action.id);
     const eid = prefab.eid;
 
@@ -470,7 +479,7 @@ export const updateSpawnables = (
 
     mat4.getTranslation(prefab.position, spawnFrom.worldMatrix);
 
-    mat4.getRotation(_spawnWorldQuat, spawnFrom.worldMatrix);
+    getRotationNoAlloc(_spawnWorldQuat, spawnFrom.worldMatrix);
     const direction = vec3.set(_direction, 0, 0, -1);
     vec3.transformQuat(direction, direction, _spawnWorldQuat);
 
@@ -529,7 +538,7 @@ export const updateSpawnablesXR = (
 
   mat4.getTranslation(prefab.position, spawnFrom.worldMatrix);
 
-  mat4.getRotation(_spawnWorldQuat, spawnFrom.worldMatrix);
+  getRotationNoAlloc(_spawnWorldQuat, spawnFrom.worldMatrix);
   const direction = vec3.set(_direction, 0, 0, -1);
   vec3.transformQuat(direction, direction, _spawnWorldQuat);
 

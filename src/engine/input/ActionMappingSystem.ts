@@ -57,7 +57,9 @@ export const ActionTypesToBindings = {
       // It changes back and forth between pressed and released.
       let down = false;
 
-      for (const binding of bindings) {
+      for (let i = 0; i < bindings.length; i++) {
+        const binding = bindings[i];
+
         if (binding.type === BindingType.Button) {
           down = down || !!controller.raw[binding.path];
         }
@@ -102,7 +104,9 @@ export const ActionTypesToBindings = {
       let x = 0;
       let y = 0;
 
-      for (const binding of bindings) {
+      for (let i = 0; i < bindings.length; i++) {
+        const binding = bindings[i];
+
         if (binding.type === BindingType.Axes) {
           if (binding.x) {
             x = controller.raw[binding.x] || 0;
@@ -159,8 +163,12 @@ export const ActionTypesToBindings = {
 
 // Note not optimized at all
 function updateActionMaps(ctx: GameState, network: GameNetworkState, controller: InputController) {
-  for (const actionMap of controller.actionMaps) {
-    for (const actionDef of actionMap.actionDefs) {
+  for (let i = 0; i < controller.actionMaps.length; i++) {
+    const actionMap = controller.actionMaps[i];
+
+    for (let j = 0; j < actionMap.actionDefs.length; j++) {
+      const actionDef = actionMap.actionDefs[j];
+
       const action = ActionTypesToBindings[actionDef.type];
       let actionState = controller.actionStates.get(actionDef.path);
 

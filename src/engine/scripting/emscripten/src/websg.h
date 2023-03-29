@@ -498,5 +498,18 @@ import_websg(ui_text_set_font_size) int32_t websg_ui_text_set_font_size(ui_text_
 import_websg(ui_text_set_font_family) int32_t websg_ui_text_set_font_family(ui_text_id_t txt_id, const char *family, size_t length);
 import_websg(ui_text_set_font_style) int32_t websg_ui_text_set_font_style(ui_text_id_t txt_id, const char *style, size_t length);
 import_websg(ui_text_set_color) int32_t websg_ui_text_set_color(ui_text_id_t txt_id, float_t *color);
+/**
+ * Orbiting
+*/
+
+typedef struct CameraRigOptions {
+  float_t pitch;
+  float_t yaw;
+  float_t zoom;
+} CameraRigOptions;
+
+import_websg(start_orbit) int32_t websg_start_orbit(node_id_t node_id, CameraRigOptions *options);
+import_websg(stop_orbit) int32_t websg_stop_orbit();
+
 
 #endif

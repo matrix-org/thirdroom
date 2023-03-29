@@ -151,3 +151,9 @@ export function exitWorld(context: IMainThreadContext) {
     type: ThirdRoomMessageType.ExitWorld,
   });
 }
+
+export function togglePhysicsDebug(ctx: IMainThreadContext) {
+  ctx.sendMessage<TogglePhysicsDebugMessage>(Thread.Game, {
+    type: PhysicsMessageType.TogglePhysicsDebug,
+  });
+}
