@@ -71,7 +71,7 @@ export function WorldLoading({ world, loading, error }: { world: Room; loading: 
         <div className="WorldLoading flex justify-center">
           <WorldPreviewCard
             title={world.name ?? world.canonicalAlias ?? "Unknown World"}
-            // desc={error.message}
+            desc={error.message}
             options={
               <Button
                 onClick={() => {
