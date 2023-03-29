@@ -178,7 +178,7 @@ export function WorldView({ world }: WorldViewProps) {
           />
         </>
       )}
-      {world && editorEnabled && <EditorView />}
+      {world && editorEnabled && <EditorView room={world} />}
       {!("isBeingCreated" in world) && <Nametags room={world} show={showNames && !overlayVisible} />}
 
       {!overlayVisible && <WorldInteraction session={session} world={world} activeCall={activeCall} />}
