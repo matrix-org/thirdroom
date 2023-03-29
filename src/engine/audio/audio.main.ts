@@ -797,7 +797,7 @@ export function setLocalMediaStream(ctx: IMainThreadContext, mediaStream: MediaS
 
   if (mediaStream) {
     if (audioModule.localMediaStreamSource) {
-      console.warn("Local media stream source already connected.");
+      throw new Error("Local media stream source already connected.");
     }
 
     audioModule.localMediaStreamSource = audioModule.context.createMediaStreamSource(mediaStream);
