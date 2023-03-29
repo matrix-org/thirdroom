@@ -59,11 +59,15 @@ export default function WorldRootView() {
       selectWorld(roomId);
 
       (async () => {
-        const content = await getWorldContent(navigatedWorld);
-        if (!content) return;
-
-        await loadWorld(navigatedWorld, content);
-        await enterWorld(navigatedWorld);
+        try {
+          const content = await getWorldContent(navigatedWorld);
+          if (!content) return;
+          await loadWorld(navigatedWorld, content);
+          await enterWorld(navigatedWorld);
+        } catch (err) {
+          setError(err as Error);
+          console.error(err);
+        }
       })();
     }
   }, [roomId, reloadId, selectWorld, navigatedWorld, enterWorld, loadWorld]);
@@ -90,11 +94,16 @@ export default function WorldRootView() {
   useEffect(() => {
     if (firstRender && navigatedWorld && !entered && !loading) {
       (async () => {
-        const content = await getWorldContent(navigatedWorld);
-        if (!content) return;
+        try {
+          const content = await getWorldContent(navigatedWorld);
+          if (!content) return;
 
-        await loadWorld(navigatedWorld, content);
-        await enterWorld(navigatedWorld);
+          await loadWorld(navigatedWorld, content);
+          await enterWorld(navigatedWorld);
+        } catch (err) {
+          setError(err as Error);
+          console.error(err);
+        }
       })();
     }
   }, [firstRender, loading, entered, navigatedWorld, enterWorld, loadWorld]);
