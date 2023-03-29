@@ -1,19 +1,32 @@
-import { ObservedStateKeyValue, StateEvent } from "@thirdroom/hydrogen-view-sdk";
-import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import { ObservedStateKeyValue, StateEvent, SubscriptionHandle } from "@thirdroom/hydrogen-view-sdk";
+import { useAtom } from "jotai";
 import { useEffect, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { useIsMounted } from "../../../hooks/useIsMounted";
 import { useMainThreadContext } from "../../../hooks/useMainThread";
+import { useRoom } from "../../../hooks/useRoom";
 import { useWorldPath } from "../../../hooks/useWorld";
 import { useWorldLoader } from "../../../hooks/useWorldLoader";
+import { useWorldNavigator } from "../../../hooks/useWorldNavigator";
 import { overlayVisibilityAtom } from "../../../state/overlayVisibility";
-import { overlayWorldAtom } from "../../../state/overlayWorld";
 import { worldAtom } from "../../../state/world";
+import { aliasToRoomId } from "../../../utils/matrixUtils";
 import { WorldLoading } from "./WorldLoading";
 import { WorldThumbnail } from "./WorldThumbnail";
 import { WorldView } from "./WorldView";
+
+function useNavigatedWorld() {
+  const { session } = useHydrogen(true);
+  const location = useLocation();
+  const params = useParams();
+
+  const worldId = params.worldId || aliasToRoomId(session.rooms, location.hash);
+  const world = useRoom(session, worldId);
+
+  return world;
+}
 
 function useFirstRender() {
   const ref = useRef(true);
@@ -23,99 +36,92 @@ function useFirstRender() {
 }
 
 export default function WorldRootView() {
-  const params = useParams();
-  const { worldId: worldIdAtom, entered, loading } = useAtomValue(worldAtom);
-  const worldId = params.worldId || worldIdAtom;
-
   const { session } = useHydrogen(true);
-  const world = worldId ? session.rooms.get(worldId) : undefined;
-
+  const [{ worldId, entered, loading }] = useAtom(worldAtom);
+  const navigatedWorld = useNavigatedWorld();
   const firstRender = useFirstRender();
   const isMounted = useIsMounted();
   const [error, setError] = useState<Error>();
   const mainThread = useMainThreadContext();
   const [, reloadId] = useWorldPath();
-  const selectWorld = useSetAtom(overlayWorldAtom);
-  const { loadWorld, enterWorld, reloadWorld } = useWorldLoader();
   const [, setOverlayVisibility] = useAtom(overlayVisibilityAtom);
-
+  const { loadWorld, enterWorld, exitWorld, reloadWorld } = useWorldLoader();
   const reloadObservableRef = useRef<ObservedStateKeyValue | undefined>(undefined);
-
-  useEffect(() => {
-    if (worldId && session.rooms.get(worldId)) {
-      selectWorld(worldId);
-    }
-  }, [selectWorld, worldId, session.rooms]);
+  const { navigateLoadWorld, navigateExitWorld } = useWorldNavigator(session);
 
   useEffect(() => {
     setOverlayVisibility(!loading && !entered);
   }, [setOverlayVisibility, entered, loading]);
 
+  /**
+   * First time load via url
+   */
+  useEffect(() => {
+    if (firstRender && !entered && !loading && navigatedWorld) {
+      navigateExitWorld();
+      navigateLoadWorld(navigatedWorld);
+    }
+  }, [firstRender, loading, entered, navigatedWorld, navigateLoadWorld, navigateExitWorld]);
+
+  /**
+   * Reloading via state update
+   */
   useEffect(() => {
     setError(undefined);
 
-    if (!world || loading) return;
+    if (!navigatedWorld || loading) return;
 
     const handleLoad = async (event: StateEvent | undefined) => {
       const content = event?.content;
 
-      if (loading || !content) {
+      if (!entered || loading || !content) {
         return;
       }
 
       try {
-        // reload if already in world
-        if (entered) {
-          await reloadWorld(world, content);
-        } else {
-          // otherwise load in
-          await loadWorld(world, content);
-          await enterWorld(world);
-        }
+        await reloadWorld(navigatedWorld, content);
       } catch (err) {
         setError(err as Error);
         console.error(err);
       }
     };
 
-    world.observeStateTypeAndKey("org.matrix.msc3815.world", "").then(async (observable) => {
-      if (!isMounted() || reloadObservableRef.current) return;
+    let dispose: SubscriptionHandle;
+    navigatedWorld.observeStateTypeAndKey("org.matrix.msc3815.world", "").then(async (observable) => {
+      if (!isMounted() || reloadObservableRef.current || worldId !== navigatedWorld.id) return;
 
       reloadObservableRef.current = observable;
-      observable.subscribe(handleLoad);
-
-      // on first render, trigger load
-      if (firstRender) {
-        const initialEvent = observable.get();
-        handleLoad(initialEvent);
-      }
+      dispose = observable.subscribe(handleLoad);
     });
 
     return () => {
       if (reloadObservableRef.current) {
         reloadObservableRef.current.unsubscribe(handleLoad);
         reloadObservableRef.current = undefined;
+        dispose?.();
       }
     };
   }, [
-    session,
-    world,
+    worldId,
+    navigatedWorld,
     reloadId,
     isMounted,
     mainThread,
     loadWorld,
     enterWorld,
+    exitWorld,
+    navigateLoadWorld,
+    navigateExitWorld,
     entered,
     loading,
     reloadWorld,
-    firstRender,
   ]);
 
   return (
     <>
-      {world && entered && <WorldView world={world} />}
+      {navigatedWorld && entered && <WorldView world={navigatedWorld} />}
       <WorldThumbnail />
-      {world && <WorldLoading world={world} loading={loading} error={error} />}
+      {navigatedWorld && <WorldLoading world={navigatedWorld} loading={loading} error={error} />}
     </>
   );
 }

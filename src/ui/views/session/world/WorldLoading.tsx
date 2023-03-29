@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Room } from "@thirdroom/hydrogen-view-sdk";
-import { useAtom, useSetAtom } from "jotai";
+import { useAtom } from "jotai";
 
 import { IMainThreadContext } from "../../../../engine/MainThread";
 import { registerMessageHandler } from "../../../../engine/module/module.common";
@@ -10,10 +10,8 @@ import { Text } from "../../../atoms/text/Text";
 import { useMainThreadContext } from "../../../hooks/useMainThread";
 import { bytesToSize, getPercentage } from "../../../utils/common";
 import "./WorldLoading.css";
-import { useHydrogen } from "../../../hooks/useHydrogen";
 import { Button } from "../../../atoms/button/Button";
 import { WorldPreviewCard } from "../../components/world-preview-card/WorldPreviewCard";
-import { overlayWorldAtom } from "../../../state/overlayWorld";
 import { overlayVisibilityAtom } from "../../../state/overlayVisibility";
 import { useWorldLoader } from "../../../hooks/useWorldLoader";
 
@@ -42,21 +40,12 @@ function useWorldLoadingProgress(): [() => void, WorldLoadProgress] {
 
 export function WorldLoading({ world, loading, error }: { world: Room; loading: boolean; error?: Error }) {
   const [overlayVisible] = useAtom(overlayVisibilityAtom);
-  const selectWorld = useSetAtom(overlayWorldAtom);
-  const { session } = useHydrogen(true);
   const [resetLoadProgress, loadProgress] = useWorldLoadingProgress();
   const [creator, setCreator] = useState<string>();
   const { enterWorld } = useWorldLoader();
-
   useEffect(() => {
     resetLoadProgress();
   }, [resetLoadProgress, loading]);
-
-  useEffect(() => {
-    if (!overlayVisible && world) {
-      selectWorld(world.id);
-    }
-  }, [overlayVisible, selectWorld, world, session.rooms]);
 
   useEffect(() => {
     let disposed = false;

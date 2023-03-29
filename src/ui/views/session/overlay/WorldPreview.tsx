@@ -22,6 +22,7 @@ import { useUpdateScene } from "../../../hooks/useUpdateScene";
 import { overlayWorldAtom } from "../../../state/overlayWorld";
 import { worldAtom } from "../../../state/world";
 import { useWorldLoader } from "../../../hooks/useWorldLoader";
+import { useWorldNavigator } from "../../../hooks/useWorldNavigator";
 
 interface InviteWorldPreviewProps {
   session: Session;
@@ -106,16 +107,14 @@ function EnterWorldButton({ room }: { room: Room }) {
   const [micException, setMicException] = useState<RequestException>();
   const [needsUpdate, setNeedsUpdate] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { loadWorld, enterWorld } = useWorldLoader();
+  const { exitWorld } = useWorldLoader();
+  const { navigateLoadWorld } = useWorldNavigator(session);
 
   const { checkForUpdate, updateScene } = useUpdateScene(session, room);
 
   const handleLoadWorld = async () => {
-    const stateEvent = await room.getStateEvent("org.matrix.msc3815.world");
-    const content = stateEvent?.event.content;
-    if (!content) return;
-    await loadWorld(room, content);
-    await enterWorld(room);
+    exitWorld();
+    navigateLoadWorld(room);
   };
 
   const handleEnterWorld = async (checkUpdate = false) => {
