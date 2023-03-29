@@ -1,5 +1,5 @@
 import { ObservedStateKeyValue, Room, StateEvent, SubscriptionHandle } from "@thirdroom/hydrogen-view-sdk";
-import { useAtom } from "jotai";
+import { useAtom, useSetAtom } from "jotai";
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
 
@@ -8,6 +8,7 @@ import { useIsMounted } from "../../../hooks/useIsMounted";
 import { useRoom } from "../../../hooks/useRoom";
 import { useWorldLoader } from "../../../hooks/useWorldLoader";
 import { overlayVisibilityAtom } from "../../../state/overlayVisibility";
+import { overlayWorldAtom } from "../../../state/overlayWorld";
 import { worldAtom } from "../../../state/world";
 import { aliasToRoomId } from "../../../utils/matrixUtils";
 import { WorldLoading } from "./WorldLoading";
@@ -46,6 +47,16 @@ export default function WorldRootView() {
   const [, setOverlayVisibility] = useAtom(overlayVisibilityAtom);
   const { loadWorld, enterWorld, reloadWorld } = useWorldLoader();
   const reloadObservableRef = useRef<ObservedStateKeyValue | undefined>(undefined);
+  const selectWorld = useSetAtom(overlayWorldAtom);
+
+  /**
+   * Selects the world we are entered into for display in the overlay
+   */
+  useEffect(() => {
+    if (navigatedWorld) {
+      selectWorld(navigatedWorld.id);
+    }
+  }, [navigatedWorld, selectWorld]);
 
   /**
    * Hides the overlay while loading into a world
