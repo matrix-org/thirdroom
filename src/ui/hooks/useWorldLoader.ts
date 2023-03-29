@@ -36,7 +36,6 @@ export function useWorldLoader(): WorldLoader {
   const [{ entered }, setWorld] = useAtom(worldAtom);
 
   const exitWorldCallback = useCallback(async () => {
-    console.warn("=== exitWorldCallback() ===");
     if (!entered) {
       console.warn("cannot exit world when world is not entered");
       return;
@@ -51,8 +50,6 @@ export function useWorldLoader(): WorldLoader {
 
   const loadWorldCallback = useCallback(
     async (world: Room, content: Content) => {
-      console.warn("=== loadWorldCallback() ===");
-
       const roomId = world.id;
 
       setWorld({ type: "LOAD", roomId });
@@ -88,13 +85,7 @@ export function useWorldLoader(): WorldLoader {
         throw new Error(err?.message ?? "Unknown error loading world.");
       }
     },
-    [
-      mainThread,
-      session,
-      setWorld,
-      // entered,
-      // exitWorldCallback,
-    ]
+    [mainThread, session, setWorld]
   );
 
   const getWorldGroupCall = (session: Session, world: Room) => getRoomCall(session.callHandler.calls, world.id);
@@ -125,7 +116,6 @@ export function useWorldLoader(): WorldLoader {
   const enterWorldCallback = useCallback(
     async (world: Room): Promise<(() => void) | undefined> => {
       try {
-        console.warn("=== enterWorldCallback() ===");
         if (import.meta.env.VITE_USE_TESTNET) {
           connectToTestNet(mainThread);
           return undefined;
@@ -170,8 +160,6 @@ export function useWorldLoader(): WorldLoader {
   // keeps the call established and reloads the scene/script
   const reloadWorldCallback = useCallback(
     async (world: Room, content: Content) => {
-      console.warn("=== reloadWorldCallback() ===");
-
       setWorld({ type: "LOAD", roomId: world.id });
 
       disposeActiveMatrixRoom(mainThread);

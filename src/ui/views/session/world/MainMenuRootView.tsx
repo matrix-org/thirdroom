@@ -7,7 +7,7 @@ import { WorldThumbnail } from "./WorldThumbnail";
 import { useWorldLoader } from "../../../hooks/useWorldLoader";
 
 export default function MainMenuRootView() {
-  const [{ entered, loading }, setWorld] = useAtom(worldAtom);
+  const [{ entered, loading }] = useAtom(worldAtom);
   const { exitWorld } = useWorldLoader();
 
   /**
@@ -27,7 +27,7 @@ export default function MainMenuRootView() {
     if (entered) {
       exitWorld();
     }
-  }, [loading, entered, exitWorld, setWorld]);
+  }, [loading, entered, exitWorld]);
 
   return (
     <>

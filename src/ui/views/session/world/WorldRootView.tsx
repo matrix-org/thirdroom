@@ -47,6 +47,9 @@ export default function WorldRootView() {
   const { loadWorld, enterWorld, reloadWorld } = useWorldLoader();
   const reloadObservableRef = useRef<ObservedStateKeyValue | undefined>(undefined);
 
+  /**
+   * Hides the overlay while loading into a world
+   */
   useEffect(() => {
     setOverlayVisibility(!loading && !entered);
   }, [setOverlayVisibility, entered, loading]);
