@@ -44,7 +44,7 @@ export function WorldLoading({ world, loading, error }: { world: Room; loading: 
   const [resetLoadProgress, loadProgress] = useWorldLoadingProgress();
   const [creator, setCreator] = useState<string>();
   const { session } = useHydrogen(true);
-  const { navigateEnterWorld } = useWorldNavigator(session);
+  const { navigateEnterWorld, navigateExitWorld } = useWorldNavigator(session);
 
   useEffect(() => {
     resetLoadProgress();
@@ -73,13 +73,22 @@ export function WorldLoading({ world, loading, error }: { world: Room; loading: 
             title={world.name ?? world.canonicalAlias ?? "Unknown World"}
             desc={error.message}
             options={
-              <Button
-                onClick={() => {
-                  navigateEnterWorld(world, { reload: true });
-                }}
-              >
-                Reload
-              </Button>
+              <>
+                <Button
+                  onClick={() => {
+                    navigateEnterWorld(world, { reload: true });
+                  }}
+                >
+                  Reload
+                </Button>
+                <Button
+                  onClick={() => {
+                    navigateExitWorld();
+                  }}
+                >
+                  Exit
+                </Button>
+              </>
             }
           />
         </div>
