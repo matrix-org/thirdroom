@@ -2,6 +2,5 @@
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "typescript.tsdk": "node_modules/typescript/lib",
-  "C_Cpp.autoAddFileAssociations": false,
-  "liveServer.settings.multiRootWorkspaceName": "thirdroom"
+  "C_Cpp.autoAddFileAssociations": false
 }
