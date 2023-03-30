@@ -32,34 +32,6 @@ onupdate = (dt) => {
 };
 `;
 
-export const saveTextAsFile = (text: string, fileName: string): void => {
-  const blob = new Blob([text], { type: "text/plain" });
-  const downloadLink = document.createElement("a");
-  downloadLink.download = fileName;
-  downloadLink.innerHTML = "Download File";
-  if (window.webkitURL) {
-    // No need to add the download element to the DOM in Webkit.
-    downloadLink.href = window.webkitURL.createObjectURL(blob);
-  } else {
-    downloadLink.href = window.URL.createObjectURL(blob);
-    downloadLink.onclick = (event: MouseEvent): void => {
-      if (event.target) {
-        document.body.removeChild(event.target as Node);
-      }
-    };
-    downloadLink.style.display = "none";
-    document.body.appendChild(downloadLink);
-  }
-
-  downloadLink.click();
-
-  if (window.webkitURL) {
-    window.webkitURL.revokeObjectURL(downloadLink.href);
-  } else {
-    window.URL.revokeObjectURL(downloadLink.href);
-  }
-};
-
 export function EditorView({ room }: { room: Room }) {
   const treeViewRef = useRef<TreeViewRefApi>(null);
   const { loading, scene, resources } = useEditor(treeViewRef);
@@ -129,6 +101,14 @@ export function EditorView({ room }: { room: Room }) {
     <>
       {loading || !scene ? null : (
         <>
+          <div className="EditorView__leftPanel">
+            <HierarchyPanel scene={scene} resources={resources} treeViewRef={treeViewRef} />
+          </div>
+          {typeof resource === "object" && (
+            <div className="EditorView__rightPanel">
+              <PropertiesPanel resource={resource} />
+            </div>
+          )}
           <div className="EditorView__textEditor">
             <Editor
               height="100%"
@@ -140,14 +120,6 @@ export function EditorView({ room }: { room: Room }) {
               Save & Run
             </Button>
           </div>
-          <div className="EditorView__leftPanel">
-            <HierarchyPanel scene={scene} resources={resources} treeViewRef={treeViewRef} />
-          </div>
-          {typeof resource === "object" && (
-            <div className="EditorView__rightPanel">
-              <PropertiesPanel resource={resource} />
-            </div>
-          )}
         </>
       )}
     </>

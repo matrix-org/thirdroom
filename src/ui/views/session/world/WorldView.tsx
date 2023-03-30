@@ -181,7 +181,9 @@ export function WorldView({ world }: WorldViewProps) {
       {world && editorEnabled && <EditorView room={world} />}
       {!("isBeingCreated" in world) && <Nametags room={world} show={showNames && !overlayVisible} />}
 
-      {!overlayVisible && <WorldInteraction session={session} world={world} activeCall={activeCall} />}
+      {!overlayVisible && !editorEnabled && (
+        <WorldInteraction session={session} world={world} activeCall={activeCall} />
+      )}
 
       <div className="WorldView__toast-container">
         <div className={classNames("WorldView__toast", { "WorldView__toast--shown": toastShown })}>
