@@ -77,11 +77,10 @@ export function EditorView({ room }: { room: Room }) {
 
     if (!content) return false;
 
-    const file = new File([editorText], "script.js", { type: "text/javascript" });
-    const blobHandle = platform.createBlob(await file.arrayBuffer(), "text/javascript");
-    // HACK: explicitly overwrite blob, internally the mimeType is reset.
+    const blobHandle = platform.createBlob(new ArrayBuffer(0), "text/javascript");
+    // HACK: explicitly overwrite _blob (internally the mimeType is reset by platform.createBlob)
     // TODO: expose BlobHandle or override platform.createBlob to accept a regular blob and not overwrite its mimeType
-    (blobHandle as any)._blob = file;
+    (blobHandle as any)._blob = new File([editorText], "script.js", { type: "text/javascript" });
 
     const scriptMxc = await uploadAttachment(session.hsApi, blobHandle);
 
