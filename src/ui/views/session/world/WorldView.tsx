@@ -160,9 +160,9 @@ export function WorldView({ world }: WorldViewProps) {
       <WorldOnboarding world={world} />
       <Stats statsEnabled={statsEnabled} />
       <div className={classNames("WorldView__chat flex", { "WorldView__chat--open": worldChatVisible })}>
-        {!("isBeingCreated" in world) && <WorldChat open={worldChatVisible} room={world} />}
+        {!("isBeingCreated" in world) && !editorEnabled && <WorldChat open={worldChatVisible} room={world} />}
       </div>
-      {world && (
+      {world && !editorEnabled && (
         <>
           {!worldChatVisible && <HotbarControls />}
           <WorldControls

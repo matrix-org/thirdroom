@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { TreeViewRefApi } from "@thirdroom/manifold-editor-components";
-import { useAtomValue } from "jotai";
+import { atom, useAtom, useAtomValue } from "jotai";
 import Editor, { OnChange } from "@monaco-editor/react";
 import { Room } from "@thirdroom/hydrogen-view-sdk";
 
@@ -32,6 +32,8 @@ onupdate = (dt) => {
 };
 `;
 
+const scriptSourceAtom = atom<string>(DEFAULT_EDITOR_TEXT);
+
 export function EditorView({ room }: { room: Room }) {
   const treeViewRef = useRef<TreeViewRefApi>(null);
   const { loading, scene, resources } = useEditor(treeViewRef);
@@ -41,35 +43,47 @@ export function EditorView({ room }: { room: Room }) {
   const mainThread = useMainThreadContext();
   const resource = getLocalResource(mainThread, activeEntity) as unknown as MainThreadResource;
 
-  const [editorText, setEditorText] = useState(DEFAULT_EDITOR_TEXT);
+  const [editorText, setEditorText] = useAtom(scriptSourceAtom);
 
-  // const maxObjectCapRef = useRef(MAX_OBJECT_CAP);
   const [maxObjectCap] = useState(MAX_OBJECT_CAP);
+
+  /**
+   * Release pointer when editor view is rendered, re-lock it when editor view is disposed
+   */
+  useEffect(() => {
+    document.exitPointerLock();
+    return () => {
+      mainThread.canvas?.requestPointerLock();
+    };
+  }, [mainThread]);
 
   /**
    * Load the existing script if one exists
    */
   useEffect(() => {
-    room?.getStateEvent("org.matrix.msc3815.world").then((stateEvent) => {
-      const content = stateEvent?.event.content;
-      if (!content) return false;
+    if (room) {
+      (async () => {
+        const stateEvent = await room.getStateEvent("org.matrix.msc3815.world");
+        const content = stateEvent?.event.content;
+        if (!content) return false;
 
-      let scriptUrl = content.script_url;
-      if (!scriptUrl) return;
+        let scriptUrl = content.script_url;
+        if (!scriptUrl) return;
 
-      if (scriptUrl.startsWith("mxc:")) {
-        scriptUrl = session.mediaRepository.mxcUrl(scriptUrl);
-      }
+        if (scriptUrl.startsWith("mxc:")) {
+          scriptUrl = session.mediaRepository.mxcUrl(scriptUrl);
+        }
 
-      fetch(scriptUrl).then((res) => {
+        const res = await fetch(scriptUrl);
         const contentType = res.headers.get("content-type");
         if (contentType === "application/wasm") {
           return;
         }
-        res.text().then(setEditorText);
-      });
-    });
-  }, [session, room, loading]);
+        const text = await res.text();
+        setEditorText(text);
+      })();
+    }
+  }, [session, room, setEditorText]);
 
   async function saveAndRunScript() {
     const event = await room?.getStateEvent("org.matrix.msc3815.world");
@@ -98,7 +112,7 @@ export function EditorView({ room }: { room: Room }) {
 
   return (
     <>
-      {loading || !scene ? null : (
+      {!loading && scene && (
         <>
           <div className="EditorView__leftPanel">
             <HierarchyPanel scene={scene} resources={resources} treeViewRef={treeViewRef} />
