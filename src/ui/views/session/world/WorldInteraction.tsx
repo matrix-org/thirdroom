@@ -7,7 +7,6 @@ import { InteractableAction } from "../../../../plugins/interaction/interaction.
 import { useIsMounted } from "../../../hooks/useIsMounted";
 import { useMainThreadContext } from "../../../hooks/useMainThread";
 import { useMemoizedState } from "../../../hooks/useMemoizedState";
-import { useWorldAction } from "../../../hooks/useWorldAction";
 import { overlayWorldAtom } from "../../../state/overlayWorld";
 import { aliasToRoomId, getMxIdUsername, parseMatrixUri } from "../../../utils/matrixUtils";
 import { InteractionState, useWorldInteraction } from "../../../hooks/useWorldInteraction";
@@ -17,6 +16,7 @@ import { MemberListDialog } from "../dialogs/MemberListDialog";
 import { getModule } from "../../../../engine/module/module.common";
 import { CameraRigModule } from "../../../../plugins/camera/CameraRig.main";
 import { Reticle } from "../reticle/Reticle";
+import { useWorldNavigator } from "../../../hooks/useWorldNavigator";
 
 export interface IPortalProcess {
   joining?: boolean;
@@ -37,7 +37,7 @@ export function WorldInteraction({ session, world, activeCall }: WorldInteractio
   const [portalProcess, setPortalProcess] = useMemoizedState<IPortalProcess>({});
   const [members, setMembers] = useState(false);
 
-  const { enterWorld } = useWorldAction(session);
+  const { navigateExitWorld, navigateEnterWorld } = useWorldNavigator(session);
   const selectWorld = useSetAtom(overlayWorldAtom);
   const isMounted = useIsMounted();
 
@@ -59,22 +59,42 @@ export function WorldInteraction({ session, world, activeCall }: WorldInteractio
         const roomIdOrAlias = parsedUri.mxid1;
         const roomId = roomIdOrAlias.startsWith("#") ? aliasToRoomId(session.rooms, parsedUri.mxid1) : parsedUri.mxid1;
 
-        if (roomId && session.rooms.get(roomId)) {
-          selectWorld(roomId);
-          enterWorld(roomId);
+        if (!roomId) {
+          setPortalProcess({ joining: true });
+          const rId = await session.joinRoom(roomIdOrAlias);
+          if (!isMounted()) return;
+
+          setPortalProcess({});
+          const roomStatusObserver = await session.observeRoomStatus(rId);
+          unSubStatusObserver = roomStatusObserver.subscribe(async (roomStatus) => {
+            const newWorld = session.rooms.get(rId);
+            if (!newWorld || roomStatus !== RoomStatus.Joined) return;
+
+            const stateEvent = await newWorld.getStateEvent("org.matrix.msc3815.world");
+            const content = stateEvent?.event.content;
+            if (!content) return;
+
+            selectWorld(roomId);
+
+            navigateExitWorld();
+            navigateEnterWorld(newWorld);
+          });
+
           return;
         }
 
-        setPortalProcess({ joining: true });
-        const rId = await session.joinRoom(roomIdOrAlias);
-        if (!isMounted()) return;
-        setPortalProcess({});
-        const roomStatusObserver = await session.observeRoomStatus(rId);
-        unSubStatusObserver = roomStatusObserver.subscribe((roomStatus) => {
-          if (roomStatus !== RoomStatus.Joined) return;
-          selectWorld(rId);
-          enterWorld(rId);
-        });
+        const newWorld = session.rooms.get(roomId);
+        if (newWorld) {
+          const stateEvent = await newWorld.getStateEvent("org.matrix.msc3815.world");
+          const content = stateEvent?.event.content;
+          if (!content) return;
+
+          selectWorld(roomId);
+
+          navigateExitWorld();
+          navigateEnterWorld(newWorld);
+          return;
+        }
       } catch (err) {
         if (!isMounted()) return;
         setPortalProcess({ error: err as Error });
@@ -83,7 +103,7 @@ export function WorldInteraction({ session, world, activeCall }: WorldInteractio
         unSubStatusObserver?.();
       };
     },
-    [session, selectWorld, enterWorld, isMounted, setPortalProcess]
+    [session, selectWorld, navigateExitWorld, navigateEnterWorld, isMounted, setPortalProcess]
   );
 
   const handleInteraction = useCallback(

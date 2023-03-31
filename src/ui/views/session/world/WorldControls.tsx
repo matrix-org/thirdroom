@@ -15,7 +15,6 @@ import CrossIC from "../../../../../res/ic/cross.svg";
 import HelpIC from "../../../../../res/ic/help.svg";
 import XRIC from "../../../../../res/ic/xr.svg";
 import { Text } from "../../../atoms/text/Text";
-import { useWorldAction } from "../../../hooks/useWorldAction";
 import { NametagsEnableMessage, NametagsEnableMessageType } from "../../../../plugins/nametags/nametags.common";
 import { Thread } from "../../../../engine/module/module.common";
 import { useMainThreadContext } from "../../../hooks/useMainThread";
@@ -30,6 +29,7 @@ import { useKeyDown } from "../../../hooks/useKeyDown";
 import { manageMuteRequest, MicExceptionDialog, useMuteButton } from "../../components/MuteButtonProvider";
 import { inputFocused } from "../../../utils/common";
 import { useDisableInput } from "../../../hooks/useDisableInput";
+import { useWorldNavigator } from "../../../hooks/useWorldNavigator";
 
 export function HotbarControls() {
   return (
@@ -94,7 +94,7 @@ export function WorldControls({
   setShowNames: setLocalStorageItem<boolean>;
 }) {
   const mainThread = useMainThreadContext();
-  const { exitWorld } = useWorldAction(session);
+  const { navigateExitWorld } = useWorldNavigator(session);
 
   const [showActiveMembers, setShowActiveMembers] = useState<boolean>(false);
   const [shortcutUI, setShortcutUI] = useState(false);
@@ -120,7 +120,7 @@ export function WorldControls({
       if (inputFocused()) return;
 
       if (e.altKey && e.code === "KeyL") {
-        exitWorld();
+        navigateExitWorld();
       }
     },
     [enterXR, isWebXRSupported]
@@ -195,7 +195,7 @@ export function WorldControls({
       )}
       <div className="flex flex-column items-center">
         <Tooltip content="Disconnect">
-          <IconButton variant="danger" label="Disconnect" iconSrc={CallCrossIC} onClick={exitWorld} />
+          <IconButton variant="danger" label="Disconnect" iconSrc={CallCrossIC} onClick={navigateExitWorld} />
         </Tooltip>
         <Text variant="b3" color="world" weight="bold">
           Alt + L
