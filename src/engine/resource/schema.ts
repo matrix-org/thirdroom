@@ -442,7 +442,7 @@ export enum FlexDirection {
   RowReverse = Yoga.FLEX_DIRECTION_ROW_REVERSE,
 }
 
-export enum FlexPositionType {
+export enum ElementPositionType {
   Relative = Yoga.POSITION_TYPE_RELATIVE,
   Absolute = Yoga.POSITION_TYPE_ABSOLUTE,
 }
@@ -499,11 +499,14 @@ export const UIImageResource = defineResource("ui-image", ResourceType.UIImage, 
   alt: PropType.string({ script: true, required: false }),
 });
 
-export const UIElementResource = defineResource("ui-flex", ResourceType.UIElement, {
+export const UIElementResource = defineResource("ui-element", ResourceType.UIElement, {
+  name: PropType.string({ default: "UIElement", script: true }),
+  type: PropType.enum(ElementType, { default: ElementType.Flex, mutable: false }),
+
   position: PropType.vec4({ script: true, mutable: true }),
 
-  positionType: PropType.enum(FlexPositionType, {
-    default: FlexPositionType.Relative,
+  positionType: PropType.enum(ElementPositionType, {
+    default: ElementPositionType.Relative,
     script: true,
     mutable: true,
   }),
@@ -573,13 +576,13 @@ export const UIElementResource = defineResource("ui-flex", ResourceType.UIElemen
   prevSibling: PropType.selfRef({ backRef: true }),
   nextSibling: PropType.selfRef(),
 
-  type: PropType.enum(ElementType, { default: ElementType.Flex, mutable: false }),
   text: PropType.ref(UITextResource, { mutable: false }),
   button: PropType.ref(UIButtonResource, { mutable: false }),
   image: PropType.ref(UIImageResource, { mutable: false }),
 });
 
 export const UICanvasResource = defineResource("ui-canvas", ResourceType.UICanvas, {
+  name: PropType.string({ default: "UICanvas", script: true }),
   root: PropType.ref(UIElementResource),
   size: PropType.vec2({ script: true, mutable: true }),
   width: PropType.f32({ script: true, mutable: true }),

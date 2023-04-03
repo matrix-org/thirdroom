@@ -32,6 +32,16 @@ typedef uint32_t ui_element_id_t;
  * Common WebSG Property Types *
  *******************************/
 
+typedef struct WebSGFloatArray {
+  float_t *items;
+  uint32_t count;
+} WebSGFloatArray;
+
+typedef struct WebSGString {
+  const char *value;
+  uint32_t length;
+} WebSGString;
+
 typedef struct Extensions {
   ExtensionItem *items;
   uint32_t count;
@@ -41,16 +51,6 @@ typedef struct ExtensionItem {
   const char *name;
   void* extension;
 } ExtensionItem;
-
-typedef struct Extras {
-  ExtrasItem *items;
-  uint32_t count;
-} Extras;
-
-typedef struct ExtrasItem {
-  const char *key;
-  void* value;
-} ExtrasItem;
 
 /*********
  * World *
@@ -66,7 +66,7 @@ import_websg(world_set_environment) int32_t websg_world_set_environment(scene_id
 typedef struct SceneProps {
   const char *name;
   Extensions extensions;
-  Extras extras;
+  void *extras;
 } SceneProps;
 
 import_websg(world_create_scene) scene_id_t websg_world_create_scene(SceneProps *props);
@@ -81,22 +81,17 @@ import_websg(scene_get_node) node_id_t websg_scene_get_node(scene_id_t scene_id,
  * Node *
  ********/
 
-typedef struct NodeWeights {
-  float_t *items;
-  uint32_t count;
-} NodeWeights;
-
 typedef struct NodeProps {
+  const char *name;
+  Extensions extensions;
+  void *extras;
   camera_id_t camera;
   skin_id_t skin;
   mesh_id_t mesh;
   float_t rotation[4];
   float_t scale[3];
   float_t translation[3];
-  NodeWeights weights;
-  const char *name;
-  Extensions extensions;
-  Extras extras;
+  WebSGFloatArray weights;
 } NodeProps;
 
 import_websg(world_create_node) node_id_t websg_world_create_node(NodeProps *props);
@@ -193,19 +188,14 @@ typedef struct MeshPrimitiveTargetsList {
 } MeshPrimitiveTargetsList;
 
 typedef struct MeshPrimitiveProps {
+  Extensions extensions;
+  void *extras;
   MeshPrimitiveAttributesList attributes;
   accessor_id_t indices;
   material_id_t material;
   MeshPrimitiveMode mode;
   MeshPrimitiveTargetsList targets;
-  Extensions extensions;
-  Extras extras;
 } MeshPrimitiveProps;
-
-typedef struct MeshWeights {
-  float_t *items;
-  uint32_t count;
-} MeshWeights;
 
 typedef struct MeshPrimitivePropsList {
   MeshPrimitiveProps *items;
@@ -213,11 +203,11 @@ typedef struct MeshPrimitivePropsList {
 } MeshPrimitivePropsList;
 
 typedef struct MeshProps {
-  MeshPrimitivePropsList primitives;
-  MeshWeights weights;
   const char *name;
   Extensions extensions;
-  Extras extras;
+  void *extras;
+  WebSGFloatArray weights;
+  MeshPrimitivePropsList primitives;
 } MeshProps;
 
 import_websg(world_create_mesh) mesh_id_t websg_world_create_mesh(MeshProps *props);
@@ -268,8 +258,8 @@ typedef struct AccessorFromProps {
   uint32_t count;
   uint32_t normalized;
   uint32_t dynamic;
-  float_t min[16]; // Currently unused and optional but see spec for use.
-  float_t max[16]; // Currently unused and optional but see spec for use.
+  WebSGFloatArray min; // Currently unused and optional but see spec for use.
+  WebSGFloatArray max; // Currently unused and optional but see spec for use.
 } AccessorFromProps;
 
 // TODO: Add standard websg_create_accessor method that takes buffer views and support sparse accessors
@@ -301,53 +291,57 @@ typedef enum MaterialAlphaMode {
 } MaterialAlphaMode;
 
 typedef struct MaterialTextureInfoProps {
+  Extensions extensions;
+  void *extras;
   texture_id_t texture;
   uint32_t tex_coord;
-  Extensions extensions;
-  Extras extras;
 } MaterialTextureInfoProps;
 
 typedef struct MaterialNormalTextureInfoProps {
+  Extensions extensions;
+  void *extras;
   texture_id_t texture;
   uint32_t tex_coord;
   float_t scale;
-  Extensions extensions;
-  Extras extras;
 } MaterialNormalTextureInfoProps;
 
 typedef struct MaterialOcclusionTextureInfoProps {
+  Extensions extensions;
+  void *extras;
   texture_id_t texture;
   uint32_t tex_coord;
   float_t strength;
-  Extensions extensions;
-  Extras extras;
 } MaterialOcclusionTextureInfoProps;
 
 typedef struct MaterialTextureTransformProps {
+  Extensions extensions;
+  void *extras;
   float_t offset[2];
   float_t rotation;
   float_t scale[2];
   uint32_t tex_coord;
-  Extensions extensions;
-  Extras extras;
 } MaterialTextureTransformProps;
 
 typedef struct MaterialUnlitProps {
   Extensions extensions;
-  Extras extras;
+  void *extras;
 } MaterialUnlitProps;
 
 typedef struct MaterialPbrMetallicRoughnessProps {
+  Extensions extensions;
+  void *extras;
   float_t base_color_factor[4];
   MaterialTextureInfoProps base_color_texture;
   float_t metallic_factor;
   float_t roughness_factor;
   MaterialTextureInfoProps metallic_roughness_texture;
-  Extensions extensions;
-  Extras extras;
+  
 } MaterialPbrMetallicRoughnessProps;
 
 typedef struct MaterialProps {
+  const char *name;
+  Extensions extensions;
+  void *extras;
   MaterialPbrMetallicRoughnessProps pbr_metallic_roughness;
   MaterialNormalTextureInfoProps normal_texture;
   MaterialOcclusionTextureInfoProps occlusion_texture;
@@ -356,9 +350,6 @@ typedef struct MaterialProps {
   MaterialAlphaMode alpha_mode;
   float_t alpha_cutoff;
   uint32_t double_sided;
-  const char *name;
-  Extensions extensions;
-  Extras extras;
 } MaterialProps;
 
 import_websg(world_create_material) material_id_t websg_world_create_material(MaterialProps *props);
@@ -378,7 +369,7 @@ import_websg(material_set_base_color_texture) int32_t websg_material_set_base_co
  * Texture
  **/
 
-import_websg(texture_find_by_name) texture_id_t websg_texture_find_by_name(const char *name, uint32_t length);
+import_websg(world_find_texture_by_name) texture_id_t websg_world_find_texture_by_name(const char *name, uint32_t length);
 
 /**
  * Light
@@ -391,25 +382,25 @@ typedef enum LightType {
 } LightType;
 
 typedef struct LightSpotProps {
+  Extensions extensions;
+  void *extras;
   float_t inner_cone_angle;
   float_t outer_cone_angle;
-  Extensions extensions;
-  Extras extras;
 } LightSpotProps;
 
 typedef struct LightProps {
-  float_t color[3];
-  float_t intensity;
-  LightSpotProps spot;
-  LightType type;
-  float_t range;
   const char *name;
   Extensions extensions;
-  Extras extras;
+  void *extras;
+  float_t color[3];
+  float_t intensity;
+  LightType type;
+  float_t range;
+  LightSpotProps spot;
 } LightProps;
 
-import_websg(create_light) light_id_t websg_create_light(LightType type);
-import_websg(light_find_by_name) light_id_t websg_light_find_by_name(const char *name, uint32_t length);
+import_websg(world_create_light) light_id_t websg_world_create_light(LightProps *props);
+import_websg(world_find_light_by_name) light_id_t websg_world_find_light_by_name(const char *name, uint32_t length);
 import_websg(light_get_color) int32_t websg_light_get_color(light_id_t light_id, float_t *color);
 import_websg(light_set_color) int32_t websg_light_set_color(light_id_t light_id, float_t *color);
 import_websg(light_get_intensity) float_t websg_light_get_intensity(light_id_t light_id);
@@ -424,17 +415,17 @@ typedef enum InteractableType {
 } InteractableType;
 
 typedef struct InteractableProps {
-  InteractableType type;
   Extensions extensions;
-  Extras extras;
+  void *extras;
+  InteractableType type;
 } InteractableProps;
 
-import_websg(add_interactable) int32_t websg_add_interactable(node_id_t node_id, InteractableProps *props);
-import_websg(remove_interactable) int32_t websg_remove_interactable(node_id_t node_id);
-import_websg(has_interactable) int32_t websg_has_interactable(node_id_t node_id);
-import_websg(get_interactable_pressed) int32_t websg_get_interactable_pressed(node_id_t node_id);
-import_websg(get_interactable_held) int32_t websg_get_interactable_held(node_id_t node_id);
-import_websg(get_interactable_released) int32_t websg_get_interactable_released(node_id_t node_id);
+import_websg(node_add_interactable) int32_t websg_node_add_interactable(node_id_t node_id, InteractableProps *props);
+import_websg(node_remove_interactable) int32_t websg_node_remove_interactable(node_id_t node_id);
+import_websg(node_has_interactable) int32_t websg_node_has_interactable(node_id_t node_id);
+import_websg(node_get_interactable_pressed) int32_t websg_node_get_interactable_pressed(node_id_t node_id);
+import_websg(node_get_interactable_held) int32_t websg_node_get_interactable_held(node_id_t node_id);
+import_websg(node_get_interactable_released) int32_t websg_node_get_interactable_released(node_id_t node_id);
 
 /**
  * Collider
@@ -450,19 +441,20 @@ typedef enum ColliderType {
 } ColliderType;
 
 typedef struct ColliderProps {
+  const char *name;
+  Extensions extensions;
+  void *extras;
   ColliderType type;
   uint32_t is_trigger;
   float_t size[3];
   float_t radius;
   float_t height;
   mesh_id_t mesh;
-  const char *name;
-  Extensions extensions;
-  Extras extras;
+  
 } ColliderProps;
 
-import_websg(create_collider) collider_id_t websg_create_collider(ColliderProps *props);
-import_websg(collider_find_by_name) collider_id_t websg_collider_find_by_name(const char *name, uint32_t length);
+import_websg(world_create_collider) collider_id_t websg_world_create_collider(ColliderProps *props);
+import_websg(world_find_collider_by_name) collider_id_t websg_world_find_collider_by_name(const char *name, uint32_t length);
 
 /**
  * PhysicsBody
@@ -475,33 +467,34 @@ typedef enum PhysicsBodyType {
 } PhysicsBodyType;
 
 typedef struct PhysicsBodyProps {
+  Extensions extensions;
+  void *extras;
   PhysicsBodyType type;
   float_t linear_velocity[3];
   float_t angular_velocity[3];
   float_t inertia_tensor[9];
-  Extensions extensions;
-  Extras extras;
 } PhysicsBodyProps;
 
-import_websg(add_physics_body) int32_t websg_add_physics_body(node_id_t node_id, PhysicsBodyProps *props);
-import_websg(remove_physics_body) int32_t websg_remove_physics_body(node_id_t node_id);
-import_websg(has_physics_body) int32_t websg_has_physics_body(node_id_t node_id);
+import_websg(node_add_physics_body) int32_t websg_node_add_physics_body(node_id_t node_id, PhysicsBodyProps *props);
+import_websg(node_remove_physics_body) int32_t websg_node_remove_physics_body(node_id_t node_id);
+import_websg(node_has_physics_body) int32_t websg_node_has_physics_body(node_id_t node_id);
 
 /**
  * UI Canvas
  **/
 
 typedef struct UICanvasProps {
+  const char *name;
+  Extensions extensions;
+  void *extras;
   ui_element_id_t root;
   float_t size[2];
   float_t width;
   float_t height;
-  const char *name;
-  Extensions extensions;
-  Extras extras;
 } UICanvasProps;
 
-import_websg(create_ui_canvas) ui_canvas_id_t websg_create_ui_canvas(UICanvasProps *props);
+import_websg(world_create_ui_canvas) ui_canvas_id_t websg_world_create_ui_canvas(UICanvasProps *props);
+import_websg(world_find_ui_canvas_by_name) light_id_t websg_world_find_ui_canvas_by_name(const char *name, uint32_t length);
 import_websg(node_set_ui_canvas) int32_t websg_node_set_ui_canvas(node_id_t node_id, ui_canvas_id_t canvas_id);
 import_websg(ui_canvas_get_root) ui_element_id_t websg_ui_canvas_get_root(ui_canvas_id_t canvas_id);
 import_websg(ui_canvas_set_root) int32_t websg_ui_canvas_set_root(ui_canvas_id_t canvas_id, ui_element_id_t root_id);
@@ -563,28 +556,26 @@ typedef enum FlexWrap {
 } FlexWrap;
 
 typedef struct UIButtonProps {
-  const char *label;
-  size_t label_length;
   Extensions extensions;
-  Extras extras;
+  void *extras;
+  WebSGString label;
 } UIButtonProps;
 
 typedef struct UITextProps {
-  float_t color[4];
-  const char *value;
-  uint32_t value_length;
-  const char *font_family;
-  uint32_t font_family_length;
-  float_t font_size;
-  const char *font_weight;
-  uint32_t font_weight_length;
-  const char *font_style;
-  uint32_t font_style_length;
   Extensions extensions;
-  Extras extras;
+  void *extras;
+  WebSGString value;
+  WebSGString font_family;
+  WebSGString font_weight;
+  WebSGString font_style;
+  float_t font_size;
+  float_t color[4];
 } UITextProps;
 
 typedef struct UIElementProps {
+  const char *name;
+  Extensions extensions;
+  void *extras;
   ElementType type;
   float_t position[4];
   ElementPositionType position_type;
@@ -610,12 +601,10 @@ typedef struct UIElementProps {
   float_t border_width[4];
   UIButtonProps *button;
   UITextProps *text;
-  const char *name;
-  Extensions extensions;
-  Extras extras;
 } UIElementProps;
 
-import_websg(create_ui_element) ui_element_id_t websg_ui_create_element(UIElementProps *props);
+import_websg(world_create_ui_element) ui_element_id_t websg_world_create_ui_element(UIElementProps *props);
+import_websg(world_find_ui_element_by_name) light_id_t websg_world_find_ui_element_by_name(const char *name, uint32_t length);
 import_websg(ui_element_get_position) int32_t websg_ui_element_get_position(ui_element_id_t element_id, float_t *position);
 import_websg(ui_element_set_position) int32_t websg_ui_element_set_position(ui_element_id_t element_id, float_t *position);
 import_websg(ui_element_get_position_type) ElementPositionType websg_ui_element_get_position_type(ui_element_id_t element_id);
