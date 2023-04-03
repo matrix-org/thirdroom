@@ -35,7 +35,7 @@ import {
   EnvironmentResource,
   UIButtonResource,
   UICanvasResource,
-  UIFlexResource,
+  UIElementResource,
   UIImageResource,
   UITextResource,
   ColliderResource,
@@ -132,18 +132,18 @@ export class RemoteUIText extends defineRemoteResourceClass(UITextResource) {}
 export class RemoteUIButton extends defineRemoteResourceClass(UIButtonResource) {}
 export class RemoteUIImage extends defineRemoteResourceClass(UIImageResource) {}
 
-export class RemoteUIFlex extends defineRemoteResourceClass(UIFlexResource) {
-  declare parent: RemoteUIFlex | undefined;
-  declare firstChild: RemoteUIFlex | undefined;
-  declare prevSibling: RemoteUIFlex | undefined;
-  declare nextSibling: RemoteUIFlex | undefined;
+export class RemoteUIElement extends defineRemoteResourceClass(UIElementResource) {
+  declare parent: RemoteUIElement | undefined;
+  declare firstChild: RemoteUIElement | undefined;
+  declare prevSibling: RemoteUIElement | undefined;
+  declare nextSibling: RemoteUIElement | undefined;
 
   declare text: RemoteUIText;
   declare button: RemoteUIButton;
   declare image: RemoteUIImage;
 }
 export class RemoteUICanvas extends defineRemoteResourceClass(UICanvasResource) {
-  declare root: RemoteUIFlex;
+  declare root: RemoteUIElement;
 }
 export class RemoteCollider extends defineRemoteResourceClass(ColliderResource) {
   declare mesh: RemoteMesh | undefined;

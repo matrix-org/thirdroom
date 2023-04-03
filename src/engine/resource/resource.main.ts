@@ -44,7 +44,7 @@ import {
   TilesRendererResource,
   UIButtonResource,
   UICanvasResource,
-  UIFlexResource,
+  UIElementResource,
   UIImageResource,
   UITextResource,
   WorldResource,
@@ -237,11 +237,11 @@ export class MainUIImage extends defineLocalResourceClass(UIImageResource) {
   domElement?: HTMLImageElement;
 }
 
-export class MainUIFlex extends defineLocalResourceClass(UIFlexResource) {
-  declare parent: MainUIFlex | undefined;
-  declare firstChild: MainUIFlex | undefined;
-  declare prevSibling: MainUIFlex | undefined;
-  declare nextSibling: MainUIFlex | undefined;
+export class MainUIElement extends defineLocalResourceClass(UIElementResource) {
+  declare parent: MainUIElement | undefined;
+  declare firstChild: MainUIElement | undefined;
+  declare prevSibling: MainUIElement | undefined;
+  declare nextSibling: MainUIElement | undefined;
 
   declare text: MainUIText;
   declare button: MainUIButton;
@@ -251,7 +251,7 @@ export class MainUIFlex extends defineLocalResourceClass(UIFlexResource) {
 }
 
 export class MainUICanvas extends defineLocalResourceClass(UICanvasResource) {
-  declare root: MainUIFlex;
+  declare root: MainUIElement;
 
   canvasTexture?: CanvasTexture;
   canvas?: HTMLCanvasElement;
@@ -352,7 +352,7 @@ const {
   MainNode,
   MainUIButton,
   MainUICanvas,
-  MainUIFlex,
+  MainUIElement,
   MainUIImage,
   MainUIText,
   MainAudioData,

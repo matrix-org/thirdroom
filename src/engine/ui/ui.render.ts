@@ -11,7 +11,7 @@ import {
   RenderNode,
   RenderUIButton,
   RenderUICanvas,
-  RenderUIFlex,
+  RenderUIElement,
   RenderUIText,
 } from "../resource/resource.render";
 import { createDisposables } from "../utils/createDisposables";
@@ -52,14 +52,17 @@ export const WebSGUIModule = defineModule<
   },
 });
 
-export function traverseUIFlex(node: RenderUIFlex, callback: (child: RenderUIFlex, index: number) => boolean | void) {
+export function traverseUIElements(
+  node: RenderUIElement,
+  callback: (child: RenderUIElement, index: number) => boolean | void
+) {
   let curChild = node.firstChild;
   let i = 0;
 
   while (curChild) {
     const continueTraversal = callback(curChild, i++) !== false;
     if (continueTraversal) {
-      traverseUIFlex(curChild, callback);
+      traverseUIElements(curChild, callback);
       curChild = curChild.nextSibling;
     } else {
       return;
@@ -68,14 +71,14 @@ export function traverseUIFlex(node: RenderUIFlex, callback: (child: RenderUIFle
 }
 
 function findHitButton(uiCanvas: RenderUICanvas, hitPoint: vec3): RenderUIButton | undefined {
-  const { pixelDensity, width, height, root } = uiCanvas;
+  const { size, width, height, root } = uiCanvas;
 
-  const x = hitPoint[0] * pixelDensity + (width * pixelDensity) / 2;
-  const y = -(hitPoint[1] * pixelDensity - (height * pixelDensity) / 2);
+  const x = hitPoint[0] * (width / size[0]) + size[0] / 2;
+  const y = -(hitPoint[1] * (height / size[1]) - size[1] / 2);
 
   let button;
 
-  traverseUIFlex(root, (child) => {
+  traverseUIElements(root, (child) => {
     // TODO: iterate over array of buttons instead of traversing entire graph looking for buttons
     if (!child.button) return true;
 
@@ -142,7 +145,7 @@ function drawNode(
   ctx2d: OffscreenCanvasRenderingContext2D,
   loadingImages: Set<RenderImage>,
   loadingText: Set<RenderUIText>,
-  node: RenderUIFlex
+  node: RenderUIElement
 ) {
   if (!node.yogaNode) {
     console.warn("yoga node not found for eid", node.eid);
@@ -152,6 +155,7 @@ function drawNode(
   // setup brush
   ctx2d.fillStyle = rgbaToString(node.backgroundColor);
   ctx2d.strokeStyle = rgbaToString(node.borderColor);
+  ctx2d.lineWidth = node.borderWidth[0]; // TODO: support independent border widths
 
   // draw layout
   const layout = node.yogaNode.getComputedLayout();
@@ -165,8 +169,8 @@ function drawNode(
     parent = parent.parent;
   }
 
-  if (node.backgroundColor) ctx2d.fillRect(layout.left, layout.top, layout.width, layout.height);
-  if (node.borderColor) ctx2d.strokeRect(layout.left, layout.top, layout.width, layout.height);
+  ctx2d.fillRect(layout.left, layout.top, layout.width, layout.height);
+  ctx2d.strokeRect(layout.left, layout.top, layout.width, layout.height);
 
   // draw image
   if (node.image) {
@@ -210,34 +214,59 @@ function drawNode(
   return ctx2d;
 }
 
-function updateYogaNode(child: RenderUIFlex) {
-  child.yogaNode.setFlexDirection(child.flexDirection);
+function updateYogaNode(child: RenderUIElement) {
+  child.yogaNode.setPositionType(child.positionType);
 
-  child.yogaNode.setWidth(child.width);
-  child.yogaNode.setHeight(child.height);
+  child.yogaNode.setPosition(FlexEdge.LEFT, child.position[FlexEdge.LEFT]);
+  child.yogaNode.setPosition(FlexEdge.TOP, child.position[FlexEdge.TOP]);
+  child.yogaNode.setPosition(FlexEdge.RIGHT, child.position[FlexEdge.RIGHT]);
+  child.yogaNode.setPosition(FlexEdge.BOTTOM, child.position[FlexEdge.BOTTOM]);
+
+  child.yogaNode.setWidth(child.width >= 0 ? child.width : "auto");
+  child.yogaNode.setHeight(child.height >= 0 ? child.height : "auto");
+
+  child.yogaNode.setMinWidth(child.minWidth >= 0 ? child.minWidth : "auto");
+  child.yogaNode.setMinHeight(child.minHeight >= 0 ? child.minHeight : "auto");
+
+  child.yogaNode.setMaxWidth(child.maxWidth >= 0 ? child.maxWidth : "auto");
+  child.yogaNode.setMaxHeight(child.maxHeight >= 0 ? child.maxHeight : "auto");
+
+  child.yogaNode.setMargin(FlexEdge.LEFT, child.margin[FlexEdge.LEFT] >= 0 ? child.margin[FlexEdge.LEFT] : "auto");
+  child.yogaNode.setMargin(FlexEdge.TOP, child.margin[FlexEdge.TOP] >= 0 ? child.margin[FlexEdge.TOP] : "auto");
+  child.yogaNode.setMargin(FlexEdge.RIGHT, child.margin[FlexEdge.RIGHT] >= 0 ? child.margin[FlexEdge.RIGHT] : "auto");
+  child.yogaNode.setMargin(
+    FlexEdge.BOTTOM,
+    child.margin[FlexEdge.BOTTOM] >= 0 ? child.margin[FlexEdge.BOTTOM] : "auto"
+  );
+
+  child.yogaNode.setBorder(FlexEdge.LEFT, child.borderWidth[FlexEdge.LEFT]);
+  child.yogaNode.setBorder(FlexEdge.TOP, child.borderWidth[FlexEdge.TOP]);
+  child.yogaNode.setBorder(FlexEdge.RIGHT, child.borderWidth[FlexEdge.RIGHT]);
+  child.yogaNode.setBorder(FlexEdge.BOTTOM, child.borderWidth[FlexEdge.BOTTOM]);
 
   child.yogaNode.setPadding(FlexEdge.LEFT, child.padding[FlexEdge.LEFT]);
   child.yogaNode.setPadding(FlexEdge.TOP, child.padding[FlexEdge.TOP]);
   child.yogaNode.setPadding(FlexEdge.RIGHT, child.padding[FlexEdge.RIGHT]);
   child.yogaNode.setPadding(FlexEdge.BOTTOM, child.padding[FlexEdge.BOTTOM]);
 
-  child.yogaNode.setMargin(FlexEdge.LEFT, child.margin[FlexEdge.LEFT]);
-  child.yogaNode.setMargin(FlexEdge.TOP, child.margin[FlexEdge.TOP]);
-  child.yogaNode.setMargin(FlexEdge.RIGHT, child.margin[FlexEdge.RIGHT]);
-  child.yogaNode.setMargin(FlexEdge.BOTTOM, child.margin[FlexEdge.BOTTOM]);
-
-  // TODO: add remainder of Yoga.Node API
-  child.yogaNode.setPositionType(Yoga.POSITION_TYPE_RELATIVE);
-  child.yogaNode.setJustifyContent(Yoga.JUSTIFY_FLEX_START);
+  child.yogaNode.setFlexDirection(child.flexDirection);
+  child.yogaNode.setFlexBasis(child.flexBasis);
+  child.yogaNode.setFlexWrap(child.flexWrap);
+  child.yogaNode.setFlexGrow(child.flexGrow);
+  child.yogaNode.setFlexShrink(child.flexShrink);
+  child.yogaNode.setAlignItems(child.alignItems);
+  child.yogaNode.setAlignSelf(child.alignSelf);
+  child.yogaNode.setAlignContent(child.alignContent);
+  child.yogaNode.setJustifyContent(child.justifyContent);
 }
 
-function disposeYogaNode(child: RenderUIFlex) {
+function disposeYogaNode(child: RenderUIElement) {
   if (child.yogaNode) {
     Yoga.Node.destroy(child.yogaNode);
   }
 }
 
-function updateYogaNodeRecursive(child: RenderUIFlex, i: number) {
+function updateYogaNodeRecursive(child: RenderUIElement, i: number) {
   child.yogaNode = Yoga.Node.create();
 
   // if not root
@@ -259,7 +288,7 @@ function drawNodeRecursive(
   drawNode(ctx2d, loadingImages, loadingText, uiCanvas.root);
 
   // draw children
-  traverseUIFlex(uiCanvas.root, (child) => {
+  traverseUIElements(uiCanvas.root, (child) => {
     drawNode(ctx2d, loadingImages, loadingText, child);
   });
 }
@@ -273,7 +302,7 @@ export function updateNodeUICanvas(ctx: RenderThreadState, scene: Scene, node: R
     // teardown
     if (node.uiCanvas.root) {
       if (node.uiCanvas.root.yogaNode) Yoga.Node.destroy(node.uiCanvas.root.yogaNode);
-      traverseUIFlex(node.uiCanvas.root, disposeYogaNode);
+      traverseUIElements(node.uiCanvas.root, disposeYogaNode);
     }
     if (node.uiCanvasMesh) {
       scene.remove(node.uiCanvasMesh);
@@ -302,12 +331,12 @@ export function updateNodeUICanvas(ctx: RenderThreadState, scene: Scene, node: R
     updateYogaNode(uiCanvas.root);
 
     // traverse root, create & update yoga nodes
-    traverseUIFlex(uiCanvas.root, updateYogaNodeRecursive);
+    traverseUIElements(uiCanvas.root, updateYogaNodeRecursive);
 
     uiCanvas.canvasTexture = new CanvasTexture(uiCanvas.canvas);
 
     node.uiCanvasMesh = new Mesh(
-      new PlaneGeometry(uiCanvas.width, uiCanvas.height),
+      new PlaneGeometry(uiCanvas.size[0], uiCanvas.size[1]),
       new MeshBasicMaterial({ map: uiCanvas.canvasTexture, transparent: true })
     );
 

@@ -316,6 +316,16 @@ export const readFloat32Array = (v: CursorView, length: number) => {
   return arr;
 };
 
+export const readFloat32List = (v: CursorView) => {
+  const rewind = rewindCursorView(v);
+  const itemsPtr = readUint32(v);
+  const count = readUint32(v);
+  moveCursorView(v, itemsPtr);
+  const arr = readFloat32Array(v, count);
+  rewind();
+  return arr;
+};
+
 export const readUint64 = (v: CursorView) => {
   const val = v.getBigUint64(v.cursor, v.littleEndian);
   v.cursor += BigUint64Array.BYTES_PER_ELEMENT;
@@ -341,6 +351,16 @@ export const readUint32Array = (v: CursorView, length: number) => {
 
   const arr = new Uint32Array(v.buffer, v.cursor, length);
   v.cursor += arr.byteLength;
+  return arr;
+};
+
+export const readUint32List = (v: CursorView) => {
+  const rewind = rewindCursorView(v);
+  const itemsPtr = readUint32(v);
+  const count = readUint32(v);
+  moveCursorView(v, itemsPtr);
+  const arr = readUint32Array(v, count);
+  rewind();
   return arr;
 };
 

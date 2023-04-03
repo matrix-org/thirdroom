@@ -9,6 +9,7 @@ import {
   readFloat32ArrayInto,
   readSharedArrayBuffer,
   readString,
+  readStringFromCursorView,
   readUint8Array,
   WASMModuleContext,
   writeFloat32Array,
@@ -17,6 +18,7 @@ import {
   RemoteAccessor,
   RemoteBuffer,
   RemoteBufferView,
+  RemoteCamera,
   RemoteCollider,
   RemoteInteractable,
   RemoteLight,
@@ -25,10 +27,11 @@ import {
   RemoteMeshPrimitive,
   RemoteNode,
   RemoteScene,
+  RemoteSkin,
   RemoteTexture,
   RemoteUIButton,
   RemoteUICanvas,
-  RemoteUIFlex,
+  RemoteUIElement,
   RemoteUIText,
 } from "../resource/RemoteResources";
 import { addChild, removeChild, traverse } from "../component/transform";
@@ -45,11 +48,13 @@ import {
   ResourceType,
 } from "../resource/schema";
 import {
+  CursorView,
   moveCursorView,
   readFloat32,
   readFloat32Array,
   readUint32,
   readUint32Array,
+  skipUint32,
   writeUint32,
 } from "../allocator/CursorView";
 import { AccessorComponentTypeToTypedArray, AccessorTypeToElementSize } from "../accessor/accessor.common";
@@ -64,7 +69,7 @@ import { getModule } from "../module/module.common";
 import { createMesh } from "../mesh/mesh.game";
 import { addInteractableComponent } from "../../plugins/interaction/interaction.game";
 import { dynamicObjectCollisionGroups } from "../physics/CollisionGroups";
-import { addUIFlexChild } from "../ui/ui.game";
+import { addUIElementChild } from "../ui/ui.game";
 import { startOrbit, stopOrbit } from "../../plugins/camera/CameraRig.game";
 
 export function getScriptResource<T extends RemoteResourceConstructor>(
@@ -212,6 +217,145 @@ function scriptGetChildAt(wasmCtx: WASMModuleContext, parent: RemoteNode | Remot
   return 0;
 }
 
+function readExtensions(
+  wasmCtx: WASMModuleContext,
+  parseExtension: (wasmCtx: WASMModuleContext, name: string) => any = () => {}
+) {
+  const itemsPtr = readUint32(wasmCtx.cursorView);
+  const count = readUint32(wasmCtx.cursorView);
+
+  const extensionItemLength = 8;
+
+  const extensions: { [key: string]: any } = {};
+
+  for (let i = 0; i < count; i++) {
+    moveCursorView(wasmCtx.cursorView, itemsPtr + i * extensionItemLength);
+    const name = readStringFromCursorView(wasmCtx);
+    extensions[name] = parseExtension(wasmCtx, name);
+  }
+
+  return extensions;
+}
+
+<<<<<<< Updated upstream
+function readExtras(cursorView: CursorView) {
+=======
+function skipExtras(cursorView: CursorView) {
+>>>>>>> Stashed changes
+  skipUint32(cursorView);
+  skipUint32(cursorView);
+}
+
+function readTextureRef(wasmCtx: WASMModuleContext) {
+  const textureId = readUint32(wasmCtx.cursorView);
+
+  let texture: RemoteTexture | undefined;
+
+  if (textureId) {
+    texture = getScriptResource(wasmCtx, RemoteTexture, textureId);
+  }
+
+  return texture;
+}
+
+function readTextureInfoExtensions(wasmCtx: WASMModuleContext) {
+  return readExtensions(wasmCtx, (wasmCtx, name) => {
+    if (name == "KHR_textures_transform") {
+      const offset = readFloat32Array(wasmCtx.cursorView, 2);
+      const rotation = readFloat32(wasmCtx.cursorView);
+      const scale = readFloat32Array(wasmCtx.cursorView, 2);
+      const texCoord = readUint32(wasmCtx.cursorView);
+
+      return { offset, rotation, scale, texCoord };
+    }
+
+    return {};
+  });
+}
+
+<<<<<<< Updated upstream
+function readTextureInfo(wasmCtx: WASMModuleContext) {
+  
+
+  skipUint32(wasmCtx.cursorView); // skip texCoord
+  const extensions readTextureInfoExtensions(wasmCtx);
+  readExtras(wasmCtx.cursorView);
+
+  return texture;
+=======
+// MaterialTextureInfoProps
+function readTextureInfo(wasmCtx: WASMModuleContext) {
+  readTextureRef(wasmCtx);
+  skipUint32(wasmCtx.cursorView); // skip texCoord
+  const { KHR_textures_transform: { offset, rotation, scale, texCoord } = {} } = readTextureInfoExtensions(wasmCtx);
+  skipExtras(wasmCtx.cursorView);
+
+  return { texture, extensions };
+>>>>>>> Stashed changes
+}
+
+function readNormalTextureInfo(wasmCtx: WASMModuleContext) {
+  const textureId = readUint32(wasmCtx.cursorView);
+
+  let normalTexture: RemoteTexture | undefined;
+
+  if (textureId) {
+    normalTexture = getScriptResource(wasmCtx, RemoteTexture, textureId);
+  }
+
+  skipUint32(wasmCtx.cursorView); // skip texCoord
+
+  const normalScale = readFloat32(wasmCtx.cursorView);
+
+  const extensions = readExtensions(wasmCtx, parseKHRTexturesTransformExtension);
+  readExtras(wasmCtx.cursorView);
+
+  if (extensions.KHR_textures_transform) {
+    const { offset, rotation, scale } = extensions.KHR_textures_transform;
+
+    return {
+      normalTexture,
+      normalScale,
+      normalTextureOffset: offset,
+      normalTextureRotation: rotation,
+      normalTextureScale: scale,
+    };
+  }
+
+  return { normalTexture, normalScale };
+}
+
+function readOcclusionTextureInfo(wasmCtx: WASMModuleContext) {
+  const textureId = readUint32(wasmCtx.cursorView);
+
+  let occlusionTexture: RemoteTexture | undefined;
+
+  if (textureId) {
+    occlusionTexture = getScriptResource(wasmCtx, RemoteTexture, textureId);
+  }
+
+  skipUint32(wasmCtx.cursorView); // skip texCoord
+
+  const occlusionStrength = readFloat32(wasmCtx.cursorView);
+
+  const extensions = readExtensions(wasmCtx, parseKHRTexturesTransformExtension);
+  readExtras(wasmCtx.cursorView);
+
+  if (extensions.KHR_textures_transform) {
+    const { offset, rotation, scale } = extensions.KHR_textures_transform;
+
+    return {
+      occlusionTexture,
+      occlusionStrength,
+      occlusionTextureOffset: offset,
+      occlusionTextureRotation: rotation,
+      occlusionTextureScale: scale,
+    };
+  }
+
+  return { occlusionTexture, occlusionStrength };
+}
+
 interface MeshPrimitiveProps {
   attributes: { [key: number]: RemoteAccessor };
   indices?: RemoteAccessor;
@@ -229,10 +373,10 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
   const physics = getModule(ctx, PhysicsModule);
 
   return {
-    get_environment_scene() {
+    world_get_environment() {
       return ctx.worldResource.environment?.publicScene.eid || 0;
     },
-    set_environment_scene(sceneId: number) {
+    world_set_environment(sceneId: number) {
       if (!ctx.worldResource.environment) {
         console.error(`WebSG: environment not set`);
         return -1;
@@ -247,15 +391,19 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
         return -1;
       }
     },
-    create_scene() {
+    world_create_scene(propsPtr: number) {
       try {
-        return new RemoteScene(wasmCtx.resourceManager).eid;
+        moveCursorView(wasmCtx.cursorView, propsPtr);
+        const name = readStringFromCursorView(wasmCtx);
+        return new RemoteScene(wasmCtx.resourceManager, {
+          name,
+        }).eid;
       } catch (error) {
         console.error("WebSG: Error creating scene:", error);
         return 0;
       }
     },
-    scene_find_by_name(namePtr: number, byteLength: number) {
+    world_find_scene_by_name(namePtr: number, byteLength: number) {
       const scene = getScriptResourceByNamePtr(ctx, wasmCtx, RemoteScene, namePtr, byteLength);
       return scene ? scene.eid : 0;
     },
@@ -320,15 +468,71 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       return scriptGetChildAt(wasmCtx, scene, index);
     },
-    create_node() {
+    world_create_node(propsPtr: number) {
       try {
-        return new RemoteNode(wasmCtx.resourceManager).eid;
+        moveCursorView(wasmCtx.cursorView, propsPtr);
+
+        const cameraId = readUint32(wasmCtx.cursorView);
+
+        let camera: RemoteCamera | undefined;
+
+        if (cameraId) {
+          camera = getScriptResource(wasmCtx, RemoteCamera, cameraId);
+
+          if (!camera) {
+            return 0;
+          }
+        }
+
+        const skinId = readUint32(wasmCtx.cursorView);
+
+        let skin: RemoteSkin | undefined;
+
+        if (skinId) {
+          skin = getScriptResource(wasmCtx, RemoteSkin, skinId);
+
+          if (!skin) {
+            return 0;
+          }
+        }
+
+        const meshId = readUint32(wasmCtx.cursorView);
+
+        let mesh: RemoteMesh | undefined;
+
+        if (meshId) {
+          mesh = getScriptResource(wasmCtx, RemoteMesh, meshId);
+
+          if (!mesh) {
+            return 0;
+          }
+        }
+
+        const rotation = readFloat32Array(wasmCtx.cursorView, 4);
+        const scale = readFloat32Array(wasmCtx.cursorView, 3);
+        const translation = readFloat32Array(wasmCtx.cursorView, 3);
+
+        // Skip weights
+        skipUint32(wasmCtx.cursorView);
+        skipUint32(wasmCtx.cursorView);
+
+        const name = readStringFromCursorView(wasmCtx);
+
+        return new RemoteNode(wasmCtx.resourceManager, {
+          camera,
+          skin,
+          mesh,
+          quaternion: rotation,
+          scale,
+          position: translation,
+          name,
+        }).eid;
       } catch (error) {
         console.error("WebSG: Error creating node:", error);
         return 0;
       }
     },
-    node_find_by_name(namePtr: number, byteLength: number) {
+    world_find_node_by_name(namePtr: number, byteLength: number) {
       const node = getScriptResourceByNamePtr(ctx, wasmCtx, RemoteNode, namePtr, byteLength);
       return node ? node.eid : 0;
     },
@@ -431,47 +635,107 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       return parentScene.eid;
     },
-    node_get_position(nodeId: number, positionPtr: number) {
+    node_get_translation_element(nodeId: number, index: number) {
       const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
 
       if (!node) {
         return -1;
       }
 
-      writeFloat32Array(wasmCtx, positionPtr, node.position);
+      return node.position[index];
+    },
+    node_set_translation_element(nodeId: number, index: number, value: number) {
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+      if (!node) {
+        return -1;
+      }
+
+      node.position[index] = value;
 
       return 0;
     },
-    node_set_position(nodeId: number, positionPtr: number) {
+    node_get_translation(nodeId: number, translationPtr: number) {
       const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
 
       if (!node) {
         return -1;
       }
 
-      readFloat32ArrayInto(wasmCtx, positionPtr, node.position);
+      writeFloat32Array(wasmCtx, translationPtr, node.position);
 
       return 0;
     },
-    node_get_quaternion(nodeId: number, quaternionPtr: number) {
+    node_set_translation(nodeId: number, translationPtr: number) {
       const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
 
       if (!node) {
         return -1;
       }
 
-      writeFloat32Array(wasmCtx, quaternionPtr, node.quaternion);
+      readFloat32ArrayInto(wasmCtx, translationPtr, node.position);
 
       return 0;
     },
-    node_set_quaternion(nodeId: number, quaternionPtr: number) {
+    node_get_rotation_element(nodeId: number, index: number) {
       const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
 
       if (!node) {
         return -1;
       }
 
-      readFloat32ArrayInto(wasmCtx, quaternionPtr, node.quaternion);
+      return node.quaternion[index];
+    },
+    node_set_rotation_element(nodeId: number, index: number, value: number) {
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+      if (!node) {
+        return -1;
+      }
+
+      node.quaternion[index] = value;
+
+      return 0;
+    },
+    node_get_rotation(nodeId: number, rotationPtr: number) {
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+      if (!node) {
+        return -1;
+      }
+
+      writeFloat32Array(wasmCtx, rotationPtr, node.quaternion);
+
+      return 0;
+    },
+    node_set_rotation(nodeId: number, rotationPtr: number) {
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+      if (!node) {
+        return -1;
+      }
+
+      readFloat32ArrayInto(wasmCtx, rotationPtr, node.quaternion);
+
+      return 0;
+    },
+    node_get_scale_element(nodeId: number, index: number) {
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+      if (!node) {
+        return -1;
+      }
+
+      return node.scale[index];
+    },
+    node_set_scale_element(nodeId: number, index: number, value: number) {
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+      if (!node) {
+        return -1;
+      }
+
+      node.scale[index] = value;
 
       return 0;
     },
@@ -497,27 +761,56 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       return 0;
     },
-    node_get_local_matrix(nodeId: number, localMatrixPtr: number) {
+    node_get_matrix_element(nodeId: number, index: number) {
       const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
 
       if (!node) {
         return -1;
       }
 
-      writeFloat32Array(wasmCtx, localMatrixPtr, node.localMatrix);
+      return node.localMatrix[index];
+    },
+    node_set_matrix_element(nodeId: number, index: number, value: number) {
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+      if (!node) {
+        return -1;
+      }
+
+      node.localMatrix[index] = value;
 
       return 0;
     },
-    node_set_local_matrix(nodeId: number, localMatrixPtr: number) {
+    node_get_matrix(nodeId: number, matrixPtr: number) {
       const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
 
       if (!node) {
         return -1;
       }
 
-      readFloat32ArrayInto(wasmCtx, localMatrixPtr, node.localMatrix);
+      writeFloat32Array(wasmCtx, matrixPtr, node.localMatrix);
 
       return 0;
+    },
+    node_set_matrix(nodeId: number, matrixPtr: number) {
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+      if (!node) {
+        return -1;
+      }
+
+      readFloat32ArrayInto(wasmCtx, matrixPtr, node.localMatrix);
+
+      return 0;
+    },
+    node_get_world_matrix_element(nodeId: number, index: number) {
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+      if (!node) {
+        return -1;
+      }
+
+      return node.worldMatrix[index];
     },
     node_get_world_matrix(nodeId: number, worldMatrixPtr: number) {
       const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
@@ -651,19 +944,68 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       return 0;
     },
-    create_mesh(primitivesPtr: number, primitiveCount: number) {
+    node_start_orbit(nodeId: number, propsPtr: number) {
+      moveCursorView(wasmCtx.cursorView, propsPtr);
+      const pitch = readFloat32(wasmCtx.cursorView);
+      const yaw = readFloat32(wasmCtx.cursorView);
+      const zoom = readFloat32(wasmCtx.cursorView);
+
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+      if (!node) {
+        return -1;
+      }
+
+      startOrbit(ctx, node, { pitch, yaw, zoom });
+
+      return 0;
+    },
+    stop_orbit() {
+      stopOrbit(ctx);
+      return 0;
+    },
+    world_create_mesh(propsPtr: number) {
       try {
+        moveCursorView(wasmCtx.cursorView, propsPtr);
+        const primitivesPtr = readUint32(wasmCtx.cursorView);
+        const primitivesCount = readUint32(wasmCtx.cursorView);
+
+        // Skip weights
+        skipUint32(wasmCtx.cursorView);
+        skipUint32(wasmCtx.cursorView);
+
+        const name = readStringFromCursorView(wasmCtx);
+
         const primitiveProps: MeshPrimitiveProps[] = [];
         const MESH_PRIMITIVE_PROPS_BYTE_LENGTH = 20;
 
-        for (let primitiveIndex = 0; primitiveIndex < primitiveCount; primitiveIndex++) {
+        for (let primitiveIndex = 0; primitiveIndex < primitivesCount; primitiveIndex++) {
           moveCursorView(wasmCtx.cursorView, primitivesPtr + primitiveIndex * MESH_PRIMITIVE_PROPS_BYTE_LENGTH);
 
-          const mode = readUint32(wasmCtx.cursorView);
+          const attributesPtr = readUint32(wasmCtx.cursorView);
+          const attributeCount = readUint32(wasmCtx.cursorView);
+          const MESH_PRIMITIVE_ATTRIBUTE_BYTE_LENGTH = 8;
 
-          if (MeshPrimitiveMode[mode] === undefined) {
-            console.error(`WebSG: invalid mesh primitive mode: ${mode}`);
-            return -1;
+          const attributes: { [key: number]: RemoteAccessor } = {};
+
+          for (let attributeIndex = 0; attributeIndex < attributeCount; attributeIndex++) {
+            moveCursorView(wasmCtx.cursorView, attributesPtr + attributeIndex * MESH_PRIMITIVE_ATTRIBUTE_BYTE_LENGTH);
+            const attributeKey = readUint32(wasmCtx.cursorView);
+
+            if (MeshPrimitiveAttributeIndex[attributeKey] === undefined) {
+              console.error(`WebSG: invalid mesh primitive key: ${attributeKey}`);
+              return -1;
+            }
+
+            const attributeAccessorId = readUint32(wasmCtx.cursorView);
+
+            const accessor = getScriptResource(wasmCtx, RemoteAccessor, attributeAccessorId);
+
+            if (accessor === undefined) {
+              return -1;
+            }
+
+            attributes[attributeKey] = accessor;
           }
 
           const indicesAccessorId = readUint32(wasmCtx.cursorView);
@@ -690,30 +1032,11 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
             }
           }
 
-          const attributeCount = readUint32(wasmCtx.cursorView);
-          const attributesPtr = readUint32(wasmCtx.cursorView);
-          const MESH_PRIMITIVE_ATTRIBUTE_BYTE_LENGTH = 8;
+          const mode = readUint32(wasmCtx.cursorView);
 
-          const attributes: { [key: number]: RemoteAccessor } = {};
-
-          for (let attributeIndex = 0; attributeIndex < attributeCount; attributeIndex++) {
-            moveCursorView(wasmCtx.cursorView, attributesPtr + attributeIndex * MESH_PRIMITIVE_ATTRIBUTE_BYTE_LENGTH);
-            const attributeKey = readUint32(wasmCtx.cursorView);
-
-            if (MeshPrimitiveAttributeIndex[attributeKey] === undefined) {
-              console.error(`WebSG: invalid mesh primitive key: ${attributeKey}`);
-              return -1;
-            }
-
-            const attributeAccessorId = readUint32(wasmCtx.cursorView);
-
-            const accessor = getScriptResource(wasmCtx, RemoteAccessor, attributeAccessorId);
-
-            if (accessor === undefined) {
-              return -1;
-            }
-
-            attributes[attributeKey] = accessor;
+          if (MeshPrimitiveMode[mode] === undefined) {
+            console.error(`WebSG: invalid mesh primitive mode: ${mode}`);
+            return -1;
           }
 
           primitiveProps.push({
@@ -733,7 +1056,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
           primitives.push(new RemoteMeshPrimitive(wasmCtx.resourceManager, props));
         }
 
-        const mesh = new RemoteMesh(wasmCtx.resourceManager, { primitives });
+        const mesh = new RemoteMesh(wasmCtx.resourceManager, { name, primitives });
 
         return mesh.eid;
       } catch (error) {
@@ -741,7 +1064,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
         return 0;
       }
     },
-    mesh_find_by_name(namePtr: number, byteLength: number) {
+    world_find_mesh_by_name(namePtr: number, byteLength: number) {
       const mesh = getScriptResourceByNamePtr(ctx, wasmCtx, RemoteMesh, namePtr, byteLength);
       return mesh ? mesh.eid : 0;
     },
@@ -811,7 +1134,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       return 0;
     },
-    create_box_mesh(propsPtr: number) {
+    world_create_box_mesh(propsPtr: number) {
       moveCursorView(wasmCtx.cursorView, propsPtr);
       const size = readFloat32Array(wasmCtx.cursorView, 3);
       const segments = readUint32Array(wasmCtx.cursorView, 3);
@@ -833,7 +1156,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       return mesh.eid;
     },
-    create_accessor_from(dataPtr: number, byteLength: number, propsPtr: number) {
+    world_create_accessor_from(dataPtr: number, byteLength: number, propsPtr: number) {
       try {
         const data = readSharedArrayBuffer(wasmCtx, dataPtr, byteLength);
         moveCursorView(wasmCtx.cursorView, propsPtr);
@@ -873,7 +1196,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
         return 0;
       }
     },
-    accessor_find_by_name(namePtr: number, byteLength: number) {
+    world_find_accessor_by_name(namePtr: number, byteLength: number) {
       const accessor = getScriptResourceByNamePtr(ctx, wasmCtx, RemoteAccessor, namePtr, byteLength);
       return accessor ? accessor.eid : 0;
     },
@@ -928,17 +1251,62 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
         return -1;
       }
     },
-    create_material(type: number) {
-      if (MaterialType[type] === undefined) {
-        console.error("WebSG: Invalid material type.");
-        return -1;
-      }
+    world_create_material(propsPtr: number) {
+      moveCursorView(wasmCtx.cursorView, propsPtr);
 
-      const material = new RemoteMaterial(wasmCtx.resourceManager, { type });
+      const baseColorFactor = readFloat32Array(wasmCtx.cursorView, 4);
+      const baseColorTexture = readTextureInfo(wasmCtx);
+      const metallicFactor = readFloat32(wasmCtx.cursorView);
+      const roughnessFactor = readFloat32(wasmCtx.cursorView);
+      const metallicRoughnessTexture = readTextureInfo(wasmCtx);
+      const normalTextureInfo = readNormalTextureInfo(wasmCtx);
+      const [
+        occlusionTexture,
+        occlusionTextureStrength,
+        occlusionTextureOffset,
+        occlusionTextureRotation,
+        occlusionTextureScale,
+      ] = readOcclusionTextureInfo(wasmCtx);
+      const emissiveTexture = readTextureInfo(wasmCtx);
+      const emissiveFactor = readFloat32Array(wasmCtx.cursorView, 3);
+      const alphaMode = readUint32(wasmCtx.cursorView);
+      const alphaCutoff = readFloat32(wasmCtx.cursorView);
+      const doubleSided = !!readUint32(wasmCtx.cursorView);
+      const name = readStringFromCursorView(wasmCtx);
+      const extensions = readExtensions(wasmCtx, (wasmCtx, name) => {
+        if (name === "KHR_materials_unlit") {
+          return {};
+        }
+
+        return {};
+      });
+
+      const type = "KHR_materials_unlit" in extensions ? MaterialType.Unlit : MaterialType.Standard;
+
+      readExtensions(wasmCtx);
+      readExtras(wasmCtx.cursorView);
+
+      const material = new RemoteMaterial(wasmCtx.resourceManager, {
+        type,
+        baseColorFactor,
+        baseColorTexture,
+        metallicFactor,
+        roughnessFactor,
+        metallicRoughnessTexture,
+        ...normalTextureInfo,
+        occlusionTexture,
+        occlusionTextureStrength,
+        emissiveTexture,
+        emissiveFactor,
+        alphaMode,
+        alphaCutoff,
+        doubleSided,
+        name,
+      });
 
       return material.eid;
     },
-    material_find_by_name(namePtr: number, byteLength: number) {
+    world_find_material_by_name(namePtr: number, byteLength: number) {
       const material = getScriptResourceByNamePtr(ctx, wasmCtx, RemoteMaterial, namePtr, byteLength);
       return material ? material.eid : 0;
     },
@@ -1326,15 +1694,15 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
     // UI Canvas
     create_ui_canvas(propsPtr: number) {
       moveCursorView(wasmCtx.cursorView, propsPtr);
+      const size = readFloat32Array(wasmCtx.cursorView, 2);
       const width = readFloat32(wasmCtx.cursorView);
       const height = readFloat32(wasmCtx.cursorView);
-      const pixelDensity = readFloat32(wasmCtx.cursorView);
 
       try {
         const uiCanvas = new RemoteUICanvas(wasmCtx.resourceManager, {
+          size,
           width,
           height,
-          pixelDensity,
         });
         return uiCanvas.eid;
       } catch (e) {
@@ -1368,6 +1736,25 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       return 0;
     },
+    ui_canvas_get_root(canvasId: number) {
+      const canvas = getScriptResource(wasmCtx, RemoteUICanvas, canvasId);
+
+      if (!canvas) {
+        return 0; // This function returns a u32 so errors returned as 0 / null eid
+      }
+
+      const root = canvas.root;
+
+      if (!root) {
+        return 0;
+      }
+
+      if (!wasmCtx.resourceManager.resourceIds.has(root.eid)) {
+        return 0;
+      }
+
+      return root.eid;
+    },
     ui_canvas_set_root(canvasId: number, rootId: number) {
       const canvas = getScriptResource(wasmCtx, RemoteUICanvas, canvasId);
 
@@ -1375,7 +1762,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
         return -1;
       }
 
-      const flex = getScriptResource(wasmCtx, RemoteUIFlex, rootId);
+      const flex = getScriptResource(wasmCtx, RemoteUIElement, rootId);
 
       if (!flex) {
         return -1;
@@ -1384,6 +1771,15 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       canvas.root = flex;
 
       return 0;
+    },
+    ui_canvas_get_width(canvasId: number) {
+      const canvas = getScriptResource(wasmCtx, RemoteUICanvas, canvasId);
+
+      if (!canvas) {
+        return -1;
+      }
+
+      return canvas.width;
     },
     ui_canvas_set_width(canvasId: number, width: number) {
       const canvas = getScriptResource(wasmCtx, RemoteUICanvas, canvasId);
@@ -1396,6 +1792,15 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       return 0;
     },
+    ui_canvas_get_height(canvasId: number) {
+      const canvas = getScriptResource(wasmCtx, RemoteUICanvas, canvasId);
+
+      if (!canvas) {
+        return -1;
+      }
+
+      return canvas.height;
+    },
     ui_canvas_set_height(canvasId: number, height: number) {
       const canvas = getScriptResource(wasmCtx, RemoteUICanvas, canvasId);
 
@@ -1404,17 +1809,6 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       }
 
       canvas.height = height;
-
-      return 0;
-    },
-    ui_canvas_set_pixel_density(canvasId: number, pixelDensity: number) {
-      const canvas = getScriptResource(wasmCtx, RemoteUICanvas, canvasId);
-
-      if (!canvas) {
-        return -1;
-      }
-
-      canvas.pixelDensity = pixelDensity;
 
       return 0;
     },
@@ -1443,7 +1837,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       const margin = readFloat32Array(wasmCtx.cursorView, 4);
 
       try {
-        const uiFlex = new RemoteUIFlex(wasmCtx.resourceManager, {
+        const uiElement = new RemoteUIElement(wasmCtx.resourceManager, {
           width,
           height,
           flexDirection,
@@ -1452,14 +1846,14 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
           padding,
           margin,
         });
-        return uiFlex.eid;
+        return uiElement.eid;
       } catch (e) {
         console.error("WebSG: error creating ui flex", e);
         return -1;
       }
     },
     ui_flex_set_flex_direction(flexId: number, flexDirection: number) {
-      const flex = getScriptResource(wasmCtx, RemoteUIFlex, flexId);
+      const flex = getScriptResource(wasmCtx, RemoteUIElement, flexId);
 
       if (!flex) {
         return -1;
@@ -1470,7 +1864,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       return 0;
     },
     ui_flex_set_width(flexId: number, width: number) {
-      const flex = getScriptResource(wasmCtx, RemoteUIFlex, flexId);
+      const flex = getScriptResource(wasmCtx, RemoteUIElement, flexId);
 
       if (!flex) {
         return -1;
@@ -1481,7 +1875,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       return 0;
     },
     ui_flex_set_height(flexId: number, height: number) {
-      const flex = getScriptResource(wasmCtx, RemoteUIFlex, flexId);
+      const flex = getScriptResource(wasmCtx, RemoteUIElement, flexId);
 
       if (!flex) {
         return -1;
@@ -1492,7 +1886,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       return 0;
     },
     ui_flex_set_background_color(flexId: number, colorPtr: number) {
-      const flex = getScriptResource(wasmCtx, RemoteUIFlex, flexId);
+      const flex = getScriptResource(wasmCtx, RemoteUIElement, flexId);
 
       if (!flex) {
         return -1;
@@ -1503,7 +1897,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       return 0;
     },
     ui_flex_set_border_color(flexId: number, colorPtr: number) {
-      const flex = getScriptResource(wasmCtx, RemoteUIFlex, flexId);
+      const flex = getScriptResource(wasmCtx, RemoteUIElement, flexId);
 
       if (!flex) {
         return -1;
@@ -1514,7 +1908,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       return 0;
     },
     ui_flex_set_padding(flexId: number, paddingPtr: number) {
-      const flex = getScriptResource(wasmCtx, RemoteUIFlex, flexId);
+      const flex = getScriptResource(wasmCtx, RemoteUIElement, flexId);
 
       if (!flex) {
         return -1;
@@ -1525,7 +1919,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       return 0;
     },
     ui_flex_set_margin(flexId: number, marginPtr: number) {
-      const flex = getScriptResource(wasmCtx, RemoteUIFlex, flexId);
+      const flex = getScriptResource(wasmCtx, RemoteUIElement, flexId);
 
       if (!flex) {
         return -1;
@@ -1536,24 +1930,24 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       return 0;
     },
     ui_flex_add_child(flexId: number, childId: number) {
-      const flex = getScriptResource(wasmCtx, RemoteUIFlex, flexId);
+      const flex = getScriptResource(wasmCtx, RemoteUIElement, flexId);
 
       if (!flex) {
         return -1;
       }
 
-      const child = getScriptResource(wasmCtx, RemoteUIFlex, childId);
+      const child = getScriptResource(wasmCtx, RemoteUIElement, childId);
 
       if (!child) {
         return -1;
       }
 
-      addUIFlexChild(flex, child);
+      addUIElementChild(flex, child);
 
       return 0;
     },
     ui_flex_add_text(flexId: number, textId: number) {
-      const flex = getScriptResource(wasmCtx, RemoteUIFlex, flexId);
+      const flex = getScriptResource(wasmCtx, RemoteUIElement, flexId);
 
       if (!flex) {
         return -1;
@@ -1571,7 +1965,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
     },
 
     ui_flex_add_button(flexId: number, buttonId: number) {
-      const flex = getScriptResource(wasmCtx, RemoteUIFlex, flexId);
+      const flex = getScriptResource(wasmCtx, RemoteUIElement, flexId);
 
       if (!flex) {
         return -1;
@@ -1755,24 +2149,6 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       }
 
       readFloat32ArrayInto(wasmCtx, colorPtr, flex.color);
-    },
-    start_orbit(nodeId: number, propsPtr: number) {
-      moveCursorView(wasmCtx.cursorView, propsPtr);
-      const pitch = readFloat32(wasmCtx.cursorView);
-      const yaw = readFloat32(wasmCtx.cursorView);
-      const zoom = readFloat32(wasmCtx.cursorView);
-
-      const options = { pitch, yaw, zoom };
-
-      const node = getScriptResource(wasmCtx, RemoteNode, nodeId)!;
-
-      startOrbit(ctx, node, options);
-
-      return node;
-    },
-    stop_orbit() {
-      stopOrbit(ctx);
-      return 0;
     },
   };
 }

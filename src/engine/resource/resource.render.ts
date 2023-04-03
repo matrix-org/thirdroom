@@ -88,7 +88,7 @@ import {
   WorldResource,
   EnvironmentResource,
   UICanvasResource,
-  UIFlexResource,
+  UIElementResource,
   UITextResource,
   UIButtonResource,
   UIImageResource,
@@ -635,11 +635,11 @@ export class RenderUIImage extends defineLocalResourceClass(UIImageResource) {
   domElement?: HTMLImageElement;
 }
 
-export class RenderUIFlex extends defineLocalResourceClass(UIFlexResource) {
-  declare parent: RenderUIFlex | undefined;
-  declare firstChild: RenderUIFlex | undefined;
-  declare prevSibling: RenderUIFlex | undefined;
-  declare nextSibling: RenderUIFlex | undefined;
+export class RenderUIElement extends defineLocalResourceClass(UIElementResource) {
+  declare parent: RenderUIElement | undefined;
+  declare firstChild: RenderUIElement | undefined;
+  declare prevSibling: RenderUIElement | undefined;
+  declare nextSibling: RenderUIElement | undefined;
 
   declare text: RenderUIText;
   declare button: RenderUIButton;
@@ -649,7 +649,7 @@ export class RenderUIFlex extends defineLocalResourceClass(UIFlexResource) {
 }
 
 export class RenderUICanvas extends defineLocalResourceClass(UICanvasResource) {
-  declare root: RenderUIFlex;
+  declare root: RenderUIElement;
 
   canvasTexture?: CanvasTexture;
   canvas?: OffscreenCanvas;
@@ -809,7 +809,7 @@ const {
   RenderNode,
   RenderUIButton,
   RenderUICanvas,
-  RenderUIFlex,
+  RenderUIElement,
   RenderUIImage,
   RenderUIText,
   RenderAudioData,

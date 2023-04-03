@@ -38,7 +38,7 @@ export enum ResourceType {
   UIText,
   UIButton,
   UIImage,
-  UIFlex,
+  UIElement,
   Collider,
   PhysicsBody,
 }
@@ -428,11 +428,49 @@ export const InteractableResource = defineResource("interactable", ResourceType.
   released: PropType.bool({ mutableScript: false, script: true }),
 });
 
+export enum ElementType {
+  Flex,
+  Text,
+  Button,
+  Image,
+}
+
 export enum FlexDirection {
-  COLUMN = Yoga.FLEX_DIRECTION_COLUMN,
-  COLUMN_REVERSE = Yoga.FLEX_DIRECTION_COLUMN_REVERSE,
-  ROW = Yoga.FLEX_DIRECTION_ROW,
-  ROW_REVERSE = Yoga.FLEX_DIRECTION_ROW_REVERSE,
+  Column = Yoga.FLEX_DIRECTION_COLUMN,
+  ColumnReverse = Yoga.FLEX_DIRECTION_COLUMN_REVERSE,
+  Row = Yoga.FLEX_DIRECTION_ROW,
+  RowReverse = Yoga.FLEX_DIRECTION_ROW_REVERSE,
+}
+
+export enum FlexPositionType {
+  Relative = Yoga.POSITION_TYPE_RELATIVE,
+  Absolute = Yoga.POSITION_TYPE_ABSOLUTE,
+}
+
+export enum FlexAlign {
+  Auto = Yoga.ALIGN_AUTO,
+  FlexStart = Yoga.ALIGN_FLEX_START,
+  Center = Yoga.ALIGN_CENTER,
+  FlexEnd = Yoga.ALIGN_FLEX_END,
+  Stretch = Yoga.ALIGN_STRETCH,
+  Baseline = Yoga.ALIGN_BASELINE,
+  SpaceBetween = Yoga.ALIGN_SPACE_BETWEEN,
+  SpaceAround = Yoga.ALIGN_SPACE_AROUND,
+}
+
+export enum FlexJustify {
+  FlexStart = Yoga.JUSTIFY_FLEX_START,
+  Center = Yoga.JUSTIFY_CENTER,
+  FlexEnd = Yoga.JUSTIFY_FLEX_END,
+  SpaceBetween = Yoga.JUSTIFY_SPACE_BETWEEN,
+  SpaceAround = Yoga.JUSTIFY_SPACE_AROUND,
+  SpaceEvenly = Yoga.JUSTIFY_SPACE_EVENLY,
+}
+
+export enum FlexWrap {
+  NoWrap = Yoga.WRAP_NO_WRAP,
+  Wrap = Yoga.WRAP_WRAP,
+  WrapReverse = Yoga.WRAP_WRAP_REVERSE,
 }
 
 export enum FlexEdge {
@@ -461,15 +499,66 @@ export const UIImageResource = defineResource("ui-image", ResourceType.UIImage, 
   alt: PropType.string({ script: true, required: false }),
 });
 
-export const UIFlexResource = defineResource("ui-flex", ResourceType.UIFlex, {
-  flexDirection: PropType.enum(FlexDirection, {
-    default: FlexDirection.ROW,
+export const UIElementResource = defineResource("ui-flex", ResourceType.UIElement, {
+  position: PropType.vec4({ script: true, mutable: true }),
+
+  positionType: PropType.enum(FlexPositionType, {
+    default: FlexPositionType.Relative,
     script: true,
     mutable: true,
   }),
 
-  width: PropType.f32({ script: true, mutable: true }),
-  height: PropType.f32({ script: true, mutable: true }),
+  alignContent: PropType.enum(FlexAlign, {
+    default: FlexAlign.FlexStart,
+    script: true,
+    mutable: true,
+  }),
+
+  alignItems: PropType.enum(FlexAlign, {
+    default: FlexAlign.Stretch,
+    script: true,
+    mutable: true,
+  }),
+
+  alignSelf: PropType.enum(FlexAlign, {
+    default: FlexAlign.Auto,
+    script: true,
+    mutable: true,
+  }),
+
+  flexDirection: PropType.enum(FlexDirection, {
+    default: FlexDirection.Row,
+    script: true,
+    mutable: true,
+  }),
+
+  flexWrap: PropType.enum(FlexWrap, {
+    default: FlexWrap.NoWrap,
+    script: true,
+    mutable: true,
+  }),
+
+  flexBasis: PropType.f32({ script: true, mutable: true }),
+
+  flexGrow: PropType.f32({ script: true, mutable: true, min: 0 }),
+
+  flexShrink: PropType.f32({ default: 1, script: true, mutable: true, min: 0 }),
+
+  justifyContent: PropType.enum(FlexJustify, {
+    default: FlexJustify.FlexStart,
+    script: true,
+    mutable: true,
+  }),
+
+  // Negative values are auto
+  width: PropType.f32({ default: -1, script: true, mutable: true }),
+  height: PropType.f32({ default: -1, script: true, mutable: true }),
+
+  minWidth: PropType.f32({ default: -1, script: true, mutable: true }),
+  minHeight: PropType.f32({ default: -1, script: true, mutable: true }),
+
+  maxWidth: PropType.f32({ default: -1, script: true, mutable: true }),
+  maxHeight: PropType.f32({ default: -1, script: true, mutable: true }),
 
   backgroundColor: PropType.rgba({ script: true, mutable: true }),
   borderColor: PropType.rgba({ script: true, mutable: true }),
@@ -477,25 +566,24 @@ export const UIFlexResource = defineResource("ui-flex", ResourceType.UIFlex, {
   // TODO: vec4 alias
   padding: PropType.rgba({ script: true, mutable: true }),
   margin: PropType.rgba({ script: true, mutable: true }),
+  borderWidth: PropType.vec4({ script: true, mutable: true }),
 
   parent: PropType.selfRef({ backRef: true }),
   firstChild: PropType.selfRef(),
   prevSibling: PropType.selfRef({ backRef: true }),
   nextSibling: PropType.selfRef(),
 
-  text: PropType.ref(UITextResource, {}),
-  button: PropType.ref(UIButtonResource, {}),
-  image: PropType.ref(UIImageResource, {}),
+  type: PropType.enum(ElementType, { default: ElementType.Flex, mutable: false }),
+  text: PropType.ref(UITextResource, { mutable: false }),
+  button: PropType.ref(UIButtonResource, { mutable: false }),
+  image: PropType.ref(UIImageResource, { mutable: false }),
 });
 
 export const UICanvasResource = defineResource("ui-canvas", ResourceType.UICanvas, {
-  root: PropType.ref(UIFlexResource),
-
-  pixelDensity: PropType.f32({ script: true, mutable: true }),
-
+  root: PropType.ref(UIElementResource),
+  size: PropType.vec2({ script: true, mutable: true }),
   width: PropType.f32({ script: true, mutable: true }),
   height: PropType.f32({ script: true, mutable: true }),
-
   redraw: PropType.u32({ default: 1, script: true, mutable: true }),
 });
 

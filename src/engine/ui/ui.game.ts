@@ -1,4 +1,5 @@
 import * as RAPIER from "@dimforge/rapier3d-compat";
+import { vec2 } from "gl-matrix";
 
 import {
   addInteractableComponent,
@@ -14,7 +15,7 @@ import {
   RemoteNode,
   RemoteUIButton,
   RemoteUICanvas,
-  RemoteUIFlex,
+  RemoteUIElement,
 } from "../resource/RemoteResources";
 import { tryGetRemoteResource } from "../resource/resource.game";
 import { InteractableType } from "../resource/schema";
@@ -50,23 +51,20 @@ export const WebSGUIModule = defineModule<GameState, {}>({
 export function createUICanvasNode(
   ctx: GameState,
   physics: PhysicsModuleState,
+  size: vec2,
   width: number,
-  height: number,
-  pixelDensity = 1000
+  height: number
 ) {
-  const widthPx = width * pixelDensity;
-  const heightPx = height * pixelDensity;
-
-  const root = new RemoteUIFlex(ctx.resourceManager, {
-    width: widthPx,
-    height: heightPx,
+  const root = new RemoteUIElement(ctx.resourceManager, {
+    width,
+    height,
   });
 
   const uiCanvas = new RemoteUICanvas(ctx.resourceManager, {
     root,
+    size,
     width,
     height,
-    pixelDensity,
   });
 
   const node = new RemoteNode(ctx.resourceManager, { uiCanvas });
@@ -74,7 +72,7 @@ export function createUICanvasNode(
   // add rigidbody for interactable UI
   const rigidBodyDesc = RAPIER.RigidBodyDesc.kinematicPositionBased();
   const rigidBody = physics.physicsWorld.createRigidBody(rigidBodyDesc);
-  const colliderDesc = RAPIER.ColliderDesc.cuboid(width / 2, height / 2, 0.01)
+  const colliderDesc = RAPIER.ColliderDesc.cuboid(size[0] / 2, size[1] / 2, 0.01)
     .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS)
     .setCollisionGroups(dynamicObjectCollisionGroups);
   physics.physicsWorld.createCollider(colliderDesc, rigidBody);
@@ -85,7 +83,7 @@ export function createUICanvasNode(
   return node;
 }
 
-function removeUIFlexFromLinkedList(parent: RemoteUIFlex, child: RemoteUIFlex) {
+function removeUIElementFromLinkedList(parent: RemoteUIElement, child: RemoteUIElement) {
   const prevSibling = child.prevSibling;
   const nextSibling = child.nextSibling;
 
@@ -107,7 +105,7 @@ function removeUIFlexFromLinkedList(parent: RemoteUIFlex, child: RemoteUIFlex) {
   }
 }
 
-export function getLastUIFlexChild(parent: RemoteUIFlex): RemoteUIFlex | undefined {
+export function getLastUIElementChild(parent: RemoteUIElement): RemoteUIElement | undefined {
   let cursor = parent.firstChild;
 
   let last = cursor;
@@ -120,7 +118,7 @@ export function getLastUIFlexChild(parent: RemoteUIFlex): RemoteUIFlex | undefin
   return last;
 }
 
-export function addUIFlexChild(parent: RemoteUIFlex, child: RemoteUIFlex) {
+export function addUIElementChild(parent: RemoteUIElement, child: RemoteUIElement) {
   child.addRef();
 
   const previousParent = child.parent;
@@ -128,10 +126,10 @@ export function addUIFlexChild(parent: RemoteUIFlex, child: RemoteUIFlex) {
   child.parent = parent;
 
   if (previousParent) {
-    removeUIFlexFromLinkedList(previousParent, child);
+    removeUIElementFromLinkedList(previousParent, child);
   }
 
-  const lastChild = getLastUIFlexChild(parent);
+  const lastChild = getLastUIElementChild(parent);
 
   if (lastChild) {
     lastChild.nextSibling = child;

@@ -3,11 +3,21 @@
 #include <stdint.h>
 #include <math.h>
 
+/*******************************
+ * WASM Import / Export Macros *
+ *******************************/
+
 #define import_websg(NAME) __attribute__((import_module("websg"),import_name(#NAME)))
 
 #define export __attribute__((used))
 
+/*************
+ * WebSG IDs *
+ *************/
+
 typedef uint32_t scene_id_t;
+typedef uint32_t camera_id_t;
+typedef uint32_t skin_id_t;
 typedef uint32_t node_id_t;
 typedef uint32_t mesh_id_t;
 typedef uint32_t accessor_id_t;
@@ -15,119 +25,127 @@ typedef uint32_t material_id_t;
 typedef uint32_t texture_id_t;
 typedef uint32_t light_id_t;
 typedef uint32_t collider_id_t;
+typedef uint32_t ui_canvas_id_t;
+typedef uint32_t ui_element_id_t;
 
-// Environment
+/*******************************
+ * Common WebSG Property Types *
+ *******************************/
 
-// Returns the scene id or 0 if not found
-import_websg(get_environment_scene) scene_id_t websg_get_environment_scene();
-// Returns 0 if successful or -1 if error
-import_websg(set_environment_scene) int32_t websg_set_environment_scene(scene_id_t scene_id);
+typedef struct Extensions {
+  ExtensionItem *items;
+  uint32_t count;
+} Extensions;
 
-/*******
- * Scene
- *******/
+typedef struct ExtensionItem {
+  const char *name;
+  void* extension;
+} ExtensionItem;
 
-// Returns scene id or 0 if error
-import_websg(create_scene) scene_id_t websg_create_scene();
-// Returns scene id or 0 if not found
-import_websg(scene_find_by_name) scene_id_t websg_scene_find_by_name(const char *name, uint32_t length);
+typedef struct Extras {
+  ExtrasItem *items;
+  uint32_t count;
+} Extras;
 
-// Scene Hierarchy
+typedef struct ExtrasItem {
+  const char *key;
+  void* value;
+} ExtrasItem;
 
-// Returns 0 if successful or -1 if error
+/*********
+ * World *
+ *********/
+
+import_websg(world_get_environment) scene_id_t websg_world_get_environment();
+import_websg(world_set_environment) int32_t websg_world_set_environment(scene_id_t scene_id);
+
+/*********
+ * Scene *
+ *********/
+
+typedef struct SceneProps {
+  const char *name;
+  Extensions extensions;
+  Extras extras;
+} SceneProps;
+
+import_websg(world_create_scene) scene_id_t websg_world_create_scene(SceneProps *props);
+import_websg(world_find_scene_by_name) scene_id_t websg_world_find_scene_by_name(const char *name, uint32_t length);
 import_websg(scene_add_node) int32_t websg_scene_add_node(scene_id_t scene_id, node_id_t node_id);
-// Returns 0 if successful or -1 if error
 import_websg(scene_remove_node) int32_t websg_scene_remove_node(scene_id_t scene_id, node_id_t node_id);
-// Returns the number of child nodes or -1 if error
 import_websg(scene_get_node_count) int32_t websg_scene_get_node_count(scene_id_t scene_id);
-// Returns the number of node ids written to the array or -1 if error
-import_websg(scene_get_nodes) int32_t websg_scene_get_nodes(
-  scene_id_t scene_id,
-  node_id_t *nodes,
-  uint32_t max_count
-);
-// Returns the node id or 0 if not found
-import_websg(scene_get_node) node_id_t websg_scene_get_node(
-  scene_id_t scene_id,
-  uint32_t index
-);
+import_websg(scene_get_nodes) int32_t websg_scene_get_nodes(scene_id_t scene_id, node_id_t *nodes, uint32_t max_count);
+import_websg(scene_get_node) node_id_t websg_scene_get_node(scene_id_t scene_id, uint32_t index);
 
-/**
- * Node
- **/
+/********
+ * Node *
+ ********/
 
-// Returns node id or 0 if error
-import_websg(create_node) node_id_t websg_create_node();
-// Returns node id or 0 if not found
-import_websg(node_find_by_name) node_id_t websg_node_find_by_name(const char *name, uint32_t length);
+typedef struct NodeWeights {
+  float_t *items;
+  uint32_t count;
+} NodeWeights;
 
-// Node Hierarchy
+typedef struct NodeProps {
+  camera_id_t camera;
+  skin_id_t skin;
+  mesh_id_t mesh;
+  float_t rotation[4];
+  float_t scale[3];
+  float_t translation[3];
+  NodeWeights weights;
+  const char *name;
+  Extensions extensions;
+  Extras extras;
+} NodeProps;
 
-// Returns 0 if successful or -1 if error
+import_websg(world_create_node) node_id_t websg_world_create_node(NodeProps *props);
+import_websg(world_find_node_by_name) node_id_t websg_world_find_node_by_name(const char *name, uint32_t length);
 import_websg(node_add_child) int32_t websg_node_add_child(node_id_t node_id, node_id_t child_id);
-// Returns 0 if successful or -1 if error
 import_websg(node_remove_child) int32_t websg_node_remove_child(node_id_t node_id, node_id_t child_id);
-// Returns the number of child nodes or -1 if error
 import_websg(node_get_child_count) int32_t websg_node_get_child_count(node_id_t node_id);
-// Returns the number of node ids written to the array or -1 if error
-import_websg(node_get_children) int32_t websg_node_get_children(
-  node_id_t node_id,
-  node_id_t *children,
-  uint32_t max_count
-);
-// Returns the node id or 0 if not found
+import_websg(node_get_children) int32_t websg_node_get_children(node_id_t node_id, node_id_t *children, uint32_t max_count);
 import_websg(node_get_child) node_id_t websg_node_get_child(node_id_t node_id, uint32_t index);
-// Returns the node id or 0 if not found
 import_websg(node_get_parent) node_id_t websg_node_get_parent(node_id_t node_id);
-// Returns the scene id or 0 if not found
 import_websg(node_get_parent_scene) scene_id_t websg_node_get_parent_scene(node_id_t node_id);
-
-// Node Transform
-
-// Returns 0 if successful or -1 if error
-import_websg(node_get_position) int32_t websg_node_get_position(node_id_t node_id, float_t *position);
-// Returns 0 if successful or -1 if error
-import_websg(node_set_position) int32_t websg_node_set_position(node_id_t node_id, float_t *position);
-// Returns 0 if successful or -1 if error
-import_websg(node_get_quaternion) int32_t websg_node_get_quaternion(node_id_t node_id, float_t *quaternion);
-// Returns 0 if successful or -1 if error
-import_websg(node_set_quaternion) int32_t websg_node_set_quaternion(node_id_t node_id, float_t *quaternion);
-// Returns 0 if successful or -1 if error
+import_websg(node_get_translation_element) float_t websg_node_get_translation_element(node_id_t node_id, uint32_t index);
+import_websg(node_set_translation_element) int32_t websg_node_set_translation_element(node_id_t node_id, uint32_t index, float_t value);
+import_websg(node_get_translation) int32_t websg_node_get_translation(node_id_t node_id, float_t *translation);
+import_websg(node_set_translation) int32_t websg_node_set_translation(node_id_t node_id, float_t *translation);
+import_websg(node_get_rotation_element) float_t websg_node_get_rotation_element(node_id_t node_id, uint32_t index);
+import_websg(node_set_rotation_element) int32_t websg_node_set_rotation_element(node_id_t node_id, uint32_t index, float_t value);
+import_websg(node_get_rotation) int32_t websg_node_get_rotation(node_id_t node_id, float_t *rotation);
+import_websg(node_set_rotation) int32_t websg_node_set_rotation(node_id_t node_id, float_t *rotation);
+import_websg(node_get_scale_element) float_t websg_node_get_scale_element(node_id_t node_id, uint32_t index);
+import_websg(node_set_scale_element) int32_t websg_node_set_scale_element(node_id_t node_id, uint32_t index, float_t value);
 import_websg(node_get_scale) int32_t websg_node_get_scale(node_id_t node_id, float_t *scale);
-// Returns 0 if successful or -1 if error
 import_websg(node_set_scale) int32_t websg_node_set_scale(node_id_t node_id, float_t *scale);
-// Returns 0 if successful or -1 if error
-import_websg(node_get_local_matrix) int32_t websg_node_get_local_matrix(node_id_t node_id, float_t *local_matrix);
-// Returns 0 if successful or -1 if error
-import_websg(node_set_local_matrix) int32_t websg_node_set_local_matrix(node_id_t node_id, float_t *local_matrix);
-// Returns 0 if successful or -1 if error
+import_websg(node_get_matrix_element) float_t websg_node_get_matrix_element(node_id_t node_id, uint32_t index);
+import_websg(node_set_matrix_element) int32_t websg_node_set_matrix_element(node_id_t node_id, uint32_t index, float_t value);
+import_websg(node_get_matrix) int32_t websg_node_get_matrix(node_id_t node_id, float_t *matrix);
+import_websg(node_set_matrix) int32_t websg_node_set_matrix(node_id_t node_id, float_t *matrix);
+import_websg(node_get_world_matrix_element) float_t websg_node_get_world_matrix_element(node_id_t node_id, uint32_t index);
 import_websg(node_get_world_matrix) int32_t websg_node_get_world_matrix(node_id_t node_id, float_t *world_matrix);
-
-// Node Props
-
-// Returns 0 if false 1 if true
 import_websg(node_get_visible) uint32_t websg_node_get_visible(node_id_t node_id);
-// Returns 0 if successful or -1 if error
 import_websg(node_set_visible) int32_t websg_node_set_visible(node_id_t node_id, uint32_t visible);
-// Returns 0 if false 1 if true
 import_websg(node_get_is_static) uint32_t websg_node_get_is_static(node_id_t node_id);
-// Returns 0 if successful or -1 if error
 import_websg(node_set_is_static) int32_t websg_node_set_is_static(node_id_t node_id, uint32_t is_static);
-import_websg(node_set_is_static_recursive) int32_t websg_node_set_is_static_recursive(
-  node_id_t node_id,
-  uint32_t is_static
-);
-
-// Node Refs
-
+import_websg(node_set_is_static_recursive) int32_t websg_node_set_is_static_recursive(node_id_t node_id, uint32_t is_static);
 import_websg(node_get_mesh) mesh_id_t websg_node_get_mesh(node_id_t node_id);
 import_websg(node_set_mesh) int32_t websg_node_set_mesh(node_id_t node_id, mesh_id_t mesh_id);
-
 import_websg(node_get_light) light_id_t websg_node_get_light(node_id_t node_id);
 import_websg(node_set_light) int32_t websg_node_set_light(node_id_t node_id, light_id_t light_id);
-
 import_websg(node_get_collider) collider_id_t websg_node_get_collider(node_id_t node_id);
 import_websg(node_set_collider) int32_t websg_node_set_collider(node_id_t node_id, collider_id_t collider_id);
+
+typedef struct CameraRigOptions {
+  float_t pitch;
+  float_t yaw;
+  float_t zoom;
+} CameraRigOptions;
+
+import_websg(node_start_orbit) int32_t websg_node_start_orbit(node_id_t node_id, CameraRigOptions *options);
+import_websg(stop_orbit) int32_t websg_stop_orbit();
 
 /**
  * Mesh
@@ -159,13 +177,50 @@ typedef struct MeshPrimitiveAttributeItem {
   accessor_id_t accessor_id;
 } MeshPrimitiveAttributeItem;
 
+typedef struct MeshPrimitiveAttributesList {
+  MeshPrimitiveAttributeItem *items;
+  uint32_t count;
+} MeshPrimitiveAttributesList;
+
+typedef struct MeshPrimitiveTarget {
+  MeshPrimitiveAttribute key;
+  accessor_id_t accessor_id;
+} MeshPrimitiveTarget;
+
+typedef struct MeshPrimitiveTargetsList {
+  MeshPrimitiveTarget *items;
+  uint32_t count;
+} MeshPrimitiveTargetsList;
+
 typedef struct MeshPrimitiveProps {
-  MeshPrimitiveMode mode;
+  MeshPrimitiveAttributesList attributes;
   accessor_id_t indices;
   material_id_t material;
-  uint32_t attribute_count;
-  MeshPrimitiveAttributeItem *attributes;
+  MeshPrimitiveMode mode;
+  MeshPrimitiveTargetsList targets;
+  Extensions extensions;
+  Extras extras;
 } MeshPrimitiveProps;
+
+typedef struct MeshWeights {
+  float_t *items;
+  uint32_t count;
+} MeshWeights;
+
+typedef struct MeshPrimitivePropsList {
+  MeshPrimitiveProps *items;
+  uint32_t count;
+} MeshPrimitivePropsList;
+
+typedef struct MeshProps {
+  MeshPrimitivePropsList primitives;
+  MeshWeights weights;
+  const char *name;
+  Extensions extensions;
+  Extras extras;
+} MeshProps;
+
+import_websg(world_create_mesh) mesh_id_t websg_world_create_mesh(MeshProps *props);
 
 typedef struct BoxMeshProps {
   float_t size[3];
@@ -173,47 +228,16 @@ typedef struct BoxMeshProps {
   material_id_t material;
 } BoxMeshProps;
 
-import_websg(create_mesh) mesh_id_t websg_create_mesh(MeshPrimitiveProps *primitives, uint32_t count);
-import_websg(create_box_mesh) mesh_id_t websg_create_box_mesh(BoxMeshProps *props);
-import_websg(mesh_find_by_name) mesh_id_t websg_mesh_find_by_name(const char *name, uint32_t length);
-// Returns the number of mesh primitives or -1 if error
+import_websg(world_create_box_mesh) mesh_id_t websg_world_create_box_mesh(BoxMeshProps *props);
+import_websg(world_find_mesh_by_name) mesh_id_t websg_world_find_mesh_by_name(const char *name, uint32_t length);
 import_websg(mesh_get_primitive_count) int32_t websg_mesh_get_primitive_count(mesh_id_t mesh_id);
-// Returns the accessor id or 0 if not found
-import_websg(mesh_get_primitive_attribute) accessor_id_t websg_mesh_get_primitive_attribute(
-  mesh_id_t mesh_id,
-  uint32_t index,
-  MeshPrimitiveAttribute attribute
-);
-// Returns the accessor id or 0 if not found
-import_websg(mesh_get_primitive_indices) accessor_id_t websg_mesh_get_primitive_indices(
-  mesh_id_t mesh_id,
-  uint32_t index
-);
-// Returns the material id or 0 if not found
-import_websg(mesh_get_primitive_material) material_id_t websg_mesh_get_primitive_material(
-  mesh_id_t mesh_id,
-  uint32_t index
-);
-import_websg(mesh_set_primitive_material) int32_t websg_mesh_set_primitive_material(
-  mesh_id_t mesh_id,
-  uint32_t index,
-  material_id_t material_id
-);
-import_websg(mesh_get_primitive_mode) MeshPrimitiveMode websg_mesh_get_primitive_mode(
-  mesh_id_t mesh_id,
-  uint32_t index
-);
-import_websg(mesh_set_primitive_draw_range) MeshPrimitiveMode websg_mesh_set_primitive_draw_range(
-  mesh_id_t mesh_id,
-  uint32_t index,
-  uint32_t start,
-  uint32_t count
-);
-import_websg(mesh_set_primitive_hologram_material_enabled) int32_t websg_mesh_set_primitive_hologram_material_enabled(
-  mesh_id_t mesh_id,
-  uint32_t index,
-  uint32_t enabled
-);
+import_websg(mesh_get_primitive_attribute) accessor_id_t websg_mesh_get_primitive_attribute(mesh_id_t mesh_id, uint32_t index, MeshPrimitiveAttribute attribute);
+import_websg(mesh_get_primitive_indices) accessor_id_t websg_mesh_get_primitive_indices(mesh_id_t mesh_id, uint32_t index);
+import_websg(mesh_get_primitive_material) material_id_t websg_mesh_get_primitive_material(mesh_id_t mesh_id, uint32_t index);
+import_websg(mesh_set_primitive_material) int32_t websg_mesh_set_primitive_material(mesh_id_t mesh_id, uint32_t index, material_id_t material_id);
+import_websg(mesh_get_primitive_mode) MeshPrimitiveMode websg_mesh_get_primitive_mode(mesh_id_t mesh_id, uint32_t index);
+import_websg(mesh_set_primitive_draw_range) MeshPrimitiveMode websg_mesh_set_primitive_draw_range(mesh_id_t mesh_id, uint32_t index, uint32_t start, uint32_t count);
+import_websg(mesh_set_primitive_hologram_material_enabled) int32_t websg_mesh_set_primitive_hologram_material_enabled(mesh_id_t mesh_id, uint32_t index, uint32_t enabled);
 
 /**
  * Accessor
@@ -238,7 +262,7 @@ typedef enum AccessorComponentType {
   AccessorComponentType_Float32 = 5126,
 } AccessorComponentType;
 
-typedef struct AccessorProps {
+typedef struct AccessorFromProps {
   AccessorType type;
   AccessorComponentType component_type;
   uint32_t count;
@@ -246,15 +270,15 @@ typedef struct AccessorProps {
   uint32_t dynamic;
   float_t min[16]; // Currently unused and optional but see spec for use.
   float_t max[16]; // Currently unused and optional but see spec for use.
-} AccessorProps;
+} AccessorFromProps;
 
 // TODO: Add standard websg_create_accessor method that takes buffer views and support sparse accessors
-import_websg(create_accessor_from) accessor_id_t websg_create_accessor_from(
+import_websg(world_create_accessor_from) accessor_id_t websg_world_create_accessor_from(
   void *data,
   uint32_t byte_length,
-  AccessorProps *props
+  AccessorFromProps *props
 );
-import_websg(accessor_find_by_name) accessor_id_t websg_accessor_find_by_name(const char *name, uint32_t length);
+import_websg(world_find_accessor_by_name) accessor_id_t websg_world_find_accessor_by_name(const char *name, uint32_t length);
 import_websg(accessor_update_with) int32_t websg_accessor_update_with(
   accessor_id_t accessor_id,
   void *data,
@@ -270,41 +294,85 @@ typedef enum MaterialType {
   MaterialType_Unlit,
 } MaterialType;
 
-import_websg(create_material) material_id_t websg_create_material(MaterialType type);
-import_websg(material_find_by_name) material_id_t websg_material_find_by_name(const char *name, uint32_t length);
-import_websg(material_get_base_color_factor) int32_t websg_material_get_base_color_factor(
-  material_id_t material_id,
-  float_t *base_color_factor
-);
-import_websg(material_set_base_color_factor) int32_t websg_material_set_base_color_factor(
-  material_id_t material_id,
-  float_t *base_color_factor
-);
+typedef enum MaterialAlphaMode {
+  MaterialAlphaMode_OPAQUE,
+  MaterialAlphaMode_MASK,
+  MaterialAlphaMode_BLEND,
+} MaterialAlphaMode;
+
+typedef struct MaterialTextureInfoProps {
+  texture_id_t texture;
+  uint32_t tex_coord;
+  Extensions extensions;
+  Extras extras;
+} MaterialTextureInfoProps;
+
+typedef struct MaterialNormalTextureInfoProps {
+  texture_id_t texture;
+  uint32_t tex_coord;
+  float_t scale;
+  Extensions extensions;
+  Extras extras;
+} MaterialNormalTextureInfoProps;
+
+typedef struct MaterialOcclusionTextureInfoProps {
+  texture_id_t texture;
+  uint32_t tex_coord;
+  float_t strength;
+  Extensions extensions;
+  Extras extras;
+} MaterialOcclusionTextureInfoProps;
+
+typedef struct MaterialTextureTransformProps {
+  float_t offset[2];
+  float_t rotation;
+  float_t scale[2];
+  uint32_t tex_coord;
+  Extensions extensions;
+  Extras extras;
+} MaterialTextureTransformProps;
+
+typedef struct MaterialUnlitProps {
+  Extensions extensions;
+  Extras extras;
+} MaterialUnlitProps;
+
+typedef struct MaterialPbrMetallicRoughnessProps {
+  float_t base_color_factor[4];
+  MaterialTextureInfoProps base_color_texture;
+  float_t metallic_factor;
+  float_t roughness_factor;
+  MaterialTextureInfoProps metallic_roughness_texture;
+  Extensions extensions;
+  Extras extras;
+} MaterialPbrMetallicRoughnessProps;
+
+typedef struct MaterialProps {
+  MaterialPbrMetallicRoughnessProps pbr_metallic_roughness;
+  MaterialNormalTextureInfoProps normal_texture;
+  MaterialOcclusionTextureInfoProps occlusion_texture;
+  MaterialTextureInfoProps emissive_texture;
+  float_t emissive_factor[3];
+  MaterialAlphaMode alpha_mode;
+  float_t alpha_cutoff;
+  uint32_t double_sided;
+  const char *name;
+  Extensions extensions;
+  Extras extras;
+} MaterialProps;
+
+import_websg(world_create_material) material_id_t websg_world_create_material(MaterialProps *props);
+import_websg(world_find_material_by_name) material_id_t websg_world_find_material_by_name(const char *name, uint32_t length);
+import_websg(material_get_base_color_factor) int32_t websg_material_get_base_color_factor(material_id_t material_id, float_t *base_color_factor);
+import_websg(material_set_base_color_factor) int32_t websg_material_set_base_color_factor(material_id_t material_id, float_t *base_color_factor);
 import_websg(material_get_metallic_factor) float_t websg_material_get_metallic_factor(material_id_t material_id);
-import_websg(material_set_metallic_factor) int32_t websg_material_set_metallic_factor(
-  material_id_t material_id,
-  float_t metallic_factor
-);
+import_websg(material_set_metallic_factor) int32_t websg_material_set_metallic_factor(material_id_t material_id, float_t metallic_factor);
 import_websg(material_get_roughness_factor) float_t websg_material_get_roughness_factor(material_id_t material_id);
-import_websg(material_set_roughness_factor) int32_t websg_material_set_roughness_factor(
-  material_id_t material_id,
-  float_t roughness_factor
-);
-import_websg(material_get_emissive_factor) int32_t websg_material_get_emissive_factor(
-  material_id_t material_id,
-  float_t *emissive_factor
-);
-import_websg(material_set_emissive_factor) int32_t websg_material_set_emissive_factor(
-  material_id_t material_id,
-  float_t *emissive_factor
-);
-import_websg(material_get_base_color_texture) texture_id_t websg_material_get_base_color_texture(
-  material_id_t material_id
-);
-import_websg(material_set_base_color_texture) int32_t websg_material_set_base_color_texture(
-  material_id_t material_id,
-  texture_id_t texture_id
-);
+import_websg(material_set_roughness_factor) int32_t websg_material_set_roughness_factor(material_id_t material_id, float_t roughness_factor);
+import_websg(material_get_emissive_factor) int32_t websg_material_get_emissive_factor(material_id_t material_id, float_t *emissive_factor);
+import_websg(material_set_emissive_factor) int32_t websg_material_set_emissive_factor(material_id_t material_id, float_t *emissive_factor);
+import_websg(material_get_base_color_texture) texture_id_t websg_material_get_base_color_texture(material_id_t material_id);
+import_websg(material_set_base_color_texture) int32_t websg_material_set_base_color_texture(material_id_t material_id, texture_id_t texture_id);
 
 /**
  * Texture
@@ -322,8 +390,26 @@ typedef enum LightType {
   LightType_Spot,
 } LightType;
 
-import_websg(light_find_by_name) light_id_t websg_light_find_by_name(const char *name, uint32_t length);
+typedef struct LightSpotProps {
+  float_t inner_cone_angle;
+  float_t outer_cone_angle;
+  Extensions extensions;
+  Extras extras;
+} LightSpotProps;
+
+typedef struct LightProps {
+  float_t color[3];
+  float_t intensity;
+  LightSpotProps spot;
+  LightType type;
+  float_t range;
+  const char *name;
+  Extensions extensions;
+  Extras extras;
+} LightProps;
+
 import_websg(create_light) light_id_t websg_create_light(LightType type);
+import_websg(light_find_by_name) light_id_t websg_light_find_by_name(const char *name, uint32_t length);
 import_websg(light_get_color) int32_t websg_light_get_color(light_id_t light_id, float_t *color);
 import_websg(light_set_color) int32_t websg_light_set_color(light_id_t light_id, float_t *color);
 import_websg(light_get_intensity) float_t websg_light_get_intensity(light_id_t light_id);
@@ -337,17 +423,15 @@ typedef enum InteractableType {
   InteractableType_Interactable = 1,
 } InteractableType;
 
-typedef struct Interactable {
+typedef struct InteractableProps {
   InteractableType type;
-  uint32_t pressed;
-  uint32_t held;
-  uint32_t released;
-} Interactable;
+  Extensions extensions;
+  Extras extras;
+} InteractableProps;
 
-import_websg(add_interactable) int32_t websg_add_interactable(node_id_t node_id, InteractableType type);
+import_websg(add_interactable) int32_t websg_add_interactable(node_id_t node_id, InteractableProps *props);
 import_websg(remove_interactable) int32_t websg_remove_interactable(node_id_t node_id);
 import_websg(has_interactable) int32_t websg_has_interactable(node_id_t node_id);
-import_websg(get_interactable) int32_t websg_get_interactable(node_id_t node_id, Interactable *interactable);
 import_websg(get_interactable_pressed) int32_t websg_get_interactable_pressed(node_id_t node_id);
 import_websg(get_interactable_held) int32_t websg_get_interactable_held(node_id_t node_id);
 import_websg(get_interactable_released) int32_t websg_get_interactable_released(node_id_t node_id);
@@ -372,6 +456,9 @@ typedef struct ColliderProps {
   float_t radius;
   float_t height;
   mesh_id_t mesh;
+  const char *name;
+  Extensions extensions;
+  Extras extras;
 } ColliderProps;
 
 import_websg(create_collider) collider_id_t websg_create_collider(ColliderProps *props);
@@ -392,38 +479,50 @@ typedef struct PhysicsBodyProps {
   float_t linear_velocity[3];
   float_t angular_velocity[3];
   float_t inertia_tensor[9];
+  Extensions extensions;
+  Extras extras;
 } PhysicsBodyProps;
 
 import_websg(add_physics_body) int32_t websg_add_physics_body(node_id_t node_id, PhysicsBodyProps *props);
 import_websg(remove_physics_body) int32_t websg_remove_physics_body(node_id_t node_id);
 import_websg(has_physics_body) int32_t websg_has_physics_body(node_id_t node_id);
 
-typedef uint32_t ui_canvas_id_t;
-typedef uint32_t ui_flex_id_t;
-typedef uint32_t ui_button_id_t;
-typedef uint32_t ui_text_id_t;
-
 /**
  * UI Canvas
  **/
 
 typedef struct UICanvasProps {
+  ui_element_id_t root;
+  float_t size[2];
   float_t width;
   float_t height;
-  float_t pixel_density;
+  const char *name;
+  Extensions extensions;
+  Extras extras;
 } UICanvasProps;
 
 import_websg(create_ui_canvas) ui_canvas_id_t websg_create_ui_canvas(UICanvasProps *props);
 import_websg(node_set_ui_canvas) int32_t websg_node_set_ui_canvas(node_id_t node_id, ui_canvas_id_t canvas_id);
-import_websg(ui_canvas_set_root) int32_t websg_ui_canvas_set_root(ui_canvas_id_t canvas_id, ui_flex_id_t root_id);
+import_websg(ui_canvas_get_root) ui_element_id_t websg_ui_canvas_get_root(ui_canvas_id_t canvas_id);
+import_websg(ui_canvas_set_root) int32_t websg_ui_canvas_set_root(ui_canvas_id_t canvas_id, ui_element_id_t root_id);
+import_websg(ui_canvas_get_size) int32_t websg_ui_canvas_get_size(ui_canvas_id_t canvas_id, float_t *size);
+import_websg(ui_canvas_set_size) int32_t websg_ui_canvas_set_size(ui_canvas_id_t canvas_id, float_t *size);
+import_websg(ui_canvas_get_width) float_t websg_ui_canvas_get_width(ui_canvas_id_t canvas_id);
 import_websg(ui_canvas_set_width) int32_t websg_ui_canvas_set_width(ui_canvas_id_t canvas_id, float_t width);
+import_websg(ui_canvas_get_height) float_t websg_ui_canvas_get_height(ui_canvas_id_t canvas_id);
 import_websg(ui_canvas_set_height) int32_t websg_ui_canvas_set_height(ui_canvas_id_t canvas_id, float_t height);
-import_websg(ui_canvas_set_pixel_density) int32_t websg_ui_canvas_set_pixel_density(ui_canvas_id_t canvas_id, float_t pixel_density);
 import_websg(ui_canvas_redraw) int32_t websg_ui_canvas_redraw(ui_canvas_id_t canvas_id);
 
-/**
- * UI Flex
- **/
+/**************
+ * UI Element *
+ **************/
+
+typedef enum ElementType {
+  ElementType_FLEX,
+  ElementType_TEXT,
+  ElementType_BUTTON,
+  ElementType_IMAGE,
+} ElementType;
 
 typedef enum FlexDirection {
   FlexDirection_COLUMN,
@@ -432,84 +531,164 @@ typedef enum FlexDirection {
   FlexDirection_ROW_REVERSE,
 } FlexDirection;
 
-typedef enum FlexEdge {
-  FlexEdge_LEFT,
-  FlexEdge_TOP,
-  FlexEdge_RIGHT,
-  FlexEdge_BOTTOM,
-} FlexEdge;
+typedef enum ElementPositionType {
+  ElementPositionType_RELATIVE,
+  ElementPositionType_ABSOLUTE,
+} ElementPositionType;
 
-typedef struct UIFlexProps {
+typedef enum FlexAlign {
+  FlexAlign_AUTO,
+  FlexAlign_FLEX_START,
+  FlexAlign_CENTER,
+  FlexAlign_FLEX_END,
+  FlexAlign_STRETCH,
+  FlexAlign_BASELINE,
+  FlexAlign_SPACE_BETWEEN,
+  FlexAlign_SPACE_AROUND,
+} FlexAlign;
+
+typedef enum FlexJustify {
+  FlexJustify_FLEX_START,
+  FlexJustify_CENTER,
+  FlexJustify_FLEX_END,
+  FlexJustify_SPACE_BETWEEN,
+  FlexJustify_SPACE_AROUND,
+  FlexJustify_SPACE_EVENLY,
+} FlexJustify;
+
+typedef enum FlexWrap {
+  FlexWrap_NO_WRAP,
+  FlexWrap_WRAP,
+  FlexWrap_WRAP_REVERSE,
+} FlexWrap;
+
+typedef struct UIButtonProps {
+  const char *label;
+  size_t label_length;
+  Extensions extensions;
+  Extras extras;
+} UIButtonProps;
+
+typedef struct UITextProps {
+  float_t color[4];
+  const char *value;
+  uint32_t value_length;
+  const char *font_family;
+  uint32_t font_family_length;
+  float_t font_size;
+  const char *font_weight;
+  uint32_t font_weight_length;
+  const char *font_style;
+  uint32_t font_style_length;
+  Extensions extensions;
+  Extras extras;
+} UITextProps;
+
+typedef struct UIElementProps {
+  ElementType type;
+  float_t position[4];
+  ElementPositionType position_type;
+  FlexAlign align_content;
+  FlexAlign align_items;
+  FlexAlign align_self;
+  FlexDirection flex_direction;
+  FlexWrap flex_wrap;
+  float_t flex_basis;
+  float_t flex_grow;
+  float_t flex_shrink;
+  FlexJustify justify_content;
   float_t width;
   float_t height;
-  FlexDirection flex_direction;
+  float_t min_width;
+  float_t min_height;
+  float_t max_width;
+  float_t max_height;
   float_t background_color[4];
   float_t border_color[4];
   float_t padding[4];
   float_t margin[4];
-} UIFlexProps;
+  float_t border_width[4];
+  UIButtonProps *button;
+  UITextProps *text;
+  const char *name;
+  Extensions extensions;
+  Extras extras;
+} UIElementProps;
 
-import_websg(create_ui_flex) ui_flex_id_t websg_ui_create_flex(UIFlexProps *props);
-import_websg(ui_flex_set_flex_direction) int32_t websg_ui_flex_set_flex_direction(ui_flex_id_t flex_id, FlexDirection flex_direction);
-import_websg(ui_flex_set_width) int32_t websg_ui_flex_set_width(ui_flex_id_t flex_id, float_t width);
-import_websg(ui_flex_set_height) int32_t websg_ui_flex_set_height(ui_flex_id_t flex_id, float_t height);
-import_websg(ui_flex_set_background_color) int32_t websg_ui_flex_set_background_color(ui_flex_id_t flex_id, float_t *color);
-import_websg(ui_flex_set_border_color) int32_t websg_ui_flex_set_border_color(ui_flex_id_t flex_id, float_t *color);
-import_websg(ui_flex_set_padding) int32_t websg_ui_flex_set_padding(ui_flex_id_t flex_id, float_t *padding);
-import_websg(ui_flex_set_margin) int32_t websg_ui_flex_set_margin(ui_flex_id_t flex_id, float_t *margin);
-import_websg(ui_flex_add_child) int32_t websg_ui_flex_add_child(ui_flex_id_t parent_id, ui_flex_id_t child_id);
-import_websg(ui_flex_add_text) int32_t websg_ui_flex_add_text(ui_flex_id_t parent_id, ui_text_id_t text_id);
-import_websg(ui_flex_add_button) int32_t websg_ui_flex_add_button(ui_flex_id_t parent_id, ui_button_id_t button_id);
+import_websg(create_ui_element) ui_element_id_t websg_ui_create_element(UIElementProps *props);
+import_websg(ui_element_get_position) int32_t websg_ui_element_get_position(ui_element_id_t element_id, float_t *position);
+import_websg(ui_element_set_position) int32_t websg_ui_element_set_position(ui_element_id_t element_id, float_t *position);
+import_websg(ui_element_get_position_type) ElementPositionType websg_ui_element_get_position_type(ui_element_id_t element_id);
+import_websg(ui_element_set_position_type) int32_t websg_ui_element_set_position_type(ui_element_id_t element_id, ElementPositionType position_type);
+import_websg(ui_element_get_align_content) FlexAlign websg_ui_element_get_align_content(ui_element_id_t element_id);
+import_websg(ui_element_set_align_content) int32_t websg_ui_element_set_align_content(ui_element_id_t element_id, FlexAlign align_content);
+import_websg(ui_element_get_align_items) FlexAlign websg_ui_element_get_align_items(ui_element_id_t element_id);
+import_websg(ui_element_set_align_items) int32_t websg_ui_element_set_align_items(ui_element_id_t element_id, FlexAlign align_items);
+import_websg(ui_element_get_align_self) FlexAlign websg_ui_element_get_align_self(ui_element_id_t element_id);
+import_websg(ui_element_set_align_self) int32_t websg_ui_element_set_align_self(ui_element_id_t element_id, FlexAlign align_self);
+import_websg(ui_element_get_flex_direction) FlexDirection websg_ui_element_get_flex_direction(ui_element_id_t element_id);
+import_websg(ui_element_set_flex_direction) int32_t websg_ui_element_set_flex_direction(ui_element_id_t element_id, FlexDirection flex_direction);
+import_websg(ui_element_get_flex_wrap) FlexWrap websg_ui_element_get_flex_wrap(ui_element_id_t element_id);
+import_websg(ui_element_set_flex_wrap) int32_t websg_ui_element_set_flex_wrap(ui_element_id_t element_id, FlexWrap flex_wrap);
+import_websg(ui_element_set_flex_basis) int32_t websg_ui_element_set_flex_basis(ui_element_id_t element_id, float_t flex_basis);
+import_websg(ui_element_get_flex_basis) float_t websg_ui_element_get_flex_basis(ui_element_id_t element_id);
+import_websg(ui_element_set_flex_grow) int32_t websg_ui_element_set_flex_grow(ui_element_id_t element_id, float_t flex_grow);
+import_websg(ui_element_get_flex_grow) float_t websg_ui_element_get_flex_grow(ui_element_id_t element_id);
+import_websg(ui_element_set_flex_shrink) int32_t websg_ui_element_set_flex_shrink(ui_element_id_t element_id, float_t flex_shrink);
+import_websg(ui_element_get_flex_shrink) float_t websg_ui_element_get_flex_shrink(ui_element_id_t element_id);
+import_websg(ui_element_get_justify_content) FlexJustify websg_ui_element_get_justify_content(ui_element_id_t element_id);
+import_websg(ui_element_set_justify_content) int32_t websg_ui_element_set_justify_content(ui_element_id_t element_id, FlexJustify justify_content);
+import_websg(ui_element_set_width) int32_t websg_ui_element_set_width(ui_element_id_t element_id, float_t width);
+import_websg(ui_element_get_width) float_t websg_ui_element_get_width(ui_element_id_t element_id);
+import_websg(ui_element_set_height) int32_t websg_ui_element_set_height(ui_element_id_t element_id, float_t height);
+import_websg(ui_element_get_height) float_t websg_ui_element_get_height(ui_element_id_t element_id);
+import_websg(ui_element_set_min_width) int32_t websg_ui_element_set_min_width(ui_element_id_t element_id, float_t min_width);
+import_websg(ui_element_get_min_width) float_t websg_ui_element_get_min_width(ui_element_id_t element_id);
+import_websg(ui_element_set_min_height) int32_t websg_ui_element_set_min_height(ui_element_id_t element_id, float_t min_height);
+import_websg(ui_element_get_min_height) float_t websg_ui_element_get_min_height(ui_element_id_t element_id);
+import_websg(ui_element_set_max_width) int32_t websg_ui_element_set_max_width(ui_element_id_t element_id, float_t max_width);
+import_websg(ui_element_get_max_width) float_t websg_ui_element_get_max_width(ui_element_id_t element_id);
+import_websg(ui_element_set_max_height) int32_t websg_ui_element_set_max_height(ui_element_id_t element_id, float_t max_height);
+import_websg(ui_element_get_max_height) float_t websg_ui_element_get_max_height(ui_element_id_t element_id);
+import_websg(ui_element_get_background_color) int32_t websg_ui_element_get_background_color(ui_element_id_t element_id, float_t *background_color);
+import_websg(ui_element_set_background_color) int32_t websg_ui_element_set_background_color(ui_element_id_t element_id, float_t *background_color);
+import_websg(ui_element_get_border_color) int32_t websg_ui_element_get_border_color(ui_element_id_t element_id, float_t *border_color);
+import_websg(ui_element_set_border_color) int32_t websg_ui_element_set_border_color(ui_element_id_t element_id, float_t *border_color);
+import_websg(ui_element_get_padding) int32_t websg_ui_element_get_padding(ui_element_id_t element_id, float_t *padding);
+import_websg(ui_element_set_padding) int32_t websg_ui_element_set_padding( ui_element_id_t element_id, float_t *padding);
+import_websg(ui_element_get_margin) int32_t websg_ui_element_get_margin(ui_element_id_t element_id, float_t *margin);
+import_websg(ui_element_set_margin) int32_t websg_ui_element_set_margin(ui_element_id_t element_id, float_t *margin);
+import_websg(ui_element_get_border_width) int32_t websg_ui_element_get_border_width(ui_element_id_t element_id, float_t *border_width);
+import_websg(ui_element_set_border_width) int32_t websg_ui_element_set_border_width(ui_element_id_t element_id, float_t *border_width);
+import_websg(ui_element_get_element_type) ElementType websg_ui_element_get_element_type(ui_element_id_t element_id);
 
-/**
- * UI Button
- **/
+/********************************
+ * UI Button Element Properties *
+ ********************************/
 
-import_websg(create_ui_button) ui_button_id_t websg_ui_create_button(const char *label, size_t length);
-import_websg(ui_button_set_label) int32_t websg_ui_button_set_label(ui_button_id_t btn_id, char *label, size_t length);
-import_websg(ui_button_get_pressed) int32_t websg_ui_button_get_pressed(ui_button_id_t btn_id);
-import_websg(ui_button_get_held) int32_t websg_ui_button_get_held(ui_button_id_t btn_id);
-import_websg(ui_button_get_released) int32_t websg_ui_button_get_released(ui_button_id_t btn_id);
+import_websg(ui_button_get_label_length) int32_t websg_ui_button_get_label_length(ui_element_id_t element_id);
+import_websg(ui_button_get_label) int32_t websg_ui_button_get_label(ui_element_id_t element_id, char *label, size_t length);
+import_websg(ui_button_set_label) int32_t websg_ui_button_set_label(ui_element_id_t element_id, char *label, size_t length);
+import_websg(ui_button_get_pressed) int32_t websg_ui_button_get_pressed(ui_element_id_t element_id);
+import_websg(ui_button_get_held) int32_t websg_ui_button_get_held(ui_element_id_t element_id);
+import_websg(ui_button_get_released) int32_t websg_ui_button_get_released(ui_element_id_t element_id);
 
-/**
- * UI Text
- **/
+/******************************
+ * UI Text Element Properties *
+ ******************************/
 
-typedef struct UITextProps {
-  float_t font_size;
-  float_t color[4];
-
-  const char *value;
-  uint32_t value_length;
-
-  const char *font_family;
-  uint32_t font_family_length;
-
-  const char *font_weight;
-  uint32_t font_weight_length;
-
-  const char *font_style;
-  uint32_t font_style_length;
-} UITextProps;
-
-import_websg(create_ui_text) ui_text_id_t websg_ui_create_text(UITextProps *props);
-import_websg(ui_text_set_value) int32_t websg_ui_text_set_value(ui_text_id_t txt_id, const char *value, size_t length);
-import_websg(ui_text_set_font_size) int32_t websg_ui_text_set_font_size(ui_text_id_t txt_id, float_t font_size);
-import_websg(ui_text_set_font_family) int32_t websg_ui_text_set_font_family(ui_text_id_t txt_id, const char *family, size_t length);
-import_websg(ui_text_set_font_style) int32_t websg_ui_text_set_font_style(ui_text_id_t txt_id, const char *style, size_t length);
-import_websg(ui_text_set_color) int32_t websg_ui_text_set_color(ui_text_id_t txt_id, float_t *color);
-/**
- * Orbiting
-*/
-
-typedef struct CameraRigOptions {
-  float_t pitch;
-  float_t yaw;
-  float_t zoom;
-} CameraRigOptions;
-
-import_websg(start_orbit) int32_t websg_start_orbit(node_id_t node_id, CameraRigOptions *options);
-import_websg(stop_orbit) int32_t websg_stop_orbit();
-
+import_websg(ui_text_get_value_length) int32_t websg_ui_text_get_value_length(ui_element_id_t element_id);
+import_websg(ui_text_get_value) int32_t websg_ui_text_get_value(ui_element_id_t element_id, char *value, size_t length);
+import_websg(ui_text_set_value) int32_t websg_ui_text_set_value(ui_element_id_t element_id, const char *value, size_t length);
+import_websg(ui_text_get_font_family_length) int32_t websg_ui_text_get_font_family_length(ui_element_id_t element_id);
+import_websg(ui_text_get_font_family) int32_t websg_ui_text_get_font_family(ui_element_id_t element_id, char *font_family, size_t length);
+import_websg(ui_text_set_font_family) int32_t websg_ui_text_set_font_family(ui_element_id_t element_id, const char *font_family, size_t length);
+import_websg(ui_text_get_font_style_length) int32_t websg_ui_text_get_font_style_length(ui_element_id_t element_id);
+import_websg(ui_text_get_font_style) int32_t websg_ui_text_get_font_style(ui_element_id_t element_id, char *font_style, size_t length);
+import_websg(ui_text_set_font_style) int32_t websg_ui_text_set_font_style(ui_element_id_t element_id, const char *font_style, size_t length);
+import_websg(ui_text_get_font_size) float_t websg_ui_text_get_font_size(ui_element_id_t element_id);
+import_websg(ui_text_set_font_size) int32_t websg_ui_text_set_font_size(ui_element_id_t element_id, float_t font_size);
+import_websg(ui_text_get_color) int32_t websg_ui_text_get_color(ui_element_id_t element_id, float_t *color);
+import_websg(ui_text_set_color) int32_t websg_ui_text_set_color(ui_element_id_t element_id, float_t *color);
 
 #endif

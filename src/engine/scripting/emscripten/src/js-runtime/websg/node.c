@@ -13,6 +13,7 @@
 #include "./vector3.h"
 #include "./quaternion.h"
 #include "./matrix4.h"
+#include "./ui-canvas.h"
 
 static void js_websg_node_finalizer(JSRuntime *rt, JSValue val) {
   WebSGNodeData *node_data = JS_GetOpaque(val, js_websg_node_class_id);
@@ -178,8 +179,8 @@ static JSValue js_websg_node_set_visible(JSContext *ctx, JSValueConst this_val, 
 
 static JSValue js_websg_node_get_mesh(JSContext *ctx, JSValueConst this_val) {
   WebSGNodeData *node_data = JS_GetOpaque(this_val, js_websg_node_class_id);
-  mesh_id_t result = websg_node_get_mesh(node_data->node_id);
-  return JS_NewBool(ctx, result);
+  mesh_id_t mesh_id = websg_node_get_mesh(node_data->node_id);
+  return js_websg_get_mesh_by_id(ctx, node_data->world_data, mesh_id);
 }
 
 static JSValue js_websg_node_set_mesh(JSContext *ctx, JSValueConst this_val, JSValueConst arg) {
@@ -201,8 +202,8 @@ static JSValue js_websg_node_set_mesh(JSContext *ctx, JSValueConst this_val, JSV
 
 static JSValue js_websg_node_get_light(JSContext *ctx, JSValueConst this_val) {
   WebSGNodeData *node_data = JS_GetOpaque(this_val, js_websg_node_class_id);
-  light_id_t result = websg_node_get_light(node_data->node_id);
-  return JS_NewBool(ctx, result);
+  light_id_t light_id = websg_node_get_light(node_data->node_id);
+  return js_websg_get_light_by_id(ctx, node_data->world_data, light_id);
 }
 
 static JSValue js_websg_node_set_light(JSContext *ctx, JSValueConst this_val, JSValueConst arg) {
@@ -224,8 +225,8 @@ static JSValue js_websg_node_set_light(JSContext *ctx, JSValueConst this_val, JS
 
 static JSValue js_websg_node_get_collider(JSContext *ctx, JSValueConst this_val) {
   WebSGNodeData *node_data = JS_GetOpaque(this_val, js_websg_node_class_id);
-  collider_id_t result = websg_node_get_collider(node_data->node_id);
-  return JS_NewBool(ctx, result);
+  collider_id_t collider_id = websg_node_get_collider(node_data->node_id);
+  return js_websg_get_collider_by_id(ctx, node_data->world_data, collider_id);
 }
 
 static JSValue js_websg_node_set_collider(JSContext *ctx, JSValueConst this_val, JSValueConst arg) {
@@ -239,6 +240,30 @@ static JSValue js_websg_node_set_collider(JSContext *ctx, JSValueConst this_val,
 
   if (websg_node_set_collider(node_data->node_id, collider_data->collider_id) == -1) {
     JS_ThrowInternalError(ctx, "WebSG: Couldn't set collider.");
+    return JS_EXCEPTION;
+  }
+
+  return JS_UNDEFINED;
+}
+
+static JSValue js_websg_node_get_ui_canvas(JSContext *ctx, JSValueConst this_val) {
+  WebSGNodeData *node_data = JS_GetOpaque(this_val, js_websg_node_class_id);
+  ui_canvas_id_t ui_canvas_id = websg_node_get_ui_canvas(node_data->node_id);
+  return js_websg_get_ui_canvas_by_id(ctx, node_data->world_data, ui_canvas_id);
+}
+
+
+static JSValue js_websg_node_set_ui_canvas(JSContext *ctx, JSValueConst this_val, JSValueConst arg) {
+  WebSGNodeData *node_data = JS_GetOpaque(this_val, js_websg_node_class_id);
+
+  WebSGUICanvasData *ui_canvas_data = JS_GetOpaque2(ctx, arg, js_websg_ui_canvas_class_id);
+
+  if (ui_canvas_data == NULL) {
+    return JS_EXCEPTION;
+  }
+
+  if (websg_node_set_ui_canvas(node_data->node_id, ui_canvas_data->ui_canvas_id) == -1) {
+    JS_ThrowInternalError(ctx, "WebSG: Couldn't set UICanvas.");
     return JS_EXCEPTION;
   }
 
@@ -306,6 +331,7 @@ static const JSCFunctionListEntry js_websg_node_proto_funcs[] = {
   JS_CGETSET_DEF("mesh", js_websg_node_get_mesh, js_websg_node_set_mesh),
   JS_CGETSET_DEF("light", js_websg_node_get_light, js_websg_node_set_light),
   JS_CGETSET_DEF("collider", js_websg_node_get_collider, js_websg_node_set_collider),
+  JS_CGETSET_DEF("uiCanvas", js_websg_node_get_ui_canvas, js_websg_node_set_ui_canvas),
   JS_CGETSET_DEF("interactable", js_websg_node_get_interactable, NULL),
   JS_CFUNC_DEF("addInteractable", 1, js_websg_node_add_interactable),
   JS_CFUNC_DEF("removeInteractable", 0, js_websg_node_remove_interactable),
