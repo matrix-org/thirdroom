@@ -150,6 +150,7 @@ JSValue js_websg_world_create_collider(JSContext *ctx, JSValueConst this_val, in
 
   if (collider_type == -1) {
     JS_ThrowTypeError(ctx, "WebSG: Unknown collider type.");
+    js_free(ctx, props);
     return JS_EXCEPTION;
   }
 
@@ -159,6 +160,7 @@ JSValue js_websg_world_create_collider(JSContext *ctx, JSValueConst this_val, in
     int is_trigger = JS_ToBool(ctx, is_trigger_val);
 
     if (is_trigger < 0) {
+      js_free(ctx, props);
       return JS_EXCEPTION;
     }
 
@@ -169,6 +171,7 @@ JSValue js_websg_world_create_collider(JSContext *ctx, JSValueConst this_val, in
 
   if (!JS_IsUndefined(size_val)) {
     if (js_get_float_array_like(ctx, size_val, props->size, 3) < 0) {
+      js_free(ctx, props);
       return JS_EXCEPTION;}
   }
 
@@ -178,6 +181,7 @@ JSValue js_websg_world_create_collider(JSContext *ctx, JSValueConst this_val, in
     double_t radius;
 
     if (JS_ToFloat64(ctx, &radius, radius_val) == -1) {
+      js_free(ctx, props);
       return JS_EXCEPTION;
     }
 
@@ -190,6 +194,7 @@ JSValue js_websg_world_create_collider(JSContext *ctx, JSValueConst this_val, in
     double_t height;
 
     if (JS_ToFloat64(ctx, &height, height_val) == -1) {
+      js_free(ctx, props);
       return JS_EXCEPTION;
     }
 
@@ -202,13 +207,16 @@ JSValue js_websg_world_create_collider(JSContext *ctx, JSValueConst this_val, in
     mesh_id_t mesh_id;
 
     if (JS_ToUint32(ctx, &mesh_id, mesh_val) == -1) {
+      js_free(ctx, props);
       return JS_EXCEPTION;
     }
 
     props->mesh = mesh_id;
   }
 
-  collider_id_t collider_id = websg_create_collider(props);
+  collider_id_t collider_id = websg_world_create_collider(props);
+
+  js_free(ctx, props);
 
   if (collider_id == 0) {
     JS_ThrowInternalError(ctx, "WebSG: Couldn't create collider.");
@@ -228,7 +236,7 @@ JSValue js_websg_world_find_collider_by_name(JSContext *ctx, JSValueConst this_v
     return JS_EXCEPTION;
   }
 
-  collider_id_t collider_id = websg_collider_find_by_name(name, length);
+  collider_id_t collider_id = websg_world_find_collider_by_name(name, length);
 
   if (collider_id == 0) {
     return JS_UNDEFINED;

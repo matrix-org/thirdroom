@@ -5,19 +5,23 @@
 #include "./rgba.h"
 #include "./rgb.h"
 #include "./texture.h"
+#include "../utils/array.h"
 
 /**
  * Private Methods and Variables
  **/
 
-JSAtom standard;
-JSAtom unlit;
+JSAtom opaque;
+JSAtom mask;
+JSAtom blend;
 
-MaterialType get_material_type_from_atom(JSAtom atom) {
-  if (atom == standard) {
-    return MaterialType_Standard;
-  } else if (atom == unlit) {
-    return MaterialType_Unlit;
+MaterialAlphaMode get_alpha_mode_from_atom(JSAtom atom) {
+  if (atom == opaque) {
+    return MaterialAlphaMode_OPAQUE;
+  } else if (atom == mask) {
+    return MaterialAlphaMode_MASK;
+  } else if (atom == blend) {
+    return MaterialAlphaMode_BLEND;
   } else {
     return -1;
   }
@@ -169,13 +173,15 @@ void js_websg_define_material(JSContext *ctx, JSValue websg) {
   );
   JS_SetClassProto(ctx, js_websg_material_class_id, material_proto);
 
-  standard = JS_NewAtom(ctx, "standard");
-  unlit = JS_NewAtom(ctx, "unlit");
+  opaque = JS_NewAtom(ctx, "OPAQUE");
+  blend = JS_NewAtom(ctx, "BLEND");
+  mask = JS_NewAtom(ctx, "MASK");
 
-  JSValue material_type = JS_NewObject(ctx);
-  JS_SetPropertyStr(ctx, material_type, "Standard", JS_AtomToValue(ctx, standard));
-  JS_SetPropertyStr(ctx, material_type, "Unlit", JS_AtomToValue(ctx, unlit));
-  JS_SetPropertyStr(ctx, websg, "MaterialType", material_type);
+  JSValue alpha_mode = JS_NewObject(ctx);
+  JS_SetPropertyStr(ctx, alpha_mode, "OPAQUE", JS_AtomToValue(ctx, opaque));
+  JS_SetPropertyStr(ctx, alpha_mode, "BLEND", JS_AtomToValue(ctx, blend));
+  JS_SetPropertyStr(ctx, alpha_mode, "MASK", JS_AtomToValue(ctx, mask));
+  JS_SetPropertyStr(ctx, websg, "AlphaMode", alpha_mode);
 }
 
 JSValue js_websg_new_material_instance(JSContext *ctx, WebSGWorldData *world_data, material_id_t material_id) {
@@ -229,23 +235,313 @@ JSValue js_websg_get_material_by_id(JSContext *ctx, WebSGWorldData *world_data, 
  * World Methods
  **/
 
-JSValue js_websg_world_create_material(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+JSValue js_websg_world_create_unlit_material(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
   WebSGWorldData *world_data = JS_GetOpaque(this_val, js_websg_world_class_id);
 
-  MaterialType material_type;
-  
-  if (JS_IsUndefined(argv[0])) {
-    material_type = MaterialType_Standard;
-  } else {
-    material_type = get_material_type_from_atom(JS_ValueToAtom(ctx, argv[0]));
+  MaterialProps *props = js_mallocz(ctx, sizeof(MaterialProps));
+  props->extensions.count = 1;
+  props->extensions.items = js_mallocz(ctx, sizeof(ExtensionItem));
+  props->extensions.items[0].name = "KHR_materials_unlit";
+  props->extensions.items[0].extension = NULL;
+
+  JSValue name_val = JS_GetPropertyStr(ctx, argv[0], "name");
+
+  if (!JS_IsUndefined(name_val)) {
+    props->name = JS_ToCString(ctx, name_val);
+
+    if (props->name == NULL) {
+      js_free(ctx, props);
+      return JS_EXCEPTION;
+    }
   }
 
-  if (material_type == -1) {
-    JS_ThrowTypeError(ctx, "WebSG: Unknown material type.");
+  JSValue base_color_factor_val = JS_GetPropertyStr(ctx, argv[0], "baseColorFactor");
+
+  if (!JS_IsUndefined(base_color_factor_val)) {
+    if (js_get_float_array_like(ctx, base_color_factor_val, props->pbr_metallic_roughness.base_color_factor, 4) < 0) {
+      return JS_EXCEPTION;
+    }
+  } else {
+    props->pbr_metallic_roughness.base_color_factor[0] = 1.0f;
+    props->pbr_metallic_roughness.base_color_factor[1] = 1.0f;
+    props->pbr_metallic_roughness.base_color_factor[2] = 1.0f;
+    props->pbr_metallic_roughness.base_color_factor[3] = 1.0f;
+  }
+
+  JSValue base_color_texture_val = JS_GetPropertyStr(ctx, argv[0], "baseColorTexture");
+
+  if (!JS_IsUndefined(base_color_texture_val)) {
+    WebSGTextureData *base_color_texture_data = JS_GetOpaque2(ctx, base_color_texture_val, js_websg_texture_class_id);
+
+    if (base_color_texture_data == NULL) {
+      return JS_EXCEPTION;
+    }
+
+    props->pbr_metallic_roughness.base_color_texture.texture = base_color_texture_data->texture_id;
+  }
+
+  JSValue double_sided_val = JS_GetPropertyStr(ctx, argv[0], "doubleSided");
+
+  if (!JS_IsUndefined(double_sided_val)) {
+    int result = JS_ToBool(ctx, double_sided_val);
+
+    if (result < 0) {
+      return JS_EXCEPTION;
+    }
+
+    props->double_sided = result;
+  }
+
+  JSValue alpha_cutoff_val = JS_GetPropertyStr(ctx, argv[0], "alphaCutoff");
+
+  if (!JS_IsUndefined(alpha_cutoff_val)) {
+    double alpha_cutoff;
+
+    if (JS_ToFloat64(ctx, &alpha_cutoff, alpha_cutoff_val) < 0) {
+      return JS_EXCEPTION;
+    }
+
+    props->alpha_cutoff = alpha_cutoff;
+  } else {
+    props->alpha_cutoff = 0.5f;
+  }
+
+  JSValue alpha_mode_val = JS_GetPropertyStr(ctx, argv[0], "alphaMode");
+
+  if (!JS_IsUndefined(alpha_mode_val)) {
+    MaterialAlphaMode alpha_mode = get_alpha_mode_from_atom(JS_ValueToAtom(ctx, alpha_mode_val));
+
+    if (alpha_mode < 0) {
+      JS_ThrowTypeError(ctx, "WebSG: Invalid alpha mode.");
+      return JS_EXCEPTION;
+    }
+
+    props->alpha_mode = alpha_mode;
+  }
+
+  material_id_t material_id = websg_world_create_material(props);
+
+  if (material_id == 0) {
+    JS_ThrowInternalError(ctx, "WebSG: Couldn't create material.");
     return JS_EXCEPTION;
   }
 
-  material_id_t material_id = websg_create_material(material_type);
+  return js_websg_new_material_instance(ctx, world_data, material_id);
+}
+
+JSValue js_websg_world_create_material(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  WebSGWorldData *world_data = JS_GetOpaque(this_val, js_websg_world_class_id);
+
+  MaterialProps *props = js_mallocz(ctx, sizeof(MaterialProps));
+
+  JSValue name_val = JS_GetPropertyStr(ctx, argv[0], "name");
+
+  if (!JS_IsUndefined(name_val)) {
+    props->name = JS_ToCString(ctx, name_val);
+
+    if (props->name == NULL) {
+      js_free(ctx, props);
+      return JS_EXCEPTION;
+    }
+  }
+
+  JSValue double_sided_val = JS_GetPropertyStr(ctx, argv[0], "doubleSided");
+
+  if (!JS_IsUndefined(double_sided_val)) {
+    int result = JS_ToBool(ctx, double_sided_val);
+
+    if (result < 0) {
+      js_free(ctx, props);
+      return JS_EXCEPTION;
+    }
+
+    props->double_sided = result;
+  }
+
+  JSValue alpha_cutoff_val = JS_GetPropertyStr(ctx, argv[0], "alphaCutoff");
+
+  if (!JS_IsUndefined(alpha_cutoff_val)) {
+    double alpha_cutoff;
+
+    if (JS_ToFloat64(ctx, &alpha_cutoff, alpha_cutoff_val) < 0) {
+      js_free(ctx, props);
+      return JS_EXCEPTION;
+    }
+
+    props->alpha_cutoff = alpha_cutoff;
+  } else {
+    props->alpha_cutoff = 0.5f;
+  }
+
+  JSValue alpha_mode_val = JS_GetPropertyStr(ctx, argv[0], "alphaMode");
+
+  if (!JS_IsUndefined(alpha_mode_val)) {
+    MaterialAlphaMode alpha_mode = get_alpha_mode_from_atom(JS_ValueToAtom(ctx, alpha_mode_val));
+
+    if (alpha_mode < 0) {
+      JS_ThrowTypeError(ctx, "WebSG: Invalid alpha mode.");
+      js_free(ctx, props);
+      return JS_EXCEPTION;
+    }
+
+    props->alpha_mode = alpha_mode;
+  }
+
+  JSValue base_color_factor_val = JS_GetPropertyStr(ctx, argv[0], "baseColorFactor");
+
+  if (!JS_IsUndefined(base_color_factor_val)) {
+    if (js_get_float_array_like(ctx, base_color_factor_val, props->pbr_metallic_roughness.base_color_factor, 4) < 0) {
+      js_free(ctx, props);
+      return JS_EXCEPTION;
+    }
+  } else {
+    props->pbr_metallic_roughness.base_color_factor[0] = 1.0f;
+    props->pbr_metallic_roughness.base_color_factor[1] = 1.0f;
+    props->pbr_metallic_roughness.base_color_factor[2] = 1.0f;
+    props->pbr_metallic_roughness.base_color_factor[3] = 1.0f;
+  }
+
+  JSValue base_color_texture_val = JS_GetPropertyStr(ctx, argv[0], "baseColorTexture");
+
+  if (!JS_IsUndefined(base_color_texture_val)) {
+    WebSGTextureData *base_color_texture_data = JS_GetOpaque2(ctx, base_color_texture_val, js_websg_texture_class_id);
+
+    if (base_color_texture_data == NULL) {
+      js_free(ctx, props);
+      return JS_EXCEPTION;
+    }
+
+    props->pbr_metallic_roughness.base_color_texture.texture = base_color_texture_data->texture_id;
+  }
+
+  JSValue metallic_factor_val = JS_GetPropertyStr(ctx, argv[0], "metallicFactor");
+
+  if (!JS_IsUndefined(metallic_factor_val)) {
+    double metallic_factor;
+
+    if (JS_ToFloat64(ctx, &metallic_factor, metallic_factor_val) < 0) {
+      js_free(ctx, props);
+      return JS_EXCEPTION;
+    }
+
+    props->pbr_metallic_roughness.metallic_factor = metallic_factor;
+  } else {
+    props->pbr_metallic_roughness.metallic_factor = 1.0f;
+  }
+
+  JSValue roughness_factor_val = JS_GetPropertyStr(ctx, argv[0], "roughnessFactor");
+
+  if (!JS_IsUndefined(roughness_factor_val)) {
+    double roughness_factor;
+
+    if (JS_ToFloat64(ctx, &roughness_factor, roughness_factor_val) < 0) {
+      js_free(ctx, props);
+      return JS_EXCEPTION;
+    }
+
+    props->pbr_metallic_roughness.roughness_factor = roughness_factor;
+  } else {
+    props->pbr_metallic_roughness.roughness_factor = 1.0f;
+  }
+
+  JSValue metallic_roughness_texture_val = JS_GetPropertyStr(ctx, argv[0], "metallicRoughnessTexture");
+
+  if (!JS_IsUndefined(metallic_roughness_texture_val)) {
+    WebSGTextureData *metallic_roughness_texture_data = JS_GetOpaque2(ctx, metallic_roughness_texture_val, js_websg_texture_class_id);
+
+    if (metallic_roughness_texture_data == NULL) {
+      js_free(ctx, props);
+      return JS_EXCEPTION;
+    }
+
+    props->pbr_metallic_roughness.metallic_roughness_texture.texture = metallic_roughness_texture_data->texture_id;
+  }
+
+  JSValue normal_texture_val = JS_GetPropertyStr(ctx, argv[0], "normalTexture");
+
+  if (!JS_IsUndefined(normal_texture_val)) {
+    WebSGTextureData *normal_texture_data = JS_GetOpaque2(ctx, normal_texture_val, js_websg_texture_class_id);
+
+    if (normal_texture_data == NULL) {
+      js_free(ctx, props);
+      return JS_EXCEPTION;
+    }
+
+    props->normal_texture.texture = normal_texture_data->texture_id;
+  }
+
+  JSValue normal_scale_val = JS_GetPropertyStr(ctx, argv[0], "normalScale");
+
+  if (!JS_IsUndefined(normal_scale_val)) {
+    double normal_scale;
+
+    if (JS_ToFloat64(ctx, &normal_scale, normal_scale_val) < 0) {
+      js_free(ctx, props);
+      return JS_EXCEPTION;
+    }
+
+    props->normal_texture.scale = normal_scale;
+  } else {
+    props->normal_texture.scale = 1.0f;
+  }
+
+  JSValue occlusion_texture_val = JS_GetPropertyStr(ctx, argv[0], "occlusionTexture");
+
+  if (!JS_IsUndefined(occlusion_texture_val)) {
+    WebSGTextureData *occlusion_texture_data = JS_GetOpaque2(ctx, occlusion_texture_val, js_websg_texture_class_id);
+
+    if (occlusion_texture_data == NULL) {
+      js_free(ctx, props);
+      return JS_EXCEPTION;
+    }
+
+    props->occlusion_texture.texture = occlusion_texture_data->texture_id;
+  }
+
+  JSValue occlusion_strength_val = JS_GetPropertyStr(ctx, argv[0], "occlusionStrength");
+
+  if (!JS_IsUndefined(occlusion_strength_val)) {
+    double occlusion_strength;
+
+    if (JS_ToFloat64(ctx, &occlusion_strength, occlusion_strength_val) < 0) {
+      js_free(ctx, props);
+      return JS_EXCEPTION;
+    }
+
+    props->occlusion_texture.strength = occlusion_strength;
+  } else {
+    props->occlusion_texture.strength = 1.0f;
+  }
+
+  JSValue emissive_factor_val = JS_GetPropertyStr(ctx, argv[0], "emissiveFactor");
+
+  if (!JS_IsUndefined(emissive_factor_val)) {
+    if (js_get_float_array_like(ctx, emissive_factor_val, props->emissive_factor, 3) < 0) {
+      js_free(ctx, props);
+      return JS_EXCEPTION;
+    }
+  } else {
+    props->emissive_factor[0] = 0.0f;
+    props->emissive_factor[1] = 0.0f;
+    props->emissive_factor[2] = 0.0f;
+  }
+
+  JSValue emissive_texture_val = JS_GetPropertyStr(ctx, argv[0], "emissiveTexture");
+
+  if (!JS_IsUndefined(emissive_texture_val)) {
+    WebSGTextureData *emissive_texture_data = JS_GetOpaque2(ctx, emissive_texture_val, js_websg_texture_class_id);
+
+    if (emissive_texture_data == NULL) {
+      js_free(ctx, props);
+      return JS_EXCEPTION;
+    }
+
+    props->emissive_texture.texture = emissive_texture_data->texture_id;
+  }
+
+  material_id_t material_id = websg_world_create_material(props);
+
+  js_free(ctx, props);
 
   if (material_id == 0) {
     JS_ThrowInternalError(ctx, "WebSG: Couldn't create material.");
@@ -270,7 +566,7 @@ JSValue js_websg_world_find_material_by_name(
     return JS_EXCEPTION;
   }
 
-  material_id_t material_id = websg_material_find_by_name(name, length);
+  material_id_t material_id = websg_world_find_material_by_name(name, length);
 
   if (material_id == 0) {
     return JS_UNDEFINED;

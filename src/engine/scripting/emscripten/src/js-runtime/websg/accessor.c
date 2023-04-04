@@ -173,7 +173,7 @@ JSValue js_websg_get_accessor_by_id(JSContext *ctx, WebSGWorldData *world_data, 
  * World Methods
  **/
 
-JSValue js_websg_world_create_accessor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+JSValue js_websg_world_create_accessor_from(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
   WebSGWorldData *world_data = JS_GetOpaque(this_val, js_websg_world_class_id);
 
   size_t buffer_byte_length;
@@ -185,7 +185,7 @@ JSValue js_websg_world_create_accessor(JSContext *ctx, JSValueConst this_val, in
 
   JSValue props_obj = argv[1];
 
-  AccessorProps *props = js_malloc(ctx, sizeof(AccessorProps));
+  AccessorFromProps *props = js_malloc(ctx, sizeof(AccessorFromProps));
 
   JSValue type_val = JS_GetPropertyStr(ctx, props_obj, "type");
 
@@ -257,7 +257,7 @@ JSValue js_websg_world_create_accessor(JSContext *ctx, JSValueConst this_val, in
     props->dynamic = dynamic;
   }
 
-  accessor_id_t accessor_id = websg_create_accessor_from(data, buffer_byte_length, props);
+  accessor_id_t accessor_id = websg_world_create_accessor_from(data, buffer_byte_length, props);
 
   if (accessor_id == 0) {
     JS_ThrowInternalError(ctx, "WebSG: Couldn't create accessor.");
@@ -277,7 +277,7 @@ JSValue js_websg_world_find_accessor_by_name(JSContext *ctx, JSValueConst this_v
     return JS_EXCEPTION;
   }
 
-  accessor_id_t accessor_id = websg_accessor_find_by_name(name, length);
+  accessor_id_t accessor_id = websg_world_find_accessor_by_name(name, length);
 
   if (accessor_id == 0) {
     return JS_UNDEFINED;

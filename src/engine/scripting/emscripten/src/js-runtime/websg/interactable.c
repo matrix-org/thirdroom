@@ -24,7 +24,7 @@ static JSClassDef js_websg_interactable_class = {
 static JSValue js_websg_interactable_pressed(JSContext *ctx, JSValueConst this_val) {
   WebSGInteractableData *interactable_data = JS_GetOpaque(this_val, js_websg_interactable_class_id);
 
-  int32_t result = websg_get_interactable_pressed(interactable_data->node_id);
+  int32_t result = websg_node_get_interactable_pressed(interactable_data->node_id);
 
   if (result == -1) {
     JS_ThrowInternalError(ctx, "WebSG: Error getting interactable pressed state.");
@@ -37,7 +37,7 @@ static JSValue js_websg_interactable_pressed(JSContext *ctx, JSValueConst this_v
 static JSValue js_websg_interactable_held(JSContext *ctx, JSValueConst this_val) {
   WebSGInteractableData *interactable_data = JS_GetOpaque(this_val, js_websg_interactable_class_id);
 
-  int32_t result = websg_get_interactable_held(interactable_data->node_id);
+  int32_t result = websg_node_get_interactable_held(interactable_data->node_id);
 
   if (result == -1) {
     JS_ThrowInternalError(ctx, "WebSG: Error getting interactable held state.");
@@ -50,7 +50,7 @@ static JSValue js_websg_interactable_held(JSContext *ctx, JSValueConst this_val)
 static JSValue js_websg_interactable_released(JSContext *ctx, JSValueConst this_val) {
   WebSGInteractableData *interactable_data = JS_GetOpaque(this_val, js_websg_interactable_class_id);
 
-  int32_t result = websg_get_interactable_released(interactable_data->node_id);
+  int32_t result = websg_node_get_interactable_released(interactable_data->node_id);
 
   if (result == -1) {
     JS_ThrowInternalError(ctx, "WebSG: Error getting interactable released state.");
@@ -105,7 +105,7 @@ void js_websg_define_interactable(JSContext *ctx, JSValue websg) {
  **/
 
 JSValue js_websg_init_node_interactable(JSContext *ctx, node_id_t node_id) {
-  if (websg_has_interactable(node_id) == 0) {
+  if (websg_node_has_interactable(node_id) == 0) {
     return JS_UNDEFINED;
   }
 
@@ -125,8 +125,13 @@ JSValue js_websg_init_node_interactable(JSContext *ctx, node_id_t node_id) {
 JSValue js_websg_node_add_interactable(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
   WebSGNodeData *node_data = JS_GetOpaque(this_val, js_websg_node_class_id);
 
+  InteractableProps *props = js_mallocz(ctx, sizeof(InteractableProps));
+  props->type = InteractableType_Interactable;
+
   // TODO: Add more types of interactables and make the interactable type optional with this as the default
-  int32_t result = websg_add_interactable(node_data->node_id, InteractableType_Interactable);
+  int32_t result = websg_node_add_interactable(node_data->node_id, props);
+
+  js_free(ctx, props);
 
   if (result == -1) {
     JS_ThrowInternalError(ctx, "WebSG: Error adding interactable.");
@@ -151,7 +156,7 @@ JSValue js_websg_node_add_interactable(JSContext *ctx, JSValueConst this_val, in
 JSValue js_websg_node_remove_interactable(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
   WebSGNodeData *node_data = JS_GetOpaque(this_val, js_websg_node_class_id);
 
-  int32_t result = websg_remove_interactable(node_data->node_id);
+  int32_t result = websg_node_remove_interactable(node_data->node_id);
 
   if (result == -1) {
     JS_ThrowInternalError(ctx, "WebSG: Error removing interactable.");
@@ -168,7 +173,7 @@ JSValue js_websg_node_remove_interactable(JSContext *ctx, JSValueConst this_val,
 JSValue js_websg_node_get_interactable(JSContext *ctx, JSValueConst this_val) {
   WebSGNodeData *node_data = JS_GetOpaque(this_val, js_websg_node_class_id);
 
-  if (websg_has_interactable(node_data->node_id) && JS_IsUndefined(node_data->interactable)) {
+  if (websg_node_has_interactable(node_data->node_id) && JS_IsUndefined(node_data->interactable)) {
     JSValue interactable = JS_NewObjectClass(ctx, js_websg_interactable_class_id);
 
     if (JS_IsException(interactable)) {

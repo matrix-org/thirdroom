@@ -77,7 +77,7 @@ import { getModule } from "../module/module.common";
 import { createMesh } from "../mesh/mesh.game";
 import { addInteractableComponent } from "../../plugins/interaction/interaction.game";
 import { dynamicObjectCollisionGroups } from "../physics/CollisionGroups";
-import { addUIElementChild } from "../ui/ui.game";
+import { addUIElementChild, removeUIElementChild } from "../ui/ui.game";
 import { startOrbit, stopOrbit } from "../../plugins/camera/CameraRig.game";
 
 export function getScriptResource<T extends RemoteResourceConstructor>(
@@ -208,6 +208,72 @@ function scriptGetChildAt(wasmCtx: WASMModuleContext, parent: RemoteNode | Remot
 
   let i = 0;
   let cursor = parent.resourceType === ResourceType.Node ? parent.firstChild : parent.firstNode;
+
+  while (cursor && i < index) {
+    // Only count the resources owned by the script.
+    if (resourceIds.has(cursor.eid)) {
+      i++;
+    }
+
+    cursor = cursor.nextSibling;
+  }
+
+  if (i === index && cursor && resourceIds.has(cursor.eid)) {
+    return cursor.eid;
+  }
+
+  return 0;
+}
+
+function getScriptUIElementChildCount(wasmCtx: WASMModuleContext, element: RemoteUIElement): number {
+  const resourceIds = wasmCtx.resourceManager.resourceIds;
+
+  let count = 0;
+  let cursor = element.firstChild;
+
+  while (cursor) {
+    // Only count the resources owned by the script.
+    if (resourceIds.has(cursor.eid)) {
+      count++;
+    }
+
+    cursor = cursor.nextSibling;
+  }
+
+  return count;
+}
+
+function getScriptUIElementChildren(
+  wasmCtx: WASMModuleContext,
+  element: RemoteUIElement,
+  elArrPtr: number,
+  maxCount: number
+): number {
+  const resourceIds = wasmCtx.resourceManager.resourceIds;
+  const U32Heap = wasmCtx.U32Heap;
+
+  let i = 0;
+  let cursor = element.firstChild;
+
+  while (cursor && i < maxCount) {
+    // Only write the resources owned by the script.
+    if (resourceIds.has(cursor.eid)) {
+      U32Heap[elArrPtr / 4 + i] = cursor.eid;
+      i++;
+    }
+
+    cursor = cursor.nextSibling;
+  }
+
+  // Return the number of ids written into the array
+  return i;
+}
+
+function scriptGetUIElementChildAt(wasmCtx: WASMModuleContext, parent: RemoteUIElement, index: number): number {
+  const resourceIds = wasmCtx.resourceManager.resourceIds;
+
+  let i = 0;
+  let cursor = parent.firstChild;
 
   while (cursor && i < index) {
     // Only count the resources owned by the script.
@@ -1712,6 +1778,10 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       return 0;
     },
+    node_get_ui_canvas(nodeId: number) {
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+      return node?.uiCanvas?.eid ?? 0;
+    },
     ui_canvas_get_root(canvasId: number) {
       const canvas = getScriptResource(wasmCtx, RemoteUICanvas, canvasId);
 
@@ -1767,6 +1837,26 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       }
 
       readFloat32ArrayInto(wasmCtx, sizePtr, uiCanvas.size);
+
+      return 0;
+    },
+    ui_element_get_size_element(uiCanvasId: number, index: number) {
+      const uiCanvas = getScriptResource(wasmCtx, RemoteUICanvas, uiCanvasId);
+
+      if (!uiCanvas) {
+        return -1;
+      }
+
+      return uiCanvas.size[index];
+    },
+    ui_element_set_size_element(uiCanvasId: number, index: number, value: number) {
+      const uiCanvas = getScriptResource(wasmCtx, RemoteUICanvas, uiCanvasId);
+
+      if (!uiCanvas) {
+        return -1;
+      }
+
+      uiCanvas.size[index] = value;
 
       return 0;
     },
@@ -1955,6 +2045,26 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       }
 
       readFloat32ArrayInto(wasmCtx, positionPtr, uiElement.position);
+
+      return 0;
+    },
+    ui_element_get_position_element(uiElementId: number, index: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      return uiElement.position[index];
+    },
+    ui_element_set_position_element(uiElementId: number, index: number, value: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      uiElement.position[index] = value;
 
       return 0;
     },
@@ -2335,6 +2445,26 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       return 0;
     },
+    ui_element_get_background_color_element(uiElementId: number, index: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      return uiElement.backgroundColor[index];
+    },
+    ui_element_set_background_color_element(uiElementId: number, index: number, value: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      uiElement.backgroundColor[index] = value;
+
+      return 0;
+    },
     ui_element_get_border_color(lightId: number, colorPtr: number) {
       const uiElement = getScriptResource(wasmCtx, RemoteUIElement, lightId);
 
@@ -2354,6 +2484,26 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       }
 
       readFloat32ArrayInto(wasmCtx, colorPtr, uiElement.borderColor);
+
+      return 0;
+    },
+    ui_element_get_border_color_element(uiElementId: number, index: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      return uiElement.borderColor[index];
+    },
+    ui_element_set_border_color_element(uiElementId: number, index: number, value: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      uiElement.borderColor[index] = value;
 
       return 0;
     },
@@ -2379,6 +2529,26 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       return 0;
     },
+    ui_element_get_padding_element(uiElementId: number, index: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      return uiElement.padding[index];
+    },
+    ui_element_set_padding_element(uiElementId: number, index: number, value: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      uiElement.padding[index] = value;
+
+      return 0;
+    },
     ui_element_get_margin(lightId: number, marginPtr: number) {
       const uiElement = getScriptResource(wasmCtx, RemoteUIElement, lightId);
 
@@ -2401,6 +2571,26 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       return 0;
     },
+    ui_element_get_margin_element(uiElementId: number, index: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      return uiElement.margin[index];
+    },
+    ui_element_set_margin_element(uiElementId: number, index: number, value: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      uiElement.margin[index] = value;
+
+      return 0;
+    },
     ui_element_get_border_width(lightId: number, borderWidth: number) {
       const uiElement = getScriptResource(wasmCtx, RemoteUIElement, lightId);
 
@@ -2420,6 +2610,26 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       }
 
       readFloat32ArrayInto(wasmCtx, borderWidth, uiElement.borderWidth);
+
+      return 0;
+    },
+    ui_element_get_border_width_element(uiElementId: number, index: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      return uiElement.borderWidth[index];
+    },
+    ui_element_set_border_width_element(uiElementId: number, index: number, value: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      uiElement.borderWidth[index] = value;
 
       return 0;
     },
@@ -2448,6 +2658,69 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       addUIElementChild(flex, child);
 
       return 0;
+    },
+    ui_element_remove_child(uiElementId: number, childId: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      const child = getScriptResource(wasmCtx, RemoteUIElement, childId);
+
+      if (!child) {
+        return -1;
+      }
+
+      removeUIElementChild(uiElement, child);
+
+      return 0;
+    },
+    ui_element_get_child_count(uiElementId: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      return getScriptUIElementChildCount(wasmCtx, uiElement);
+    },
+    ui_element_get_children(uiElementId: number, childArrPtr: number, maxCount: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      return getScriptUIElementChildren(wasmCtx, uiElement, childArrPtr, maxCount);
+    },
+    ui_element_get_child(uiElementId: number, index: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return 0; // This function returns a u32 so errors returned as 0 / null eid
+      }
+
+      return scriptGetUIElementChildAt(wasmCtx, uiElement, index);
+    },
+    ui_element_get_parent(uiElementId: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return 0; // This function returns a u32 so errors returned as 0 / null eid
+      }
+
+      const parent = uiElement.parent;
+
+      if (!parent) {
+        return 0;
+      }
+
+      if (!wasmCtx.resourceManager.resourceIds.has(parent.eid)) {
+        return 0;
+      }
+
+      return parent.eid;
     },
 
     // UI Button

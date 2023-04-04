@@ -17,6 +17,8 @@ JSValue js_websg_get_material_by_id(JSContext *ctx, WebSGWorldData *world_data, 
 
 JSValue js_websg_world_create_material(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 
+JSValue js_websg_world_create_unlit_material(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
+
 JSValue js_websg_world_find_material_by_name(
   JSContext *ctx,
   JSValueConst this_val,

@@ -4,8 +4,9 @@
 #include "../../websg.h"
 #include "./websg-js.h"
 #include "./ui-canvas.h"
-#include "./ui-flex.h"
+#include "./ui-element.h"
 #include "./vector2.h"
+#include "../utils/array.h"
 
 /**
  * Class Definition
@@ -27,24 +28,25 @@ static JSClassDef js_websg_ui_canvas_class = {
 static JSValue js_websg_ui_canvas_get_root(JSContext *ctx, JSValueConst this_val) {
  WebSGUICanvasData *ui_canvas_data = JS_GetOpaque(this_val, js_websg_ui_canvas_class_id);
 
-  ui_flex_id_t root_id = websg_ui_canvas_get_root(ui_canvas_data->ui_canvas_id);
+  ui_element_id_t root_id = websg_ui_canvas_get_root(ui_canvas_data->ui_canvas_id);
 
   if (root_id == 0) {
     return JS_UNDEFINED;
   }
 
-  return js_websg_get_ui_flex_by_id(ctx, ui_canvas_data->world_data, root_id);
+  return js_websg_get_ui_element_by_id(ctx, ui_canvas_data->world_data, root_id);
 }
 
-static JSValue js_websg_ui_canvas_set_root(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+static JSValue js_websg_ui_canvas_set_root(JSContext *ctx, JSValueConst this_val, JSValueConst arg) {
   WebSGUICanvasData *ui_canvas_data = JS_GetOpaque(this_val, js_websg_ui_canvas_class_id);
   
-  ui_flex_id_t root_id;
-  if (JS_ToUint32(ctx, &root_id, argv[1]) == -1) {
+  WebSGUIElementData *root_data = JS_GetOpaque2(ctx, arg, js_websg_ui_element_class_id);
+
+  if (root_data == NULL) {
     return JS_EXCEPTION;
   }
 
-  int32_t result = websg_ui_canvas_set_root(ui_canvas_data->ui_canvas_id, root_id);
+  int32_t result = websg_ui_canvas_set_root(ui_canvas_data->ui_canvas_id, root_data->ui_element_id);
 
   if (result == -1) {
     JS_ThrowInternalError(ctx, "WebSG UI: Error setting UI canvas root.");
@@ -212,7 +214,7 @@ JSValue js_websg_get_ui_canvas_by_id(JSContext *ctx, WebSGWorldData *world_data,
  * World Methods
  **/
 
-static JSValue js_websg_world_create_ui_canvas(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+JSValue js_websg_world_create_ui_canvas(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
   WebSGWorldData *world_data = JS_GetOpaque(this_val, js_websg_world_class_id);
 
   UICanvasProps *props = js_mallocz(ctx, sizeof(UICanvasProps));
@@ -220,13 +222,13 @@ static JSValue js_websg_world_create_ui_canvas(JSContext *ctx, JSValueConst this
   JSValue root_val = JS_GetPropertyStr(ctx, argv[0], "root");
 
   if (!JS_IsUndefined(root_val)) {
-    WebSGUIFlexData *ui_flex_data = JS_GetOpaque2(ctx, root_val, js_websg_ui_flex_class_id);
+    WebSGUIElementData *ui_element_data = JS_GetOpaque2(ctx, root_val, js_websg_ui_element_class_id);
 
-    if (ui_flex_data == NULL) {
+    if (ui_element_data == NULL) {
       return JS_EXCEPTION;
     }
 
-    props->root = ui_flex_data->ui_flex_id;
+    props->root = ui_element_data->ui_element_id;
   }
 
   JSValue size_val = JS_GetPropertyStr(ctx, argv[0], "size");
@@ -261,7 +263,7 @@ static JSValue js_websg_world_create_ui_canvas(JSContext *ctx, JSValueConst this
     props->height = (float_t)height;
   }
 
-  ui_canvas_id_t ui_canvas_id = websg_create_ui_canvas(props);
+  ui_canvas_id_t ui_canvas_id = websg_world_create_ui_canvas(props);
 
   if (ui_canvas_id == 0) {
     JS_ThrowInternalError(ctx, "WebSG UI: Error creating UI canvas.");
@@ -269,4 +271,23 @@ static JSValue js_websg_world_create_ui_canvas(JSContext *ctx, JSValueConst this
   }
 
   return js_websg_new_ui_canvas_instance(ctx, world_data, ui_canvas_id);
+}
+
+JSValue js_websg_world_find_ui_canvas_by_name(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  WebSGWorldData *world_data = JS_GetOpaque(this_val, js_websg_world_class_id);
+
+  size_t length;
+  const char* name = JS_ToCStringLen(ctx, &length, argv[0]);
+
+  if (name == NULL) {
+    return JS_EXCEPTION;
+  }
+
+  ui_canvas_id_t ui_canvas_id = websg_world_find_ui_canvas_by_name(name, length);
+
+  if (ui_canvas_id == 0) {
+    return JS_UNDEFINED;
+  }
+
+  return js_websg_get_ui_canvas_by_id(ctx, world_data, ui_canvas_id);
 }

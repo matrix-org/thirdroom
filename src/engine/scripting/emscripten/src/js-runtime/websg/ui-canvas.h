@@ -17,4 +17,11 @@ JSValue js_websg_get_ui_canvas_by_id(JSContext *ctx, WebSGWorldData *world_data,
 
 JSValue js_websg_world_create_ui_canvas(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 
+JSValue js_websg_world_find_ui_canvas_by_name(
+  JSContext *ctx,
+  JSValueConst this_val,
+  int argc,
+  JSValueConst *argv
+);
+
 #endif

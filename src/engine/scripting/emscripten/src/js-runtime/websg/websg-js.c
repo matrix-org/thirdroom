@@ -16,12 +16,16 @@
 #include "./mesh-primitive.h"
 #include "./mesh.h"
 #include "./node.h"
+#include "./node-iterator.h"
 #include "./physics-body.h"
 #include "./quaternion.h"
 #include "./rgb.h"
 #include "./rgba.h"
 #include "./scene.h"
-#include "./ui.h"
+#include "./texture.h"
+#include "./ui-canvas.h"
+#include "./ui-element.h"
+#include "./ui-element-iterator.h"
 #include "./vector3.h"
 #include "./world.h"
 
@@ -66,7 +70,7 @@ static JSValue js_start_orbit(JSContext *ctx, JSValueConst this_val, int argc, J
   }
 
 
-  int32_t result = websg_start_orbit(node_id, options);
+  int32_t result = websg_node_start_orbit(node_id, options);
 
   if (result == -1) {
     JS_ThrowInternalError(ctx, "WebSG: Error starting orbit.");
@@ -121,12 +125,16 @@ void js_define_websg_api(JSContext *ctx) {
   js_websg_define_mesh_primitive(ctx, websg);
   js_websg_define_mesh(ctx, websg);
   js_websg_define_node(ctx, websg);
+  js_websg_define_node_iterator(ctx);
   js_websg_define_physics_body(ctx, websg);
   js_websg_define_quaternion(ctx, websg);
   js_websg_define_rgb(ctx, websg);
   js_websg_define_rgba(ctx, websg);
   js_websg_define_scene(ctx, websg);
-  js_websg_define_ui(ctx, websg);
+  js_websg_define_texture(ctx, websg);
+  js_websg_define_ui_canvas(ctx, websg);
+  js_websg_define_ui_element(ctx, websg);
+  js_websg_define_ui_element_iterator(ctx);
   js_websg_define_vector3(ctx, websg);
   js_websg_define_world(ctx, websg);
   JS_SetPropertyStr(ctx, global, "WebSG", websg);

@@ -143,3 +143,13 @@ export function addUIElementChild(parent: RemoteUIElement, child: RemoteUIElemen
 
   child.removeRef();
 }
+
+export function removeUIElementChild(parent: RemoteUIElement, child: RemoteUIElement) {
+  child.addRef();
+  removeUIElementFromLinkedList(parent, child);
+  child.parent = undefined;
+  child.prevSibling = undefined;
+  child.nextSibling = undefined;
+  child.firstChild = undefined;
+  child.removeRef();
+}

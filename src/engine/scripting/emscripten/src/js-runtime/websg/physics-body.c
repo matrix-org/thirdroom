@@ -94,7 +94,7 @@ void js_websg_define_physics_body(JSContext *ctx, JSValue websg) {
  **/
 
 JSValue js_websg_init_node_physics_body(JSContext *ctx, node_id_t node_id) {
-  if (websg_has_physics_body(node_id) == 0) {
+  if (websg_node_has_physics_body(node_id) == 0) {
     return JS_UNDEFINED;
   }
 
@@ -151,7 +151,7 @@ JSValue js_websg_node_add_physics_body(JSContext *ctx, JSValueConst this_val, in
     }
   }
 
-  int32_t result = websg_add_physics_body(node_data->node_id, props);
+  int32_t result = websg_node_add_physics_body(node_data->node_id, props);
 
   if (result == -1) {
     JS_ThrowInternalError(ctx, "WebSG: Error adding physics body.");
@@ -176,7 +176,7 @@ JSValue js_websg_node_add_physics_body(JSContext *ctx, JSValueConst this_val, in
 JSValue js_websg_node_remove_physics_body(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
   WebSGNodeData *node_data = JS_GetOpaque(this_val, js_websg_node_class_id);
 
-  int32_t result = websg_remove_physics_body(node_data->node_id);
+  int32_t result = websg_node_remove_physics_body(node_data->node_id);
 
   if (result == -1) {
     JS_ThrowInternalError(ctx, "WebSG: Error removing physics_body.");
@@ -193,7 +193,7 @@ JSValue js_websg_node_remove_physics_body(JSContext *ctx, JSValueConst this_val,
 JSValue js_websg_node_get_physics_body(JSContext *ctx, JSValueConst this_val) {
   WebSGNodeData *node_data = JS_GetOpaque(this_val, js_websg_node_class_id);
 
-  if (websg_has_physics_body(node_data->node_id) && JS_IsUndefined(node_data->physics_body)) {
+  if (websg_node_has_physics_body(node_data->node_id) && JS_IsUndefined(node_data->physics_body)) {
     JSValue physics_body = JS_NewObjectClass(ctx, js_websg_physics_body_class_id);
 
     if (JS_IsException(physics_body)) {

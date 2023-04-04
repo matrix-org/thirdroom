@@ -5,6 +5,7 @@
 #include "./websg-js.h"
 #include "./light.h"
 #include "./rgb.h"
+#include "../utils/array.h"
 
 /**
  * Private Methods and Variables
@@ -171,14 +172,98 @@ JSValue js_websg_get_light_by_id(JSContext *ctx, WebSGWorldData *world_data, lig
 JSValue js_websg_world_create_light(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
   WebSGWorldData *world_data = JS_GetOpaque(this_val, js_websg_world_class_id);
 
-  LightType light_type = get_light_type_from_atom(JS_ValueToAtom(ctx, argv[0]));
+  LightProps *props = js_mallocz(ctx, sizeof(LightProps));
+  props->color[0] = 1.0f;
+  props->color[1] = 1.0f;
+  props->color[2] = 1.0f;
+  props->intensity = 1.0f;
+  props->range = 1.0f;
 
-  if (light_type == -1) {
+  props->type = get_light_type_from_atom(JS_ValueToAtom(ctx, argv[0]));
+
+  if (props->type == -1) {
+    js_free(ctx, props);
     JS_ThrowTypeError(ctx, "WebSG: Unknown light type.");
     return JS_EXCEPTION;
   }
 
-  light_id_t light_id = websg_create_light(light_type);
+  JSValue name_val = JS_GetPropertyStr(ctx, argv[0], "name");
+
+  if (!JS_IsUndefined(name_val)) {
+    props->name = JS_ToCString(ctx, name_val);
+
+    if (props->name == NULL) {
+      js_free(ctx, props);
+      return JS_EXCEPTION;
+    }
+  }
+
+  JSValue color_val = JS_GetPropertyStr(ctx, argv[0], "color");
+
+  if (!JS_IsUndefined(color_val)) {
+    if (js_get_float_array_like(ctx, color_val, props->color, 3) < 0) {
+      js_free(ctx, props);
+      return JS_EXCEPTION;
+    }
+  }
+
+  JSValue intensity_val = JS_GetPropertyStr(ctx, argv[0], "intensity");
+
+  if (!JS_IsUndefined(intensity_val)) {
+    double intensity;
+    
+    if (JS_ToFloat64(ctx, &intensity, intensity_val) < 0) {
+      js_free(ctx, props);
+      return JS_EXCEPTION;
+    }
+
+    props->intensity = (float_t)intensity;
+  }
+
+  JSValue range_val = JS_GetPropertyStr(ctx, argv[0], "range");
+
+  if (!JS_IsUndefined(range_val)) {
+    double range;
+    
+    if (JS_ToFloat64(ctx, &range, range_val) < 0) {
+      js_free(ctx, props);
+      return JS_EXCEPTION;
+    }
+
+    props->range = (float_t)range;
+  }
+
+  if (props->type == LightType_Spot) {
+    JSValue inner_cone_angle_val = JS_GetPropertyStr(ctx, argv[0], "innerConeAngle");
+
+    if (!JS_IsUndefined(inner_cone_angle_val)) {
+      double inner_cone_angle;
+      
+      if (JS_ToFloat64(ctx, &inner_cone_angle, inner_cone_angle_val) < 0) {
+        js_free(ctx, props);
+        return JS_EXCEPTION;
+      }
+
+      props->spot.inner_cone_angle = (float_t)inner_cone_angle;
+    }
+
+    JSValue outer_cone_angle_val = JS_GetPropertyStr(ctx, argv[0], "outerConeAngle");
+
+    if (!JS_IsUndefined(outer_cone_angle_val)) {
+      double outer_cone_angle;
+      
+      if (JS_ToFloat64(ctx, &outer_cone_angle, outer_cone_angle_val) < 0) {
+        js_free(ctx, props);
+        return JS_EXCEPTION;
+      }
+
+      props->spot.outer_cone_angle = (float_t)outer_cone_angle;
+    }
+  }
+
+  light_id_t light_id = websg_world_create_light(props);
+
+  js_free(ctx, props);
 
   if (light_id == 0) {
     JS_ThrowInternalError(ctx, "WebSG: Couldn't create light.");
@@ -199,7 +284,7 @@ JSValue js_websg_world_find_light_by_name(JSContext *ctx, JSValueConst this_val,
     return JS_EXCEPTION;
   }
 
-  light_id_t light_id = websg_light_find_by_name(name, length);
+  light_id_t light_id = websg_world_find_light_by_name(name, length);
 
   if (light_id == 0) {
     return JS_UNDEFINED;

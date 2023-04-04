@@ -187,7 +187,7 @@ JSValue js_websg_world_find_scene_by_name(JSContext *ctx, JSValueConst this_val,
     return JS_EXCEPTION;
   }
 
-  scene_id_t scene_id = websg_scene_find_by_name(name, length);
+  scene_id_t scene_id = websg_world_find_scene_by_name(name, length);
 
   if (scene_id == 0) {
     return JS_UNDEFINED;
@@ -199,7 +199,22 @@ JSValue js_websg_world_find_scene_by_name(JSContext *ctx, JSValueConst this_val,
 JSValue js_websg_world_create_scene(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
   WebSGWorldData *world_data = JS_GetOpaque(this_val, js_websg_world_class_id);
 
-  scene_id_t scene_id = websg_create_scene();
+  SceneProps *props = js_mallocz(ctx, sizeof(SceneProps));
+
+  JSValue name_val = JS_GetPropertyStr(ctx, argv[0], "name");
+
+  if (!JS_IsUndefined(name_val)) {
+    props->name = JS_ToCString(ctx, name_val);
+
+    if (props->name == NULL) {
+      js_free(ctx, props);
+      return JS_EXCEPTION;
+    }
+  }
+
+  scene_id_t scene_id = websg_world_create_scene(props);
+
+  js_free(ctx, props);
 
   if (scene_id == 0) {
     JS_ThrowInternalError(ctx, "WebSG: Couldn't create scene.");

@@ -42,15 +42,15 @@ typedef struct WebSGString {
   uint32_t length;
 } WebSGString;
 
-typedef struct Extensions {
-  ExtensionItem *items;
-  uint32_t count;
-} Extensions;
-
 typedef struct ExtensionItem {
   const char *name;
   void* extension;
 } ExtensionItem;
+
+typedef struct Extensions {
+  ExtensionItem *items;
+  uint32_t count;
+} Extensions;
 
 /*********
  * World *
@@ -279,11 +279,6 @@ import_websg(accessor_update_with) int32_t websg_accessor_update_with(
  * Material
  **/
 
-typedef enum MaterialType {
-  MaterialType_Standard,
-  MaterialType_Unlit,
-} MaterialType;
-
 typedef enum MaterialAlphaMode {
   MaterialAlphaMode_OPAQUE,
   MaterialAlphaMode_MASK,
@@ -496,10 +491,13 @@ typedef struct UICanvasProps {
 import_websg(world_create_ui_canvas) ui_canvas_id_t websg_world_create_ui_canvas(UICanvasProps *props);
 import_websg(world_find_ui_canvas_by_name) light_id_t websg_world_find_ui_canvas_by_name(const char *name, uint32_t length);
 import_websg(node_set_ui_canvas) int32_t websg_node_set_ui_canvas(node_id_t node_id, ui_canvas_id_t canvas_id);
+import_websg(node_get_ui_canvas) ui_canvas_id_t websg_node_get_ui_canvas(node_id_t node_id);
 import_websg(ui_canvas_get_root) ui_element_id_t websg_ui_canvas_get_root(ui_canvas_id_t canvas_id);
 import_websg(ui_canvas_set_root) int32_t websg_ui_canvas_set_root(ui_canvas_id_t canvas_id, ui_element_id_t root_id);
 import_websg(ui_canvas_get_size) int32_t websg_ui_canvas_get_size(ui_canvas_id_t canvas_id, float_t *size);
 import_websg(ui_canvas_set_size) int32_t websg_ui_canvas_set_size(ui_canvas_id_t canvas_id, float_t *size);
+import_websg(ui_canvas_get_size_element) float_t websg_ui_canvas_get_size_element(ui_canvas_id_t canvas_id, uint32_t index);
+import_websg(ui_canvas_set_size_element) int32_t websg_ui_canvas_set_size_element(ui_canvas_id_t canvas_id, uint32_t index, float_t value);
 import_websg(ui_canvas_get_width) float_t websg_ui_canvas_get_width(ui_canvas_id_t canvas_id);
 import_websg(ui_canvas_set_width) int32_t websg_ui_canvas_set_width(ui_canvas_id_t canvas_id, float_t width);
 import_websg(ui_canvas_get_height) float_t websg_ui_canvas_get_height(ui_canvas_id_t canvas_id);
@@ -605,6 +603,8 @@ typedef struct UIElementProps {
 
 import_websg(world_create_ui_element) ui_element_id_t websg_world_create_ui_element(UIElementProps *props);
 import_websg(world_find_ui_element_by_name) light_id_t websg_world_find_ui_element_by_name(const char *name, uint32_t length);
+import_websg(ui_element_get_position_element) float_t websg_ui_element_get_position_element(ui_element_id_t ui_element_id, uint32_t index);
+import_websg(ui_element_set_position_element) int32_t websg_ui_element_set_position_element(ui_element_id_t ui_element_id, uint32_t index, float_t value);
 import_websg(ui_element_get_position) int32_t websg_ui_element_get_position(ui_element_id_t element_id, float_t *position);
 import_websg(ui_element_set_position) int32_t websg_ui_element_set_position(ui_element_id_t element_id, float_t *position);
 import_websg(ui_element_get_position_type) ElementPositionType websg_ui_element_get_position_type(ui_element_id_t element_id);
@@ -639,17 +639,33 @@ import_websg(ui_element_set_max_width) int32_t websg_ui_element_set_max_width(ui
 import_websg(ui_element_get_max_width) float_t websg_ui_element_get_max_width(ui_element_id_t element_id);
 import_websg(ui_element_set_max_height) int32_t websg_ui_element_set_max_height(ui_element_id_t element_id, float_t max_height);
 import_websg(ui_element_get_max_height) float_t websg_ui_element_get_max_height(ui_element_id_t element_id);
+import_websg(ui_element_get_background_color_element) float_t websg_ui_element_get_background_color_element(ui_element_id_t ui_element_id, uint32_t index);
+import_websg(ui_element_set_background_color_element) int32_t websg_ui_element_set_background_color_element(ui_element_id_t ui_element_id, uint32_t index, float_t value);
 import_websg(ui_element_get_background_color) int32_t websg_ui_element_get_background_color(ui_element_id_t element_id, float_t *background_color);
 import_websg(ui_element_set_background_color) int32_t websg_ui_element_set_background_color(ui_element_id_t element_id, float_t *background_color);
+import_websg(ui_element_get_border_color_element) float_t websg_ui_element_get_border_color_element(ui_element_id_t ui_element_id, uint32_t index);
+import_websg(ui_element_set_border_color_element) int32_t websg_ui_element_set_border_color_element(ui_element_id_t ui_element_id, uint32_t index, float_t value);
 import_websg(ui_element_get_border_color) int32_t websg_ui_element_get_border_color(ui_element_id_t element_id, float_t *border_color);
 import_websg(ui_element_set_border_color) int32_t websg_ui_element_set_border_color(ui_element_id_t element_id, float_t *border_color);
+import_websg(ui_element_get_padding_element) float_t websg_ui_element_get_padding_element(ui_element_id_t ui_element_id, uint32_t index);
+import_websg(ui_element_set_padding_element) int32_t websg_ui_element_set_padding_element(ui_element_id_t ui_element_id, uint32_t index, float_t value);
 import_websg(ui_element_get_padding) int32_t websg_ui_element_get_padding(ui_element_id_t element_id, float_t *padding);
 import_websg(ui_element_set_padding) int32_t websg_ui_element_set_padding( ui_element_id_t element_id, float_t *padding);
+import_websg(ui_element_get_margin_element) float_t websg_ui_element_get_margin_element(ui_element_id_t ui_element_id, uint32_t index);
+import_websg(ui_element_set_margin_element) int32_t websg_ui_element_set_margin_element(ui_element_id_t ui_element_id, uint32_t index, float_t value);
 import_websg(ui_element_get_margin) int32_t websg_ui_element_get_margin(ui_element_id_t element_id, float_t *margin);
 import_websg(ui_element_set_margin) int32_t websg_ui_element_set_margin(ui_element_id_t element_id, float_t *margin);
+import_websg(ui_element_get_border_width_element) float_t websg_ui_element_get_border_width_element(ui_element_id_t ui_element_id, uint32_t index);
+import_websg(ui_element_set_border_width_element) int32_t websg_ui_element_set_border_width_element(ui_element_id_t ui_element_id, uint32_t index, float_t value);
 import_websg(ui_element_get_border_width) int32_t websg_ui_element_get_border_width(ui_element_id_t element_id, float_t *border_width);
 import_websg(ui_element_set_border_width) int32_t websg_ui_element_set_border_width(ui_element_id_t element_id, float_t *border_width);
 import_websg(ui_element_get_element_type) ElementType websg_ui_element_get_element_type(ui_element_id_t element_id);
+import_websg(ui_element_add_child) int32_t websg_ui_element_add_child(ui_element_id_t ui_element_id, ui_element_id_t child_id);
+import_websg(ui_element_remove_child) int32_t websg_ui_element_remove_child(ui_element_id_t ui_element_id, ui_element_id_t child_id);
+import_websg(ui_element_get_child_count) int32_t websg_ui_element_get_child_count(ui_element_id_t ui_element_id);
+import_websg(ui_element_get_children) int32_t websg_ui_element_get_children(ui_element_id_t ui_element_id, ui_element_id_t *children, uint32_t max_count);
+import_websg(ui_element_get_child) ui_element_id_t websg_ui_element_get_child(ui_element_id_t ui_element_id, uint32_t index);
+import_websg(ui_element_get_parent) ui_element_id_t websg_ui_element_get_parent(ui_element_id_t ui_element_id);
 
 /********************************
  * UI Button Element Properties *

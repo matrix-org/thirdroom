@@ -14,6 +14,8 @@
 #include "./mesh.h"
 #include "./node.h"
 #include "./scene.h"
+#include "./ui-canvas.h"
+#include "./ui-element.h"
 
 static JSClassDef js_websg_world_class = {
   "World"
@@ -22,7 +24,7 @@ static JSClassDef js_websg_world_class = {
 static JSValue js_websg_world_get_environment(JSContext *ctx, JSValueConst this_val) {
   WebSGWorldData *world_data = JS_GetOpaque(this_val, js_websg_world_class_id);
 
-  scene_id_t scene_id = websg_get_environment_scene();
+  scene_id_t scene_id = websg_world_get_environment();
 
   if (scene_id == 0) {
     return JS_UNDEFINED;
@@ -38,7 +40,7 @@ static JSValue js_websg_world_set_environment(JSContext *ctx, JSValueConst this_
     return JS_EXCEPTION;
   }
 
-  if (websg_set_environment_scene(scene_data->scene_id) == -1) {
+  if (websg_world_set_environment(scene_data->scene_id) == -1) {
     JS_ThrowInternalError(ctx, "WebSG: Couldn't set environment scene.");
     return JS_EXCEPTION;
   }
@@ -48,21 +50,26 @@ static JSValue js_websg_world_set_environment(JSContext *ctx, JSValueConst this_
 
 static const JSCFunctionListEntry js_websg_world_proto_funcs[] = {
   JS_CGETSET_DEF("environment", js_websg_world_get_environment, js_websg_world_set_environment),
-  JS_CFUNC_DEF("createAccessor", 1, js_websg_world_create_accessor),
+  JS_CFUNC_DEF("createAccessorFrom", 1, js_websg_world_create_accessor_from),
   JS_CFUNC_DEF("findAccessorByName", 1, js_websg_world_find_accessor_by_name),
   JS_CFUNC_DEF("createCollider", 1, js_websg_world_create_collider),
   JS_CFUNC_DEF("findColliderByName", 1, js_websg_world_find_collider_by_name),
   JS_CFUNC_DEF("createLight", 1, js_websg_world_create_light),
   JS_CFUNC_DEF("findLightByName", 1, js_websg_world_find_light_by_name),
   JS_CFUNC_DEF("createMaterial", 1, js_websg_world_create_material),
+  JS_CFUNC_DEF("createUnlitMaterial", 1, js_websg_world_create_unlit_material),
   JS_CFUNC_DEF("findMaterialByName", 1, js_websg_world_find_material_by_name),
   JS_CFUNC_DEF("createMesh", 1, js_websg_world_create_mesh),
   JS_CFUNC_DEF("createBoxMesh", 1, js_websg_world_create_box_mesh),
   JS_CFUNC_DEF("findMeshByName", 1, js_websg_world_find_mesh_by_name),
-  JS_CFUNC_DEF("createNode", 0, js_websg_world_create_node),
+  JS_CFUNC_DEF("createNode", 1, js_websg_world_create_node),
   JS_CFUNC_DEF("findNodeByName", 1, js_websg_world_find_node_by_name),
-  JS_CFUNC_DEF("createScene", 0, js_websg_world_create_scene),
+  JS_CFUNC_DEF("createScene", 1, js_websg_world_create_scene),
   JS_CFUNC_DEF("findSceneByName", 1, js_websg_world_find_scene_by_name),
+  JS_CFUNC_DEF("createUICanvas", 1, js_websg_world_create_ui_canvas),
+  JS_CFUNC_DEF("findUICanvasByName", 1, js_websg_world_find_ui_canvas_by_name),
+  JS_CFUNC_DEF("createUIElement", 1, js_websg_world_create_ui_element),
+  JS_CFUNC_DEF("findUIElementByName", 1, js_websg_world_find_ui_element_by_name),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "World", JS_PROP_CONFIGURABLE),
 };
 
@@ -110,6 +117,8 @@ JSValue js_websg_new_world(JSContext *ctx) {
   world_data->nodes = JS_NewObject(ctx);
   world_data->scenes = JS_NewObject(ctx);
   world_data->textures = JS_NewObject(ctx);
+  world_data->ui_canvases = JS_NewObject(ctx);
+  world_data->ui_elements = JS_NewObject(ctx);
   JS_SetOpaque(world, world_data);
 
   return world;

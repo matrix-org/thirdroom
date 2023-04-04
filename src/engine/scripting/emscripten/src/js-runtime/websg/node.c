@@ -14,6 +14,7 @@
 #include "./quaternion.h"
 #include "./matrix4.h"
 #include "./ui-canvas.h"
+#include "../utils/array.h"
 
 static void js_websg_node_finalizer(JSRuntime *rt, JSValue val) {
   WebSGNodeData *node_data = JS_GetOpaque(val, js_websg_node_class_id);
@@ -270,53 +271,40 @@ static JSValue js_websg_node_set_ui_canvas(JSContext *ctx, JSValueConst this_val
   return JS_UNDEFINED;
 }
 
-static float_t js_websg_node_get_position_element(uint32_t node_id, float_t *position, int index) {
-  websg_node_get_position(node_id, position);
-  return position[index];
+static float_t js_websg_node_get_translation_element(uint32_t node_id, float_t *translation, int index) {
+  return websg_node_get_translation_element(node_id, index);
 }
 
-static void js_websg_node_set_position_element(uint32_t node_id, float_t *position, int index, float_t value) {
-  websg_node_get_position(node_id, position);
-  position[index] = value;
-  websg_node_set_position(node_id, position);
+static void js_websg_node_set_translation_element(uint32_t node_id, float_t *translation, int index, float_t value) {
+  websg_node_set_translation_element(node_id, index, value);
 }
 
-static float_t js_websg_node_get_quaternion_element(uint32_t node_id, float_t *quaternion, int index) {
-  websg_node_get_quaternion(node_id, quaternion);
-  return quaternion[index];
+static float_t js_websg_node_get_rotation_element(uint32_t node_id, float_t *rotation, int index) {
+  return websg_node_get_rotation_element(node_id, index);
 }
 
-static void js_websg_node_set_quaternion_element(uint32_t node_id, float_t *quaternion, int index, float_t value) {
-  websg_node_get_quaternion(node_id, quaternion);
-  quaternion[index] = value;
-  websg_node_set_quaternion(node_id, quaternion);
+static void js_websg_node_set_rotation_element(uint32_t node_id, float_t *rotation, int index, float_t value) {
+  websg_node_set_rotation_element(node_id, index, value);
 }
 
 static float_t js_websg_node_get_scale_element(uint32_t node_id, float_t *scale, int index) {
-  websg_node_get_scale(node_id, scale);
-  return scale[index];
+  return websg_node_get_scale_element(node_id, index);
 }
 
 static void js_websg_node_set_scale_element(uint32_t node_id, float_t *scale, int index, float_t value) {
-  websg_node_get_scale(node_id, scale);
-  scale[index] = value;
-  websg_node_set_scale(node_id, scale);
+  websg_node_set_scale_element(node_id, index, value);
 }
 
-static float_t js_websg_node_get_local_matrix_element(uint32_t node_id, float_t *local_matrix, int index) {
-  websg_node_get_local_matrix(node_id, local_matrix);
-  return local_matrix[index];
+static float_t js_websg_node_get_matrix_element(uint32_t node_id, float_t *matrix, int index) {
+  return websg_node_get_matrix_element(node_id, index);
 }
 
-static void js_websg_node_set_local_matrix_element(uint32_t node_id, float_t *local_matrix, int index, float_t value) {
-  websg_node_get_local_matrix(node_id, local_matrix);
-  local_matrix[index] = value;
-  websg_node_set_local_matrix(node_id, local_matrix);
+static void js_websg_node_set_matrix_element(uint32_t node_id, float_t *matrix, int index, float_t value) {
+  websg_node_set_matrix_element(node_id, index, value);
 }
 
 static float_t js_websg_node_get_world_matrix_element(uint32_t node_id, float_t *world_matrix, int index) {
-  websg_node_get_world_matrix(node_id, world_matrix);
-  return world_matrix[index];
+  return websg_node_get_world_matrix_element(node_id, index);
 }
 
 // Implement the addChild and removeChild methods
@@ -379,19 +367,19 @@ JSValue js_websg_new_node_instance(JSContext *ctx, WebSGWorldData *world_data, n
   js_websg_define_vector3_prop(
     ctx,
     node,
-    "position",
+    "translation",
     node_id,
-    &js_websg_node_get_position_element,
-    &js_websg_node_set_position_element
+    &js_websg_node_get_translation_element,
+    &js_websg_node_set_translation_element
   );
 
   js_websg_define_quaternion_prop(
     ctx,
     node,
-    "quaternion",
+    "rotation",
     node_id,
-    &js_websg_node_get_quaternion_element,
-    &js_websg_node_set_quaternion_element
+    &js_websg_node_get_rotation_element,
+    &js_websg_node_set_rotation_element
   );
 
   js_websg_define_vector3_prop(
@@ -406,10 +394,10 @@ JSValue js_websg_new_node_instance(JSContext *ctx, WebSGWorldData *world_data, n
   js_websg_define_matrix4_prop(
     ctx,
     node,
-    "localMatrix",
+    "matrix",
     node_id,
-    &js_websg_node_get_local_matrix_element,
-    &js_websg_node_set_local_matrix_element
+    &js_websg_node_get_matrix_element,
+    &js_websg_node_set_matrix_element
   );
 
   js_websg_define_matrix4_prop_read_only(
@@ -417,7 +405,7 @@ JSValue js_websg_new_node_instance(JSContext *ctx, WebSGWorldData *world_data, n
     node,
     "worldMatrix",
     node_id,
-    &js_websg_node_get_local_matrix_element
+    &js_websg_node_get_world_matrix_element
   );
 
   WebSGNodeData *node_data = js_mallocz(ctx, sizeof(WebSGNodeData));
@@ -453,7 +441,62 @@ JSValue js_websg_get_node_by_id(JSContext *ctx, WebSGWorldData *world_data, node
 JSValue js_websg_world_create_node(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
   WebSGWorldData *world_data = JS_GetOpaque(this_val, js_websg_world_class_id);
 
-  node_id_t node_id = websg_create_node();
+  NodeProps *props = js_mallocz(ctx, sizeof(NodeProps));
+
+  JSValue name_val = JS_GetPropertyStr(ctx, argv[0], "name");
+
+  if (!JS_IsUndefined(name_val)) {
+    props->name = JS_ToCString(ctx, name_val);
+
+    if (props->name == NULL) {
+      js_free(ctx, props);
+      return JS_EXCEPTION;
+    }
+  }
+
+  JSValue mesh_val = JS_GetPropertyStr(ctx, argv[0], "mesh");
+
+  if (!JS_IsUndefined(mesh_val)) {
+    WebSGMeshData *mesh_data = JS_GetOpaque2(ctx, mesh_val, js_websg_mesh_class_id);
+
+    if (mesh_data == NULL) {
+      js_free(ctx, props);
+      return JS_EXCEPTION;
+    }
+
+    props->mesh = mesh_data->mesh_id;
+  }
+
+  JSValue translation_val = JS_GetPropertyStr(ctx, argv[0], "translation");
+
+  if (!JS_IsUndefined(translation_val)) {
+    if (js_get_float_array_like(ctx, translation_val, props->translation, 3) < 0) {
+      js_free(ctx, props);
+      return JS_EXCEPTION;
+    }
+  }
+
+  JSValue rotation_val = JS_GetPropertyStr(ctx, argv[0], "rotation");
+
+  if (!JS_IsUndefined(rotation_val)) {
+    if (js_get_float_array_like(ctx, rotation_val, props->rotation, 4) < 0) {
+      js_free(ctx, props);
+      return JS_EXCEPTION;
+    }
+  }
+
+  JSValue scale_val = JS_GetPropertyStr(ctx, argv[0], "scale");
+
+  if (!JS_IsUndefined(scale_val)) {
+    if (js_get_float_array_like(ctx, scale_val, props->scale, 3) < 0) {
+      js_free(ctx, props);
+      return JS_EXCEPTION;
+    }
+  }
+
+  node_id_t node_id = websg_world_create_node(props);
+
+  js_free(ctx, props);
 
   if (node_id == 0) {
     JS_ThrowInternalError(ctx, "WebSG: Couldn't create node.");
@@ -473,7 +516,7 @@ JSValue js_websg_world_find_node_by_name(JSContext *ctx, JSValueConst this_val, 
     return JS_EXCEPTION;
   }
 
-  node_id_t node_id = websg_node_find_by_name(name, length);
+  node_id_t node_id = websg_world_find_node_by_name(name, length);
 
   if (node_id == 0) {
     return JS_UNDEFINED;

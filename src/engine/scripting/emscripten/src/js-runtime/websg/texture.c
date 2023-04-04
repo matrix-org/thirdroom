@@ -100,7 +100,7 @@ JSValue js_websg_world_find_texture_by_name(JSContext *ctx, JSValueConst this_va
     return JS_EXCEPTION;
   }
 
-  texture_id_t texture_id = websg_texture_find_by_name(name, length);
+  texture_id_t texture_id = websg_world_find_texture_by_name(name, length);
 
   if (texture_id == 0) {
     return JS_UNDEFINED;
