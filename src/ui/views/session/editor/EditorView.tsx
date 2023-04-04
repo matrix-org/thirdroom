@@ -76,7 +76,11 @@ export function EditorView({ room }: { room?: Room }) {
   const [reloading, setReloading] = useState(false);
 
   async function saveAndRunScript() {
-    const event = await room?.getStateEvent("org.matrix.msc3815.world");
+    if (!room) {
+      return;
+    }
+
+    const event = await room.getStateEvent("org.matrix.msc3815.world");
     const content = event?.event?.content;
 
     if (!content) return false;
