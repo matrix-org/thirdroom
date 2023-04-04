@@ -91,7 +91,7 @@ export function useWorldLoader(): WorldLoader {
   const getWorldGroupCall = (session: Session, world: Room) => getRoomCall(session.callHandler.calls, world.id);
 
   const connectGroupCall = useCallback(
-    async (world: Room, groupCall: GroupCall) => {
+    async (world: Room, groupCall?: GroupCall) => {
       if (!groupCall) {
         groupCall = await session.callHandler.createCall(world.id, "m.voice", "World Call", CallIntent.Room);
       }
@@ -121,10 +121,13 @@ export function useWorldLoader(): WorldLoader {
           return undefined;
         }
 
-        const groupCall = getWorldGroupCall(session, world);
-        if (!groupCall) return;
+        let groupCall = getWorldGroupCall(session, world);
+        if (groupCall) {
+          await connectGroupCall(world, groupCall);
+        } else {
+          groupCall = await connectGroupCall(world);
+        }
 
-        await connectGroupCall(world, groupCall);
         await updateWorldProfile(session, world);
 
         setLocalMediaStream(mainThread, groupCall.localMedia?.userMedia);
