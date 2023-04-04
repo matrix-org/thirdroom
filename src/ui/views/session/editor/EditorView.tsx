@@ -19,7 +19,7 @@ import { Dots } from "../../../atoms/loading/Dots";
 import { useKeyDown } from "../../../hooks/useKeyDown";
 import { useLocalStorage } from "../../../hooks/useLocalStorage";
 
-export function EditorView({ room }: { room: Room }) {
+export function EditorView({ room }: { room?: Room }) {
   const treeViewRef = useRef<TreeViewRefApi>(null);
   const { loading, scene, resources } = useEditor(treeViewRef);
   const activeEntity = useAtomValue(editorAtom).activeEntity;
