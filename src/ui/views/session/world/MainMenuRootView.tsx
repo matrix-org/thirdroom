@@ -27,7 +27,7 @@ export default function MainMenuRootView() {
     if (entered) {
       exitWorld();
     }
-  }, [loading, entered, exitWorld]);
+  }, [entered, exitWorld]);
 
   return (
     <>
