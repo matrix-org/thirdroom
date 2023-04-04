@@ -42,6 +42,7 @@ import {
 } from "../cmd-panel/actions";
 import { inputFocused } from "../../../utils/common";
 import { useDisableInput } from "../../../hooks/useDisableInput";
+import { editorEnabledAtom } from "../../../state/editor";
 
 const SHOW_NAMES_STORE = "showNames";
 interface WorldViewProps {
@@ -56,7 +57,7 @@ export function WorldView({ world }: WorldViewProps) {
   const isWorldEntered = useAtomValue(worldAtom).entered;
   const [worldChatVisible, setWorldChatVisibility] = useAtom(worldChatVisibilityAtom);
   const [overlayVisible, setOverlayVisibility] = useAtom(overlayVisibilityAtom);
-  const [editorEnabled, setEditorEnabled] = useState(false);
+  const [editorEnabled, setEditorEnabled] = useAtom(editorEnabledAtom);
   const [statsEnabled, setStatsEnabled] = useState(false);
 
   const { toastShown, toastContent, showToast } = useToast();

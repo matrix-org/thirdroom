@@ -341,6 +341,8 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     mimeType: string;
     readAsBuffer(): Promise<unknown>;
     dispose(): void;
+    // TODO: remove when hydrogen is updated
+    _blob: Blob;
   }
   export class SettingsStorage {
     constructor(prefix: string);
