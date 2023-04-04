@@ -7,7 +7,6 @@
 #include "./ui-element.h"
 #include "./vector2.h"
 #include "../utils/array.h"
-#include <emscripten/console.h>
 
 JSClassID js_websg_ui_canvas_class_id;
 
@@ -226,8 +225,6 @@ JSValue js_websg_world_create_ui_canvas(JSContext *ctx, JSValueConst this_val, i
 
   if (!JS_IsUndefined(root_val)) {
     WebSGUIElementData *ui_element_data = JS_GetOpaque2(ctx, root_val, js_websg_ui_element_class_id);
-
-    emscripten_console_logf("%i %i %i", JS_IsObject(root_val), JS_GetClassID(root_val), js_websg_ui_element_class_id);
 
     if (ui_element_data == NULL) {
       return JS_EXCEPTION;

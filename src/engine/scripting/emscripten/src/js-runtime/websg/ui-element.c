@@ -8,7 +8,6 @@
 #include "./vector4.h"
 #include "./ui-element-iterator.h"
 #include "../utils/array.h"
-#include <emscripten/console.h>
 
 JSClassID js_websg_ui_element_class_id;
 
@@ -909,8 +908,6 @@ void js_websg_define_ui_element(JSContext *ctx, JSValue websg) {
   JS_SetPropertyFunctionList(ctx, ui_element_proto, js_websg_ui_element_proto_funcs, countof(js_websg_ui_element_proto_funcs));
   JS_SetClassProto(ctx, js_websg_ui_element_class_id, ui_element_proto);
 
-  emscripten_console_logf("%i", js_websg_ui_element_class_id);
-
   JSValue constructor = JS_NewCFunction2(
     ctx,
     js_websg_ui_element_constructor,
@@ -1394,8 +1391,6 @@ JSValue js_websg_world_create_ui_element(JSContext *ctx, JSValueConst this_val, 
     JS_ThrowInternalError(ctx, "WebSG UI: Error creating UI canvas.");
     return JS_EXCEPTION;
   }
-
-  emscripten_console_logf("%i", ui_element_id);
 
   return js_websg_new_ui_element_instance(ctx, world_data, ui_element_id);
 }
