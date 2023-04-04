@@ -49,7 +49,7 @@ const horizontalPlatformEndPos = [18.07, 2.866, 2.025];
 
 onupdate = (dt, time) => {
   const t = (Math.sin(time) + 1) / 2;
-  lerp(verticalPlatform.position, verticalPlatformStartPos, verticalPlatformEndPos, t);
-  lerp(horizontalPlatform.position, horizontalPlatformStartPos, horizontalPlatformEndPos, t);
-  fromEuler(spinner.quaternion, 90, 0, 30 * time);
+  lerp(verticalPlatform.translation, verticalPlatformStartPos, verticalPlatformEndPos, t);
+  lerp(horizontalPlatform.translation, horizontalPlatformStartPos, horizontalPlatformEndPos, t);
+  fromEuler(spinner.rotation, 90, 0, 30 * time);
 };

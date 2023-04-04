@@ -1818,7 +1818,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       return 0;
     },
-    ui_element_get_size(uiCanvasId: number, sizePtr: number) {
+    ui_canvas_get_size(uiCanvasId: number, sizePtr: number) {
       const uiCanvas = getScriptResource(wasmCtx, RemoteUICanvas, uiCanvasId);
 
       if (!uiCanvas) {
@@ -1829,7 +1829,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       return 0;
     },
-    ui_element_set_size(uiCanvasId: number, sizePtr: number) {
+    ui_canvas_set_size(uiCanvasId: number, sizePtr: number) {
       const uiCanvas = getScriptResource(wasmCtx, RemoteUICanvas, uiCanvasId);
 
       if (!uiCanvas) {
@@ -1840,7 +1840,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       return 0;
     },
-    ui_element_get_size_element(uiCanvasId: number, index: number) {
+    ui_canvas_get_size_element(uiCanvasId: number, index: number) {
       const uiCanvas = getScriptResource(wasmCtx, RemoteUICanvas, uiCanvasId);
 
       if (!uiCanvas) {
@@ -1849,7 +1849,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       return uiCanvas.size[index];
     },
-    ui_element_set_size_element(uiCanvasId: number, index: number, value: number) {
+    ui_canvas_set_size_element(uiCanvasId: number, index: number, value: number) {
       const uiCanvas = getScriptResource(wasmCtx, RemoteUICanvas, uiCanvasId);
 
       if (!uiCanvas) {
