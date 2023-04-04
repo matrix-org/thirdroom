@@ -39,6 +39,27 @@ onload = () => {
   verticalPlatform = world.findNodeByName("VerticalPlatform");
   horizontalPlatform = world.findNodeByName("HorizontalPlatform");
   spinner = world.findNodeByName("Spinner");
+
+  const canvasNode = world.createNode({
+    name: "Canvas",
+    translation: [0, 1, 0],
+  });
+
+  const root = world.createUIElement({
+    backgroundColor: [0, 0, 0, 1],
+    borderRadius: [64, 64, 64, 64],
+    borderWidth: [3, 3, 3, 3],
+    borderColor: [1, 1, 1, 1],
+  });
+
+  canvasNode.uiCanvas = world.createUICanvas({
+    root,
+    size: [1, 1],
+    width: 1024,
+    height: 1024,
+  });
+
+  world.environment.addNode(canvasNode);
 };
 
 const verticalPlatformStartPos = [7.398, 2.866, 2.025];

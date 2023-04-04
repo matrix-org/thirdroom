@@ -10,7 +10,7 @@ typedef struct WebSGQuaternionData {
   void (*set)(uint32_t resource_id, float_t *element, int index, float_t value);
 } WebSGQuaternionData;
 
-static JSClassID js_websg_quaternion_class_id;
+extern JSClassID js_websg_quaternion_class_id;
 
 void js_websg_define_quaternion(JSContext *ctx, JSValue websg);
 

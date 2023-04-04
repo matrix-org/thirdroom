@@ -4,6 +4,8 @@
 #include "../../websg.h"
 #include "./vector4.h"
 
+JSClassID js_websg_vector4_class_id;
+
 static void js_websg_vector4_finalizer(JSRuntime *rt, JSValue val) {
   WebSGVector4Data *vec4_data = JS_GetOpaque(val, js_websg_vector4_class_id);
 

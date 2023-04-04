@@ -9,7 +9,7 @@ typedef struct WebSGLightData {
   light_id_t light_id;
 } WebSGLightData;
 
-static JSClassID js_websg_light_class_id;
+extern JSClassID js_websg_light_class_id;
 
 void js_websg_define_light(JSContext *ctx, JSValue websg);
 

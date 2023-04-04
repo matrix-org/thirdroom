@@ -9,7 +9,7 @@ typedef struct WebSGSceneData {
   scene_id_t scene_id;
 } WebSGSceneData;
 
-static JSClassID js_websg_scene_class_id;
+extern JSClassID js_websg_scene_class_id;
 
 void js_websg_define_scene(JSContext *ctx, JSValue websg);
 

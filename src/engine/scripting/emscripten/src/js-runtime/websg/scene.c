@@ -6,6 +6,8 @@
 #include "./node.h"
 #include "./node-iterator.h"
 
+JSClassID js_websg_scene_class_id;
+
 /**
  * Class Definition
  **/

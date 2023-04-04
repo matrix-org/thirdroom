@@ -4,6 +4,8 @@
 #include "../../websg.h"
 #include "./quaternion.h"
 
+JSClassID js_websg_quaternion_class_id;
+
 static void js_websg_quaternion_finalizer(JSRuntime *rt, JSValue val) {
   WebSGQuaternionData *quat_data = JS_GetOpaque(val, js_websg_quaternion_class_id);
 

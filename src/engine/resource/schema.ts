@@ -458,6 +458,8 @@ export enum FlexAlign {
   SpaceAround = Yoga.ALIGN_SPACE_AROUND,
 }
 
+console.log(Yoga);
+
 export enum FlexJustify {
   FlexStart = Yoga.JUSTIFY_FLEX_START,
   Center = Yoga.JUSTIFY_CENTER,
@@ -501,7 +503,7 @@ export const UIImageResource = defineResource("ui-image", ResourceType.UIImage, 
 
 export const UIElementResource = defineResource("ui-element", ResourceType.UIElement, {
   name: PropType.string({ default: "UIElement", script: true }),
-  type: PropType.enum(ElementType, { default: ElementType.Flex, mutable: false }),
+  type: PropType.enum(ElementType, { required: true, mutable: false }),
 
   position: PropType.vec4({ script: true, mutable: true }),
 
@@ -570,6 +572,7 @@ export const UIElementResource = defineResource("ui-element", ResourceType.UIEle
   padding: PropType.rgba({ script: true, mutable: true }),
   margin: PropType.rgba({ script: true, mutable: true }),
   borderWidth: PropType.vec4({ script: true, mutable: true }),
+  borderRadius: PropType.vec4({ script: true, mutable: true }),
 
   parent: PropType.selfRef({ backRef: true }),
   firstChild: PropType.selfRef(),

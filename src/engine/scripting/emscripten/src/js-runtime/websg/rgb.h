@@ -10,7 +10,7 @@ typedef struct WebSGRGBData {
   void (*set)(uint32_t resource_id, float_t *element, int index, float_t value);
 } WebSGRGBData;
 
-static JSClassID js_websg_rgb_class_id;
+extern JSClassID js_websg_rgb_class_id;
 
 void js_websg_define_rgb(JSContext *ctx, JSValue websg);
 

@@ -523,6 +523,7 @@ typedef enum FlexDirection {
 } FlexDirection;
 
 typedef enum ElementPositionType {
+  ElementPositionType_STATIC,
   ElementPositionType_RELATIVE,
   ElementPositionType_ABSOLUTE,
 } ElementPositionType;
@@ -597,6 +598,7 @@ typedef struct UIElementProps {
   float_t padding[4];
   float_t margin[4];
   float_t border_width[4];
+  float_t border_radius[4];
   UIButtonProps *button;
   UITextProps *text;
 } UIElementProps;
@@ -659,6 +661,10 @@ import_websg(ui_element_get_border_width_element) float_t websg_ui_element_get_b
 import_websg(ui_element_set_border_width_element) int32_t websg_ui_element_set_border_width_element(ui_element_id_t ui_element_id, uint32_t index, float_t value);
 import_websg(ui_element_get_border_width) int32_t websg_ui_element_get_border_width(ui_element_id_t element_id, float_t *border_width);
 import_websg(ui_element_set_border_width) int32_t websg_ui_element_set_border_width(ui_element_id_t element_id, float_t *border_width);
+import_websg(ui_element_get_border_radius_element) float_t websg_ui_element_get_border_radius_element(ui_element_id_t ui_element_id, uint32_t index);
+import_websg(ui_element_set_border_radius_element) int32_t websg_ui_element_set_border_radius_element(ui_element_id_t ui_element_id, uint32_t index, float_t value);
+import_websg(ui_element_get_border_radius) int32_t websg_ui_element_get_border_radius(ui_element_id_t element_id, float_t *border_radius);
+import_websg(ui_element_set_border_radius) int32_t websg_ui_element_set_border_radius(ui_element_id_t element_id, float_t *border_radius);
 import_websg(ui_element_get_element_type) ElementType websg_ui_element_get_element_type(ui_element_id_t element_id);
 import_websg(ui_element_add_child) int32_t websg_ui_element_add_child(ui_element_id_t ui_element_id, ui_element_id_t child_id);
 import_websg(ui_element_remove_child) int32_t websg_ui_element_remove_child(ui_element_id_t ui_element_id, ui_element_id_t child_id);

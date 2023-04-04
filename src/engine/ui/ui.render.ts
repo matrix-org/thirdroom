@@ -1,6 +1,6 @@
 // typedefs: https://github.com/facebook/yoga/blob/main/javascript/src_js/wrapAsm.d.ts
 import Yoga from "@react-pdf/yoga";
-import { CanvasTexture, Material, Mesh, MeshBasicMaterial, PlaneGeometry, Texture } from "three";
+import { CanvasTexture, DoubleSide, Material, Mesh, MeshBasicMaterial, PlaneGeometry, Texture } from "three";
 import { Scene } from "three";
 import { vec3 } from "gl-matrix";
 
@@ -169,8 +169,9 @@ function drawNode(
     parent = parent.parent;
   }
 
-  ctx2d.fillRect(layout.left, layout.top, layout.width, layout.height);
-  ctx2d.strokeRect(layout.left, layout.top, layout.width, layout.height);
+  ctx2d.roundRect(layout.left, layout.top, layout.width, layout.height, node.borderRadius);
+  ctx2d.fill();
+  ctx2d.stroke();
 
   // draw image
   if (node.image) {
@@ -225,11 +226,11 @@ function updateYogaNode(child: RenderUIElement) {
   child.yogaNode.setWidth(child.width >= 0 ? child.width : "auto");
   child.yogaNode.setHeight(child.height >= 0 ? child.height : "auto");
 
-  child.yogaNode.setMinWidth(child.minWidth >= 0 ? child.minWidth : "auto");
-  child.yogaNode.setMinHeight(child.minHeight >= 0 ? child.minHeight : "auto");
+  child.yogaNode.setMinWidth(child.minWidth >= 0 ? child.minWidth : 0);
+  child.yogaNode.setMinHeight(child.minHeight >= 0 ? child.minHeight : 0);
 
-  child.yogaNode.setMaxWidth(child.maxWidth >= 0 ? child.maxWidth : "auto");
-  child.yogaNode.setMaxHeight(child.maxHeight >= 0 ? child.maxHeight : "auto");
+  child.yogaNode.setMaxWidth(child.maxWidth >= 0 ? child.maxWidth : "100%");
+  child.yogaNode.setMaxHeight(child.maxHeight >= 0 ? child.maxHeight : "100%");
 
   child.yogaNode.setMargin(FlexEdge.LEFT, child.margin[FlexEdge.LEFT] >= 0 ? child.margin[FlexEdge.LEFT] : "auto");
   child.yogaNode.setMargin(FlexEdge.TOP, child.margin[FlexEdge.TOP] >= 0 ? child.margin[FlexEdge.TOP] : "auto");
@@ -324,7 +325,7 @@ export function updateNodeUICanvas(ctx: RenderThreadState, scene: Scene, node: R
   const uiCanvas = node.uiCanvas;
 
   if (!node.uiCanvasMesh || !uiCanvas.canvas) {
-    uiCanvas.canvas = new OffscreenCanvas(uiCanvas.root.width, uiCanvas.root.height);
+    uiCanvas.canvas = new OffscreenCanvas(uiCanvas.width, uiCanvas.height);
 
     // create & update root yoga node
     uiCanvas.root.yogaNode = Yoga.Node.create();
@@ -337,7 +338,7 @@ export function updateNodeUICanvas(ctx: RenderThreadState, scene: Scene, node: R
 
     node.uiCanvasMesh = new Mesh(
       new PlaneGeometry(uiCanvas.size[0], uiCanvas.size[1]),
-      new MeshBasicMaterial({ map: uiCanvas.canvasTexture, transparent: true })
+      new MeshBasicMaterial({ map: uiCanvas.canvasTexture, transparent: true, side: DoubleSide })
     );
 
     scene.add(node.uiCanvasMesh);
@@ -350,9 +351,11 @@ export function updateNodeUICanvas(ctx: RenderThreadState, scene: Scene, node: R
   if (uiCanvas.redraw > uiCanvas.lastRedraw) {
     const ctx2d = uiCanvas.canvas.getContext("2d") as OffscreenCanvasRenderingContext2D;
 
-    ctx2d.clearRect(0, 0, uiCanvas.root.width, uiCanvas.root.height);
+    ctx2d.clearRect(0, 0, uiCanvas.width, uiCanvas.height);
 
     // calculate layout
+    uiCanvas.root.yogaNode.setWidth(uiCanvas.width);
+    uiCanvas.root.yogaNode.setHeight(uiCanvas.height);
     uiCanvas.root.yogaNode.calculateLayout(uiCanvas.root.width, uiCanvas.root.height, Yoga.DIRECTION_LTR);
 
     drawNodeRecursive(uiCanvas, ctx2d, loadingImages, loadingText);

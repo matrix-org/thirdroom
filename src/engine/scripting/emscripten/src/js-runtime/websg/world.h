@@ -15,7 +15,7 @@ typedef struct WebSGWorldData {
   JSValue ui_elements;
 } WebSGWorldData;
 
-static JSClassID js_websg_world_class_id;
+extern JSClassID js_websg_world_class_id;
 
 void js_websg_define_world(JSContext *ctx, JSValue websg);
 

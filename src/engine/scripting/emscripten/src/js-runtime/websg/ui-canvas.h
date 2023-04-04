@@ -9,7 +9,7 @@ typedef struct WebSGUICanvasData {
   ui_canvas_id_t ui_canvas_id;
 } WebSGUICanvasData;
 
-static JSClassID js_websg_ui_canvas_class_id;
+extern JSClassID js_websg_ui_canvas_class_id;
 
 void js_websg_define_ui_canvas(JSContext *ctx, JSValue websg);
 

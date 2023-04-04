@@ -5,6 +5,8 @@
 #include "./collider.h"
 #include "../utils/array.h"
 
+JSClassID js_websg_collider_class_id;
+
 /**
  * Private Methods and Variables
  **/

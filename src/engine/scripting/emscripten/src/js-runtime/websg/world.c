@@ -17,6 +17,8 @@
 #include "./ui-canvas.h"
 #include "./ui-element.h"
 
+JSClassID js_websg_world_class_id;
+
 static JSClassDef js_websg_world_class = {
   "World"
 };

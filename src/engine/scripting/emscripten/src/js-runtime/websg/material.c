@@ -7,6 +7,8 @@
 #include "./texture.h"
 #include "../utils/array.h"
 
+JSClassID js_websg_material_class_id;
+
 /**
  * Private Methods and Variables
  **/

@@ -3,6 +3,8 @@
 #include "../../websg.h"
 #include "./rgb.h"
 
+JSClassID js_websg_rgb_class_id;
+
 static void js_websg_rgb_finalizer(JSRuntime *rt, JSValue val) {
   WebSGRGBData *rgb_data = JS_GetOpaque(val, js_websg_rgb_class_id);
 

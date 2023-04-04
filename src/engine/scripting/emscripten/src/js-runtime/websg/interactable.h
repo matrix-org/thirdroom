@@ -7,7 +7,7 @@ typedef struct WebSGInteractableData {
   node_id_t node_id;
 } WebSGInteractableData;
 
-static JSClassID js_websg_interactable_class_id;
+extern JSClassID js_websg_interactable_class_id;
 
 void js_websg_define_interactable(JSContext *ctx, JSValue websg);
 

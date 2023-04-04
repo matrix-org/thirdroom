@@ -5,6 +5,8 @@
 #include "./node.h"
 #include "./node-iterator.h"
 
+JSClassID js_websg_node_iterator_class_id;
+
 static void js_websg_node_iterator_finalizer(JSRuntime *rt, JSValue val) {
   JSWebSGNodeIteratorData *it = JS_GetOpaque(val, js_websg_node_iterator_class_id);
 

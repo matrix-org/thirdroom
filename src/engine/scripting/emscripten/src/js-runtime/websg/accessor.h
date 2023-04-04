@@ -4,7 +4,7 @@
 #include "../quickjs/quickjs.h"
 #include "./world.h"
 
-static JSClassID js_websg_accessor_class_id;
+extern JSClassID js_websg_accessor_class_id;
 
 typedef struct WebSGAccessorData {
   WebSGWorldData *world_data;

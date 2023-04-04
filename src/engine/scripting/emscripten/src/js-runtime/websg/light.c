@@ -7,6 +7,8 @@
 #include "./rgb.h"
 #include "../utils/array.h"
 
+JSClassID js_websg_light_class_id;
+
 /**
  * Private Methods and Variables
  **/

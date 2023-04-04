@@ -11,7 +11,7 @@ typedef struct JSWebSGUIElementIteratorData {
     uint32_t count;
 } JSWebSGUIElementIteratorData;
 
-static JSClassID js_websg_ui_element_iterator_class_id;
+extern JSClassID js_websg_ui_element_iterator_class_id;
 
 void js_websg_define_ui_element_iterator(JSContext *ctx);
 

@@ -8,6 +8,9 @@
 #include "./vector4.h"
 #include "./ui-element-iterator.h"
 #include "../utils/array.h"
+#include <emscripten/console.h>
+
+JSClassID js_websg_ui_element_class_id;
 
 JSAtom flex_atom;
 JSAtom text_atom;
@@ -262,6 +265,14 @@ static float_t js_websg_ui_element_get_border_width_element(uint32_t ui_element_
 
 static void js_websg_ui_element_set_border_width_element(uint32_t ui_element_id, float_t *border_width, int index, float_t value) {
   websg_ui_element_set_border_width_element(ui_element_id, index, value);
+}
+
+static float_t js_websg_ui_element_get_border_radius_element(uint32_t ui_element_id, float_t *border_radius, int index) {
+  return websg_ui_element_get_border_radius_element(ui_element_id, index);
+}
+
+static void js_websg_ui_element_set_border_radius_element(uint32_t ui_element_id, float_t *border_radius, int index, float_t value) {
+  websg_ui_element_set_border_radius_element(ui_element_id, index, value);
 }
 
 static JSValue js_websg_ui_element_get_flex_direction(JSContext *ctx, JSValueConst this_val) {
@@ -898,6 +909,8 @@ void js_websg_define_ui_element(JSContext *ctx, JSValue websg) {
   JS_SetPropertyFunctionList(ctx, ui_element_proto, js_websg_ui_element_proto_funcs, countof(js_websg_ui_element_proto_funcs));
   JS_SetClassProto(ctx, js_websg_ui_element_class_id, ui_element_proto);
 
+  emscripten_console_logf("%i", js_websg_ui_element_class_id);
+
   JSValue constructor = JS_NewCFunction2(
     ctx,
     js_websg_ui_element_constructor,
@@ -989,10 +1002,19 @@ JSValue js_websg_new_ui_element_instance(JSContext *ctx, WebSGWorldData *world_d
   js_websg_define_vector4_prop(
     ctx,
     ui_element,
-    "border_width",
+    "borderWidth",
     ui_element_id,
     &js_websg_ui_element_get_border_width_element,
     &js_websg_ui_element_set_border_width_element
+  );
+
+  js_websg_define_vector4_prop(
+    ctx,
+    ui_element,
+    "borderRadius",
+    ui_element_id,
+    &js_websg_ui_element_get_border_radius_element,
+    &js_websg_ui_element_set_border_radius_element
   );
 
   WebSGUIElementData *ui_element_data = js_mallocz(ctx, sizeof(WebSGUIElementData));
@@ -1088,6 +1110,8 @@ static int js_websg_parse_ui_element_props(
     }
 
     props->position_type = position_type;
+  } else {
+    props->position_type = ElementPositionType_RELATIVE;
   }
 
   JSValue align_content_val = JS_GetPropertyStr(ctx, arg, "alignContent");
@@ -1101,6 +1125,8 @@ static int js_websg_parse_ui_element_props(
     }
 
     props->align_content = align_content;
+  } else {
+    props->align_content = FlexAlign_FLEX_START;
   }
 
   JSValue align_items_val = JS_GetPropertyStr(ctx, arg, "alignItems");
@@ -1114,6 +1140,8 @@ static int js_websg_parse_ui_element_props(
     }
 
     props->align_items = align_items;
+  } else {
+    props->align_items = FlexAlign_STRETCH;
   }
 
   JSValue align_self_val = JS_GetPropertyStr(ctx, arg, "alignSelf");
@@ -1127,6 +1155,8 @@ static int js_websg_parse_ui_element_props(
     }
 
     props->align_self = align_self;
+  } else {
+    props->align_self = FlexAlign_AUTO;
   }
 
   JSValue flex_direction_val = JS_GetPropertyStr(ctx, arg, "flexDirection");
@@ -1140,6 +1170,8 @@ static int js_websg_parse_ui_element_props(
     }
 
     props->flex_direction = flex_direction;
+  } else {
+    props->flex_direction = FlexDirection_ROW;
   }
 
   JSValue flex_wrap_val = JS_GetPropertyStr(ctx, arg, "flexWrap");
@@ -1153,6 +1185,8 @@ static int js_websg_parse_ui_element_props(
     }
 
     props->flex_wrap = flex_wrap;
+  } else {
+    props->flex_wrap = FlexWrap_NO_WRAP;
   }
 
   JSValue flex_basis_val = JS_GetPropertyStr(ctx, arg, "flexBasis");
@@ -1189,6 +1223,8 @@ static int js_websg_parse_ui_element_props(
     }
 
     props->flex_shrink = (float_t)flex_shrink;
+  } else {
+    props->flex_shrink = 1.0f;
   }
 
   JSValue justify_content_val = JS_GetPropertyStr(ctx, arg, "justifyContent");
@@ -1202,6 +1238,8 @@ static int js_websg_parse_ui_element_props(
     }
 
     props->justify_content = justify_content;
+  } else {
+    props->justify_content = FlexJustify_FLEX_START;
   }
 
   JSValue width_val = JS_GetPropertyStr(ctx, arg, "width");
@@ -1214,6 +1252,8 @@ static int js_websg_parse_ui_element_props(
     }
 
     props->width = (float_t)width;
+  } else {
+    props->width = -1;
   }
 
   JSValue height_val = JS_GetPropertyStr(ctx, arg, "height");
@@ -1226,6 +1266,8 @@ static int js_websg_parse_ui_element_props(
     }
 
     props->height = (float_t)height;
+  } else {
+    props->height = -1;
   }
 
   JSValue min_width_val = JS_GetPropertyStr(ctx, arg, "minWidth");
@@ -1238,6 +1280,8 @@ static int js_websg_parse_ui_element_props(
     }
 
     props->min_width = (float_t)min_width;
+  } else {
+    props->min_width = -1;
   }
 
   JSValue min_height_val = JS_GetPropertyStr(ctx, arg, "minHeight");
@@ -1250,6 +1294,8 @@ static int js_websg_parse_ui_element_props(
     }
 
     props->min_height = (float_t)min_height;
+  } else {
+    props->min_height = -1;
   }
 
   JSValue max_width_val = JS_GetPropertyStr(ctx, arg, "maxWidth");
@@ -1262,6 +1308,8 @@ static int js_websg_parse_ui_element_props(
     }
 
     props->max_width = (float_t)max_width;
+  } else {
+    props->max_width = -1;
   }
 
   JSValue max_height_val = JS_GetPropertyStr(ctx, arg, "maxHeight");
@@ -1274,6 +1322,8 @@ static int js_websg_parse_ui_element_props(
     }
 
     props->max_height = (float_t)max_height;
+  } else {
+    props->max_height = -1;
   }
 
   JSValue background_color_val = JS_GetPropertyStr(ctx, arg, "backgroundColor");
@@ -1316,6 +1366,14 @@ static int js_websg_parse_ui_element_props(
     }
   }
 
+  JSValue border_radius_val = JS_GetPropertyStr(ctx, arg, "borderRadius");
+
+  if (!JS_IsUndefined(border_radius_val)) {
+    if (js_get_float_array_like(ctx, border_radius_val, props->border_radius, 4) < 0) {
+      return -1;
+    }
+  }
+
   return 0;
 }
 
@@ -1336,6 +1394,8 @@ JSValue js_websg_world_create_ui_element(JSContext *ctx, JSValueConst this_val, 
     JS_ThrowInternalError(ctx, "WebSG UI: Error creating UI canvas.");
     return JS_EXCEPTION;
   }
+
+  emscripten_console_logf("%i", ui_element_id);
 
   return js_websg_new_ui_element_instance(ctx, world_data, ui_element_id);
 }

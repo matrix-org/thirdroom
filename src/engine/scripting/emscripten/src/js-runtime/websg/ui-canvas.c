@@ -7,6 +7,9 @@
 #include "./ui-element.h"
 #include "./vector2.h"
 #include "../utils/array.h"
+#include <emscripten/console.h>
+
+JSClassID js_websg_ui_canvas_class_id;
 
 /**
  * Class Definition
@@ -224,6 +227,8 @@ JSValue js_websg_world_create_ui_canvas(JSContext *ctx, JSValueConst this_val, i
   if (!JS_IsUndefined(root_val)) {
     WebSGUIElementData *ui_element_data = JS_GetOpaque2(ctx, root_val, js_websg_ui_element_class_id);
 
+    emscripten_console_logf("%i %i %i", JS_IsObject(root_val), JS_GetClassID(root_val), js_websg_ui_element_class_id);
+
     if (ui_element_data == NULL) {
       return JS_EXCEPTION;
     }
@@ -237,6 +242,9 @@ JSValue js_websg_world_create_ui_canvas(JSContext *ctx, JSValueConst this_val, i
     if (js_get_float_array_like(ctx, size_val, props->size, 2) < 0) {
       return JS_EXCEPTION;
     }
+  } else {
+    props->size[0] = 1;
+    props->size[1] = 1;
   }
 
   JSValue width_val = JS_GetPropertyStr(ctx, argv[0], "width");
@@ -249,6 +257,8 @@ JSValue js_websg_world_create_ui_canvas(JSContext *ctx, JSValueConst this_val, i
     }
 
     props->width = (float_t)width;
+  } else {
+    props->width = 1024.0f;
   }
 
   JSValue height_val = JS_GetPropertyStr(ctx, argv[0], "height");
@@ -261,6 +271,8 @@ JSValue js_websg_world_create_ui_canvas(JSContext *ctx, JSValueConst this_val, i
     }
 
     props->height = (float_t)height;
+  } else {
+    props->height = 1024.0f;
   }
 
   ui_canvas_id_t ui_canvas_id = websg_world_create_ui_canvas(props);

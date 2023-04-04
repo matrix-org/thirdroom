@@ -1941,6 +1941,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       const padding = readFloat32Array(wasmCtx.cursorView, 4);
       const margin = readFloat32Array(wasmCtx.cursorView, 4);
       const borderWidth = readFloat32Array(wasmCtx.cursorView, 4);
+      const borderRadius = readFloat32Array(wasmCtx.cursorView, 4);
 
       let button: RemoteUIButton | undefined = undefined;
 
@@ -2013,6 +2014,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
           padding,
           margin,
           borderWidth,
+          borderRadius,
           button,
           text,
         });
@@ -2630,6 +2632,48 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       }
 
       uiElement.borderWidth[index] = value;
+
+      return 0;
+    },
+    ui_element_get_border_radius(lightId: number, borderRadius: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, lightId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      writeFloat32Array(wasmCtx, borderRadius, uiElement.borderRadius);
+
+      return 0;
+    },
+    ui_element_set_border_radius(uiElementId: number, borderRadius: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      readFloat32ArrayInto(wasmCtx, borderRadius, uiElement.borderRadius);
+
+      return 0;
+    },
+    ui_element_get_border_radius_element(uiElementId: number, index: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      return uiElement.borderRadius[index];
+    },
+    ui_element_set_border_radius_element(uiElementId: number, index: number, value: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      uiElement.borderRadius[index] = value;
 
       return 0;
     },

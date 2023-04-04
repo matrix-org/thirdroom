@@ -7,7 +7,7 @@ typedef struct WebSGPhysicsBodyData {
   node_id_t node_id;
 } WebSGPhysicsBodyData;
 
-static JSClassID js_websg_physics_body_class_id;
+extern JSClassID js_websg_physics_body_class_id;
 
 void js_websg_define_physics_body(JSContext *ctx, JSValue websg);
 

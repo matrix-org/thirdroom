@@ -10,7 +10,7 @@ typedef struct WebSGColliderData {
 } WebSGColliderData;
 
 
-static JSClassID js_websg_collider_class_id;
+extern JSClassID js_websg_collider_class_id;
 
 void js_websg_define_collider(JSContext *ctx, JSValue websg);
 

@@ -4,7 +4,7 @@
 #include "../quickjs/quickjs.h"
 #include "./world.h"
 
-static JSClassID js_websg_mesh_primitive_class_id;
+extern JSClassID js_websg_mesh_primitive_class_id;
 
 typedef struct WebSGMeshPrimitiveData {
   WebSGWorldData *world_data;

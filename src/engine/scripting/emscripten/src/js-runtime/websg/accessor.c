@@ -4,6 +4,8 @@
 #include "./world.h"
 #include "./accessor.h"
 
+JSClassID js_websg_accessor_class_id;
+
 /**
  * Private Methods and Variables
  **/

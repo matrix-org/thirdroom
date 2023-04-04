@@ -11,7 +11,7 @@ typedef struct WebSGMatrix4Data {
   void (*set)(uint32_t resource_id, float_t *element, int index, float_t value);
 } WebSGMatrix4Data;
 
-static JSClassID js_websg_matrix4_class_id;
+extern JSClassID js_websg_matrix4_class_id;
 
 void js_websg_define_matrix4(JSContext *ctx, JSValue websg);
 

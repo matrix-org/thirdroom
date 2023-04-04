@@ -6,6 +6,8 @@
 #include "./material.h"
 #include "./accessor.h"
 
+JSClassID js_websg_mesh_primitive_class_id;
+
 /**
  * Private Methods and Variables
  **/

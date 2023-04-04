@@ -4,6 +4,8 @@
 #include "./node.h"
 #include "./interactable.h"
 
+JSClassID js_websg_interactable_class_id;
+
 /**
  * Class Definition
  **/

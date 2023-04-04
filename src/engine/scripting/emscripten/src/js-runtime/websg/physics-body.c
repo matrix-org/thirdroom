@@ -5,6 +5,8 @@
 #include "./physics-body.h"
 #include "../utils/array.h"
 
+JSClassID js_websg_physics_body_class_id;
+
 /**
  * Private Methods and Variables
  **/

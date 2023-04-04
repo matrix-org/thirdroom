@@ -6,6 +6,8 @@
 #include "./mesh-primitive.h"
 #include "../utils/array.h"
 
+JSClassID js_websg_mesh_class_id;
+
 /**
  * Class Definition
  **/

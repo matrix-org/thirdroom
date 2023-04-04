@@ -9,7 +9,7 @@ typedef struct WebSGTextureData {
   texture_id_t texture_id;
 } WebSGTextureData;
 
-static JSClassID js_websg_texture_class_id;
+extern JSClassID js_websg_texture_class_id;
 
 void js_websg_define_texture(JSContext *ctx, JSValue websg);
 

@@ -16,6 +16,8 @@
 #include "./ui-canvas.h"
 #include "../utils/array.h"
 
+JSClassID js_websg_node_class_id;
+
 static void js_websg_node_finalizer(JSRuntime *rt, JSValue val) {
   WebSGNodeData *node_data = JS_GetOpaque(val, js_websg_node_class_id);
 
@@ -483,6 +485,11 @@ JSValue js_websg_world_create_node(JSContext *ctx, JSValue this_val, int argc, J
       js_free(ctx, props);
       return JS_EXCEPTION;
     }
+  } else {
+    props->rotation[0] = 0.0f;
+    props->rotation[1] = 0.0f;
+    props->rotation[2] = 0.0f;
+    props->rotation[3] = 1.0f;
   }
 
   JSValue scale_val = JS_GetPropertyStr(ctx, argv[0], "scale");
@@ -492,6 +499,10 @@ JSValue js_websg_world_create_node(JSContext *ctx, JSValue this_val, int argc, J
       js_free(ctx, props);
       return JS_EXCEPTION;
     }
+  } else {
+    props->scale[0] = 1.0f;
+    props->scale[1] = 1.0f;
+    props->scale[2] = 1.0f;
   }
 
   node_id_t node_id = websg_world_create_node(props);

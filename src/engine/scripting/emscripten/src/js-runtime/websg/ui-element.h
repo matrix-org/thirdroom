@@ -9,7 +9,7 @@ typedef struct WebSGUIElementData {
   ui_element_id_t ui_element_id;
 } WebSGUIElementData;
 
-static JSClassID js_websg_ui_element_class_id;
+extern JSClassID js_websg_ui_element_class_id;
 
 void js_websg_define_ui_element(JSContext *ctx, JSValue websg);
 

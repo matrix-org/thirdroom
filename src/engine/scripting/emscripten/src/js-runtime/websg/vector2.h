@@ -10,7 +10,7 @@ typedef struct WebSGVector2Data {
   void (*set)(uint32_t resource_id, float_t *element, int index, float_t value);
 } WebSGVector2Data;
 
-static JSClassID js_websg_vector2_class_id;
+extern JSClassID js_websg_vector2_class_id;
 
 void js_websg_define_vector2(JSContext *ctx, JSValue websg);
 

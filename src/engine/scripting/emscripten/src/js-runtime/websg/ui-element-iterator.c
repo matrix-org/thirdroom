@@ -5,6 +5,8 @@
 #include "./ui-element.h"
 #include "./ui-element-iterator.h"
 
+JSClassID js_websg_ui_element_iterator_class_id;
+
 static void js_websg_ui_element_iterator_finalizer(JSRuntime *rt, JSValue val) {
   JSWebSGUIElementIteratorData *it = JS_GetOpaque(val, js_websg_ui_element_iterator_class_id);
 

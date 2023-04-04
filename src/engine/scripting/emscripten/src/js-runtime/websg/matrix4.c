@@ -4,6 +4,8 @@
 #include "../../websg.h"
 #include "./matrix4.h"
 
+JSClassID js_websg_matrix4_class_id;
+
 /**
  * Class Definition
  **/

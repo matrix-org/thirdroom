@@ -11,7 +11,7 @@ typedef struct JSWebSGNodeIteratorData {
     uint32_t count;
 } JSWebSGNodeIteratorData;
 
-static JSClassID js_websg_node_iterator_class_id;
+extern JSClassID js_websg_node_iterator_class_id;
 
 void js_websg_define_node_iterator(JSContext *ctx);
 

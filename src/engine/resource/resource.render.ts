@@ -650,7 +650,6 @@ export class RenderUIElement extends defineLocalResourceClass(UIElementResource)
 
 export class RenderUICanvas extends defineLocalResourceClass(UICanvasResource) {
   declare root: RenderUIElement;
-
   canvasTexture?: CanvasTexture;
   canvas?: OffscreenCanvas;
   lastRedraw = 0;

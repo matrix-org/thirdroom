@@ -5,6 +5,8 @@
 #include "./websg-js.h"
 #include "./texture.h"
 
+JSClassID js_websg_texture_class_id;
+
 /**
  * Class Definition
  **/
