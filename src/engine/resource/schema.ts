@@ -458,8 +458,6 @@ export enum FlexAlign {
   SpaceAround = Yoga.ALIGN_SPACE_AROUND,
 }
 
-console.log(Yoga);
-
 export enum FlexJustify {
   FlexStart = Yoga.JUSTIFY_FLEX_START,
   Center = Yoga.JUSTIFY_CENTER,
