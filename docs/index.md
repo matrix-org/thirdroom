@@ -3,22 +3,25 @@
 layout: home
 
 hero:
-  name: "Third Room"
-  text: "Documentation for Third Room"
-  tagline: My great project tagline
+  name: Third Room
+  text: Documentation for Third Room
+  tagline: Open, decentralised, immersive worlds built on Matrix
   actions:
     - theme: brand
-      text: Markdown Examples
-      link: /markdown-examples
-    - theme: alt
-      text: API Examples
-      link: /api-examples
+      text: Get Started
+      link: /get-started
 
 features:
-  - title: Feature A
-    details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
-  - title: Feature B
-    details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
-  - title: Feature C
-    details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
+  - icon: 👤
+    title: User Guide
+    details: Introduction to Third Room.
+    link: /get-started
+  - icon: 👨‍💻
+    title: Developer Guide
+    details: Learn more about Web Scene Graph API.
+    link: /get-started
+  - icon: 🎨
+    title: Creator Guide
+    details: Learn more about how to create content using Third Room Unity Exporter
+    link: /get-started
 ---

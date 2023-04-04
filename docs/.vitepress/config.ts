@@ -7,10 +7,13 @@ export default defineConfig({
   base: "/docs",
   outDir: "../dist/docs",
   themeConfig: {
+    siteTitle: false,
+    logo: { light: "/light-logo-full.svg", dark: "/dark-logo-full.svg", alt: "Third Room" },
     // https://vitepress.dev/reference/default-theme-config
     nav: [
-      { text: "Home", link: "/" },
-      { text: "Examples", link: "/markdown-examples" },
+      { text: "User Guide", link: "/get-started" },
+      { text: "Developers", link: "/get-started" },
+      { text: "Creators", link: "/get-started" },
     ],
 
     sidebar: [
@@ -23,6 +26,6 @@ export default defineConfig({
       },
     ],
 
-    socialLinks: [{ icon: "github", link: "https://github.com/vuejs/vitepress" }],
+    socialLinks: [{ icon: "github", link: "https://github.com/matrix-org/thirdroom" }],
   },
 });
