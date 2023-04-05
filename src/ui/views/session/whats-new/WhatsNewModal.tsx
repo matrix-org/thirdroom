@@ -14,9 +14,10 @@ import { WhatsNewCard } from "./WhatsNewCard";
 interface WhatsNewModalProps {
   open: boolean;
   requestClose: () => void;
+  createSpecialWorld: () => void;
 }
 
-export function WhatsNewModal({ open, requestClose }: WhatsNewModalProps) {
+export function WhatsNewModal({ open, requestClose, createSpecialWorld }: WhatsNewModalProps) {
   return (
     <Modal open={open} className="WhatsNewModal" size="sm">
       <Content
@@ -76,7 +77,7 @@ export function WhatsNewModal({ open, requestClose }: WhatsNewModalProps) {
           <Footer
             center={
               <div className="flex flex-column gap-xxs" style={{ padding: "var(--sp-xs)" }}>
-                <Button onClick={() => console.log("Create special world")}>Try the Script Editor</Button>
+                <Button onClick={createSpecialWorld}>Try the Script Editor</Button>
                 <Button onClick={requestClose} fill="none" size="sm">
                   Maybe later
                 </Button>
