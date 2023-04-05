@@ -514,14 +514,13 @@ function updateOrbitInteraction(
   }
 }
 
-function updateFocus(ctx: GameState, physics: PhysicsModuleState, rig: RemoteNode, focusingNode: RemoteNode) {
-  // raycast outward from focusing node
-  const worldMatrix = focusingNode.worldMatrix;
+function hitscan(physics: PhysicsModuleState, node: RemoteNode, collisionGroup: number, distance: number) {
+  const worldMatrix = node.worldMatrix;
   getRotationNoAlloc(_worldQuat, worldMatrix);
 
   const target = vec3.set(_target, 0, 0, -1);
   vec3.transformQuat(target, target, _worldQuat);
-  vec3.scale(target, target, MAX_FOCUS_DISTANCE);
+  vec3.scale(target, target, distance);
 
   const source = mat4.getTranslation(_source, worldMatrix);
 
@@ -538,8 +537,13 @@ function updateFocus(ctx: GameState, physics: PhysicsModuleState, rig: RemoteNod
     10.0,
     true,
     0,
-    focusShapeCastCollisionGroups
+    collisionGroup
   );
+  return hit;
+}
+
+function updateFocus(ctx: GameState, physics: PhysicsModuleState, rig: RemoteNode, focusingNode: RemoteNode) {
+  const hit = hitscan(physics, focusingNode, focusShapeCastCollisionGroups, MAX_FOCUS_DISTANCE);
 
   // if there's no hit, clear focus
   if (!hit) {
@@ -558,15 +562,15 @@ function updateFocus(ctx: GameState, physics: PhysicsModuleState, rig: RemoteNod
 
   // if within interaction distance, deem entity as focused
   if (hit.toi <= Interactable.interactionDistance[eid]) {
-    // if it's render UI, don't focus, render thread will report back with button focus
+    addComponent(ctx.world, FocusComponent, rig.eid);
+    FocusComponent.focusedEntity[rig.eid] = eid;
+
+    // if it's render UI, don't sendInteractionMessage, render thread will report back with button focus
     if (Interactable.type[eid] === InteractableType.UI) {
       const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
       const projectedHit = projectHitOntoCanvas(ctx, hit, node);
       notifyUICanvasFocus(ctx, projectedHit, node);
     } else {
-      addComponent(ctx.world, FocusComponent, rig.eid);
-      FocusComponent.focusedEntity[rig.eid] = eid;
-
       // only update react UI if it's our player or it's our orbit
       const ourPlayer = hasComponent(ctx.world, OurPlayer, rig.eid);
       if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Focus, eid);
@@ -665,39 +669,15 @@ function updateGrabThrow(
 
     GrabComponent.heldOffset[rig.eid] = 0;
   } else {
-    // raycast outward from camera
-    const cameraMatrix = grabbingNode.worldMatrix;
-    getRotationNoAlloc(_worldQuat, cameraMatrix);
+    const hit = hitscan(physics, grabbingNode, grabShapeCastCollisionGroups, GRAB_DISTANCE);
 
-    const target = vec3.set(_target, 0, 0, -1);
-    vec3.transformQuat(target, target, _worldQuat);
-    vec3.scale(target, target, GRAB_DISTANCE);
-
-    const source = mat4.getTranslation(_source, cameraMatrix);
-
-    const s: Vector3 = _s.fromArray(source);
-    const t: Vector3 = _t.fromArray(target);
-
-    shapeCastPosition.copy(s);
-
-    const shapecastHit = physics.physicsWorld.castShape(
-      shapeCastPosition,
-      shapeCastRotation,
-      t,
-      colliderShape,
-      10.0,
-      true,
-      0,
-      grabShapeCastCollisionGroups
-    );
-
-    if (shapecastHit !== null) {
-      const eid = physics.handleToEid.get(shapecastHit.collider.handle);
+    if (hit !== null) {
+      const eid = physics.handleToEid.get(hit.collider.handle);
       const node = eid ? getRemoteResource<RemoteNode>(ctx, eid) : undefined;
 
       if (!node || !eid) {
-        console.warn(`Could not find entity for physics handle ${shapecastHit.collider.handle}`);
-      } else if (shapecastHit.toi <= Interactable.interactionDistance[node.eid]) {
+        console.warn(`Could not find entity for physics handle ${hit.collider.handle}`);
+      } else if (hit.toi <= Interactable.interactionDistance[node.eid]) {
         if (grabPressed) {
           if (Interactable.type[node.eid] === InteractableType.Grabbable) {
             playOneShotAudio(ctx, interaction.clickEmitter?.sources[0] as RemoteAudioSource);
@@ -741,7 +721,7 @@ function updateGrabThrow(
               interactable.held = true;
             }
 
-            const projectedHit = projectHitOntoCanvas(ctx, shapecastHit, node);
+            const projectedHit = projectHitOntoCanvas(ctx, hit, node);
             notifyUICanvasPressed(ctx, projectedHit, node);
           } else {
             if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, eid);
@@ -821,38 +801,14 @@ function updateGrabThrowXR(
   grabbingNode: RemoteNode,
   hand: XRHandedness
 ) {
-  // raycast outward from node
-  const nodeMatrix = grabbingNode.worldMatrix;
-  getRotationNoAlloc(_worldQuat, nodeMatrix);
+  const hit = hitscan(physics, grabbingNode, grabShapeCastCollisionGroups, GRAB_DISTANCE);
 
-  const target = vec3.set(_target, 0, 0, -1);
-  vec3.transformQuat(target, target, _worldQuat);
-  vec3.scale(target, target, GRAB_DISTANCE);
-
-  const source = mat4.getTranslation(_source, nodeMatrix);
-
-  const s: Vector3 = _s.fromArray(source);
-  const t: Vector3 = _t.fromArray(target);
-
-  shapeCastPosition.copy(s);
-
-  const shapecastHit = physics.physicsWorld.castShape(
-    shapeCastPosition,
-    shapeCastRotation,
-    t,
-    colliderShape,
-    1.0,
-    true,
-    0,
-    grabShapeCastCollisionGroups
-  );
-
-  if (shapecastHit === null) {
+  if (hit === null) {
     grabbingNode.visible = true;
     return;
   }
 
-  let focusedEntity = physics.handleToEid.get(shapecastHit.collider.handle);
+  let focusedEntity = physics.handleToEid.get(hit.collider.handle);
 
   if (!focusedEntity) {
     grabbingNode.visible = true;
@@ -871,7 +827,7 @@ function updateGrabThrowXR(
     let focusedNode = tryGetRemoteResource<RemoteNode>(ctx, focusedEntity);
     const ourPlayer = hasComponent(ctx.world, OurPlayer, rig.eid);
 
-    if (shapecastHit.toi <= Interactable.interactionDistance[focusedNode.eid]) {
+    if (hit.toi <= Interactable.interactionDistance[focusedNode.eid]) {
       if (squeezeState.held && Interactable.type[focusedNode.eid] === InteractableType.Grabbable) {
         const ownedEnts = network.authoritative ? networkedQuery(ctx.world) : ownedNetworkedQuery(ctx.world);
         if (ownedEnts.length > interaction.maxObjCap && !hasComponent(ctx.world, Owned, focusedNode.eid)) {
@@ -912,7 +868,7 @@ function updateGrabThrowXR(
           interactable.held = true;
         }
 
-        const projectedHit = projectHitOntoCanvas(ctx, shapecastHit, focusedNode);
+        const projectedHit = projectHitOntoCanvas(ctx, hit, focusedNode);
         notifyUICanvasPressed(ctx, projectedHit, focusedNode);
       } else {
         if (ourPlayer) sendInteractionMessage(ctx, InteractableAction.Grab, focusedEntity);

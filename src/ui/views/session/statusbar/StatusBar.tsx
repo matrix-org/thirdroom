@@ -1,7 +1,7 @@
 import { CSSProperties, ReactNode, useReducer, useRef } from "react";
 import { useMatch } from "react-router-dom";
 import { Session } from "@thirdroom/hydrogen-view-sdk";
-import { useAtom, useSetAtom } from "jotai";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 
 import { Text } from "../../../atoms/text/Text";
 import { useHydrogen } from "../../../hooks/useHydrogen";
@@ -14,6 +14,8 @@ import { useWorldPath } from "../../../hooks/useWorld";
 import { activeChatsAtom } from "../../../state/overlayChat";
 import { worldChatVisibilityAtom } from "../../../state/worldChatVisibility";
 import { overlayVisibilityAtom } from "../../../state/overlayVisibility";
+import { sidebarTabAtom, SidebarTab } from "../../../state/sidebarTab";
+import { editorEnabledAtom, showCodeEditorAtom } from "../../../state/editor";
 
 function OverlayButton({
   style,
@@ -103,13 +105,16 @@ export function StatusBar() {
   const { session } = useHydrogen(true);
   const [overlayVisible, setOverlayVisibility] = useAtom(overlayVisibilityAtom);
   const setWorldChatVisibility = useSetAtom(worldChatVisibilityAtom);
+  const setSidebarTab = useSetAtom(sidebarTabAtom);
+  const [showCodeEditor, setShowCodeEditor] = useAtom(showCodeEditorAtom);
+  const editorEnabled = useAtomValue(editorEnabledAtom);
 
   const homeMatch = useMatch({ path: "/", end: true });
   const isHome = homeMatch !== null;
   const [knownWorldId] = useWorldPath();
   const world = knownWorldId ? session.rooms.get(knownWorldId) : undefined;
 
-  const handleTipClick = () => {
+  const openOverlay = () => {
     if (overlayVisible) {
       setOverlayVisibility(false);
     } else {
@@ -119,11 +124,30 @@ export function StatusBar() {
     }
   };
 
+  const openNotifications = () => {
+    if (overlayVisible) {
+      setOverlayVisibility(false);
+    } else {
+      document.exitPointerLock();
+      setWorldChatVisibility(false);
+      setOverlayVisibility(true);
+      setSidebarTab(SidebarTab.Notifications);
+    }
+  };
+
+  const openCodeEditor = () => {
+    if (showCodeEditor) {
+      setShowCodeEditor(false);
+    } else {
+      setShowCodeEditor(true);
+    }
+  };
+
   return (
     <div className="StatusBar shrink-0 flex items-center">
       <div className="StatusBar__left grow basis-0">
         {knownWorldId && (
-          <OverlayButton style={{ paddingLeft: "var(--sp-xxs)" }} onClick={handleTipClick}>
+          <OverlayButton style={{ paddingLeft: "var(--sp-xxs)" }} onClick={openOverlay}>
             <Text
               color="world"
               weight="medium"
@@ -141,6 +165,29 @@ export function StatusBar() {
             </Text>
           </OverlayButton>
         )}
+        {editorEnabled && (
+          <OverlayButton style={{ paddingLeft: "var(--sp-xxs)" }} onClick={openCodeEditor}>
+            <Text
+              color="world"
+              weight="medium"
+              variant="b3"
+              style={{
+                padding: "0 3px",
+                borderRadius: "var(--br-xxs)",
+                border: "1px solid var(--bg-world-border)",
+              }}
+            >
+              SHIFT
+            </Text>
+            <Text className="flex items-center" color="world" variant="b3">
+              + `
+            </Text>
+
+            <Text className="flex items-center" color="world" variant="b3">
+              {showCodeEditor ? "Close Code Editor" : "Open Code Editor"}
+            </Text>
+          </OverlayButton>
+        )}
       </div>
       <div className="StatusBar__center">
         <Text color="world" weight="semi-bold">
@@ -148,7 +195,7 @@ export function StatusBar() {
         </Text>
       </div>
       <div className="StatusBar__right grow basis-0 flex justify-end">
-        {knownWorldId && <NotificationButton onClick={handleTipClick} />}
+        {knownWorldId && <NotificationButton onClick={openNotifications} />}
       </div>
     </div>
   );

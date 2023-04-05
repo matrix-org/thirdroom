@@ -23,3 +23,19 @@
 .EditorView__rightPanel {
   right: var(--sp-md);
 }
+
+.EditorView__code {
+  --editor-height: 48px;
+  --controls-height: 58px;
+  --controls-top: calc(var(--controls-height) + var(--sp-xs));
+  top: calc(var(--editor-height) + var(--sp-xs));
+  /* bottom: calc(var(--controls-top) + var(--sp-xs)); */
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  margin: auto;
+  opacity: 0.8;
+  width: 50vw;
+  height: 88.5vh;
+}

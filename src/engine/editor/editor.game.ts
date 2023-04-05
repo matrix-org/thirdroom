@@ -37,7 +37,7 @@ import {
 } from "../allocator/ObjectBufferView";
 import { NOOP } from "../config.common";
 import { addLayer, Layer, removeLayer } from "../node/node.common";
-import { getRemoteResource, RemoteResourceTypes } from "../resource/resource.game";
+import { getRemoteResource, RemoteResourceTypes, tryGetRemoteResource } from "../resource/resource.game";
 import { RemoteNode } from "../resource/RemoteResources";
 
 /*********
@@ -240,7 +240,7 @@ export function EditorStateSystem(ctx: GameState) {
     // Recursively update this layer so that the selected effect can be applied to all descendants
     for (let i = 0; i < selectedRemoved.length; i++) {
       const eid = selectedRemoved[i];
-      const selectedNode = getRemoteResource<RemoteNode>(ctx, eid)!;
+      const selectedNode = tryGetRemoteResource<RemoteNode>(ctx, eid);
 
       traverse(selectedNode, (child) => {
         child.layers = removeLayer(child.layers, Layer.EditorSelection);
@@ -249,7 +249,7 @@ export function EditorStateSystem(ctx: GameState) {
 
     for (let i = 0; i < selectedAdded.length; i++) {
       const eid = selectedAdded[i];
-      const selectedNode = getRemoteResource<RemoteNode>(ctx, eid)!;
+      const selectedNode = tryGetRemoteResource<RemoteNode>(ctx, eid);
 
       traverse(selectedNode, (child) => {
         child.layers = addLayer(child.layers, Layer.EditorSelection);
