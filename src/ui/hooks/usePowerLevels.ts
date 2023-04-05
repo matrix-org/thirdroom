@@ -33,12 +33,8 @@ export function usePowerLevels(room: Room) {
   const [powerLevels, setPowerLevels] = useState<IPowerLevels>();
 
   const callback = useCallback((stateEvent: StateEvent | undefined) => {
-    if (stateEvent) {
-      const { content } = stateEvent;
-      setPowerLevels(content);
-    } else {
-      setPowerLevels(undefined);
-    }
+    const { content } = stateEvent ?? {};
+    setPowerLevels(content);
   }, []);
 
   useStateEventKeyCallback(room, "m.room.power_levels", "", callback);
@@ -56,10 +52,10 @@ export function usePowerLevels(room: Room) {
   );
 
   const canSendEvent = useCallback(
-    (eventType: string, powerLevel: number) => {
+    (eventType: string | undefined, powerLevel: number) => {
       if (!powerLevels) return powerLevel >= 0;
       const { events, events_default: eventsDefault } = powerLevels;
-      if (events && events[eventType] !== undefined) {
+      if (events && eventType && events[eventType] !== undefined) {
         return powerLevel >= events[eventType];
       }
       return powerLevel >= (eventsDefault ?? DefaultPowerLevels.eventsDefault);
@@ -68,10 +64,10 @@ export function usePowerLevels(room: Room) {
   );
 
   const canSendStateEvent = useCallback(
-    (eventType: string, powerLevel: number) => {
+    (eventType: string | undefined, powerLevel: number) => {
       if (!powerLevels) return powerLevel >= 0;
       const { events, state_default: stateDefault } = powerLevels;
-      if (events && events[eventType] !== undefined) {
+      if (events && eventType && events[eventType] !== undefined) {
         return powerLevel >= events[eventType];
       }
       return powerLevel >= (stateDefault ?? DefaultPowerLevels.stateDefault);
