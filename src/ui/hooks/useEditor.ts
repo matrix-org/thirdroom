@@ -51,9 +51,10 @@ export function useEditor(treeViewRef: RefObject<TreeViewRefApi>): EditorUIState
   }, [selectedResourceType, mainThread]);
 
   useEffect(() => {
-    if (editorState.activeEntityHistorySize === 0) {
-      setSelectedEntity(mainThread, editorState.activeEntity);
-    } else {
+    const resourceId = editorState.activeEntity;
+    if (editorState.activeEntityHistorySize === 0 && resourceId) {
+      setSelectedEntity(mainThread, resourceId);
+    } else if (resourceId) {
       const resourceId = editorState.activeEntity;
       const resource = getLocalResource<LocalResourceInstance<ResourceDefinition, IMainThreadContext>>(
         mainThread,

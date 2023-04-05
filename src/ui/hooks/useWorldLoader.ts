@@ -1,5 +1,5 @@
 import { Room, CallIntent, LocalMedia, Content, GroupCall, Session } from "@thirdroom/hydrogen-view-sdk";
-import { useAtom } from "jotai";
+import { useAtom, useSetAtom } from "jotai";
 import { useCallback } from "react";
 
 import { AudioModule, setLocalMediaStream } from "../../engine/audio/audio.main";
@@ -33,20 +33,15 @@ export function useWorldLoader(): WorldLoader {
   const { session, platform, client } = useHydrogen(true);
   const mainThread = useMainThreadContext();
   const [matrixNetworkInterface, setMatrixNetworkInterface] = useAtom(matrixNetworkInterfaceAtom);
-  const [{ entered }, setWorld] = useAtom(worldAtom);
+  const setWorld = useSetAtom(worldAtom);
 
   const exitWorldCallback = useCallback(async () => {
-    if (!entered) {
-      console.warn("cannot exit world when world is not entered");
-      return;
-    }
-
     matrixNetworkInterface?.dispose();
 
     disposeActiveMatrixRoom(mainThread);
 
     setWorld({ type: "CLOSE" });
-  }, [setWorld, matrixNetworkInterface, mainThread, entered]);
+  }, [setWorld, matrixNetworkInterface, mainThread]);
 
   const loadWorldCallback = useCallback(
     async (world: Room, content: Content) => {
@@ -91,7 +86,7 @@ export function useWorldLoader(): WorldLoader {
   const getWorldGroupCall = (session: Session, world: Room) => getRoomCall(session.callHandler.calls, world.id);
 
   const connectGroupCall = useCallback(
-    async (world: Room, groupCall: GroupCall) => {
+    async (world: Room, groupCall?: GroupCall) => {
       if (!groupCall) {
         groupCall = await session.callHandler.createCall(world.id, "m.voice", "World Call", CallIntent.Room);
       }
@@ -121,10 +116,13 @@ export function useWorldLoader(): WorldLoader {
           return undefined;
         }
 
-        const groupCall = getWorldGroupCall(session, world);
-        if (!groupCall) return;
+        let groupCall = getWorldGroupCall(session, world);
+        if (groupCall) {
+          await connectGroupCall(world, groupCall);
+        } else {
+          groupCall = await connectGroupCall(world);
+        }
 
-        await connectGroupCall(world, groupCall);
         await updateWorldProfile(session, world);
 
         setLocalMediaStream(mainThread, groupCall.localMedia?.userMedia);
