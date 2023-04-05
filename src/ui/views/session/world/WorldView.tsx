@@ -42,6 +42,7 @@ import {
 } from "../cmd-panel/actions";
 import { inputFocused } from "../../../utils/common";
 import { useDisableInput } from "../../../hooks/useDisableInput";
+import { editorEnabledAtom } from "../../../state/editor";
 
 const SHOW_NAMES_STORE = "showNames";
 interface WorldViewProps {
@@ -56,7 +57,7 @@ export function WorldView({ world }: WorldViewProps) {
   const isWorldEntered = useAtomValue(worldAtom).entered;
   const [worldChatVisible, setWorldChatVisibility] = useAtom(worldChatVisibilityAtom);
   const [overlayVisible, setOverlayVisibility] = useAtom(overlayVisibilityAtom);
-  const [editorEnabled, setEditorEnabled] = useState(false);
+  const [editorEnabled, setEditorEnabled] = useAtom(editorEnabledAtom);
   const [statsEnabled, setStatsEnabled] = useState(false);
 
   const { toastShown, toastContent, showToast } = useToast();
@@ -160,9 +161,9 @@ export function WorldView({ world }: WorldViewProps) {
       <WorldOnboarding world={world} />
       <Stats statsEnabled={statsEnabled} />
       <div className={classNames("WorldView__chat flex", { "WorldView__chat--open": worldChatVisible })}>
-        {!("isBeingCreated" in world) && <WorldChat open={worldChatVisible} room={world} />}
+        {!("isBeingCreated" in world) && !editorEnabled && <WorldChat open={worldChatVisible} room={world} />}
       </div>
-      {world && (
+      {world && !editorEnabled && (
         <>
           {!worldChatVisible && <HotbarControls />}
           <WorldControls
@@ -178,10 +179,12 @@ export function WorldView({ world }: WorldViewProps) {
           />
         </>
       )}
-      {world && editorEnabled && <EditorView />}
+      {world && editorEnabled && <EditorView room={world} />}
       {!("isBeingCreated" in world) && <Nametags room={world} show={showNames && !overlayVisible} />}
 
-      {!overlayVisible && <WorldInteraction session={session} world={world} activeCall={activeCall} />}
+      {!overlayVisible && !editorEnabled && (
+        <WorldInteraction session={session} world={world} activeCall={activeCall} />
+      )}
 
       <div className="WorldView__toast-container">
         <div className={classNames("WorldView__toast", { "WorldView__toast--shown": toastShown })}>
