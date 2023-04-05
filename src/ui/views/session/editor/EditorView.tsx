@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { TreeViewRefApi } from "@thirdroom/manifold-editor-components";
 import { useAtom, useAtomValue } from "jotai";
-import Editor, { Monaco, OnChange } from "@monaco-editor/react";
+import Editor, { OnChange } from "@monaco-editor/react";
 import { BlobHandle, Room } from "@thirdroom/hydrogen-view-sdk";
 
 import "./EditorView.css";
@@ -123,16 +123,6 @@ export function EditorView({ room }: { room?: Room }) {
     setLocalCode(() => value);
   }
 
-  async function onBeforeMount(monaco: Monaco) {
-    const webSgTypeDefs = await (await fetch("/scripts/websg.d.ts")).text();
-    monaco.languages.typescript.typescriptDefaults.addExtraLib(webSgTypeDefs);
-    monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
-      target: monaco.languages.typescript.ScriptTarget.ESNext,
-      module: monaco.languages.typescript.ModuleKind.ESNext,
-      allowJs: true,
-    });
-  }
-
   return (
     <>
       {!loading && scene && (
@@ -151,7 +141,6 @@ export function EditorView({ room }: { room?: Room }) {
                 defaultLanguage="javascript"
                 defaultValue={scriptSource}
                 onChange={handleEditorChange as OnChange}
-                beforeMount={onBeforeMount}
               />
               <Button size="xxl" variant="primary" onClick={saveAndRunScript}>
                 {!reloading ? (
