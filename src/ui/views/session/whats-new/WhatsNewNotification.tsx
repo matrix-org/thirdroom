@@ -22,7 +22,6 @@ export function WhatsNewNotification() {
         padding: "var(--sp-xxs) var(--sp-xs)",
         background: "var(--bg-primary)",
         borderRadius: "var(--br-xs)",
-        cursor: "pointer",
       }}
     >
       <div className="shrink-0 flex">
@@ -36,7 +35,12 @@ export function WhatsNewNotification() {
           }}
         />
       </div>
-      <button className="grow flex items-center" type="button" onClick={() => setWhatsNewDialog(true)}>
+      <button
+        className="grow flex items-center"
+        style={{ cursor: "pointer" }}
+        type="button"
+        onClick={() => setWhatsNewDialog(true)}
+      >
         <Text variant="b3" className="truncate" type="span" color="on-primary" weight="medium">
           Tech Preview 2 is out! 🎉
         </Text>
