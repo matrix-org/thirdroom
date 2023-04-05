@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { TreeViewRefApi } from "@thirdroom/manifold-editor-components";
 import { useAtom, useAtomValue } from "jotai";
-import Editor, { OnChange } from "@monaco-editor/react";
+import Editor, { Monaco, OnChange } from "@monaco-editor/react";
 import { BlobHandle, Room } from "@thirdroom/hydrogen-view-sdk";
 
 import "./EditorView.css";
@@ -10,7 +10,7 @@ import { HierarchyPanel } from "./HierarchyPanel";
 import { useMainThreadContext } from "../../../hooks/useMainThread";
 import { getLocalResource, MainThreadResource } from "../../../../engine/resource/resource.main";
 import { PropertiesPanel } from "./PropertiesPanel";
-import { editorAtom, scriptSourceAtom, showCodeEditorAtom } from "../../../state/editor";
+import { DEFAULT_SCRIPT_SOURCE, editorAtom, scriptSourceAtom, showCodeEditorAtom } from "../../../state/editor";
 import { Button } from "../../../atoms/button/Button";
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { MAX_OBJECT_CAP } from "../../../../engine/config.common";
@@ -29,47 +29,54 @@ export function EditorView({ room }: { room?: Room }) {
   const [scriptSource, setScriptSource] = useAtom(scriptSourceAtom);
   const [showCodeEditor, setShowCodeEditor] = useAtom(showCodeEditorAtom);
   const [maxObjectCap] = useState(MAX_OBJECT_CAP);
-  const [localCode, setLocalCode] = useLocalStorage<string | undefined>("feature_localCodeEditorState", undefined);
+  const [localCode, setLocalCode] = useLocalStorage<string | undefined>(
+    "feature_localCodeEditorState_worldId_" + room?.id || "gltfViewer",
+    undefined
+  );
 
   /**
    * Release pointer when editor view is rendered, re-lock it when editor view is disposed
    */
   useEffect(() => {
     document.exitPointerLock();
+
     return () => {
       mainThread.canvas?.requestPointerLock();
     };
   }, [mainThread]);
 
   /**
+   * Set monaco editor text to locally stored code or default script source
+   */
+  useEffect(() => {
+    setScriptSource(localCode || DEFAULT_SCRIPT_SOURCE);
+  }, [localCode, setScriptSource]);
+
+  /**
    * Load up the locally saved code, otherwise load the existing script
    */
   useEffect(() => {
     if (room) {
-      if (localCode) {
-        setScriptSource(localCode);
-      } else {
-        (async () => {
-          const stateEvent = await room.getStateEvent("org.matrix.msc3815.world");
-          const content = stateEvent?.event.content;
-          if (!content) return false;
+      (async () => {
+        const stateEvent = await room.getStateEvent("org.matrix.msc3815.world");
+        const content = stateEvent?.event.content;
+        if (!content) return false;
 
-          let scriptUrl = content.script_url;
-          if (!scriptUrl) return;
+        let scriptUrl = content.script_url;
+        if (!scriptUrl) return;
 
-          if (scriptUrl.startsWith("mxc:")) {
-            scriptUrl = session.mediaRepository.mxcUrl(scriptUrl);
-          }
+        if (scriptUrl.startsWith("mxc:")) {
+          scriptUrl = session.mediaRepository.mxcUrl(scriptUrl);
+        }
 
-          const res = await fetch(scriptUrl);
-          const contentType = res.headers.get("content-type");
-          if (contentType === "application/wasm") {
-            return;
-          }
-          const text = await res.text();
-          setScriptSource(text);
-        })();
-      }
+        const res = await fetch(scriptUrl);
+        const contentType = res.headers.get("content-type");
+        if (contentType === "application/wasm") {
+          return;
+        }
+        const text = await res.text();
+        setScriptSource(text);
+      })();
     }
   }, [session, room, setScriptSource, localCode]);
 
@@ -116,6 +123,16 @@ export function EditorView({ room }: { room?: Room }) {
     setLocalCode(() => value);
   }
 
+  async function onBeforeMount(monaco: Monaco) {
+    const webSgTypeDefs = await (await fetch("/scripts/websg.d.ts")).text();
+    monaco.languages.typescript.typescriptDefaults.addExtraLib(webSgTypeDefs);
+    monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
+      target: monaco.languages.typescript.ScriptTarget.ESNext,
+      module: monaco.languages.typescript.ModuleKind.ESNext,
+      allowJs: true,
+    });
+  }
+
   return (
     <>
       {!loading && scene && (
@@ -134,6 +151,7 @@ export function EditorView({ room }: { room?: Room }) {
                 defaultLanguage="javascript"
                 defaultValue={scriptSource}
                 onChange={handleEditorChange as OnChange}
+                beforeMount={onBeforeMount}
               />
               <Button size="xxl" variant="primary" onClick={saveAndRunScript}>
                 {!reloading ? (
