@@ -43,6 +43,7 @@ import {
 import { inputFocused } from "../../../utils/common";
 import { useDisableInput } from "../../../hooks/useDisableInput";
 import { editorEnabledAtom } from "../../../state/editor";
+import { usePowerLevels } from "../../../hooks/usePowerLevels";
 
 const SHOW_NAMES_STORE = "showNames";
 interface WorldViewProps {
@@ -52,6 +53,8 @@ interface WorldViewProps {
 export function WorldView({ world }: WorldViewProps) {
   const mainThread = useMainThreadContext();
   const { session } = useHydrogen(true);
+  const { getPowerLevel, canSendStateEvent } = usePowerLevels(world);
+  const canEditScene = canSendStateEvent("org.matrix.msc3815.world", getPowerLevel(session.userId));
   const calls = useCalls(session);
   const activeCall = useRoomCall(calls, world.id);
   const isWorldEntered = useAtomValue(worldAtom).entered;
@@ -70,7 +73,7 @@ export function WorldView({ world }: WorldViewProps) {
   useDisableInput(kbarVisible);
 
   useToggleNamesAction(showNames, setShowNames, showToast);
-  useToggleEditorAction(setEditorEnabled);
+  useToggleEditorAction(setEditorEnabled, canEditScene, showToast);
   useTogglePhysicsDebugAction();
   useToggleStatsAction(setStatsEnabled);
 

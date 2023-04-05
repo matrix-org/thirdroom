@@ -224,7 +224,11 @@ export const ShortcutDialogAction = () => {
   );
 };
 
-export const useToggleEditorAction = (setOpen: (value: boolean | ((value: boolean) => boolean)) => void) => {
+export const useToggleEditorAction = (
+  setOpen: (value: boolean | ((value: boolean) => boolean)) => void,
+  havePermission: boolean,
+  showToast?: (text: string) => void
+) => {
   useRegisterActions(
     [
       {
@@ -235,11 +239,17 @@ export const useToggleEditorAction = (setOpen: (value: boolean | ((value: boolea
         section: ActionSection.World,
         icon: undefined,
         subtitle: undefined,
-        perform: () => setOpen((state) => !state),
+        perform: () => {
+          if (havePermission) {
+            setOpen((state) => !state);
+          } else {
+            showToast?.("Failed: Permission Required!");
+          }
+        },
         parent: undefined,
       },
     ],
-    []
+    [havePermission]
   );
 };
 
