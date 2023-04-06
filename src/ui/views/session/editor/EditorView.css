@@ -39,3 +39,39 @@
   width: 50vw;
   height: 88.5vh;
 }
+
+.EditorView__buttons {
+  display: flex;
+  flex-direction: row;
+
+  & > * {
+    flex-grow: 1;
+  }
+}
+
+.EditorView__resetScriptDialog {
+  display: flex;
+  padding: var(--sp-xs) var(--sp-md);
+}
+
+.EditorView__resetScriptDialog_content {
+  text-align: center;
+  height: auto;
+}
+
+.EditorView__resetScriptDialog_content .Content__children {
+  & > * {
+    margin-bottom: var(--sp-xs);
+  }
+}
+
+.EditorView__resetScriptDialog_buttons {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-evenly;
+  gap: var(--sp-sm);
+
+  & > * {
+    flex-grow: 1;
+  }
+}
