@@ -214,4 +214,17 @@ export async function createMatrixNetworkInterface(
   };
 }
 
-export const matrixNetworkInterfaceAtom = atom<MatrixNetworkInterface | undefined>(undefined);
+const baseMxNetworkInterfaceAtom = atom<MatrixNetworkInterface | undefined>(undefined);
+export const registerMatrixNetworkInterfaceAtom = atom<null, [MatrixNetworkInterface], void>(
+  null,
+  (get, set, update) => {
+    set(baseMxNetworkInterfaceAtom, update);
+  }
+);
+export const providerMatrixNetworkInterfaceAtom = atom<
+  null,
+  [(mxNetworkInterface: MatrixNetworkInterface | undefined) => void],
+  void
+>(null, (get, set, update) => {
+  update(get(baseMxNetworkInterfaceAtom));
+});

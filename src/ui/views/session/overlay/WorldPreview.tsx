@@ -106,12 +106,11 @@ function EnterWorldButton({ room }: { room: Room }) {
   const [micException, setMicException] = useState<RequestException>();
   const [needsUpdate, setNeedsUpdate] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { navigateEnterWorld, navigateExitWorld } = useWorldNavigator(session);
+  const { navigateEnterWorld } = useWorldNavigator(session);
 
   const { checkForUpdate, updateScene } = useUpdateScene(session, room);
 
   const handleLoadWorld = async () => {
-    navigateExitWorld();
     navigateEnterWorld(room);
   };
 

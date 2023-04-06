@@ -195,7 +195,7 @@ export function WorldControls({
       )}
       <div className="flex flex-column items-center">
         <Tooltip content="Disconnect">
-          <IconButton variant="danger" label="Disconnect" iconSrc={CallCrossIC} onClick={navigateExitWorld} />
+          <IconButton variant="danger" label="Disconnect" iconSrc={CallCrossIC} onClick={() => navigateExitWorld()} />
         </Tooltip>
         <Text variant="b3" color="world" weight="bold">
           Alt + L
