@@ -243,7 +243,7 @@ export const useToggleEditorAction = (
           if (havePermission) {
             setOpen((state) => !state);
           } else {
-            showToast?.("Failed: Permission Required!");
+            showToast?.("You don't have permission to edit this scene.");
           }
         },
         parent: undefined,
