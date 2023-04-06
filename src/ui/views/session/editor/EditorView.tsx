@@ -78,7 +78,7 @@ export function EditorView({ room }: { room?: Room }) {
         setScriptSource(text);
       })();
     }
-  }, [session, room, setScriptSource, localCode]);
+  }, [session, room, setScriptSource]);
 
   const [reloading, setReloading] = useState(false);
 
