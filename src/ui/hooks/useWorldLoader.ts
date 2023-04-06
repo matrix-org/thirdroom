@@ -7,8 +7,8 @@ import { disposeActiveMatrixRoom, setActiveMatrixRoom } from "../../engine/matri
 import { getModule, Thread } from "../../engine/module/module.common";
 import {
   createMatrixNetworkInterface,
-  registerMatrixNetworkInterfaceAtom,
-  providerMatrixNetworkInterfaceAtom,
+  registerMatrixNetworkInterface,
+  provideMatrixNetworkInterface,
 } from "../../engine/network/createMatrixNetworkInterface";
 import { connectToTestNet, reconnectPeers } from "../../engine/network/network.main";
 import { SetObjectCapMessage, SetObjectCapMessageType } from "../../plugins/spawnables/spawnables.common";
@@ -35,8 +35,6 @@ const getWorldGroupCall = (session: Session, world: Room) => getRoomCall(session
 export function useWorldLoader(): WorldLoader {
   const { session, platform, client } = useHydrogen(true);
   const mainThread = useMainThreadContext();
-  const registerMatrixNetworkInterface = useSetAtom(registerMatrixNetworkInterfaceAtom);
-  const provideMatrixNetworkInterface = useSetAtom(providerMatrixNetworkInterfaceAtom);
   const setWorld = useSetAtom(worldAtom);
 
   const exitWorldCallback = useCallback(async () => {
@@ -47,7 +45,7 @@ export function useWorldLoader(): WorldLoader {
     disposeActiveMatrixRoom(mainThread);
 
     setWorld({ type: "CLOSE" });
-  }, [setWorld, mainThread, provideMatrixNetworkInterface]);
+  }, [setWorld, mainThread]);
 
   const loadWorldCallback = useCallback(
     async (world: Room, content: Content) => {
@@ -91,7 +89,7 @@ export function useWorldLoader(): WorldLoader {
         throw new Error(err?.message ?? "Unknown error loading world.");
       }
     },
-    [mainThread, session, setWorld, provideMatrixNetworkInterface]
+    [mainThread, session, setWorld]
   );
 
   const connectGroupCall = useCallback(
@@ -161,7 +159,7 @@ export function useWorldLoader(): WorldLoader {
         throw err;
       }
     },
-    [session, mainThread, connectGroupCall, client, registerMatrixNetworkInterface, setWorld]
+    [session, mainThread, connectGroupCall, client, setWorld]
   );
 
   // keeps the call established and reloads the scene/script
