@@ -1,0 +1,11 @@
+.ContentSection--low {
+  background-color: var(--bg-surface-low);
+}
+.ContentSection__content {
+  margin: auto;
+  padding: 120px var(--side-spacing);
+  max-width: var(--content-max-width);
+  display: flex;
+  flex-direction: column;
+  gap: 160px;
+}
