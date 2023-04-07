@@ -26,7 +26,7 @@ export function FooterSection() {
       <div className="FooterSection__content">
         <div className="FooterSection__branding flex justify-between items-center gap-md">
           <Logo />
-          <Button onClick={() => navigate("/login")} disabled={isMobileDevice()}>
+          <Button size="lg" onClick={() => navigate("/login")} disabled={isMobileDevice()}>
             {isMobileDevice() ? "Try on Desktop" : "Get Started"}
             <Icon color="on-primary" src={ArrowForwardIC} />
           </Button>
