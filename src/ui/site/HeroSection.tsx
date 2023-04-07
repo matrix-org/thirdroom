@@ -49,7 +49,7 @@ export function HeroSection() {
     <section className="HeroSection flex flex-column items-center">
       <div className="HeroSection__main flex flex-column items-center justify-center">
         <Text className="HeroSection__heading" variant="h2">
-          Open, decentralised, immersive worlds built on Matrix
+          Open, decentralized, immersive worlds built on Matrix
         </Text>
         <Button size="xl" onClick={() => navigate("/login")} disabled={isMobileDevice()}>
           <Text color="on-primary" weight="semi-bold">

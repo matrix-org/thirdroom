@@ -11,7 +11,7 @@ export function Logo() {
     <div className="inline-flex flex-column items-end gap-xxs">
       <img height={20} src={LogoFullSVG} alt="Third Room" />
       <Text variant="b3" weight="medium" className="uppercase">
-        Tech Preview
+        Tech Preview 2
       </Text>
     </div>
   );

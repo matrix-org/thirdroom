@@ -1,5 +1,5 @@
 .FooterSection {
-  background-color: var(--bg-surface-low);
+  background-color: var(--bg-primary-soft-hover);
   border-top: 1px solid var(--bg-surface-border);
   & a {
     color: var(--tc-surface);
@@ -16,4 +16,8 @@
 
 .FooterSection__copyright {
   margin-top: var(--sp-xl);
+}
+
+.FooterSection__copyright a {
+  text-decoration: underline;
 }
