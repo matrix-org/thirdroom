@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema",
+  "title": "MX_lightmap extension",
+  "type": "object",
+  "allOf": [{ "$ref": "glTFProperty.schema.json" }],
+  "properties": {
+    "lightMapTexture": {
+      "allOf": [{ "$ref": "textureInfo.schema.json" }],
+      "description": "The light map texture."
+    },
+    "extensions": {},
+    "extras": {}
+  },
+  "required": ["lightMapTexture"]
+}
