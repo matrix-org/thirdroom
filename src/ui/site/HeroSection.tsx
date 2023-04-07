@@ -10,6 +10,21 @@ import ArrowForwardIC from "../../../res/ic/arrow-forward.svg";
 import PlayIC from "../../../res/ic/play.svg";
 import { isMobileDevice } from "../utils/common";
 
+function HeroBanner() {
+  return (
+    <div className="HeroSection_Banner flex items-center gap-md">
+      <Text color="on-primary" weight="bold">
+        Tech Preview 2 is here! Web Scene Graph API, WebXR, and more!
+      </Text>
+      <Button style={{ border: "1px solid var(--bg-primary-hover)" }}>
+        <Text color="on-primary" weight="bold">
+          Read More
+        </Text>
+      </Button>
+    </div>
+  );
+}
+
 function PreviewVideoPlayer() {
   const preview = "https://matrix.thirdroom.io/_matrix/media/r0/download/matrix.org/eCIGHgUqQWmJrVdzUpTwrGbp";
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -47,6 +62,7 @@ export function HeroSection() {
 
   return (
     <section className="HeroSection flex flex-column items-center">
+      <HeroBanner />
       <div className="HeroSection__main flex flex-column items-center justify-center">
         <Text className="HeroSection__heading" variant="h2">
           Open, decentralized, immersive worlds built on Matrix

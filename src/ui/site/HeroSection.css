@@ -73,3 +73,10 @@
     bottom: -70px;
   }
 }
+
+.HeroSection_Banner {
+  margin: var(--sp-md);
+  padding: var(--sp-xs) var(--sp-xs) var(--sp-xs) var(--sp-md);
+  background-color: var(--bg-primary);
+  border-radius: var(--br-md);
+}
