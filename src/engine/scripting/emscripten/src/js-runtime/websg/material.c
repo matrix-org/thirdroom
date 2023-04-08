@@ -62,7 +62,7 @@ static void js_websg_material_set_base_color_factor_element(
   websg_material_set_base_color_factor(material_id, color);
 }
 
-static JSValue js_material_get_metallic_factor(JSContext *ctx, JSValueConst this_val) {
+static JSValue js_websg_material_get_metallic_factor(JSContext *ctx, JSValueConst this_val) {
   WebSGMaterialData *material_data = JS_GetOpaque(this_val, js_websg_material_class_id);
 
   float_t result = websg_material_get_metallic_factor(material_data->material_id);
@@ -70,7 +70,7 @@ static JSValue js_material_get_metallic_factor(JSContext *ctx, JSValueConst this
   return JS_NewFloat64(ctx, result);
 }
 
-static JSValue js_material_set_metallic_factor(JSContext *ctx, JSValueConst this_val, JSValueConst arg) {
+static JSValue js_websg_material_set_metallic_factor(JSContext *ctx, JSValueConst this_val, JSValueConst arg) {
   WebSGMaterialData *material_data = JS_GetOpaque(this_val, js_websg_material_class_id);
 
   double_t value;
@@ -89,7 +89,7 @@ static JSValue js_material_set_metallic_factor(JSContext *ctx, JSValueConst this
   return JS_UNDEFINED;
 }
 
-static JSValue js_material_get_roughness_factor(JSContext *ctx, JSValueConst this_val) {
+static JSValue js_websg_material_get_roughness_factor(JSContext *ctx, JSValueConst this_val) {
   WebSGMaterialData *material_data = JS_GetOpaque(this_val, js_websg_material_class_id);
 
   float_t result = websg_material_get_roughness_factor(material_data->material_id);
@@ -97,7 +97,7 @@ static JSValue js_material_get_roughness_factor(JSContext *ctx, JSValueConst thi
   return JS_NewFloat64(ctx, result);
 }
 
-static JSValue js_material_set_roughness_factor(JSContext *ctx, JSValueConst this_val, JSValueConst arg) {
+static JSValue js_websg_material_set_roughness_factor(JSContext *ctx, JSValueConst this_val, JSValueConst arg) {
   WebSGMaterialData *material_data = JS_GetOpaque(this_val, js_websg_material_class_id);
 
   double_t value;
@@ -132,7 +132,7 @@ static void js_websg_material_set_emissive_factor_element(
   websg_material_set_emissive_factor(material_id, color);
 }
 
-static JSValue js_material_get_base_color_texture(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+static JSValue js_websg_material_get_base_color_texture(JSContext *ctx, JSValueConst this_val) {
   WebSGMaterialData *material_data = JS_GetOpaque(this_val, js_websg_material_class_id);
 
   texture_id_t texture_id = websg_material_get_base_color_texture(material_data->material_id);
@@ -144,10 +144,10 @@ static JSValue js_material_get_base_color_texture(JSContext *ctx, JSValueConst t
   return js_websg_get_texture_by_id(ctx, material_data->world_data, texture_id);
 }
 
-static JSValue js_material_set_base_color_texture(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+static JSValue js_websg_material_set_base_color_texture(JSContext *ctx, JSValueConst this_val, JSValueConst arg) {
   WebSGMaterialData *material_data = JS_GetOpaque(this_val, js_websg_material_class_id);
 
-  WebSGTextureData *texture_data = JS_GetOpaque2(ctx, argv[0], js_websg_texture_class_id);
+  WebSGTextureData *texture_data = JS_GetOpaque2(ctx, arg, js_websg_texture_class_id);
 
   int32_t result = websg_material_set_base_color_texture(material_data->material_id, texture_data->texture_id);
 
@@ -160,6 +160,9 @@ static JSValue js_material_set_base_color_texture(JSContext *ctx, JSValueConst t
 }
 
 static const JSCFunctionListEntry js_websg_material_proto_funcs[] = {
+  JS_CGETSET_DEF("baseColorTexture", js_websg_material_get_base_color_texture, js_websg_material_set_base_color_texture),
+  JS_CGETSET_DEF("metallicFactor", js_websg_material_get_metallic_factor, js_websg_material_set_metallic_factor),
+  JS_CGETSET_DEF("roughnessFactor", js_websg_material_get_roughness_factor, js_websg_material_set_roughness_factor),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "Material", JS_PROP_CONFIGURABLE),
 };
 
