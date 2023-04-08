@@ -444,65 +444,67 @@ JSValue js_websg_world_create_node(JSContext *ctx, JSValue this_val, int argc, J
   WebSGWorldData *world_data = JS_GetOpaque(this_val, js_websg_world_class_id);
 
   NodeProps *props = js_mallocz(ctx, sizeof(NodeProps));
+  props->rotation[0] = 0.0f;
+  props->rotation[1] = 0.0f;
+  props->rotation[2] = 0.0f;
+  props->rotation[3] = 1.0f;
+  props->scale[0] = 1.0f;
+  props->scale[1] = 1.0f;
+  props->scale[2] = 1.0f;
 
-  JSValue name_val = JS_GetPropertyStr(ctx, argv[0], "name");
+  if (!JS_IsUndefined(argv[0])) {
 
-  if (!JS_IsUndefined(name_val)) {
-    props->name = JS_ToCString(ctx, name_val);
+    JSValue name_val = JS_GetPropertyStr(ctx, argv[0], "name");
 
-    if (props->name == NULL) {
-      js_free(ctx, props);
-      return JS_EXCEPTION;
+    if (!JS_IsUndefined(name_val)) {
+      props->name = JS_ToCString(ctx, name_val);
+
+      if (props->name == NULL) {
+        js_free(ctx, props);
+        return JS_EXCEPTION;
+      }
     }
-  }
 
-  JSValue mesh_val = JS_GetPropertyStr(ctx, argv[0], "mesh");
+    JSValue mesh_val = JS_GetPropertyStr(ctx, argv[0], "mesh");
 
-  if (!JS_IsUndefined(mesh_val)) {
-    WebSGMeshData *mesh_data = JS_GetOpaque2(ctx, mesh_val, js_websg_mesh_class_id);
+    if (!JS_IsUndefined(mesh_val)) {
+      WebSGMeshData *mesh_data = JS_GetOpaque2(ctx, mesh_val, js_websg_mesh_class_id);
 
-    if (mesh_data == NULL) {
-      js_free(ctx, props);
-      return JS_EXCEPTION;
+      if (mesh_data == NULL) {
+        js_free(ctx, props);
+        return JS_EXCEPTION;
+      }
+
+      props->mesh = mesh_data->mesh_id;
     }
 
-    props->mesh = mesh_data->mesh_id;
-  }
+    JSValue translation_val = JS_GetPropertyStr(ctx, argv[0], "translation");
 
-  JSValue translation_val = JS_GetPropertyStr(ctx, argv[0], "translation");
-
-  if (!JS_IsUndefined(translation_val)) {
-    if (js_get_float_array_like(ctx, translation_val, props->translation, 3) < 0) {
-      js_free(ctx, props);
-      return JS_EXCEPTION;
+    if (!JS_IsUndefined(translation_val)) {
+      if (js_get_float_array_like(ctx, translation_val, props->translation, 3) < 0) {
+        js_free(ctx, props);
+        return JS_EXCEPTION;
+      }
     }
-  }
 
-  JSValue rotation_val = JS_GetPropertyStr(ctx, argv[0], "rotation");
+    JSValue rotation_val = JS_GetPropertyStr(ctx, argv[0], "rotation");
 
-  if (!JS_IsUndefined(rotation_val)) {
-    if (js_get_float_array_like(ctx, rotation_val, props->rotation, 4) < 0) {
-      js_free(ctx, props);
-      return JS_EXCEPTION;
+    if (!JS_IsUndefined(rotation_val)) {
+      if (js_get_float_array_like(ctx, rotation_val, props->rotation, 4) < 0) {
+        js_free(ctx, props);
+        return JS_EXCEPTION;
+      }
     }
-  } else {
-    props->rotation[0] = 0.0f;
-    props->rotation[1] = 0.0f;
-    props->rotation[2] = 0.0f;
-    props->rotation[3] = 1.0f;
-  }
 
-  JSValue scale_val = JS_GetPropertyStr(ctx, argv[0], "scale");
+    JSValue scale_val = JS_GetPropertyStr(ctx, argv[0], "scale");
 
-  if (!JS_IsUndefined(scale_val)) {
-    if (js_get_float_array_like(ctx, scale_val, props->scale, 3) < 0) {
-      js_free(ctx, props);
-      return JS_EXCEPTION;
+    if (!JS_IsUndefined(scale_val)) {
+      if (js_get_float_array_like(ctx, scale_val, props->scale, 3) < 0) {
+        js_free(ctx, props);
+        return JS_EXCEPTION;
+      }
     }
-  } else {
-    props->scale[0] = 1.0f;
-    props->scale[1] = 1.0f;
-    props->scale[2] = 1.0f;
+
   }
 
   node_id_t node_id = websg_world_create_node(props);

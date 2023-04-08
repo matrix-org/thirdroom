@@ -275,7 +275,7 @@ static void js_websg_ui_element_set_border_radius_element(uint32_t ui_element_id
 }
 
 static JSValue js_websg_ui_element_get_flex_direction(JSContext *ctx, JSValueConst this_val) {
- WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
 
   FlexDirection result = websg_ui_element_get_flex_direction(ui_element_data->ui_element_id);
 
@@ -307,7 +307,7 @@ static JSValue js_websg_ui_element_set_flex_direction(JSContext *ctx, JSValueCon
 }
 
 static JSValue js_websg_ui_element_get_position_type(JSContext *ctx, JSValueConst this_val) {
- WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
 
   ElementPositionType result = websg_ui_element_get_position_type(ui_element_data->ui_element_id);
 
@@ -364,7 +364,7 @@ static JSValue js_websg_ui_element_set_position(JSContext *ctx, JSValueConst thi
 }
 
 static JSValue js_websg_ui_element_get_align_content(JSContext *ctx, JSValueConst this_val) {
- WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
 
   FlexAlign result = websg_ui_element_get_align_content(ui_element_data->ui_element_id);
 
@@ -396,7 +396,7 @@ static JSValue js_websg_ui_element_set_align_content(JSContext *ctx, JSValueCons
 }
 
 static JSValue js_websg_ui_element_get_align_items(JSContext *ctx, JSValueConst this_val) {
- WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
 
   FlexAlign result = websg_ui_element_get_align_items(ui_element_data->ui_element_id);
 
@@ -428,7 +428,7 @@ static JSValue js_websg_ui_element_set_align_items(JSContext *ctx, JSValueConst 
 }
 
 static JSValue js_websg_ui_element_get_align_self(JSContext *ctx, JSValueConst this_val) {
- WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
 
   FlexAlign result = websg_ui_element_get_align_self(ui_element_data->ui_element_id);
 
@@ -460,7 +460,7 @@ static JSValue js_websg_ui_element_set_align_self(JSContext *ctx, JSValueConst t
 }
 
 static JSValue js_websg_ui_element_get_flex_wrap(JSContext *ctx, JSValueConst this_val) {
- WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
 
   FlexWrap result = websg_ui_element_get_flex_wrap(ui_element_data->ui_element_id);
 
@@ -492,7 +492,7 @@ static JSValue js_websg_ui_element_set_flex_wrap(JSContext *ctx, JSValueConst th
 }
 
 static JSValue js_websg_ui_element_get_flex_basis(JSContext *ctx, JSValueConst this_val) {
- WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
 
   float_t result = websg_ui_element_get_flex_basis(ui_element_data->ui_element_id);
 
@@ -519,7 +519,7 @@ static JSValue js_websg_ui_element_set_flex_basis(JSContext *ctx, JSValueConst t
 }
 
 static JSValue js_websg_ui_element_get_flex_grow(JSContext *ctx, JSValueConst this_val) {
- WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
 
   float_t result = websg_ui_element_get_flex_grow(ui_element_data->ui_element_id);
 
@@ -546,7 +546,7 @@ static JSValue js_websg_ui_element_set_flex_grow(JSContext *ctx, JSValueConst th
 }
 
 static JSValue js_websg_ui_element_get_flex_shrink(JSContext *ctx, JSValueConst this_val) {
- WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
 
   float_t result = websg_ui_element_get_flex_shrink(ui_element_data->ui_element_id);
 
@@ -573,7 +573,7 @@ static JSValue js_websg_ui_element_set_flex_shrink(JSContext *ctx, JSValueConst 
 }
 
 static JSValue js_websg_ui_element_get_justify_content(JSContext *ctx, JSValueConst this_val) {
- WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
 
   FlexJustify result = websg_ui_element_get_justify_content(ui_element_data->ui_element_id);
 
@@ -605,7 +605,7 @@ static JSValue js_websg_ui_element_set_justify_content(JSContext *ctx, JSValueCo
 }
 
 static JSValue js_websg_ui_element_get_width(JSContext *ctx, JSValueConst this_val) {
- WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
 
   float_t result = websg_ui_element_get_width(ui_element_data->ui_element_id);
 
@@ -632,7 +632,7 @@ static JSValue js_websg_ui_element_set_width(JSContext *ctx, JSValueConst this_v
 }
 
 static JSValue js_websg_ui_element_get_height(JSContext *ctx, JSValueConst this_val) {
- WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
 
   float_t result = websg_ui_element_get_height(ui_element_data->ui_element_id);
 
@@ -659,7 +659,7 @@ static JSValue js_websg_ui_element_set_height(JSContext *ctx, JSValueConst this_
 }
 
 static JSValue js_websg_ui_element_get_min_width(JSContext *ctx, JSValueConst this_val) {
- WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
 
   float_t result = websg_ui_element_get_min_width(ui_element_data->ui_element_id);
 
@@ -686,7 +686,7 @@ static JSValue js_websg_ui_element_set_min_width(JSContext *ctx, JSValueConst th
 }
 
 static JSValue js_websg_ui_element_get_min_height(JSContext *ctx, JSValueConst this_val) {
- WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
 
   float_t result = websg_ui_element_get_min_height(ui_element_data->ui_element_id);
 
@@ -713,7 +713,7 @@ static JSValue js_websg_ui_element_set_min_height(JSContext *ctx, JSValueConst t
 }
 
 static JSValue js_websg_ui_element_get_max_width(JSContext *ctx, JSValueConst this_val) {
- WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
 
   float_t result = websg_ui_element_get_max_width(ui_element_data->ui_element_id);
 
@@ -740,7 +740,7 @@ static JSValue js_websg_ui_element_set_max_width(JSContext *ctx, JSValueConst th
 }
 
 static JSValue js_websg_ui_element_get_max_height(JSContext *ctx, JSValueConst this_val) {
- WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
 
   float_t result = websg_ui_element_get_max_height(ui_element_data->ui_element_id);
 
@@ -858,7 +858,7 @@ static JSValue js_websg_ui_element_parent(JSContext *ctx, JSValueConst this_val)
 }
 
 static JSValue js_websg_ui_element_get_element_type(JSContext *ctx, JSValueConst this_val) {
- WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
 
   ElementType result = websg_ui_element_get_element_type(ui_element_data->ui_element_id);
 
@@ -1107,8 +1107,6 @@ static int js_websg_parse_ui_element_props(
     }
 
     props->position_type = position_type;
-  } else {
-    props->position_type = ElementPositionType_RELATIVE;
   }
 
   JSValue align_content_val = JS_GetPropertyStr(ctx, arg, "alignContent");
@@ -1122,8 +1120,6 @@ static int js_websg_parse_ui_element_props(
     }
 
     props->align_content = align_content;
-  } else {
-    props->align_content = FlexAlign_FLEX_START;
   }
 
   JSValue align_items_val = JS_GetPropertyStr(ctx, arg, "alignItems");
@@ -1137,8 +1133,6 @@ static int js_websg_parse_ui_element_props(
     }
 
     props->align_items = align_items;
-  } else {
-    props->align_items = FlexAlign_STRETCH;
   }
 
   JSValue align_self_val = JS_GetPropertyStr(ctx, arg, "alignSelf");
@@ -1152,8 +1146,6 @@ static int js_websg_parse_ui_element_props(
     }
 
     props->align_self = align_self;
-  } else {
-    props->align_self = FlexAlign_AUTO;
   }
 
   JSValue flex_direction_val = JS_GetPropertyStr(ctx, arg, "flexDirection");
@@ -1167,8 +1159,6 @@ static int js_websg_parse_ui_element_props(
     }
 
     props->flex_direction = flex_direction;
-  } else {
-    props->flex_direction = FlexDirection_ROW;
   }
 
   JSValue flex_wrap_val = JS_GetPropertyStr(ctx, arg, "flexWrap");
@@ -1182,8 +1172,6 @@ static int js_websg_parse_ui_element_props(
     }
 
     props->flex_wrap = flex_wrap;
-  } else {
-    props->flex_wrap = FlexWrap_NO_WRAP;
   }
 
   JSValue flex_basis_val = JS_GetPropertyStr(ctx, arg, "flexBasis");
@@ -1220,8 +1208,6 @@ static int js_websg_parse_ui_element_props(
     }
 
     props->flex_shrink = (float_t)flex_shrink;
-  } else {
-    props->flex_shrink = 1.0f;
   }
 
   JSValue justify_content_val = JS_GetPropertyStr(ctx, arg, "justifyContent");
@@ -1235,8 +1221,6 @@ static int js_websg_parse_ui_element_props(
     }
 
     props->justify_content = justify_content;
-  } else {
-    props->justify_content = FlexJustify_FLEX_START;
   }
 
   JSValue width_val = JS_GetPropertyStr(ctx, arg, "width");
@@ -1249,8 +1233,6 @@ static int js_websg_parse_ui_element_props(
     }
 
     props->width = (float_t)width;
-  } else {
-    props->width = -1;
   }
 
   JSValue height_val = JS_GetPropertyStr(ctx, arg, "height");
@@ -1263,8 +1245,6 @@ static int js_websg_parse_ui_element_props(
     }
 
     props->height = (float_t)height;
-  } else {
-    props->height = -1;
   }
 
   JSValue min_width_val = JS_GetPropertyStr(ctx, arg, "minWidth");
@@ -1277,8 +1257,6 @@ static int js_websg_parse_ui_element_props(
     }
 
     props->min_width = (float_t)min_width;
-  } else {
-    props->min_width = -1;
   }
 
   JSValue min_height_val = JS_GetPropertyStr(ctx, arg, "minHeight");
@@ -1291,8 +1269,6 @@ static int js_websg_parse_ui_element_props(
     }
 
     props->min_height = (float_t)min_height;
-  } else {
-    props->min_height = -1;
   }
 
   JSValue max_width_val = JS_GetPropertyStr(ctx, arg, "maxWidth");
@@ -1305,8 +1281,6 @@ static int js_websg_parse_ui_element_props(
     }
 
     props->max_width = (float_t)max_width;
-  } else {
-    props->max_width = -1;
   }
 
   JSValue max_height_val = JS_GetPropertyStr(ctx, arg, "maxHeight");
@@ -1319,8 +1293,6 @@ static int js_websg_parse_ui_element_props(
     }
 
     props->max_height = (float_t)max_height;
-  } else {
-    props->max_height = -1;
   }
 
   JSValue background_color_val = JS_GetPropertyStr(ctx, arg, "backgroundColor");
@@ -1380,6 +1352,21 @@ JSValue js_websg_world_create_ui_element(JSContext *ctx, JSValueConst this_val, 
   UIElementProps *props = js_mallocz(ctx, sizeof(UIElementProps));
 
   props->type = ElementType_FLEX;
+  props->flex_basis = -1;
+  props->max_height = -1;
+  props->max_width = -1;
+  props->min_height = -1;
+  props->min_width = -1;
+  props->height = -1;
+  props->width = -1;
+  props->justify_content = FlexJustify_FLEX_START;
+  props->flex_shrink = 1.0f;
+  props->flex_wrap = FlexWrap_NO_WRAP;
+  props->flex_direction = FlexDirection_ROW;
+  props->align_self = FlexAlign_AUTO;
+  props->align_items = FlexAlign_STRETCH;
+  props->align_content = FlexAlign_FLEX_START;
+  props->position_type = ElementPositionType_RELATIVE;
 
   if (js_websg_parse_ui_element_props(ctx, world_data, props, argv[0]) < 0) {
     return JS_EXCEPTION;

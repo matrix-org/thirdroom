@@ -28,7 +28,7 @@ static JSClassDef js_websg_ui_canvas_class = {
 };
 
 static JSValue js_websg_ui_canvas_get_root(JSContext *ctx, JSValueConst this_val) {
- WebSGUICanvasData *ui_canvas_data = JS_GetOpaque(this_val, js_websg_ui_canvas_class_id);
+  WebSGUICanvasData *ui_canvas_data = JS_GetOpaque(this_val, js_websg_ui_canvas_class_id);
 
   ui_element_id_t root_id = websg_ui_canvas_get_root(ui_canvas_data->ui_canvas_id);
 
@@ -70,7 +70,7 @@ static void js_websg_ui_canvas_set_size_element(uint32_t ui_canvas_id, float_t *
 }
 
 static JSValue js_websg_ui_canvas_get_width(JSContext *ctx, JSValueConst this_val) {
- WebSGUICanvasData *ui_canvas_data = JS_GetOpaque(this_val, js_websg_ui_canvas_class_id);
+  WebSGUICanvasData *ui_canvas_data = JS_GetOpaque(this_val, js_websg_ui_canvas_class_id);
 
   float_t result = websg_ui_canvas_get_width(ui_canvas_data->ui_canvas_id);
 
@@ -97,7 +97,7 @@ static JSValue js_websg_ui_canvas_set_width(JSContext *ctx, JSValueConst this_va
 }
 
 static JSValue js_websg_ui_canvas_get_height(JSContext *ctx, JSValueConst this_val) {
- WebSGUICanvasData *ui_canvas_data = JS_GetOpaque(this_val, js_websg_ui_canvas_class_id);
+  WebSGUICanvasData *ui_canvas_data = JS_GetOpaque(this_val, js_websg_ui_canvas_class_id);
 
   float_t result = websg_ui_canvas_get_height(ui_canvas_data->ui_canvas_id);
 
@@ -220,56 +220,57 @@ JSValue js_websg_world_create_ui_canvas(JSContext *ctx, JSValueConst this_val, i
   WebSGWorldData *world_data = JS_GetOpaque(this_val, js_websg_world_class_id);
 
   UICanvasProps *props = js_mallocz(ctx, sizeof(UICanvasProps));
+  props->size[0] = 1;
+  props->size[1] = 1;
+  props->width = 1024.0f;
+  props->height = 1024.0f;
 
-  JSValue root_val = JS_GetPropertyStr(ctx, argv[0], "root");
+  if (!JS_IsUndefined(argv[0])) {
 
-  if (!JS_IsUndefined(root_val)) {
-    WebSGUIElementData *ui_element_data = JS_GetOpaque2(ctx, root_val, js_websg_ui_element_class_id);
+    JSValue root_val = JS_GetPropertyStr(ctx, argv[0], "root");
 
-    if (ui_element_data == NULL) {
-      return JS_EXCEPTION;
+    if (!JS_IsUndefined(root_val)) {
+      WebSGUIElementData *ui_element_data = JS_GetOpaque2(ctx, root_val, js_websg_ui_element_class_id);
+
+      if (ui_element_data == NULL) {
+        return JS_EXCEPTION;
+      }
+
+      props->root = ui_element_data->ui_element_id;
     }
 
-    props->root = ui_element_data->ui_element_id;
-  }
+    JSValue size_val = JS_GetPropertyStr(ctx, argv[0], "size");
 
-  JSValue size_val = JS_GetPropertyStr(ctx, argv[0], "size");
-
-  if (!JS_IsUndefined(size_val)) {
-    if (js_get_float_array_like(ctx, size_val, props->size, 2) < 0) {
-      return JS_EXCEPTION;
-    }
-  } else {
-    props->size[0] = 1;
-    props->size[1] = 1;
-  }
-
-  JSValue width_val = JS_GetPropertyStr(ctx, argv[0], "width");
-
-  if (!JS_IsUndefined(width_val)) {
-    double width;
-
-    if (JS_ToFloat64(ctx, &width, width_val) == -1) {
-      return JS_EXCEPTION;
+    if (!JS_IsUndefined(size_val)) {
+      if (js_get_float_array_like(ctx, size_val, props->size, 2) < 0) {
+        return JS_EXCEPTION;
+      }
     }
 
-    props->width = (float_t)width;
-  } else {
-    props->width = 1024.0f;
-  }
+    JSValue width_val = JS_GetPropertyStr(ctx, argv[0], "width");
 
-  JSValue height_val = JS_GetPropertyStr(ctx, argv[0], "height");
+    if (!JS_IsUndefined(width_val)) {
+      double width;
 
-  if (!JS_IsUndefined(height_val)) {
-    double height;
+      if (JS_ToFloat64(ctx, &width, width_val) == -1) {
+        return JS_EXCEPTION;
+      }
 
-    if (JS_ToFloat64(ctx, &height, height_val) == -1) {
-      return JS_EXCEPTION;
+      props->width = (float_t)width;
     }
 
-    props->height = (float_t)height;
-  } else {
-    props->height = 1024.0f;
+    JSValue height_val = JS_GetPropertyStr(ctx, argv[0], "height");
+
+    if (!JS_IsUndefined(height_val)) {
+      double height;
+
+      if (JS_ToFloat64(ctx, &height, height_val) == -1) {
+        return JS_EXCEPTION;
+      }
+
+      props->height = (float_t)height;
+    }
+
   }
 
   ui_canvas_id_t ui_canvas_id = websg_world_create_ui_canvas(props);
