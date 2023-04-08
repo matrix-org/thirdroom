@@ -10,7 +10,7 @@ import { HierarchyPanel } from "./HierarchyPanel";
 import { useMainThreadContext } from "../../../hooks/useMainThread";
 import { getLocalResource, MainThreadResource } from "../../../../engine/resource/resource.main";
 import { PropertiesPanel } from "./PropertiesPanel";
-import { editorAtom, scriptSourceAtom, showCodeEditorAtom } from "../../../state/editor";
+import { DEFAULT_SCRIPT_SOURCE, editorAtom, scriptSourceAtom, showCodeEditorAtom } from "../../../state/editor";
 import { Button } from "../../../atoms/button/Button";
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { MAX_OBJECT_CAP } from "../../../../engine/config.common";
@@ -18,18 +18,43 @@ import { uploadAttachment } from "../../../utils/matrixUtils";
 import { Dots } from "../../../atoms/loading/Dots";
 import { useKeyDown } from "../../../hooks/useKeyDown";
 import { useLocalStorage } from "../../../hooks/useLocalStorage";
+import CrossIC from "../../../../../res/ic/cross.svg";
+import { Text } from "../../../atoms/text/Text";
+import { Dialog } from "../../../atoms/dialog/Dialog";
+import { Header } from "../../../atoms/header/Header";
+import { HeaderTitle } from "../../../atoms/header/HeaderTitle";
+import { IconButton } from "../../../atoms/button/IconButton";
 
 export function EditorView({ room }: { room?: Room }) {
+  // dependencies
   const treeViewRef = useRef<TreeViewRefApi>(null);
   const { loading, scene, resources } = useEditor(treeViewRef);
   const activeEntity = useAtomValue(editorAtom).activeEntity;
   const { session, platform } = useHydrogen(true);
   const mainThread = useMainThreadContext();
   const resource = getLocalResource(mainThread, activeEntity) as unknown as MainThreadResource;
-  const [scriptSource, setScriptSource] = useAtom(scriptSourceAtom);
-  const [showCodeEditor, setShowCodeEditor] = useAtom(showCodeEditorAtom);
+
+  // script sources
+  const [activeScriptSource, setActiveScriptSource] = useAtom(scriptSourceAtom);
+  const [persistedScriptSource, setPersistedScriptSource] = useState<string | undefined>(undefined);
+  const [localScriptSource, setLocalScriptSource] = useLocalStorage<string | undefined>(
+    "feature_localCodeEditorState_worldId_" + room?.id || "gltfViewer",
+    undefined
+  );
+
+  // component state
   const [maxObjectCap] = useState(MAX_OBJECT_CAP);
-  const [localCode, setLocalCode] = useLocalStorage<string | undefined>("feature_localCodeEditorState", undefined);
+  const [showCodeEditor, setShowCodeEditor] = useAtom(showCodeEditorAtom);
+  const [reloading, setReloading] = useState(false);
+  const [saved, setSavedState] = useState(true);
+  const [showResetModal, setShowResetModal] = useState(false);
+
+  /**
+   *  Set saved to true if active script is equal to persisted script
+   */
+  useEffect(() => {
+    setSavedState(activeScriptSource === persistedScriptSource);
+  }, [activeScriptSource, persistedScriptSource]);
 
   /**
    * Release pointer when editor view is rendered, re-lock it when editor view is disposed
@@ -42,38 +67,40 @@ export function EditorView({ room }: { room?: Room }) {
   }, [mainThread]);
 
   /**
-   * Load up the locally saved code, otherwise load the existing script
+   * Set monaco editor text to locally stored code or default script source
+   */
+  useEffect(() => {
+    setActiveScriptSource(localScriptSource || DEFAULT_SCRIPT_SOURCE);
+  }, [localScriptSource, setActiveScriptSource]);
+
+  /**
+   * Load up the persisted script if we don't have a locally modified script
    */
   useEffect(() => {
     if (room) {
-      if (localCode) {
-        setScriptSource(localCode);
-      } else {
-        (async () => {
-          const stateEvent = await room.getStateEvent("org.matrix.msc3815.world");
-          const content = stateEvent?.event.content;
-          if (!content) return false;
+      (async () => {
+        const stateEvent = await room.getStateEvent("org.matrix.msc3815.world");
+        const content = stateEvent?.event.content;
+        if (!content) return false;
 
-          let scriptUrl = content.script_url;
-          if (!scriptUrl) return;
+        let scriptUrl = content.script_url;
+        if (!scriptUrl) return;
 
-          if (scriptUrl.startsWith("mxc:")) {
-            scriptUrl = session.mediaRepository.mxcUrl(scriptUrl);
-          }
+        if (scriptUrl.startsWith("mxc:")) {
+          scriptUrl = session.mediaRepository.mxcUrl(scriptUrl);
+        }
 
-          const res = await fetch(scriptUrl);
-          const contentType = res.headers.get("content-type");
-          if (contentType === "application/wasm") {
-            return;
-          }
-          const text = await res.text();
-          setScriptSource(text);
-        })();
-      }
+        const res = await fetch(scriptUrl);
+        const contentType = res.headers.get("content-type");
+        if (contentType === "application/wasm") {
+          return;
+        }
+        const text = await res.text();
+        if (!localScriptSource) setActiveScriptSource(text);
+        setPersistedScriptSource(text);
+      })();
     }
-  }, [session, room, setScriptSource, localCode]);
-
-  const [reloading, setReloading] = useState(false);
+  }, [session, room, setActiveScriptSource, localScriptSource]);
 
   async function saveAndRunScript() {
     if (!room) {
@@ -90,7 +117,7 @@ export function EditorView({ room }: { room?: Room }) {
     const blobHandle = platform.createBlob(new ArrayBuffer(0), "text/javascript");
     // HACK: explicitly overwrite _blob (internally the mimeType is reset by platform.createBlob)
     // TODO: expose BlobHandle or override platform.createBlob to accept a regular blob and not overwrite its mimeType
-    (blobHandle as BlobHandle)._blob = new File([scriptSource], "script.js", { type: "text/javascript" });
+    (blobHandle as BlobHandle)._blob = new File([activeScriptSource], "script.js", { type: "text/javascript" });
 
     const scriptMxc = await uploadAttachment(session.hsApi, blobHandle);
 
@@ -112,8 +139,18 @@ export function EditorView({ room }: { room?: Room }) {
   );
 
   function handleEditorChange(value: string) {
-    setScriptSource(value);
-    setLocalCode(() => value);
+    setActiveScriptSource(value);
+    setLocalScriptSource(() => value);
+    setSavedState(value === persistedScriptSource);
+  }
+
+  function onShowResetModal() {
+    setShowResetModal(true);
+  }
+
+  function resetScript() {
+    if (persistedScriptSource) setActiveScriptSource(persistedScriptSource);
+    setShowResetModal(false);
   }
 
   return (
@@ -128,22 +165,51 @@ export function EditorView({ room }: { room?: Room }) {
               <PropertiesPanel resource={resource} />
             </div>
           )}
+
+          <Dialog className="EditorView__resetScriptDialog" open={showResetModal}>
+            <div className="flex flex-column">
+              <Header
+                className="shrink-0"
+                left={<HeaderTitle size="lg">Confirm Reset</HeaderTitle>}
+                right={<IconButton iconSrc={CrossIC} onClick={() => setShowResetModal(false)} label="Close" />}
+              />
+              <div className="grow flex flex-column gap-lg" style={{ padding: "var(--sp-md)" }}>
+                <div className="flex flex-column gap-sm">
+                  <Text>Are you sure you want to reset the script? Any unsaved changes will be lost!</Text>
+                  <div className="EditorView__resetScriptDialog_buttons">
+                    <Button size="md" onClick={resetScript}>
+                      Yes
+                    </Button>
+                    <Button size="md" onClick={() => setShowResetModal(false)}>
+                      No
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Dialog>
           {showCodeEditor && (
             <div className="EditorView__code">
               <Editor
                 defaultLanguage="javascript"
-                defaultValue={scriptSource}
+                defaultValue={DEFAULT_SCRIPT_SOURCE}
+                value={activeScriptSource}
                 onChange={handleEditorChange as OnChange}
               />
-              <Button size="xxl" variant="primary" onClick={saveAndRunScript}>
-                {!reloading ? (
-                  "Save & Run"
-                ) : (
-                  <>
-                    <Dots size="lg" color="on-primary" />
-                  </>
-                )}
-              </Button>
+              <div className="EditorView__buttons">
+                <Button size="xxl" variant="primary" onClick={saveAndRunScript} disabled={saved}>
+                  {!reloading ? (
+                    "Save & Run"
+                  ) : (
+                    <>
+                      <Dots size="lg" color="on-primary" />
+                    </>
+                  )}
+                </Button>
+                <Button size="xxl" variant="danger" onClick={onShowResetModal} disabled={saved}>
+                  Reset
+                </Button>
+              </div>
             </div>
           )}
         </>

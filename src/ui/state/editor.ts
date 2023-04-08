@@ -140,7 +140,7 @@ export const editorAtom = atom<EditorState, [EditorStateAction], void>(
   }
 );
 
-const DEFAULT_SCRIPT_SOURCE = `
+export const DEFAULT_SCRIPT_SOURCE = `
 
 
 onload = () => {
