@@ -5,7 +5,9 @@ import { IconButton } from "../../../atoms/button/IconButton";
 import { Progress } from "../../../atoms/progress/Progress";
 import { bytesToSize, getPercentage } from "../../../utils/common";
 import CrossIC from "../../../../../res/ic/cross.svg";
+import CheckIC from "../../../../../res/ic/check.svg";
 import "./FileUploadCard.css";
+import { Icon } from "../../../atoms/icon/Icon";
 
 interface FileUploadCardProps {
   className?: string;
@@ -26,11 +28,20 @@ export function FileUploadCard({ className, name, sentBytes, totalBytes, onUploa
         </div>
         <IconButton onClick={onUploadDrop} iconSrc={CrossIC} size="sm" label="cancel" />
       </div>
-      <Progress variant="secondary" value={sentBytes} max={totalBytes} />
+      {sentBytes < totalBytes && <Progress variant="secondary" value={sentBytes} max={totalBytes} />}
       <div className="flex items-center gap-xs">
-        <Text className="grow" variant="b3" color="surface-low">
-          {sentBytes < totalBytes ? `${getPercentage(totalBytes, sentBytes)}%` : "Completed"}
-        </Text>
+        {sentBytes < totalBytes ? (
+          <Text className="grow" variant="b3" color="surface-low">
+            {`${getPercentage(totalBytes, sentBytes)}%`}
+          </Text>
+        ) : (
+          <div className="grow flex items-start gap-xxs">
+            <Text variant="b3" color="surface-low">
+              Uploaded
+            </Text>
+            <Icon size="sm" color="secondary" src={CheckIC} />
+          </div>
+        )}
         <Text variant="b3" color="surface-low">
           {sentBytes < totalBytes ? `${bytesToSize(sentBytes)} / ${bytesToSize(totalBytes)}` : bytesToSize(totalBytes)}
         </Text>
