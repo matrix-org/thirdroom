@@ -1762,12 +1762,12 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       node.uiCanvas = canvas;
 
-      const { width, height } = canvas;
+      const { size } = canvas;
 
       // setup collider
       const rigidBodyDesc = RAPIER.RigidBodyDesc.kinematicPositionBased();
       const rigidBody = physics.physicsWorld.createRigidBody(rigidBodyDesc);
-      const colliderDesc = RAPIER.ColliderDesc.cuboid(width / 2, height / 2, 0.01)
+      const colliderDesc = RAPIER.ColliderDesc.cuboid(size[0] / 2, size[1] / 2, 0.01)
         .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS)
         .setCollisionGroups(dynamicObjectCollisionGroups);
       physics.physicsWorld.createCollider(colliderDesc, rigidBody);
@@ -1912,7 +1912,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       return 0;
     },
 
-    // UI Flex
+    // UI Element
 
     world_create_ui_element(propsPtr: number) {
       moveCursorView(wasmCtx.cursorView, propsPtr);
