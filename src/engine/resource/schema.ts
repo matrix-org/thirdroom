@@ -501,7 +501,7 @@ export const UIImageResource = defineResource("ui-image", ResourceType.UIImage, 
 
 export const UIElementResource = defineResource("ui-element", ResourceType.UIElement, {
   name: PropType.string({ default: "UIElement", script: true }),
-  type: PropType.enum(ElementType, { required: true, mutable: false }),
+  type: PropType.enum(ElementType, { default: ElementType.Flex, mutable: false }),
 
   position: PropType.vec4({ script: true, mutable: true }),
 
@@ -541,7 +541,8 @@ export const UIElementResource = defineResource("ui-element", ResourceType.UIEle
     mutable: true,
   }),
 
-  flexBasis: PropType.f32({ script: true, mutable: true }),
+  // Negative values are auto
+  flexBasis: PropType.f32({ default: -1, script: true, mutable: true }),
 
   flexGrow: PropType.f32({ script: true, mutable: true, min: 0 }),
 
