@@ -4,24 +4,24 @@ layout: home
 
 hero:
   name: Third Room
-  text: Documentation for Third Room
-  tagline: Open, decentralised, immersive worlds built on Matrix
+  text: Documentation
+  tagline: Open, decentralized, immersive worlds built on Matrix
   actions:
     - theme: brand
       text: Get Started
-      link: /get-started
+      link: /guides/getting-started
 
 features:
   - icon: 👤
-    title: User Guide
-    details: Introduction to Third Room.
-    link: /get-started
-  - icon: 👨‍💻
-    title: Developer Guide
-    details: Learn more about Web Scene Graph API.
-    link: /get-started
+    title: Getting Started
+    details: Learn about Third Room's features and how to use them.
+    link: /guides/getting-started
   - icon: 🎨
     title: Creator Guide
-    details: Learn more about how to create content using Third Room Unity Exporter
-    link: /get-started
+    details: Learn more about how to create content using Third Room Unity Exporter and more.
+    link: /guides/creators
+  - icon: 👨‍💻
+    title: Developer Guide
+    details: Learn more about Web Scene Graph API and how to program Third Room worlds.
+    link: /guides/developers
 ---

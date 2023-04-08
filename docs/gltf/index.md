@@ -1,4 +1,4 @@
-# Third Room Supported glTF Extensions
+# glTF Extensions Overview
 
 Below is a list of the currently supported glTF extensions in Third Room and their specifications. Third Room is focused on trying to push forward standards for 3D content in the hopes of promoting interoperability. This means our content should work anywhere where these extensions are supported and anyone wanting to support Third Room's content can do so by implementing the extensions below. It also means any tool wishing to export to Third Room (Blender, Unity, Godot, etc.) should implement the following extensions. If you are looking to add support for any of the Matrix glTF extensions to your tool/engine/game let us know in the [Third Room chat](https://matrix.to/#/#thirdroom-dev:matrix.org).
 

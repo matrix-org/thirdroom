@@ -93,7 +93,7 @@ When used with the `EXT_mesh_gpu_instancing` extension:
 
 ### JSON Schema
 
-[scene.MX_background.schema.json](./schema/scene.MX_background.schema.json)
+[node.MX_lightmap.schema.json](./schema/node.MX_lightmap.schema.json)
 
 ## Known Implementations
 

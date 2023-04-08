@@ -46,8 +46,8 @@ Currently the only supported postprocessing effect is `bloom` which is an option
 
 ### JSON Schema
 
-[scene.MX_postprocessing.schema.json](./schema/scene.MX_postprocessing.schema.json)
-[bloom.schema.json](./schema/bloom.schema.json)
+- [scene.MX_postprocessing.schema.json](./schema/scene.MX_postprocessing.schema.json)
+- [bloom.schema.json](./schema/bloom.schema.json)
 
 ## Known Implementations
 
