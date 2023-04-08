@@ -169,6 +169,7 @@ function drawNode(
     parent = parent.parent;
   }
 
+  ctx2d.beginPath();
   ctx2d.roundRect(layout.left, layout.top, layout.width, layout.height, node.borderRadius);
   ctx2d.fill();
   ctx2d.stroke();
@@ -251,7 +252,7 @@ function updateYogaNode(child: RenderUIElement) {
   child.yogaNode.setPadding(FlexEdge.BOTTOM, child.padding[FlexEdge.BOTTOM]);
 
   child.yogaNode.setFlexDirection(child.flexDirection);
-  child.yogaNode.setFlexBasis(child.flexBasis);
+  if (child.flexBasis >= 0) child.yogaNode.setFlexBasis(child.flexBasis);
   child.yogaNode.setFlexWrap(child.flexWrap);
   child.yogaNode.setFlexGrow(child.flexGrow);
   child.yogaNode.setFlexShrink(child.flexShrink);
