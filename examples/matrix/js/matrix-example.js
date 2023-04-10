@@ -2,13 +2,13 @@ let tv;
 let tvState = false;
 
 onload = () => {
-  tv = WebSG.nodeFindByName("TV");
-  WebSG.addInteractable(tv);
+  tv = world.findNodeByName("TV");
+  tv.addInteractable();
 };
 
 onupdate = (dt) => {
-  if (WebSG.getInteractablePressed(tv)) {
+  if (tv.interactable.pressed) {
     tvState = !tvState;
-    ThirdRoom.enableMatrixMaterial(tvState);
+    thirdroom.enableMatrixMaterial(tvState);
   }
 };
