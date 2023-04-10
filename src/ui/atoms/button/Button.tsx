@@ -5,7 +5,7 @@ import { Text } from "../text/Text";
 
 import "./Button.css";
 export type ButtonVariant = "primary" | "secondary" | "danger";
-export type ButtonFill = "solid" | "outline";
+export type ButtonFill = "solid" | "outline" | "none";
 export type ButtonSize = "xs" | "sm" | "md" | "lg" | "xl" | "xxl";
 interface IButton {
   className?: string;
