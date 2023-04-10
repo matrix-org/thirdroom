@@ -1,7 +1,7 @@
 import { hasComponent } from "bitecs";
 import RAPIER from "@dimforge/rapier3d-compat";
 import { BoxGeometry } from "three";
-import { vec2 } from "@gltf-transform/core";
+import { vec2, vec4 } from "gl-matrix";
 
 import { GameState } from "../GameTypes";
 import { IRemoteResourceClass, RemoteResourceConstructor } from "../resource/RemoteResourceClass";
@@ -62,7 +62,6 @@ import {
   readUint32,
   readUint32Array,
   rewindCursorView,
-  skipBytes,
   skipUint32,
 } from "../allocator/CursorView";
 import { AccessorComponentTypeToTypedArray, AccessorTypeToElementSize } from "../accessor/accessor.common";
@@ -314,7 +313,6 @@ function readExtensionsAndExtras(
 }
 
 function readFloatList(wasmCtx: WASMModuleContext): Float32Array | undefined {
-  const rewind = rewindCursorView(wasmCtx.cursorView);
   const itemsPtr = readUint32(wasmCtx.cursorView);
   const count = readUint32(wasmCtx.cursorView);
 
@@ -322,29 +320,28 @@ function readFloatList(wasmCtx: WASMModuleContext): Float32Array | undefined {
     return undefined;
   }
 
+  const rewind = rewindCursorView(wasmCtx.cursorView);
   moveCursorView(wasmCtx.cursorView, itemsPtr);
   const arr = readFloat32Array(wasmCtx.cursorView, count);
   rewind();
-  skipBytes(wasmCtx.cursorView, 8);
   return arr;
 }
 
 function readStringLen(wasmCtx: WASMModuleContext): string {
-  const rewind = rewindCursorView(wasmCtx.cursorView);
   const strPtr = readUint32(wasmCtx.cursorView);
   const byteLength = readUint32(wasmCtx.cursorView);
+  const rewind = rewindCursorView(wasmCtx.cursorView);
   const value = readString(wasmCtx, strPtr, byteLength);
   rewind();
-  skipBytes(wasmCtx.cursorView, 8);
   return value;
 }
 
 function readList<T>(wasmCtx: WASMModuleContext, readItem: (wasmCtx: WASMModuleContext, index: number) => T): T[] {
   const items: T[] = [];
 
-  const rewind = rewindCursorView(wasmCtx.cursorView);
   const itemsPtr = readUint32(wasmCtx.cursorView);
   const count = readUint32(wasmCtx.cursorView);
+  const rewind = rewindCursorView(wasmCtx.cursorView);
   moveCursorView(wasmCtx.cursorView, itemsPtr);
 
   for (let i = 0; i < count; i++) {
@@ -352,7 +349,6 @@ function readList<T>(wasmCtx: WASMModuleContext, readItem: (wasmCtx: WASMModuleC
   }
 
   rewind();
-  skipBytes(wasmCtx.cursorView, 8);
 
   return items;
 }
@@ -379,15 +375,15 @@ function readRefMap<T extends RemoteResourceConstructor>(
   wasmCtx: WASMModuleContext,
   resourceConstructor: T
 ): { [key: string]: InstanceType<T> } {
-  const map: { [key: string]: InstanceType<T> } = {};
+  const map: { [key: number]: InstanceType<T> } = {};
 
-  const rewind = rewindCursorView(wasmCtx.cursorView);
   const itemsPtr = readUint32(wasmCtx.cursorView);
   const count = readUint32(wasmCtx.cursorView);
+  const rewind = rewindCursorView(wasmCtx.cursorView);
   moveCursorView(wasmCtx.cursorView, itemsPtr);
 
   for (let i = 0; i < count; i++) {
-    const key = readStringFromCursorView(wasmCtx);
+    const key = readEnum(wasmCtx, MeshPrimitiveAttributeIndex, "MeshPrimitiveAttributeIndex");
     const value = readResourceRef(wasmCtx, resourceConstructor);
 
     if (!value) {
@@ -398,13 +394,12 @@ function readRefMap<T extends RemoteResourceConstructor>(
   }
 
   rewind();
-  skipBytes(wasmCtx.cursorView, 8);
 
   return map;
 }
 
 // MaterialTextureInfoProps
-function readTextureInfo(
+function readBaseTextureInfo(
   wasmCtx: WASMModuleContext
 ): [RemoteTexture, vec2 | undefined, number | undefined, vec2 | undefined] {
   const extensions = readExtensionsAndExtras(wasmCtx, (wasmCtx, name) => {
@@ -436,20 +431,107 @@ function readTextureInfo(
   return [texture, undefined, undefined, undefined];
 }
 
+function readTextureInfo(
+  wasmCtx: WASMModuleContext
+): [RemoteTexture | undefined, vec2 | undefined, number | undefined, vec2 | undefined] {
+  const textureInfoPtr = readUint32(wasmCtx.cursorView);
+
+  if (textureInfoPtr === 0) {
+    return [undefined, undefined, undefined, undefined];
+  } else {
+    const rewind = rewindCursorView(wasmCtx.cursorView);
+    moveCursorView(wasmCtx.cursorView, textureInfoPtr);
+    const [texture, offset, rotation, scale] = readBaseTextureInfo(wasmCtx);
+    rewind();
+    return [texture, offset, rotation, scale];
+  }
+}
+
 function readNormalTextureInfo(
   wasmCtx: WASMModuleContext
-): [RemoteTexture, number | undefined, vec2 | undefined, number | undefined, vec2 | undefined] {
-  const [texture, offset, rotation, scale] = readTextureInfo(wasmCtx);
-  const normalScale = readFloat32(wasmCtx.cursorView);
-  return [texture, normalScale, offset, rotation, scale];
+): [RemoteTexture | undefined, number | undefined, vec2 | undefined, number | undefined, vec2 | undefined] {
+  const textureInfoPtr = readUint32(wasmCtx.cursorView);
+
+  if (textureInfoPtr === 0) {
+    return [undefined, undefined, undefined, undefined, undefined];
+  } else {
+    const rewind = rewindCursorView(wasmCtx.cursorView);
+    moveCursorView(wasmCtx.cursorView, textureInfoPtr);
+    const [texture, offset, rotation, scale] = readBaseTextureInfo(wasmCtx);
+    const normalScale = readFloat32(wasmCtx.cursorView);
+    rewind();
+    return [texture, normalScale, offset, rotation, scale];
+  }
 }
 
 function readOcclusionTextureInfo(
   wasmCtx: WASMModuleContext
-): [RemoteTexture, number | undefined, vec2 | undefined, number | undefined, vec2 | undefined] {
-  const [texture, offset, rotation, scale] = readTextureInfo(wasmCtx);
-  const occlusionStrength = readFloat32(wasmCtx.cursorView);
-  return [texture, occlusionStrength, offset, rotation, scale];
+): [RemoteTexture | undefined, number | undefined, vec2 | undefined, number | undefined, vec2 | undefined] {
+  const textureInfoPtr = readUint32(wasmCtx.cursorView);
+
+  if (textureInfoPtr === 0) {
+    return [undefined, undefined, undefined, undefined, undefined];
+  } else {
+    const rewind = rewindCursorView(wasmCtx.cursorView);
+    moveCursorView(wasmCtx.cursorView, textureInfoPtr);
+    const [texture, offset, rotation, scale] = readBaseTextureInfo(wasmCtx);
+    const occlusionStrength = readFloat32(wasmCtx.cursorView);
+    rewind();
+    return [texture, occlusionStrength, offset, rotation, scale];
+  }
+}
+
+interface PBRMetallicRoughnessProps {
+  baseColorFactor?: vec4;
+  baseColorTexture?: RemoteTexture;
+  baseColorTextureOffset?: vec2;
+  baseColorTextureRotation?: number;
+  baseColorTextureScale?: vec2;
+  metallicFactor?: number;
+  roughnessFactor?: number;
+  metallicRoughnessTexture?: RemoteTexture;
+  metallicRoughnessTextureOffset?: vec2;
+  metallicRoughnessTextureRotation?: number;
+  metallicRoughnessTextureScale?: vec2;
+}
+
+function readPBRMetallicRoughness(wasmCtx: WASMModuleContext): PBRMetallicRoughnessProps {
+  const pbrMetallicRoughnessPtr = readUint32(wasmCtx.cursorView);
+
+  if (pbrMetallicRoughnessPtr === 0) {
+    return {};
+  } else {
+    const rewind = rewindCursorView(wasmCtx.cursorView);
+    moveCursorView(wasmCtx.cursorView, pbrMetallicRoughnessPtr);
+    readExtensionsAndExtras(wasmCtx); // pbrMetallicRoughness extensions
+    const baseColorFactor = readFloat32Array(wasmCtx.cursorView, 4);
+    const [baseColorTexture, baseColorTextureOffset, baseColorTextureRotation, baseColorTextureScale] =
+      readTextureInfo(wasmCtx);
+    const metallicFactor = readFloat32(wasmCtx.cursorView);
+    const roughnessFactor = readFloat32(wasmCtx.cursorView);
+    const [
+      metallicRoughnessTexture,
+      metallicRoughnessTextureOffset,
+      metallicRoughnessTextureRotation,
+      metallicRoughnessTextureScale,
+    ] = readTextureInfo(wasmCtx);
+
+    rewind();
+
+    return {
+      baseColorFactor,
+      baseColorTexture,
+      baseColorTextureOffset,
+      baseColorTextureRotation,
+      baseColorTextureScale,
+      metallicFactor,
+      roughnessFactor,
+      metallicRoughnessTexture,
+      metallicRoughnessTextureOffset,
+      metallicRoughnessTextureRotation,
+      metallicRoughnessTextureScale,
+    };
+  }
 }
 
 interface MeshPrimitiveProps {
@@ -1250,10 +1332,20 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
         moveCursorView(wasmCtx.cursorView, propsPtr);
         const name = readStringFromCursorView(wasmCtx);
         const extensions = readExtensionsAndExtras(wasmCtx);
-        readExtensionsAndExtras(wasmCtx); // pbrMetallicRoughness extensions
-        const baseColorFactor = readFloat32Array(wasmCtx.cursorView, 4);
-        const [baseColorTexture, baseColorTextureOffset, baseColorTextureRotation, baseColorTextureScale] =
-          readTextureInfo(wasmCtx);
+
+        const {
+          baseColorFactor,
+          baseColorTexture,
+          baseColorTextureOffset,
+          baseColorTextureRotation,
+          baseColorTextureScale,
+          metallicFactor,
+          roughnessFactor,
+          metallicRoughnessTexture,
+          metallicRoughnessTextureOffset,
+          metallicRoughnessTextureRotation,
+          metallicRoughnessTextureScale,
+        } = readPBRMetallicRoughness(wasmCtx);
 
         if ("KHR_materials_unlit" in extensions) {
           const material = new RemoteMaterial(wasmCtx.resourceManager, {
@@ -1269,14 +1361,6 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
           return material.eid;
         }
 
-        const metallicFactor = readFloat32(wasmCtx.cursorView);
-        const roughnessFactor = readFloat32(wasmCtx.cursorView);
-        const [
-          metallicRoughnessTexture,
-          metallicRoughnessTextureOffset,
-          metallicRoughnessTextureRotation,
-          metallicRoughnessTextureScale,
-        ] = readTextureInfo(wasmCtx);
         const [normalTexture, normalScale, normalTextureOffset, normalTextureRotation, normalTextureScale] =
           readNormalTextureInfo(wasmCtx);
         const [

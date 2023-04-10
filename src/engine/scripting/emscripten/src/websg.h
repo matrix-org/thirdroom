@@ -326,10 +326,10 @@ typedef struct MaterialPbrMetallicRoughnessProps {
   Extensions extensions;
   void *extras;
   float_t base_color_factor[4];
-  MaterialTextureInfoProps base_color_texture;
+  MaterialTextureInfoProps *base_color_texture;
   float_t metallic_factor;
   float_t roughness_factor;
-  MaterialTextureInfoProps metallic_roughness_texture;
+  MaterialTextureInfoProps *metallic_roughness_texture;
   
 } MaterialPbrMetallicRoughnessProps;
 
@@ -337,10 +337,10 @@ typedef struct MaterialProps {
   const char *name;
   Extensions extensions;
   void *extras;
-  MaterialPbrMetallicRoughnessProps pbr_metallic_roughness;
-  MaterialNormalTextureInfoProps normal_texture;
-  MaterialOcclusionTextureInfoProps occlusion_texture;
-  MaterialTextureInfoProps emissive_texture;
+  MaterialPbrMetallicRoughnessProps *pbr_metallic_roughness;
+  MaterialNormalTextureInfoProps *normal_texture;
+  MaterialOcclusionTextureInfoProps *occlusion_texture;
+  MaterialTextureInfoProps *emissive_texture;
   float_t emissive_factor[3];
   MaterialAlphaMode alpha_mode;
   float_t alpha_cutoff;
