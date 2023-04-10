@@ -1,4 +1,4 @@
-import { hasComponent } from "bitecs";
+import { Component, defineQuery, hasComponent, Not } from "bitecs";
 import RAPIER from "@dimforge/rapier3d-compat";
 import { BoxGeometry } from "three";
 import { vec2 } from "@gltf-transform/core";
@@ -13,6 +13,7 @@ import {
   readStringFromCursorView,
   readUint8Array,
   WASMModuleContext,
+  writeEncodedString,
   writeFloat32Array,
   writeString,
 } from "./WASMModuleContext";
@@ -61,6 +62,7 @@ import {
   readFloat32Array,
   readUint32,
   readUint32Array,
+  readUint8,
   rewindCursorView,
   skipBytes,
   skipUint32,
@@ -79,6 +81,7 @@ import { addInteractableComponent } from "../../plugins/interaction/interaction.
 import { dynamicObjectCollisionGroups } from "../physics/CollisionGroups";
 import { addUIElementChild, removeUIElementChild } from "../ui/ui.game";
 import { startOrbit, stopOrbit } from "../../plugins/camera/CameraRig.game";
+import { ComponentPropertyType } from "../component/types";
 
 export function getScriptResource<T extends RemoteResourceConstructor>(
   wasmCtx: WASMModuleContext,
@@ -403,6 +406,36 @@ function readRefMap<T extends RemoteResourceConstructor>(
   return map;
 }
 
+enum QueryModifier {
+  Not = 1,
+}
+
+function readQuery(wasmCtx: WASMModuleContext, queryPtr: number, baseComponent: Component) {
+  moveCursorView(wasmCtx.cursorView, queryPtr);
+
+  const components = readList(wasmCtx, (wasmCtx, index) => {
+    const componentName = readStringFromCursorView(wasmCtx);
+    const modifier = readUint8(wasmCtx.cursorView);
+
+    const component = wasmCtx.registeredComponents.get(componentName);
+
+    if (!component) {
+      throw new Error(`WebSG: Component ${componentName} is not registered`);
+    }
+
+    if (modifier & QueryModifier.Not) {
+      return Not(component);
+    }
+
+    return component;
+  });
+
+  const query = defineQuery([baseComponent, ...components]);
+  const queryId = wasmCtx.nextQueryId++;
+  wasmCtx.registeredQueries.set(queryId, query);
+  return queryId;
+}
+
 // MaterialTextureInfoProps
 function readTextureInfo(
   wasmCtx: WASMModuleContext
@@ -596,6 +629,130 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
     world_find_node_by_name(namePtr: number, byteLength: number) {
       const node = getScriptResourceByNamePtr(ctx, wasmCtx, RemoteNode, namePtr, byteLength);
       return node ? node.eid : 0;
+    },
+    world_define_component(namePtr: number, byteLength: number, propsPtr: number) {
+      try {
+        const name = readString(wasmCtx, namePtr, byteLength);
+        moveCursorView(wasmCtx.cursorView, propsPtr);
+
+        readList(wasmCtx, () => {
+          const propName = readStringFromCursorView(wasmCtx);
+          const propType = read
+        });
+
+        wasmCtx.registeredComponents.set(name, component);
+      }
+    },
+    world_get_component_id(namePtr: number, byteLength: number) {
+      const name = readString(wasmCtx, namePtr, byteLength);
+      const component = wasmCtx.registeredComponents.get(name);
+
+      if (!component) {
+        return 0;
+      }
+
+      return wasmCtx.componentIdsByName.get(name) || 0;
+    },
+    world_get_component_property_count(componentId: number) {
+      const componentProperties = wasmCtx.componentPropertiesMap.get(componentId);
+      return componentProperties.length || 0;
+    },
+    world_get_component_property_definition(componentId: number, propertyIndex: number, outPtr: number) {
+      const componentProperties = wasmCtx.componentPropertiesMap.get(componentId);
+      const propertyDefinition = componentProperties[propertyIndex];
+      moveCursorView(wasmCtx.cursorView, outPtr);
+      writeStringToCursorView(wasmCtx, propertyDefinition.name);
+      writeEnumToCursorView(wasmCtx, ComponentPropertyType propertyDefinition.type);
+    },
+    node_get_component_property_vector3(nodeId: number, componentId: number, propertyIndex: number, outPtr: number) {
+      const component = wasmCtx.registeredComponentsById.get(componentId);
+
+      if (!component) {
+        return -1;
+      }
+
+      const propName = wasmCtx.componentPropertiesMap.get(componentId)[propertyIndex].name;
+
+      writeFloat32Array(wasmCtx, outPtr, component[propertyIndex])
+      
+    },
+    node_set_component_property_vector3(nodeId: number, componentId: number, propertyId: number, outPtr: number) {
+      
+    },
+    node_get_component_property_vector3_element(nodeId: number, componentId: number, propertyId: number, index: number) {
+
+    },
+    node_set_component_property_vector3_element(nodeId: number, componentId: number, propertyId: number, index: number, value: number) {
+
+    },
+    node_get_component_property_float(nodeId: number, componentId: number, propertyId: number) {
+
+    },
+    node_get_component_property_node(nodeId: number, componentId: number, propertyId: number) {
+
+    },
+    node_get_component_property_boolean(nodeId: number, componentId: number, propertyId: number) {
+
+    },
+    world_create_node_query(queryPtr: number) {
+      try {
+        return readQuery(wasmCtx, queryPtr, RemoteNode);
+      } catch (error) {
+        console.error(error);
+        return -1;
+      }
+    },
+    world_get_node_query_count(queryId: number) {
+      const query = wasmCtx.registeredQueries.get(queryId);
+
+      if (!query) {
+        console.error("WebSG: Query not found");
+        return -1;
+      }
+
+      const entities = query(ctx.world);
+
+      let count = 0;
+
+      for (let i = 0; i < entities.length; i++) {
+        const eid = entities[i];
+
+        if (wasmCtx.resourceManager.resourceIds.has(eid)) {
+          count++;
+        }
+      }
+
+      return count;
+    },
+    world_execute_node_query(queryId: number, nodeArrPtr: number, maxCount: number) {
+      const query = wasmCtx.registeredQueries.get(queryId);
+
+      if (!query) {
+        console.error("WebSG: Query not found");
+        return -1;
+      }
+
+      const entities = query(ctx.world);
+
+      if (entities.length > maxCount) {
+        console.error("WebSG: Query result count exceeds maxCount");
+        return -1;
+      }
+
+      const U32Heap = wasmCtx.U32Heap;
+
+      let idx = 0;
+
+      for (let i = 0; i < entities.length && i < maxCount; i++) {
+        const eid = entities[i];
+
+        if (wasmCtx.resourceManager.resourceIds.has(eid)) {
+          U32Heap[nodeArrPtr / 4 + idx] = eid;
+          idx++;
+        }
+      }
+
+      return idx;
     },
     node_add_child(nodeId: number, childId: number) {
       const node = getScriptResource(wasmCtx, RemoteNode, nodeId);

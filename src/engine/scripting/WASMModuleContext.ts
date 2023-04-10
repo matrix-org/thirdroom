@@ -1,3 +1,5 @@
+import { Component, Query } from "bitecs";
+
 import { CursorView, readUint32 } from "../allocator/CursorView";
 import { RemoteResourceManager } from "../GameTypes";
 import { toSharedArrayBuffer } from "../utils/arraybuffer";
@@ -12,6 +14,9 @@ export interface WASMModuleContext {
   cursorView: CursorView;
   encodedJSSource?: Uint8Array;
   resourceManager: RemoteResourceManager;
+  registeredComponents: Map<string, Component>;
+  nextQueryId: number;
+  registeredQueries: Map<number, Query>;
 }
 
 export function writeString(wasmCtx: WASMModuleContext, ptr: number, value: string, maxBufLength?: number) {
@@ -82,7 +87,7 @@ export function readUint8Array(wasmCtx: WASMModuleContext, ptr: number, byteLeng
   return wasmCtx.U8Heap.subarray(ptr, ptr + byteLength);
 }
 
-export function writeUint32Array(wasmCtx: WASMModuleContext, ptr: number, array: Uint8Array) {
+export function writeUint32Array(wasmCtx: WASMModuleContext, ptr: number, array: Uint32Array) {
   wasmCtx.U32Heap.set(array, ptr / 4);
   return array.byteLength;
 }

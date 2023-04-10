@@ -1,4 +1,4 @@
-import { addComponent, defineQuery, exitQuery } from "bitecs";
+import { addComponent, defineQuery, exitQuery, removeQuery } from "bitecs";
 
 import scriptingRuntimeWASMUrl from "./emscripten/build/scripting-runtime.wasm?url";
 import { createCursorView } from "../allocator/CursorView";
@@ -77,6 +77,9 @@ export async function loadScript(
     cursorView: createCursorView(memory.buffer, true),
     textDecoder: new TextDecoder(),
     textEncoder: new TextEncoder(),
+    registeredComponents: new Map(),
+    nextQueryId: 0,
+    registeredQueries: new Map(),
   };
 
   let wasmBuffer: ArrayBuffer | undefined;
@@ -223,6 +226,12 @@ export async function loadScript(
     dispose() {
       disposeMatrixWASMModule(ctx);
       disposeWebSGNetworkModule(ctx);
+
+      for (const query of wasmCtx.registeredQueries.values()) {
+        removeQuery(ctx.world, query);
+      }
+
+      // TODO: Figure out how to free component bit
     },
   };
 

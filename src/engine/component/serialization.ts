@@ -9,7 +9,7 @@ export type ComponentPropertyGetter<T extends ComponentPropertyType = ComponentP
 export const ComponentPropertyGetters: {
   [T in ComponentPropertyType]: (store: ComponentPropertyStore<T>) => ComponentPropertyGetter<T>;
 } = {
-  [ComponentPropertyType.vec3]: (store) => (state, eid) => {
+  [ComponentPropertyType.Vector3]: (store) => (state, eid) => {
     return store[eid];
   },
 };
@@ -23,7 +23,7 @@ export type ComponentPropertySetter<T extends ComponentPropertyType = ComponentP
 export const ComponentPropertySetters: {
   [T in ComponentPropertyType]: (store: ComponentPropertyStore<T>) => ComponentPropertySetter<T>;
 } = {
-  [ComponentPropertyType.vec3]: (store) => (state, eid, value) => {
+  [ComponentPropertyType.Vector3]: (store) => (state, eid, value) => {
     store[eid].set(value);
   },
 };

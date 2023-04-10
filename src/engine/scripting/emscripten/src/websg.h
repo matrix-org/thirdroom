@@ -52,6 +52,58 @@ typedef struct Extensions {
   uint32_t count;
 } Extensions;
 
+typedef struct QueryItem {
+  const char *component_name;
+  uint8_t modifier;
+} QueryItem;
+
+typedef struct Query {
+  QueryItem *items;
+  uint32_t count;
+} Query;
+
+typedef enum ComponentPropertyType {
+  Int8,
+  Int16,
+  Int32,
+  Uint8,
+  Uint16,
+  Uint32,
+  Float32,
+  Float64,
+  Boolean,
+  String,
+  Vector2,
+  Vector3,
+  Vector4,
+  Quaternion,
+  RGB,
+  RGBA,
+  Matrix3,
+  Matrix4,
+  Node,
+} ComponentPropertyType;
+
+typedef struct ComponentProperty {
+  const char *name;
+  ComponentPropertyType type;
+  void *default_value;
+  Extensions extensions;
+  void *extras;
+} ComponentProperty;
+
+typedef struct ComponentPropertyList {
+  ComponentProperty *items;
+  uint32_t count;
+} ComponentPropertyList;
+
+typedef struct ComponentDefinition {
+  WebSGString name;
+  ComponentPropertyList *props;
+  Extensions extensions;
+  void *extras;
+} ComponentDefinition;
+
 /*********
  * World *
  *********/
@@ -96,6 +148,7 @@ typedef struct NodeProps {
 
 import_websg(world_create_node) node_id_t websg_world_create_node(NodeProps *props);
 import_websg(world_find_node_by_name) node_id_t websg_world_find_node_by_name(const char *name, uint32_t length);
+import_websg(world_create_node_query) node_id_t websg_world_create_node_query(Query *query);
 import_websg(node_add_child) int32_t websg_node_add_child(node_id_t node_id, node_id_t child_id);
 import_websg(node_remove_child) int32_t websg_node_remove_child(node_id_t node_id, node_id_t child_id);
 import_websg(node_get_child_count) int32_t websg_node_get_child_count(node_id_t node_id);
