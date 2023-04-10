@@ -17,24 +17,22 @@ onload = () => {
   materialButton = world.findNodeByName("MaterialButton");
   materialButton.addInteractable();
 
-  leftCubeMaterial = world.findMaterialByName("Bricks");
+  leftCubeMaterial = world.findNodeByName("LeftCube").mesh.primitives[0].material;
   bricksTexture = leftCubeMaterial.baseColorTexture;
 
-  rightCubeMaterial = world.findMaterialByName("Planks");
+  rightCubeMaterial = world.findNodeByName("RightCube").mesh.primitives[0].material;
   planksTexture = rightCubeMaterial.baseColorTexture;
 
   room1Switch = world.findNodeByName("Room1Switch");
   room1Switch.addInteractable();
 
   const room1LightNode = world.findNodeByName("Room1Light");
-  room1LightNode.isStatic = false;
   room1Light = room1LightNode.light;
 
   room2Switch = world.findNodeByName("Room2Switch");
   room2Switch.addInteractable();
 
   const room2LightNode = world.findNodeByName("Room2Light");
-  room2LightNode.isStatic = false;
   room2Light = room2LightNode.light;
 };
 
