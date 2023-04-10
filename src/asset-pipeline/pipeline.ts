@@ -5,11 +5,13 @@ import { textureResize } from "@gltf-transform/functions";
 import { KHRAudioExtension } from "./extensions/KHRAudioExtension";
 import { MXBackgroundExtension } from "./extensions/MXBackgroundExtension";
 import { MXLightmapExtension } from "./extensions/MXLightmapExtension";
+import { MXLightsShadowsExtension } from "./extensions/MXLightsShadows";
 import { MXPortalExtension } from "./extensions/MXPortalExtension";
 import { MXPostprocessingExtension } from "./extensions/MXPostprocessing";
 import { MXReflectionProbesExtension } from "./extensions/MXReflectionProbesExtension";
 import { MXSceneARExtension } from "./extensions/MXSceneAR";
 import { MXSpawnPointExtension } from "./extensions/MXSpawnPointExtension";
+import { MXStaticExtension } from "./extensions/MXStatic";
 import { MXTextureRGBMExtension } from "./extensions/MXTextureRGBM";
 import { OMIColliderExtension } from "./extensions/OMIColliderExtension";
 import { OMILinkExtension } from "./extensions/OMILinkExtension";
@@ -23,10 +25,12 @@ export function registerExtensions(io: PlatformIO) {
     ...ALL_EXTENSIONS,
     KHRAudioExtension,
     MXLightmapExtension,
+    MXLightsShadowsExtension,
     MXReflectionProbesExtension,
     MXBackgroundExtension,
     MXSceneARExtension,
     MXSpawnPointExtension,
+    MXStaticExtension,
     MXPostprocessingExtension,
     MXPortalExtension,
     MXTextureRGBMExtension,
