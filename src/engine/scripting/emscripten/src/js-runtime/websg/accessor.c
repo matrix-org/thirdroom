@@ -187,7 +187,7 @@ JSValue js_websg_world_create_accessor_from(JSContext *ctx, JSValueConst this_va
 
   JSValue props_obj = argv[1];
 
-  AccessorFromProps *props = js_malloc(ctx, sizeof(AccessorFromProps));
+  AccessorFromProps *props = js_mallocz(ctx, sizeof(AccessorFromProps));
 
   JSValue type_val = JS_GetPropertyStr(ctx, props_obj, "type");
 

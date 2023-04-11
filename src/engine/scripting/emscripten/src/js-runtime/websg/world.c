@@ -110,7 +110,7 @@ JSValue js_websg_new_world(JSContext *ctx) {
     return world;
   }
 
-  WebSGWorldData *world_data = js_malloc(ctx, sizeof(WebSGWorldData));
+  WebSGWorldData *world_data = js_mallocz(ctx, sizeof(WebSGWorldData));
   world_data->accessors = JS_NewObject(ctx);
   world_data->colliders = JS_NewObject(ctx);
   world_data->lights = JS_NewObject(ctx);

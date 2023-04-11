@@ -51,7 +51,7 @@ static JSValue js_receive(JSContext *ctx, JSValueConst this_val, int argc, JSVal
     return JS_UNDEFINED;
   }
 
-  uint8_t *target = js_malloc(ctx, packet_byte_length);
+  uint8_t *target = js_mallocz(ctx, packet_byte_length);
   JSValue array_buffer = JS_NewArrayBuffer(ctx, target, packet_byte_length, js_receive_buffer_free, NULL, 0);
 
   int32_t read_bytes = websg_network_receive(target, packet_byte_length);

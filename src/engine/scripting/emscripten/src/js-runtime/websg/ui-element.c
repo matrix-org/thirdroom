@@ -833,7 +833,7 @@ JSValue js_websg_ui_element_children(JSContext *ctx, JSValueConst this_val, int 
     return JS_EXCEPTION;
   }
 
-  ui_element_id_t *children = js_malloc(ctx, sizeof(ui_element_id_t) * count);
+  ui_element_id_t *children = js_mallocz(ctx, sizeof(ui_element_id_t) * count);
 
   if (websg_ui_element_get_children(ui_element_data->ui_element_id, children, count) == -1) {
     JS_ThrowInternalError(ctx, "WebSG: Error getting UIElement children.");

@@ -52,7 +52,7 @@ export int32_t websg_initialize() {
   on_enter_atom = JS_NewAtom(ctx, "onenter");
 
   int32_t source_len = thirdroom_get_js_source_size();
-  char *source = js_malloc(ctx, source_len); // TODO: can we free this after JS_Eval?
+  char *source = js_mallocz(ctx, source_len); // TODO: can we free this after JS_Eval?
   int32_t read_source_len = thirdroom_get_js_source(source);
 
   JSValue val = JS_Eval(ctx, source, read_source_len, "<environment-script>", JS_EVAL_TYPE_GLOBAL);

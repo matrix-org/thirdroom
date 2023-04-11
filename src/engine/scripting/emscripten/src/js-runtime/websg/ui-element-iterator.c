@@ -78,7 +78,7 @@ JSValue js_websg_create_ui_element_iterator(JSContext *ctx, WebSGWorldData *worl
     return JS_EXCEPTION;
   }
 
-  JSWebSGUIElementIteratorData *it = js_malloc(ctx, sizeof(JSWebSGUIElementIteratorData));
+  JSWebSGUIElementIteratorData *it = js_mallocz(ctx, sizeof(JSWebSGUIElementIteratorData));
 
   if (!it) {
     JS_FreeValue(ctx, iter_obj);

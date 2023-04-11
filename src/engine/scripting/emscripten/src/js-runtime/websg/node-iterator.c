@@ -78,7 +78,7 @@ JSValue js_websg_create_node_iterator(JSContext *ctx, WebSGWorldData *world_data
     return JS_EXCEPTION;
   }
 
-  JSWebSGNodeIteratorData *it = js_malloc(ctx, sizeof(JSWebSGNodeIteratorData));
+  JSWebSGNodeIteratorData *it = js_mallocz(ctx, sizeof(JSWebSGNodeIteratorData));
 
   if (!it) {
     JS_FreeValue(ctx, iter_obj);

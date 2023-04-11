@@ -100,7 +100,7 @@ JSValue js_websg_node_children(JSContext *ctx, JSValueConst this_val, int argc, 
     return JS_EXCEPTION;
   }
 
-  node_id_t *children = js_malloc(ctx, sizeof(node_id_t) * count);
+  node_id_t *children = js_mallocz(ctx, sizeof(node_id_t) * count);
 
   if (websg_node_get_children(node_data->node_id, children, count) == -1) {
     JS_ThrowInternalError(ctx, "WebSG: Error getting node children.");

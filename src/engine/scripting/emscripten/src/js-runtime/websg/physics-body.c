@@ -116,7 +116,7 @@ JSValue js_websg_init_node_physics_body(JSContext *ctx, node_id_t node_id) {
 JSValue js_websg_node_add_physics_body(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
   WebSGNodeData *node_data = JS_GetOpaque(this_val, js_websg_node_class_id);
 
-  PhysicsBodyProps *props = js_malloc(ctx, sizeof(PhysicsBodyProps));
+  PhysicsBodyProps *props = js_mallocz(ctx, sizeof(PhysicsBodyProps));
 
   JSValue typeVal = JS_GetPropertyStr(ctx, argv[0], "type");
 

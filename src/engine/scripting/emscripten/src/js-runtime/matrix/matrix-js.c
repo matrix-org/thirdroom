@@ -60,7 +60,7 @@ static JSValue js_matrix_receive(JSContext *ctx, JSValueConst this_val, int argc
     return JS_UNDEFINED;
   }
 
-  char* event = js_malloc(ctx, byte_length);
+  char* event = js_mallocz(ctx, byte_length);
   int32_t read_bytes = matrix_receive(event, byte_length);
 
   if (read_bytes == 0) {
@@ -85,5 +85,5 @@ void js_define_matrix_api(JSContext *ctx) {
   JS_SetPropertyStr(ctx, matrix, "close", JS_NewCFunction(ctx, js_matrix_close, "close", 0));
   JS_SetPropertyStr(ctx, matrix, "receive", JS_NewCFunction(ctx, js_matrix_receive, "receive", 0));
   JS_SetPropertyStr(ctx, matrix, "send", JS_NewCFunction(ctx, js_matrix_send, "send", 1));
-  JS_SetPropertyStr(ctx, global, "Matrix", matrix);
+  JS_SetPropertyStr(ctx, global, "matrix", matrix);
 }

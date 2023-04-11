@@ -79,7 +79,7 @@ static JSValue js_websg_scene_nodes(JSContext *ctx, JSValueConst this_val, int a
     return JS_EXCEPTION;
   }
 
-  node_id_t *nodes = js_malloc(ctx, sizeof(node_id_t) * count);
+  node_id_t *nodes = js_mallocz(ctx, sizeof(node_id_t) * count);
 
   if (websg_scene_get_nodes(scene_data->scene_id, nodes, count) == -1) {
     JS_ThrowInternalError(ctx, "WebSG: Error getting scene nodes.");

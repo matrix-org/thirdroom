@@ -30,13 +30,18 @@
 #include "./world.h"
 
 static JSValue js_start_orbit(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
-  node_id_t node_id;
-
-  if (JS_ToUint32(ctx, &node_id, argv[0]) == -1) {
+  if (JS_IsUndefined(argv[0])) {
+    JS_ThrowTypeError(ctx, "WebSG: Invalid arguments for startOrbit()");
     return JS_EXCEPTION;
   }
 
-  CameraRigOptions *options = js_malloc(ctx, sizeof(CameraRigOptions));
+  WebSGNodeData *node_data = JS_GetOpaque2(ctx, argv[0], js_websg_node_class_id);
+
+  if (node_data == NULL) {
+    return JS_EXCEPTION;
+  }
+
+  CameraRigOptions *options = js_mallocz(ctx, sizeof(CameraRigOptions));
 
   if (!JS_IsUndefined(argv[1])) { 
 
@@ -70,7 +75,7 @@ static JSValue js_start_orbit(JSContext *ctx, JSValueConst this_val, int argc, J
   }
 
 
-  int32_t result = websg_node_start_orbit(node_id, options);
+  int32_t result = websg_node_start_orbit(node_data->node_id, options);
 
   if (result == -1) {
     JS_ThrowInternalError(ctx, "WebSG: Error starting orbit.");
@@ -81,12 +86,6 @@ static JSValue js_start_orbit(JSContext *ctx, JSValueConst this_val, int argc, J
 }
 
 static JSValue js_stop_orbit(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
-  node_id_t node_id;
-
-  if (JS_ToUint32(ctx, &node_id, argv[0]) == -1) {
-    return JS_EXCEPTION;
-  }
-
   int32_t result = websg_stop_orbit();
 
   if (result == -1) {
