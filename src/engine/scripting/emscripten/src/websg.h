@@ -478,6 +478,12 @@ import_websg(node_has_physics_body) int32_t websg_node_has_physics_body(node_id_
  * UI Canvas
  **/
 
+typedef struct UIExtensionNodeCanvasRef {
+  Extensions extensions;
+  void *extras;
+  ui_canvas_id_t canvas;
+} UIExtensionNodeCanvasRef;
+
 typedef struct UICanvasProps {
   const char *name;
   Extensions extensions;
@@ -689,17 +695,22 @@ import_websg(ui_button_get_released) int32_t websg_ui_button_get_released(ui_ele
  ******************************/
 
 import_websg(ui_text_get_value_length) int32_t websg_ui_text_get_value_length(ui_element_id_t element_id);
-import_websg(ui_text_get_value) int32_t websg_ui_text_get_value(ui_element_id_t element_id, char *value, size_t length);
+import_websg(ui_text_get_value) int32_t websg_ui_text_get_value(ui_element_id_t element_id, const char *value, size_t length);
 import_websg(ui_text_set_value) int32_t websg_ui_text_set_value(ui_element_id_t element_id, const char *value, size_t length);
 import_websg(ui_text_get_font_family_length) int32_t websg_ui_text_get_font_family_length(ui_element_id_t element_id);
-import_websg(ui_text_get_font_family) int32_t websg_ui_text_get_font_family(ui_element_id_t element_id, char *font_family, size_t length);
+import_websg(ui_text_get_font_family) int32_t websg_ui_text_get_font_family(ui_element_id_t element_id, const char *font_family, size_t length);
 import_websg(ui_text_set_font_family) int32_t websg_ui_text_set_font_family(ui_element_id_t element_id, const char *font_family, size_t length);
 import_websg(ui_text_get_font_style_length) int32_t websg_ui_text_get_font_style_length(ui_element_id_t element_id);
-import_websg(ui_text_get_font_style) int32_t websg_ui_text_get_font_style(ui_element_id_t element_id, char *font_style, size_t length);
+import_websg(ui_text_get_font_style) int32_t websg_ui_text_get_font_style(ui_element_id_t element_id, const char *font_style, size_t length);
 import_websg(ui_text_set_font_style) int32_t websg_ui_text_set_font_style(ui_element_id_t element_id, const char *font_style, size_t length);
+import_websg(ui_text_get_font_weight_length) int32_t websg_ui_text_get_font_weight_length(ui_element_id_t element_id);
+import_websg(ui_text_get_font_weight) int32_t websg_ui_text_get_font_weight(ui_element_id_t element_id, const char *font_weight, size_t length);
+import_websg(ui_text_set_font_weight) int32_t websg_ui_text_set_font_weight(ui_element_id_t element_id, const char *font_style, size_t length);
 import_websg(ui_text_get_font_size) float_t websg_ui_text_get_font_size(ui_element_id_t element_id);
 import_websg(ui_text_set_font_size) int32_t websg_ui_text_set_font_size(ui_element_id_t element_id, float_t font_size);
 import_websg(ui_text_get_color) int32_t websg_ui_text_get_color(ui_element_id_t element_id, float_t *color);
 import_websg(ui_text_set_color) int32_t websg_ui_text_set_color(ui_element_id_t element_id, float_t *color);
+import_websg(ui_text_get_color_element) float_t websg_ui_text_get_color_element(ui_element_id_t ui_element_id, uint32_t index);
+import_websg(ui_text_set_color_element) int32_t websg_ui_text_set_color_element(ui_element_id_t ui_element_id, uint32_t index, float_t value);
 
 #endif

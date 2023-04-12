@@ -453,6 +453,7 @@ JSValue js_websg_world_create_node(JSContext *ctx, JSValue this_val, int argc, J
   props->scale[2] = 1.0f;
 
   if (!JS_IsUndefined(argv[0])) {
+    uint32_t extension_count = 0;
 
     JSValue name_val = JS_GetPropertyStr(ctx, argv[0], "name");
 
@@ -476,6 +477,23 @@ JSValue js_websg_world_create_node(JSContext *ctx, JSValue this_val, int argc, J
       }
 
       props->mesh = mesh_data->mesh_id;
+    }
+
+    JSValue ui_canvas_val = JS_GetPropertyStr(ctx, argv[0], "uiCanvas");
+
+    UIExtensionNodeCanvasRef *ui_extension = NULL;
+
+    if (!JS_IsUndefined(ui_canvas_val)) {
+      WebSGUICanvasData *ui_canvas_data = JS_GetOpaque2(ctx, ui_canvas_val, js_websg_ui_canvas_class_id);
+
+      if (ui_canvas_data == NULL) {
+        js_free(ctx, props);
+        return JS_EXCEPTION;
+      }
+
+      ui_extension = js_mallocz(ctx, sizeof(UIExtensionNodeCanvasRef));
+      ui_extension->canvas = ui_canvas_data->ui_canvas_id;
+      extension_count++;
     }
 
     JSValue translation_val = JS_GetPropertyStr(ctx, argv[0], "translation");
@@ -502,6 +520,19 @@ JSValue js_websg_world_create_node(JSContext *ctx, JSValue this_val, int argc, J
       if (js_get_float_array_like(ctx, scale_val, props->scale, 3) < 0) {
         js_free(ctx, props);
         return JS_EXCEPTION;
+      }
+    }
+
+    if (ui_extension != NULL) {
+      props->extensions.count = extension_count;
+      props->extensions.items = js_mallocz(ctx, sizeof(ExtensionItem) * extension_count);
+
+      uint32_t extension_index = 0;
+
+      if (ui_extension != NULL) {
+        props->extensions.items[extension_index].name = strdup("MX_ui");
+        props->extensions.items[extension_index].extension = ui_extension;
+        extension_index++;
       }
     }
 

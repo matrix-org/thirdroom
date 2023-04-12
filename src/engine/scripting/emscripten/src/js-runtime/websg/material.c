@@ -1,3 +1,4 @@
+#include <string.h>
 #include "../quickjs/cutils.h"
 #include "../quickjs/quickjs.h"
 #include "../../websg.h"
@@ -246,7 +247,7 @@ JSValue js_websg_world_create_unlit_material(JSContext *ctx, JSValueConst this_v
   MaterialProps *props = js_mallocz(ctx, sizeof(MaterialProps));
   props->extensions.count = 1;
   props->extensions.items = js_mallocz(ctx, sizeof(ExtensionItem));
-  props->extensions.items[0].name = "KHR_materials_unlit";
+  props->extensions.items[0].name = strdup("KHR_materials_unlit");
   props->extensions.items[0].extension = NULL;
 
   JSValue name_val = JS_GetPropertyStr(ctx, argv[0], "name");
@@ -319,7 +320,7 @@ JSValue js_websg_world_create_unlit_material(JSContext *ctx, JSValueConst this_v
   if (!JS_IsUndefined(alpha_mode_val)) {
     MaterialAlphaMode alpha_mode = get_alpha_mode_from_atom(JS_ValueToAtom(ctx, alpha_mode_val));
 
-    if (alpha_mode < 0) {
+    if (alpha_mode == -1) {
       JS_ThrowTypeError(ctx, "WebSG: Invalid alpha mode.");
       return JS_EXCEPTION;
     }
@@ -396,7 +397,7 @@ JSValue js_websg_world_create_material(JSContext *ctx, JSValueConst this_val, in
   if (!JS_IsUndefined(alpha_mode_val)) {
     MaterialAlphaMode alpha_mode = get_alpha_mode_from_atom(JS_ValueToAtom(ctx, alpha_mode_val));
 
-    if (alpha_mode < 0) {
+    if (alpha_mode == -1) {
       JS_ThrowTypeError(ctx, "WebSG: Invalid alpha mode.");
       js_free(ctx, props);
       return JS_EXCEPTION;

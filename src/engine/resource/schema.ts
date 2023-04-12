@@ -568,8 +568,8 @@ export const UIElementResource = defineResource("ui-element", ResourceType.UIEle
   borderColor: PropType.rgba({ script: true, mutable: true }),
 
   // TODO: vec4 alias
-  padding: PropType.rgba({ script: true, mutable: true }),
-  margin: PropType.rgba({ script: true, mutable: true }),
+  padding: PropType.vec4({ script: true, mutable: true }),
+  margin: PropType.vec4({ script: true, mutable: true }),
   borderWidth: PropType.vec4({ script: true, mutable: true }),
   borderRadius: PropType.vec4({ script: true, mutable: true }),
 

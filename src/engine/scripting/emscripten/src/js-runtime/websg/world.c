@@ -16,6 +16,7 @@
 #include "./scene.h"
 #include "./ui-canvas.h"
 #include "./ui-element.h"
+#include "./ui-text.h"
 
 JSClassID js_websg_world_class_id;
 
@@ -71,6 +72,7 @@ static const JSCFunctionListEntry js_websg_world_proto_funcs[] = {
   JS_CFUNC_DEF("createUICanvas", 1, js_websg_world_create_ui_canvas),
   JS_CFUNC_DEF("findUICanvasByName", 1, js_websg_world_find_ui_canvas_by_name),
   JS_CFUNC_DEF("createUIElement", 1, js_websg_world_create_ui_element),
+  JS_CFUNC_DEF("createUIText", 1, js_websg_world_create_ui_text),
   JS_CFUNC_DEF("findUIElementByName", 1, js_websg_world_find_ui_element_by_name),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "World", JS_PROP_CONFIGURABLE),
 };
