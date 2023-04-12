@@ -5,3 +5,10 @@
     margin-top: var(--sp-lg);
   }
 }
+
+.WorldSettings__empty-state {
+  visibility: hidden;
+  &:only-child {
+    visibility: visible;
+  }
+}
