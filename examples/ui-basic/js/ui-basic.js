@@ -9,6 +9,7 @@ onload = () => {
         width: 1024,
         height: 1024,
         backgroundColor: [0, 0, 0, 0.5],
+        alignItems: "flex-start",
       }),
     }),
   });
