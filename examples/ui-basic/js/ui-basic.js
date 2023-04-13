@@ -15,7 +15,15 @@ onload = () => {
 
   canvasNode.uiCanvas.root.addChild(
     world.createUIText({
+      padding: [6, 6, 6, 6],
       value: "Test",
+      backgroundColor: [1, 1, 1, 1],
+    })
+  );
+
+  canvasNode.uiCanvas.root.addChild(
+    world.createUIButton({
+      value: "Test Button",
     })
   );
 

@@ -75,8 +75,7 @@ import {
 import { getModule } from "../module/module.common";
 import { createMesh } from "../mesh/mesh.game";
 import { addInteractableComponent } from "../../plugins/interaction/interaction.game";
-import { dynamicObjectCollisionGroups } from "../physics/CollisionGroups";
-import { addUIElementChild, removeUIElementChild } from "../ui/ui.game";
+import { addUIElementChild, initNodeUICanvas, removeUIElementChild } from "../ui/ui.game";
 import { startOrbit, stopOrbit } from "../../plugins/camera/CameraRig.game";
 
 export function getScriptResource<T extends RemoteResourceConstructor>(
@@ -668,7 +667,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
         const position = readFloat32Array(wasmCtx.cursorView, 3); // translation
         readFloatList(wasmCtx); // weights (currently unused)
 
-        return new RemoteNode(wasmCtx.resourceManager, {
+        const node = new RemoteNode(wasmCtx.resourceManager, {
           camera,
           skin,
           mesh,
@@ -677,7 +676,13 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
           position,
           name,
           uiCanvas,
-        }).eid;
+        });
+
+        if (uiCanvas) {
+          initNodeUICanvas(ctx, physics, node);
+        }
+
+        return node.eid;
       } catch (error) {
         console.error("WebSG: Error creating node:", error);
         return 0;
@@ -1853,20 +1858,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       }
 
       node.uiCanvas = canvas;
-
-      const { size } = canvas;
-
-      // setup collider
-      const rigidBodyDesc = RAPIER.RigidBodyDesc.kinematicPositionBased();
-      const rigidBody = physics.physicsWorld.createRigidBody(rigidBodyDesc);
-      const colliderDesc = RAPIER.ColliderDesc.cuboid(size[0] / 2, size[1] / 2, 0.01)
-        .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS)
-        .setCollisionGroups(dynamicObjectCollisionGroups);
-      physics.physicsWorld.createCollider(colliderDesc, rigidBody);
-
-      addRigidBody(ctx, node, rigidBody);
-
-      addInteractableComponent(ctx, physics, node, InteractableType.UI);
+      initNodeUICanvas(ctx, physics, node);
 
       return 0;
     },
@@ -2059,7 +2051,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       let text: RemoteUIText | undefined = undefined;
 
-      if (type === ElementType.Text) {
+      if (type === ElementType.Text || type === ElementType.Button) {
         const rewind = rewindCursorView(wasmCtx.cursorView);
         moveCursorView(wasmCtx.cursorView, textPtr);
         readExtensionsAndExtras(wasmCtx);

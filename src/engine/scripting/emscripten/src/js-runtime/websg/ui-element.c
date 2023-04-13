@@ -5,6 +5,7 @@
 #include "./websg-js.h"
 #include "./ui-element.h"
 #include "./ui-text.h"
+#include "./ui-button.h"
 #include "./rgba.h"
 #include "./vector4.h"
 #include "./ui-element-iterator.h"
@@ -779,6 +780,10 @@ static JSValue js_websg_ui_element_add_child(JSContext *ctx, JSValueConst this_v
   }
 
   if (child_data == NULL) {
+    child_data = JS_GetOpaque(argv[0], js_websg_ui_button_class_id);
+  }
+
+  if (child_data == NULL) {
     JS_ThrowTypeError(ctx, "WebSG: Invalid child UIElement.");
     return JS_EXCEPTION;
   }
@@ -800,6 +805,10 @@ static JSValue js_websg_ui_element_remove_child(JSContext *ctx, JSValueConst thi
 
   if (child_data == NULL) {
     child_data = JS_GetOpaque(argv[0], js_websg_ui_text_class_id);
+  }
+
+  if (child_data == NULL) {
+    child_data = JS_GetOpaque(argv[0], js_websg_ui_button_class_id);
   }
 
   if (child_data == NULL) {
@@ -1061,6 +1070,8 @@ JSValue js_websg_get_ui_element_by_id(JSContext *ctx, WebSGWorldData *world_data
     return js_websg_new_ui_element_instance(ctx, world_data, ui_element_id);
   } else if (type == ElementType_TEXT) {
     return js_websg_new_ui_text_instance(ctx, world_data, ui_element_id);
+  } else if (type == ElementType_BUTTON) {
+    return js_websg_new_ui_button_instance(ctx, world_data, ui_element_id);
   } else {
     return JS_UNDEFINED;
   }

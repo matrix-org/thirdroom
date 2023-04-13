@@ -684,8 +684,8 @@ import_websg(ui_element_get_parent) ui_element_id_t websg_ui_element_get_parent(
  ********************************/
 
 import_websg(ui_button_get_label_length) int32_t websg_ui_button_get_label_length(ui_element_id_t element_id);
-import_websg(ui_button_get_label) int32_t websg_ui_button_get_label(ui_element_id_t element_id, char *label, size_t length);
-import_websg(ui_button_set_label) int32_t websg_ui_button_set_label(ui_element_id_t element_id, char *label, size_t length);
+import_websg(ui_button_get_label) int32_t websg_ui_button_get_label(ui_element_id_t element_id, const char *label, size_t length);
+import_websg(ui_button_set_label) int32_t websg_ui_button_set_label(ui_element_id_t element_id, const char *label, size_t length);
 import_websg(ui_button_get_pressed) int32_t websg_ui_button_get_pressed(ui_element_id_t element_id);
 import_websg(ui_button_get_held) int32_t websg_ui_button_get_held(ui_element_id_t element_id);
 import_websg(ui_button_get_released) int32_t websg_ui_button_get_released(ui_element_id_t element_id);

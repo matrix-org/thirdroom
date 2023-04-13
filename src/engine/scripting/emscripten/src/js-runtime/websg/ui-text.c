@@ -239,7 +239,7 @@ void js_websg_define_ui_text(JSContext *ctx, JSValue websg) {
   JS_NewClassID(&js_websg_ui_text_class_id);
   JS_NewClass(JS_GetRuntime(ctx), js_websg_ui_text_class_id, &js_websg_ui_text_class);
   JSValue ui_text_proto = JS_NewObject(ctx);
-  JSValue ui_element_proto = JS_GetClassProto(ctx, js_websg_ui_text_class_id);
+  JSValue ui_element_proto = JS_GetClassProto(ctx, js_websg_ui_element_class_id);
   JS_SetPropertyFunctionList(ctx, ui_text_proto, js_websg_ui_text_proto_funcs, countof(js_websg_ui_text_proto_funcs));
   JS_SetPrototype(ctx, ui_text_proto, ui_element_proto);
   JS_SetClassProto(ctx, js_websg_ui_text_class_id, ui_text_proto);
@@ -286,6 +286,90 @@ JSValue js_websg_new_ui_text_instance(JSContext *ctx, WebSGWorldData *world_data
  * World Methods
  **/
 
+int js_websg_parse_ui_text_props(
+  JSContext *ctx,
+  WebSGWorldData *world_data,
+  UITextProps *props,
+  JSValueConst arg
+) {
+  JSValue value_val = JS_GetPropertyStr(ctx, arg, "value");
+
+  if (!JS_IsUndefined(value_val)) {
+    size_t value_len;
+    props->value.value = JS_ToCStringLen(ctx, &value_len, value_val);
+    props->value.length = (uint32_t)value_len;
+
+    if (props->value.value == NULL) {
+      return -1;
+    }
+  }
+
+  JSValue font_family_val = JS_GetPropertyStr(ctx, arg, "fontFamily");
+
+  if (!JS_IsUndefined(font_family_val)) {
+    size_t font_style_len;
+    props->font_family.value = JS_ToCStringLen(ctx, &font_style_len, font_family_val);
+    props->font_family.length = (uint32_t)font_style_len;
+
+    if (props->font_family.value == NULL) {
+      return -1;
+    }
+  }
+
+  JSValue font_style_val = JS_GetPropertyStr(ctx, arg, "fontStyle");
+
+  if (!JS_IsUndefined(font_style_val)) {
+    size_t font_style_len;
+    props->font_style.value = JS_ToCStringLen(ctx, &font_style_len, font_style_val);
+    props->font_style.length = (uint32_t)font_style_len;
+
+    if (props->font_style.value == NULL) {
+      return -1;
+    }
+  }
+
+  JSValue font_weight_val = JS_GetPropertyStr(ctx, arg, "fontWeight");
+
+  if (!JS_IsUndefined(font_weight_val)) {
+    size_t font_weight_len;
+    props->font_weight.value = JS_ToCStringLen(ctx, &font_weight_len, font_weight_val);
+    props->font_weight.length = (uint32_t)font_weight_len;
+
+    if (props->font_weight.value == NULL) {
+      return -1;
+    }
+  }
+
+  JSValue color_val = JS_GetPropertyStr(ctx, arg, "color");
+
+  if (!JS_IsUndefined(color_val)) {
+    if (js_get_float_array_like(ctx, color_val, props->color, 4) < 0) {
+      return -1;
+    }
+  } else {
+    props->color[0] = 0.0f;
+    props->color[1] = 0.0f;
+    props->color[2] = 0.0f;
+    props->color[3] = 1.0f;
+  }
+
+  JSValue font_size_val = JS_GetPropertyStr(ctx, arg, "fontSize");
+
+  if (!JS_IsUndefined(font_size_val)) {
+    double_t font_size;
+
+    if (JS_ToFloat64(ctx, &font_size, font_size_val) == -1) {
+      return -1;
+    }
+
+    props->font_size = (float_t)font_size;
+  } else {
+    props->font_size = 16.0f;
+  }
+
+  return 0;
+}
+
 JSValue js_websg_world_create_ui_text(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
   WebSGWorldData *world_data = JS_GetOpaque(this_val, js_websg_world_class_id);
 
@@ -315,79 +399,8 @@ JSValue js_websg_world_create_ui_text(JSContext *ctx, JSValueConst this_val, int
     return JS_EXCEPTION;
   }
 
-  JSValue value_val = JS_GetPropertyStr(ctx, argv[0], "value");
-
-  if (!JS_IsUndefined(value_val)) {
-    size_t value_len;
-    text_props->value.value = JS_ToCStringLen(ctx, &value_len, value_val);
-    text_props->value.length = (uint32_t)value_len;
-
-    if (text_props->value.value == NULL) {
-      return JS_EXCEPTION;
-    }
-  }
-
-  JSValue font_family_val = JS_GetPropertyStr(ctx, argv[0], "fontFamily");
-
-  if (!JS_IsUndefined(font_family_val)) {
-    size_t font_style_len;
-    text_props->font_family.value = JS_ToCStringLen(ctx, &font_style_len, font_family_val);
-    text_props->font_family.length = (uint32_t)font_style_len;
-
-    if (text_props->font_family.value == NULL) {
-      return JS_EXCEPTION;
-    }
-  }
-
-  JSValue font_style_val = JS_GetPropertyStr(ctx, argv[0], "fontStyle");
-
-  if (!JS_IsUndefined(font_style_val)) {
-    size_t font_style_len;
-    text_props->font_style.value = JS_ToCStringLen(ctx, &font_style_len, font_style_val);
-    text_props->font_style.length = (uint32_t)font_style_len;
-
-    if (text_props->font_style.value == NULL) {
-      return JS_EXCEPTION;
-    }
-  }
-
-  JSValue font_weight_val = JS_GetPropertyStr(ctx, argv[0], "fontWeight");
-
-  if (!JS_IsUndefined(font_weight_val)) {
-    size_t font_weight_len;
-    text_props->font_weight.value = JS_ToCStringLen(ctx, &font_weight_len, font_weight_val);
-    text_props->font_weight.length = (uint32_t)font_weight_len;
-
-    if (text_props->font_weight.value == NULL) {
-      return JS_EXCEPTION;
-    }
-  }
-
-  JSValue color_val = JS_GetPropertyStr(ctx, argv[0], "color");
-
-  if (!JS_IsUndefined(color_val)) {
-    if (js_get_float_array_like(ctx, color_val, text_props->color, 4) < 0) {
-      return JS_EXCEPTION;
-    }
-  } else {
-    text_props->color[0] = 0.0f;
-    text_props->color[1] = 0.0f;
-    text_props->color[2] = 0.0f;
-    text_props->color[3] = 1.0f;
-  }
-
-  JSValue font_size_val = JS_GetPropertyStr(ctx, argv[0], "fontSize");
-
-  if (!JS_IsUndefined(font_size_val)) {
-    double_t font_size;
-
-    if (JS_ToFloat64(ctx, &font_size, font_size_val) == -1) {
-      return JS_EXCEPTION;
-    }
-
-    text_props->font_size = (float_t)font_size;
-  } else {
-    text_props->font_size = 16.0f;
+  if (js_websg_parse_ui_text_props(ctx, world_data, props->text, argv[0]) < 0) {
+    return JS_EXCEPTION;
   }
 
   ui_element_id_t ui_element_id = websg_world_create_ui_element(props);

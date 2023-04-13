@@ -1,5 +1,4 @@
 import { TilesRenderer } from "3d-tiles-renderer";
-import Yoga from "@react-pdf/yoga";
 import {
   Bone,
   BufferAttribute,
@@ -627,6 +626,7 @@ export class RenderSkin extends defineLocalResourceClass(SkinResource) {
 export class RenderInteractable extends defineLocalResourceClass(InteractableResource) {}
 
 export class RenderUIText extends defineLocalResourceClass(UITextResource) {}
+
 export class RenderUIButton extends defineLocalResourceClass(UIButtonResource) {}
 export class RenderUIImage extends defineLocalResourceClass(UIImageResource) {
   declare source: RenderImage;
@@ -645,13 +645,19 @@ export class RenderUIElement extends defineLocalResourceClass(UIElementResource)
   declare button: RenderUIButton;
   declare image: RenderUIImage;
 
-  yogaNode: Yoga.Node;
+  layout: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } = { x: 0, y: 0, width: 0, height: 0 };
 }
 
 export class RenderUICanvas extends defineLocalResourceClass(UICanvasResource) {
   declare root: RenderUIElement;
   canvasTexture?: CanvasTexture;
   canvas?: OffscreenCanvas;
+  ctx2d?: OffscreenCanvasRenderingContext2D;
   lastRedraw = 0;
 }
 export class RenderCollider extends defineLocalResourceClass(ColliderResource) {
