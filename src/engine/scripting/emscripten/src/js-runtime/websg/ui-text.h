@@ -10,11 +10,11 @@ void js_websg_define_ui_text(JSContext *ctx, JSValue websg);
 
 JSValue js_websg_world_create_ui_text(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 
-void js_define_ui_element_props(
+void js_define_ui_text_props(
   JSContext *ctx,
   WebSGWorldData *world_data,
   ui_element_id_t ui_element_id,
-  JSValue ui_element
+  JSValue ui_text
 );
 
 int js_websg_parse_ui_text_props(

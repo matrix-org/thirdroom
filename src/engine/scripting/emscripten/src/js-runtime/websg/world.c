@@ -52,6 +52,15 @@ static JSValue js_websg_world_set_environment(JSContext *ctx, JSValueConst this_
   return JS_UNDEFINED;
 }
 
+static JSValue js_websg_world_stop_orbit(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  if (websg_world_stop_orbit() == -1) {
+    JS_ThrowInternalError(ctx, "WebSG: Error stopping orbit.");
+    return JS_EXCEPTION;
+  }
+
+  return JS_UNDEFINED;
+}
+
 static const JSCFunctionListEntry js_websg_world_proto_funcs[] = {
   JS_CGETSET_DEF("environment", js_websg_world_get_environment, js_websg_world_set_environment),
   JS_CFUNC_DEF("createAccessorFrom", 1, js_websg_world_create_accessor_from),
@@ -76,6 +85,7 @@ static const JSCFunctionListEntry js_websg_world_proto_funcs[] = {
   JS_CFUNC_DEF("createUIText", 1, js_websg_world_create_ui_text),
   JS_CFUNC_DEF("createUIButton", 1, js_websg_world_create_ui_button),
   JS_CFUNC_DEF("findUIElementByName", 1, js_websg_world_find_ui_element_by_name),
+  JS_CFUNC_DEF("stopOrbit", 0, js_websg_world_stop_orbit),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "World", JS_PROP_CONFIGURABLE),
 };
 

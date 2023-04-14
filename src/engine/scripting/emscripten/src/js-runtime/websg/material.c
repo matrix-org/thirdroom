@@ -47,22 +47,6 @@ static JSClassDef js_websg_material_class = {
   .finalizer = js_websg_material_finalizer
 };
 
-static float_t js_websg_material_get_base_color_factor_element(uint32_t material_id, float_t *color, int index) {
-  websg_material_get_base_color_factor(material_id, color);
-  return color[index];
-}
-
-static void js_websg_material_set_base_color_factor_element(
-  uint32_t material_id,
-  float_t *color,
-  int index,
-  float_t value
-) {
-  websg_material_get_base_color_factor(material_id, color);
-  color[index] = value;
-  websg_material_set_base_color_factor(material_id, color);
-}
-
 static JSValue js_websg_material_get_metallic_factor(JSContext *ctx, JSValueConst this_val) {
   WebSGMaterialData *material_data = JS_GetOpaque(this_val, js_websg_material_class_id);
 
@@ -115,22 +99,6 @@ static JSValue js_websg_material_set_roughness_factor(JSContext *ctx, JSValueCon
   }
 
   return JS_UNDEFINED;
-}
-
-static float_t js_websg_material_get_emissive_factor_element(uint32_t material_id, float_t *color, int index) {
-  websg_material_get_emissive_factor(material_id, color);
-  return color[index];
-}
-
-static void js_websg_material_set_emissive_factor_element(
-  uint32_t material_id,
-  float_t *color,
-  int index,
-  float_t value
-) {
-  websg_material_get_emissive_factor(material_id, color);
-  color[index] = value;
-  websg_material_set_emissive_factor(material_id, color);
 }
 
 static JSValue js_websg_material_get_base_color_texture(JSContext *ctx, JSValueConst this_val) {
@@ -202,8 +170,9 @@ JSValue js_websg_new_material_instance(JSContext *ctx, WebSGWorldData *world_dat
     material,
     "baseColorFactor",
     material_id,
-    &js_websg_material_get_base_color_factor_element,
-    &js_websg_material_set_base_color_factor_element
+    &websg_material_get_base_color_factor_element,
+    &websg_material_set_base_color_factor_element,
+    &websg_material_set_base_color_factor
   );
 
   js_websg_define_rgb_prop(
@@ -211,8 +180,9 @@ JSValue js_websg_new_material_instance(JSContext *ctx, WebSGWorldData *world_dat
     material,
     "emissiveFactor",
     material_id,
-    &js_websg_material_get_emissive_factor_element,
-    &js_websg_material_set_emissive_factor_element
+    &websg_material_get_emissive_factor_element,
+    &websg_material_set_emissive_factor_element,
+    &websg_material_set_emissive_factor
   );
 
   WebSGMaterialData *material_data = js_mallocz(ctx, sizeof(WebSGMaterialData));

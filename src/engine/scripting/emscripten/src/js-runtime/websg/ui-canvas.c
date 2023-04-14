@@ -58,17 +58,6 @@ static JSValue js_websg_ui_canvas_set_root(JSContext *ctx, JSValueConst this_val
   return JS_UNDEFINED;
 }
 
-static float_t js_websg_ui_canvas_get_size_element(uint32_t ui_canvas_id, float_t *size, int index) {
-  websg_ui_canvas_get_size(ui_canvas_id, size);
-  return size[index];
-}
-
-static void js_websg_ui_canvas_set_size_element(uint32_t ui_canvas_id, float_t *size, int index, float_t value) {
-  websg_ui_canvas_get_size(ui_canvas_id, size);
-  size[index] = value;
-  websg_ui_canvas_set_size(ui_canvas_id, size);
-}
-
 static JSValue js_websg_ui_canvas_get_width(JSContext *ctx, JSValueConst this_val) {
   WebSGUICanvasData *ui_canvas_data = JS_GetOpaque(this_val, js_websg_ui_canvas_class_id);
 
@@ -184,8 +173,9 @@ JSValue js_websg_new_ui_canvas_instance(JSContext *ctx, WebSGWorldData *world_da
     ui_canvas,
     "size",
     ui_canvas_id,
-    &js_websg_ui_canvas_get_size_element,
-    &js_websg_ui_canvas_set_size_element
+    &websg_ui_canvas_get_size_element,
+    &websg_ui_canvas_set_size_element,
+    &websg_ui_canvas_set_size
   );
 
   WebSGUICanvasData *ui_canvas_data = js_mallocz(ctx, sizeof(WebSGUICanvasData));

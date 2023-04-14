@@ -228,54 +228,6 @@ static JSClassDef js_websg_ui_element_class = {
   .finalizer = js_websg_ui_element_finalizer
 };
 
-static float_t js_websg_ui_element_get_background_color_element(uint32_t ui_element_id, float_t *background_color, int index) {
-  return websg_ui_element_get_background_color_element(ui_element_id, index);
-}
-
-static void js_websg_ui_element_set_background_color_element(uint32_t ui_element_id, float_t *background_color, int index, float_t value) {
-  websg_ui_element_set_background_color_element(ui_element_id, index, value);
-}
-
-static float_t js_websg_ui_element_get_border_color_element(uint32_t ui_element_id, float_t *border_color, int index) {
-  return websg_ui_element_get_border_color_element(ui_element_id, index);
-}
-
-static void js_websg_ui_element_set_border_color_element(uint32_t ui_element_id, float_t *border_color, int index, float_t value) {
-  websg_ui_element_set_border_color_element(ui_element_id, index, value);
-}
-
-static float_t js_websg_ui_element_get_padding_element(uint32_t ui_element_id, float_t *padding, int index) {
-  return websg_ui_element_get_padding_element(ui_element_id, index);
-}
-
-static void js_websg_ui_element_set_padding_element(uint32_t ui_element_id, float_t *padding, int index, float_t value) {
-  websg_ui_element_set_padding_element(ui_element_id, index, value);
-}
-
-static float_t js_websg_ui_element_get_margin_element(uint32_t ui_element_id, float_t *margin, int index) {
-  return websg_ui_element_get_margin_element(ui_element_id, index);
-}
-
-static void js_websg_ui_element_set_margin_element(uint32_t ui_element_id, float_t *margin, int index, float_t value) {
-  websg_ui_element_set_margin_element(ui_element_id, index, value);
-}
-
-static float_t js_websg_ui_element_get_border_width_element(uint32_t ui_element_id, float_t *border_width, int index) {
-  return websg_ui_element_get_border_width_element(ui_element_id, index);
-}
-
-static void js_websg_ui_element_set_border_width_element(uint32_t ui_element_id, float_t *border_width, int index, float_t value) {
-  websg_ui_element_set_border_width_element(ui_element_id, index, value);
-}
-
-static float_t js_websg_ui_element_get_border_radius_element(uint32_t ui_element_id, float_t *border_radius, int index) {
-  return websg_ui_element_get_border_radius_element(ui_element_id, index);
-}
-
-static void js_websg_ui_element_set_border_radius_element(uint32_t ui_element_id, float_t *border_radius, int index, float_t value) {
-  websg_ui_element_set_border_radius_element(ui_element_id, index, value);
-}
-
 static JSValue js_websg_ui_element_get_flex_direction(JSContext *ctx, JSValueConst this_val) {
   WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
 
@@ -793,7 +745,7 @@ static JSValue js_websg_ui_element_add_child(JSContext *ctx, JSValueConst this_v
     return JS_EXCEPTION;
   }
 
-  return this_val;
+  return JS_DupValue(ctx, this_val);
 }
 
 static JSValue js_websg_ui_element_remove_child(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
@@ -821,7 +773,7 @@ static JSValue js_websg_ui_element_remove_child(JSContext *ctx, JSValueConst thi
     return JS_EXCEPTION;
   }
 
-  return this_val;
+  return JS_DupValue(ctx, this_val);
 }
 
 static JSValue js_websg_ui_element_get_child(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
@@ -984,8 +936,9 @@ void js_define_ui_element_props(
     ui_element,
     "backgroundColor",
     ui_element_id,
-    &js_websg_ui_element_get_background_color_element,
-    &js_websg_ui_element_set_background_color_element
+    &websg_ui_element_get_background_color_element,
+    &websg_ui_element_set_background_color_element,
+    &websg_ui_element_set_background_color
   );
 
   js_websg_define_rgba_prop(
@@ -993,8 +946,9 @@ void js_define_ui_element_props(
     ui_element,
     "borderColor",
     ui_element_id,
-    &js_websg_ui_element_get_border_color_element,
-    &js_websg_ui_element_set_border_color_element
+    &websg_ui_element_get_border_color_element,
+    &websg_ui_element_set_border_color_element,
+    &websg_ui_element_set_border_color
   );
 
   js_websg_define_vector4_prop(
@@ -1002,8 +956,9 @@ void js_define_ui_element_props(
     ui_element,
     "padding",
     ui_element_id,
-    &js_websg_ui_element_get_padding_element,
-    &js_websg_ui_element_set_padding_element
+    &websg_ui_element_get_padding_element,
+    &websg_ui_element_set_padding_element,
+    &websg_ui_element_set_padding
   );
 
   js_websg_define_vector4_prop(
@@ -1011,8 +966,9 @@ void js_define_ui_element_props(
     ui_element,
     "margin",
     ui_element_id,
-    &js_websg_ui_element_get_margin_element,
-    &js_websg_ui_element_set_margin_element
+    &websg_ui_element_get_margin_element,
+    &websg_ui_element_set_margin_element,
+    &websg_ui_element_set_margin
   );
 
   js_websg_define_vector4_prop(
@@ -1020,8 +976,9 @@ void js_define_ui_element_props(
     ui_element,
     "borderWidth",
     ui_element_id,
-    &js_websg_ui_element_get_border_width_element,
-    &js_websg_ui_element_set_border_width_element
+    &websg_ui_element_get_border_width_element,
+    &websg_ui_element_set_border_width_element,
+    &websg_ui_element_set_border_width
   );
 
   js_websg_define_vector4_prop(
@@ -1029,16 +986,10 @@ void js_define_ui_element_props(
     ui_element,
     "borderRadius",
     ui_element_id,
-    &js_websg_ui_element_get_border_radius_element,
-    &js_websg_ui_element_set_border_radius_element
+    &websg_ui_element_get_border_radius_element,
+    &websg_ui_element_set_border_radius_element,
+    &websg_ui_element_set_border_radius
   );
-
-  WebSGUIElementData *ui_element_data = js_mallocz(ctx, sizeof(WebSGUIElementData));
-  ui_element_data->world_data = world_data;
-  ui_element_data->ui_element_id = ui_element_id;
-  JS_SetOpaque(ui_element, ui_element_data);
-
-  JS_SetPropertyUint32(ctx, world_data->ui_elements, ui_element_id, JS_DupValue(ctx, ui_element));
 }
 
 JSValue js_websg_new_ui_element_instance(JSContext *ctx, WebSGWorldData *world_data, ui_element_id_t ui_element_id) {
@@ -1049,6 +1000,13 @@ JSValue js_websg_new_ui_element_instance(JSContext *ctx, WebSGWorldData *world_d
   }
 
   js_define_ui_element_props(ctx, world_data, ui_element_id, ui_element);
+
+  WebSGUIElementData *element_data = js_mallocz(ctx, sizeof(WebSGUIElementData));
+  element_data->world_data = world_data;
+  element_data->ui_element_id = ui_element_id;
+  JS_SetOpaque(ui_element, element_data);
+
+  JS_SetPropertyUint32(ctx, world_data->ui_elements, ui_element_id, JS_DupValue(ctx, ui_element));
   
   return ui_element;
 }

@@ -7,8 +7,9 @@ typedef struct WebSGMatrix4Data {
   uint32_t resource_id;
   float_t elements[16];
   int read_only;
-  float_t (*get)(uint32_t resource_id, float_t *elements, int index);
-  void (*set)(uint32_t resource_id, float_t *element, int index, float_t value);
+  float_t (*get)(uint32_t resource_id, uint32_t index);
+  int32_t (*set)(uint32_t resource_id, uint32_t index, float_t value);
+  int32_t (*set_array)(uint32_t resource_id, float_t *array);
 } WebSGMatrix4Data;
 
 extern JSClassID js_websg_matrix4_class_id;
@@ -20,8 +21,9 @@ int js_websg_define_matrix4_prop(
   JSValue obj,
   const char *name,
   uint32_t resource_id,
-  float_t (*get)(uint32_t resource_id, float_t *elements, int index),
-  void (*set)(uint32_t resource_id, float_t *elements, int index, float_t value)
+  float_t (*get)(uint32_t resource_id, uint32_t index),
+  int32_t (*set)(uint32_t resource_id, uint32_t index, float_t value),
+  int32_t (*set_array)(uint32_t resource_id, float_t *array)
 );
 
 int js_websg_define_matrix4_prop_read_only(
@@ -29,7 +31,7 @@ int js_websg_define_matrix4_prop_read_only(
   JSValue obj,
   const char *name,
   uint32_t resource_id,
-  float_t (*get)(uint32_t resource_id, float_t *elements, int index)
+  float_t (*get)(uint32_t resource_id, uint32_t index)
 );
 
 #endif

@@ -89,8 +89,8 @@ export function traverseUIElements(
 function findHitButton(uiCanvas: RenderUICanvas, hitPoint: vec3): RenderUIButton | undefined {
   const { size, width, height, root } = uiCanvas;
 
-  const x = (hitPoint[0] + 0.5) * (width / size[0]);
-  const y = (-hitPoint[1] + 0.5) * (height / size[1]);
+  const x = Math.ceil(((hitPoint[0] + size[0] / 2) / size[0]) * width);
+  const y = Math.ceil((1 - (hitPoint[1] + size[1] / 2) / size[1]) * height);
 
   let button;
 

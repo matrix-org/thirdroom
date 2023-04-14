@@ -27,14 +27,6 @@ static JSClassDef js_websg_ui_text_class = {
   .finalizer = js_websg_ui_text_finalizer
 };
 
-static float_t js_websg_ui_text_get_color_element(uint32_t ui_element_id, float_t *color, int index) {
-  return websg_ui_text_get_color_element(ui_element_id, index);
-}
-
-static void js_websg_ui_text_set_color_element(uint32_t ui_element_id, float_t *color, int index, float_t value) {
-  websg_ui_text_set_color_element(ui_element_id, index, value);
-}
-
 static JSValue js_websg_ui_text_get_value(JSContext *ctx, JSValueConst this_val) {
   WebSGUIElementData *ui_text_data = JS_GetOpaque(this_val, js_websg_ui_text_class_id);
 
@@ -261,13 +253,12 @@ void js_websg_define_ui_text(JSContext *ctx, JSValue websg) {
   );
 }
 
-JSValue js_websg_new_ui_text_instance(JSContext *ctx, WebSGWorldData *world_data, ui_element_id_t ui_element_id) {
-  JSValue ui_text = JS_NewObjectClass(ctx, js_websg_ui_text_class_id);
-
-  if (JS_IsException(ui_text)) {
-    return ui_text;
-  }
-
+void js_define_ui_text_props(
+  JSContext *ctx,
+  WebSGWorldData *world_data,
+  ui_element_id_t ui_element_id,
+  JSValue ui_text
+) {
   js_define_ui_element_props(ctx, world_data, ui_element_id, ui_text);
 
   js_websg_define_rgba_prop(
@@ -275,9 +266,27 @@ JSValue js_websg_new_ui_text_instance(JSContext *ctx, WebSGWorldData *world_data
     ui_text,
     "color",
     ui_element_id,
-    &js_websg_ui_text_get_color_element,
-    &js_websg_ui_text_set_color_element
+    &websg_ui_text_get_color_element,
+    &websg_ui_text_set_color_element,
+    &websg_ui_text_set_color
   );
+}
+
+JSValue js_websg_new_ui_text_instance(JSContext *ctx, WebSGWorldData *world_data, ui_element_id_t ui_element_id) {
+  JSValue ui_text = JS_NewObjectClass(ctx, js_websg_ui_text_class_id);
+
+  if (JS_IsException(ui_text)) {
+    return ui_text;
+  }
+
+  js_define_ui_text_props(ctx, world_data, ui_element_id, ui_text);
+
+  WebSGUIElementData *element_data = js_mallocz(ctx, sizeof(WebSGUIElementData));
+  element_data->world_data = world_data;
+  element_data->ui_element_id = ui_element_id;
+  JS_SetOpaque(ui_text, element_data);
+
+  JS_SetPropertyUint32(ctx, world_data->ui_elements, ui_element_id, JS_DupValue(ctx, ui_text));
   
   return ui_text;
 }

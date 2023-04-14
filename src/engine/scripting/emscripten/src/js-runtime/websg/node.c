@@ -49,7 +49,7 @@ static JSValue js_websg_node_add_child(JSContext *ctx, JSValueConst this_val, in
     return JS_EXCEPTION;
   }
 
-  return this_val;
+  return JS_DupValue(ctx, this_val);
 }
 
 static JSValue js_websg_node_remove_child(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
@@ -68,7 +68,7 @@ static JSValue js_websg_node_remove_child(JSContext *ctx, JSValueConst this_val,
     return JS_EXCEPTION;
   }
 
-  return this_val;
+  return JS_DupValue(ctx, this_val);
 }
 
 static JSValue js_websg_node_get_child(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
@@ -273,40 +273,50 @@ static JSValue js_websg_node_set_ui_canvas(JSContext *ctx, JSValueConst this_val
   return JS_UNDEFINED;
 }
 
-static float_t js_websg_node_get_translation_element(uint32_t node_id, float_t *translation, int index) {
-  return websg_node_get_translation_element(node_id, index);
-}
+static JSValue js_websg_node_start_orbit(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  WebSGNodeData *node_data = JS_GetOpaque(this_val, js_websg_node_class_id);
 
-static void js_websg_node_set_translation_element(uint32_t node_id, float_t *translation, int index, float_t value) {
-  websg_node_set_translation_element(node_id, index, value);
-}
+  CameraRigOptions *options = js_mallocz(ctx, sizeof(CameraRigOptions));
 
-static float_t js_websg_node_get_rotation_element(uint32_t node_id, float_t *rotation, int index) {
-  return websg_node_get_rotation_element(node_id, index);
-}
+  if (!JS_IsUndefined(argv[0])) { 
 
-static void js_websg_node_set_rotation_element(uint32_t node_id, float_t *rotation, int index, float_t value) {
-  websg_node_set_rotation_element(node_id, index, value);
-}
+    JSValue pitch_val = JS_GetPropertyStr(ctx, argv[0], "pitch");
+    if (!JS_IsUndefined(pitch_val)) {
+      double_t pitch;
+      if (JS_ToFloat64(ctx, &pitch, pitch_val) == -1) {
+        return JS_EXCEPTION;
+      }
+      options->pitch = (float_t)pitch;
+    }
 
-static float_t js_websg_node_get_scale_element(uint32_t node_id, float_t *scale, int index) {
-  return websg_node_get_scale_element(node_id, index);
-}
+    JSValue yaw_val = JS_GetPropertyStr(ctx, argv[0], "yaw");
+    if (!JS_IsUndefined(yaw_val)) {
+      double_t yaw;
+      if (JS_ToFloat64(ctx, &yaw, yaw_val) == -1) {
+        return JS_EXCEPTION;
+      }
+      options->yaw = (float_t)yaw;
+    }
 
-static void js_websg_node_set_scale_element(uint32_t node_id, float_t *scale, int index, float_t value) {
-  websg_node_set_scale_element(node_id, index, value);
-}
+    JSValue zoom_val = JS_GetPropertyStr(ctx, argv[0], "zoom");
+    if (!JS_IsUndefined(zoom_val)) {
+      double_t zoom;
+      if (JS_ToFloat64(ctx, &zoom, zoom_val) == -1) {
+        return JS_EXCEPTION;
+      }
+      options->zoom = (float_t)zoom;
+    }
 
-static float_t js_websg_node_get_matrix_element(uint32_t node_id, float_t *matrix, int index) {
-  return websg_node_get_matrix_element(node_id, index);
-}
+  }
 
-static void js_websg_node_set_matrix_element(uint32_t node_id, float_t *matrix, int index, float_t value) {
-  websg_node_set_matrix_element(node_id, index, value);
-}
+  if (websg_node_start_orbit(node_data->node_id, options) == -1) {
+    js_free(ctx, options);
+    JS_ThrowInternalError(ctx, "WebSG: Error starting orbit.");
+    return JS_EXCEPTION;
+  }
 
-static float_t js_websg_node_get_world_matrix_element(uint32_t node_id, float_t *world_matrix, int index) {
-  return websg_node_get_world_matrix_element(node_id, index);
+  js_free(ctx, options);
+  return JS_UNDEFINED;
 }
 
 // Implement the addChild and removeChild methods
@@ -317,7 +327,7 @@ static const JSCFunctionListEntry js_websg_node_proto_funcs[] = {
   JS_CFUNC_DEF("children", 0, js_websg_node_children),
   JS_CGETSET_DEF("parent", js_websg_node_parent, NULL),
   JS_CGETSET_DEF("isStatic", js_websg_node_get_is_static, js_websg_node_set_is_static),
-  JS_CGETSET_DEF("visible", js_websg_node_get_is_static, js_websg_node_set_is_static),
+  JS_CGETSET_DEF("visible", js_websg_node_get_visible, js_websg_node_set_visible),
   JS_CGETSET_DEF("mesh", js_websg_node_get_mesh, js_websg_node_set_mesh),
   JS_CGETSET_DEF("light", js_websg_node_get_light, js_websg_node_set_light),
   JS_CGETSET_DEF("collider", js_websg_node_get_collider, js_websg_node_set_collider),
@@ -328,7 +338,8 @@ static const JSCFunctionListEntry js_websg_node_proto_funcs[] = {
   JS_CGETSET_DEF("physicsBody", js_websg_node_get_physics_body, NULL),
   JS_CFUNC_DEF("addPhysicsBody", 1, js_websg_node_add_physics_body),
   JS_CFUNC_DEF("removePhysicsBody", 0, js_websg_node_remove_physics_body),
-  JS_PROP_STRING_DEF("[Symbol.toStringTag]", "WebSGNode", JS_PROP_CONFIGURABLE),
+  JS_CFUNC_DEF("startOrbit", 1, js_websg_node_start_orbit),
+  JS_PROP_STRING_DEF("[Symbol.toStringTag]", "Node", JS_PROP_CONFIGURABLE),
 };
 
 static JSValue js_websg_node_constructor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
@@ -371,8 +382,9 @@ JSValue js_websg_new_node_instance(JSContext *ctx, WebSGWorldData *world_data, n
     node,
     "translation",
     node_id,
-    &js_websg_node_get_translation_element,
-    &js_websg_node_set_translation_element
+    &websg_node_get_translation_element,
+    &websg_node_set_translation_element,
+    &websg_node_set_translation
   );
 
   js_websg_define_quaternion_prop(
@@ -380,8 +392,9 @@ JSValue js_websg_new_node_instance(JSContext *ctx, WebSGWorldData *world_data, n
     node,
     "rotation",
     node_id,
-    &js_websg_node_get_rotation_element,
-    &js_websg_node_set_rotation_element
+    &websg_node_get_rotation_element,
+    &websg_node_set_rotation_element,
+    &websg_node_set_rotation
   );
 
   js_websg_define_vector3_prop(
@@ -389,8 +402,9 @@ JSValue js_websg_new_node_instance(JSContext *ctx, WebSGWorldData *world_data, n
     node,
     "scale",
     node_id,
-    &js_websg_node_get_scale_element,
-    &js_websg_node_set_scale_element
+    &websg_node_get_scale_element,
+    &websg_node_set_scale_element,
+    &websg_node_set_scale
   );
 
   js_websg_define_matrix4_prop(
@@ -398,8 +412,9 @@ JSValue js_websg_new_node_instance(JSContext *ctx, WebSGWorldData *world_data, n
     node,
     "matrix",
     node_id,
-    &js_websg_node_get_matrix_element,
-    &js_websg_node_set_matrix_element
+    &websg_node_get_matrix_element,
+    &websg_node_set_matrix_element,
+    &websg_node_set_matrix
   );
 
   js_websg_define_matrix4_prop_read_only(
@@ -407,7 +422,7 @@ JSValue js_websg_new_node_instance(JSContext *ctx, WebSGWorldData *world_data, n
     node,
     "worldMatrix",
     node_id,
-    &js_websg_node_get_world_matrix_element
+    &websg_node_get_world_matrix_element
   );
 
   WebSGNodeData *node_data = js_mallocz(ctx, sizeof(WebSGNodeData));

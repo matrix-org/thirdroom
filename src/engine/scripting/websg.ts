@@ -1114,11 +1114,11 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       startOrbit(ctx, node, { pitch, yaw, zoom });
 
-      return 0;
+      return 1;
     },
-    stop_orbit() {
+    world_stop_orbit() {
       stopOrbit(ctx);
-      return 0;
+      return 1;
     },
     world_create_mesh(propsPtr: number) {
       try {
@@ -1453,6 +1453,26 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       return 0;
     },
+    material_get_base_color_factor_element(materialId: number, index: number) {
+      const material = getScriptResource(wasmCtx, RemoteMaterial, materialId);
+
+      if (!material) {
+        return -1;
+      }
+
+      return material.baseColorFactor[index];
+    },
+    material_set_base_color_factor_element(materialId: number, index: number, value: number) {
+      const material = getScriptResource(wasmCtx, RemoteMaterial, materialId);
+
+      if (!material) {
+        return -1;
+      }
+
+      material.baseColorFactor[index] = value;
+
+      return 0;
+    },
     material_get_metallic_factor(materialId: number) {
       const material = getScriptResource(wasmCtx, RemoteMaterial, materialId);
       return material?.metallicFactor || 0;
@@ -1502,6 +1522,26 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       }
 
       readFloat32ArrayInto(wasmCtx, colorPtr, material.emissiveFactor);
+
+      return 0;
+    },
+    material_get_emissive_factor_element(materialId: number, index: number) {
+      const material = getScriptResource(wasmCtx, RemoteMaterial, materialId);
+
+      if (!material) {
+        return -1;
+      }
+
+      return material.emissiveFactor[index];
+    },
+    material_set_emissive_factor_element(materialId: number, index: number, value: number) {
+      const material = getScriptResource(wasmCtx, RemoteMaterial, materialId);
+
+      if (!material) {
+        return -1;
+      }
+
+      material.emissiveFactor[index] = value;
 
       return 0;
     },
@@ -1587,6 +1627,26 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       }
 
       readFloat32ArrayInto(wasmCtx, colorPtr, light.color);
+
+      return 0;
+    },
+    light_get_color_element(lightId: number, index: number) {
+      const light = getScriptResource(wasmCtx, RemoteLight, lightId);
+
+      if (!light) {
+        return -1;
+      }
+
+      return light.color[index];
+    },
+    light_set_color_element(lightId: number, index: number, value: number) {
+      const light = getScriptResource(wasmCtx, RemoteLight, lightId);
+
+      if (!light) {
+        return -1;
+      }
+
+      light.color[index] = value;
 
       return 0;
     },

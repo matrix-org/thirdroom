@@ -203,14 +203,16 @@ JSValue js_websg_world_create_scene(JSContext *ctx, JSValue this_val, int argc, 
 
   SceneProps *props = js_mallocz(ctx, sizeof(SceneProps));
 
-  JSValue name_val = JS_GetPropertyStr(ctx, argv[0], "name");
+  if (!JS_IsUndefined(argv[0])) {
+    JSValue name_val = JS_GetPropertyStr(ctx, argv[0], "name");
 
-  if (!JS_IsUndefined(name_val)) {
-    props->name = JS_ToCString(ctx, name_val);
+    if (!JS_IsUndefined(name_val)) {
+      props->name = JS_ToCString(ctx, name_val);
 
-    if (props->name == NULL) {
-      js_free(ctx, props);
-      return JS_EXCEPTION;
+      if (props->name == NULL) {
+        js_free(ctx, props);
+        return JS_EXCEPTION;
+      }
     }
   }
 

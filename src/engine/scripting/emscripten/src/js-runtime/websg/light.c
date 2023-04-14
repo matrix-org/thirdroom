@@ -46,17 +46,6 @@ static JSClassDef js_websg_light_class = {
   .finalizer = js_websg_light_finalizer
 };
 
-static float_t js_websg_light_get_color_element(uint32_t light_id, float_t *color, int index) {
-  websg_light_get_color(light_id, color);
-  return color[index];
-}
-
-static void js_websg_light_set_color_element(uint32_t light_id, float_t *color, int index, float_t value) {
-  websg_light_get_color(light_id, color);
-  color[index] = value;
-  websg_light_get_color(light_id, color);
-}
-
 static JSValue js_websg_light_get_intensity(JSContext *ctx, JSValueConst this_val) {
  WebSGLightData *light_data = JS_GetOpaque(this_val, js_websg_light_class_id);
 
@@ -139,8 +128,9 @@ JSValue js_websg_new_light_instance(JSContext *ctx, WebSGWorldData *world_data, 
     light,
     "color",
     light_id,
-    &js_websg_light_get_color_element,
-    &js_websg_light_set_color_element
+    &websg_light_get_color_element,
+    &websg_light_set_color_element,
+    &websg_light_set_color
   );
 
   WebSGLightData *light_data = js_mallocz(ctx, sizeof(WebSGLightData));

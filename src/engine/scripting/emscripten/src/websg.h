@@ -140,7 +140,7 @@ typedef struct CameraRigOptions {
 } CameraRigOptions;
 
 import_websg(node_start_orbit) int32_t websg_node_start_orbit(node_id_t node_id, CameraRigOptions *options);
-import_websg(stop_orbit) int32_t websg_stop_orbit();
+import_websg(world_stop_orbit) int32_t websg_world_stop_orbit();
 
 /**
  * Mesh
@@ -351,12 +351,16 @@ import_websg(world_create_material) material_id_t websg_world_create_material(Ma
 import_websg(world_find_material_by_name) material_id_t websg_world_find_material_by_name(const char *name, uint32_t length);
 import_websg(material_get_base_color_factor) int32_t websg_material_get_base_color_factor(material_id_t material_id, float_t *base_color_factor);
 import_websg(material_set_base_color_factor) int32_t websg_material_set_base_color_factor(material_id_t material_id, float_t *base_color_factor);
+import_websg(material_get_base_color_factor_element) float_t websg_material_get_base_color_factor_element(material_id_t material_id, uint32_t index);
+import_websg(material_set_base_color_factor) int32_t websg_material_set_base_color_factor_element(material_id_t material_id, uint32_t index, float_t value);
 import_websg(material_get_metallic_factor) float_t websg_material_get_metallic_factor(material_id_t material_id);
 import_websg(material_set_metallic_factor) int32_t websg_material_set_metallic_factor(material_id_t material_id, float_t metallic_factor);
 import_websg(material_get_roughness_factor) float_t websg_material_get_roughness_factor(material_id_t material_id);
 import_websg(material_set_roughness_factor) int32_t websg_material_set_roughness_factor(material_id_t material_id, float_t roughness_factor);
 import_websg(material_get_emissive_factor) int32_t websg_material_get_emissive_factor(material_id_t material_id, float_t *emissive_factor);
 import_websg(material_set_emissive_factor) int32_t websg_material_set_emissive_factor(material_id_t material_id, float_t *emissive_factor);
+import_websg(material_get_emissive_factor_element) float_t websg_material_get_emissive_factor_element(material_id_t material_id, uint32_t index);
+import_websg(material_set_emissive_factor) int32_t websg_material_set_emissive_factor_element(material_id_t material_id, uint32_t index, float_t value);
 import_websg(material_get_base_color_texture) texture_id_t websg_material_get_base_color_texture(material_id_t material_id);
 import_websg(material_set_base_color_texture) int32_t websg_material_set_base_color_texture(material_id_t material_id, texture_id_t texture_id);
 
@@ -398,6 +402,8 @@ import_websg(world_create_light) light_id_t websg_world_create_light(LightProps 
 import_websg(world_find_light_by_name) light_id_t websg_world_find_light_by_name(const char *name, uint32_t length);
 import_websg(light_get_color) int32_t websg_light_get_color(light_id_t light_id, float_t *color);
 import_websg(light_set_color) int32_t websg_light_set_color(light_id_t light_id, float_t *color);
+import_websg(light_get_color_element) float_t websg_light_get_color_element(light_id_t light_id, uint32_t index);
+import_websg(light_set_color_element) int32_t websg_light_set_color_element(light_id_t light_id, uint32_t index, float value);
 import_websg(light_get_intensity) float_t websg_light_get_intensity(light_id_t light_id);
 import_websg(light_set_intensity) int32_t websg_light_set_intensity(light_id_t light_id, float_t intensity);
 

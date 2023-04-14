@@ -5,7 +5,6 @@
 #include "./websg-js.h"
 #include "./ui-element.h"
 #include "./ui-text.h"
-#include "./rgba.h"
 #include "../utils/array.h"
 
 JSClassID js_websg_ui_button_class_id;
@@ -160,7 +159,14 @@ JSValue js_websg_new_ui_button_instance(JSContext *ctx, WebSGWorldData *world_da
     return ui_button;
   }
 
-  js_define_ui_element_props(ctx, world_data, ui_element_id, ui_button);
+  js_define_ui_text_props(ctx, world_data, ui_element_id, ui_button);
+
+  WebSGUIElementData *element_data = js_mallocz(ctx, sizeof(WebSGUIElementData));
+  element_data->world_data = world_data;
+  element_data->ui_element_id = ui_element_id;
+  JS_SetOpaque(ui_button, element_data);
+
+  JS_SetPropertyUint32(ctx, world_data->ui_elements, ui_element_id, JS_DupValue(ctx, ui_button));
 
   return ui_button;
 }
