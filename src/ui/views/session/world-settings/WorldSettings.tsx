@@ -1,4 +1,5 @@
 import { ChangeEvent, FormEvent, useEffect, useState, useRef } from "react";
+import { Room } from "@thirdroom/hydrogen-view-sdk";
 import { useSetAtom } from "jotai";
 
 import { IconButton } from "../../../atoms/button/IconButton";
@@ -19,7 +20,6 @@ import { Label } from "../../../atoms/text/Label";
 import { AvatarPicker } from "../../components/avatar-picker/AvatarPicker";
 import { useFilePicker } from "../../../hooks/useFilePicker";
 import { useHydrogen } from "../../../hooks/useHydrogen";
-import { useRoom } from "../../../hooks/useRoom";
 import "./WorldSettings.css";
 import { getAvatarHttpUrl, getHttpUrl } from "../../../utils/avatar";
 import { Input } from "../../../atoms/input/Input";
@@ -31,17 +31,20 @@ import { useIsMounted } from "../../../hooks/useIsMounted";
 import { uploadAttachment } from "../../../utils/matrixUtils";
 import { MAX_OBJECT_CAP } from "../../../../engine/config.common";
 import { OverlayWindow, overlayWindowAtom } from "../../../state/overlayWindow";
+import { usePowerLevels } from "../../../hooks/usePowerLevels";
+import { EmptyState } from "../../components/empty-state/EmptyState";
 
 interface WorldSettingsProps {
-  roomId: string;
+  room: Room;
 }
 
-export function WorldSettings({ roomId }: WorldSettingsProps) {
+export function WorldSettings({ room }: WorldSettingsProps) {
   const { session, platform } = useHydrogen(true);
 
   const setOverlayWindow = useSetAtom(overlayWindowAtom);
+  const { getPowerLevel, canSendStateEvent } = usePowerLevels(room);
+  const myPowerLevel = getPowerLevel(session.userId);
   const isMounted = useIsMounted();
-  const room = useRoom(session, roomId);
 
   let httpAvatarUrl = room?.avatarUrl
     ? getAvatarHttpUrl(room.avatarUrl, 150, platform, session.mediaRepository) ?? undefined
@@ -160,64 +163,84 @@ export function WorldSettings({ roomId }: WorldSettingsProps) {
               children={
                 <Scroll>
                   <div className="WorldSettings__content">
-                    <div className="flex gap-lg">
-                      <SettingTile label={<Label>World Avatar</Label>}>
-                        <AvatarPicker url={httpAvatarUrl} onAvatarPick={pickAvatar} onAvatarDrop={dropAvatar} />
-                      </SettingTile>
-                    </div>
-                    <div className="flex gap-lg">
-                      <SettingTile className="grow basis-0" label={<Label>World Name *</Label>}>
-                        <Input onChange={handleNameChange} defaultValue={roomName} required />
-                      </SettingTile>
-                      <SettingTile className="grow basis-0" label={<Label>Private</Label>}>
-                        <Switch checked={isPrivate} onCheckedChange={setIsPrivate} />
-                      </SettingTile>
-                    </div>
-                    <div className="flex gap-lg">
-                      <SettingTile className="grow basis-0" label={<Label>Scene</Label>}>
-                        <AutoFileUpload
-                          mimeType=".glb"
-                          onUploadInfo={setSceneInfo}
-                          renderButton={(pickFile) => (
-                            <Button fill="outline" onClick={pickFile}>
-                              <Icon src={UploadIC} color="primary" />
-                              Change Scene
-                            </Button>
-                          )}
-                        />
-                      </SettingTile>
-                      <SettingTile className="grow basis-0" label={<Label>Scene Preview</Label>}>
-                        <AutoFileUpload
-                          mimeType="image/*"
-                          onUploadInfo={setPreviewInfo}
-                          renderButton={(pickFile) => (
-                            <Button fill="outline" onClick={pickFile}>
-                              <Icon src={UploadIC} color="primary" />
-                              Change Preview
-                            </Button>
-                          )}
-                        />
-                      </SettingTile>
-                    </div>
-                    <div className="flex gap-lg">
-                      <SettingTile className="grow basis-0" label={<Label>Max Spawned Objects Per User</Label>}>
-                        <Input type="number" value={maxObjectCap} onChange={handleMaxObjectCapChange} required />
-                      </SettingTile>
-                    </div>
-                    <div className="flex gap-lg">
-                      <SettingTile className="grow basis-0" label={<Label>Script (EXPERIMENTAL)</Label>}>
-                        <AutoFileUpload
-                          mimeType=".js,.wasm"
-                          onUploadInfo={setScriptInfo}
-                          renderButton={(pickFile) => (
-                            <Button fill="outline" onClick={pickFile}>
-                              <Icon src={UploadIC} color="primary" />
-                              Change Script
-                            </Button>
-                          )}
-                        />
-                      </SettingTile>
-                    </div>
+                    {canSendStateEvent("m.room.avatar", myPowerLevel) && (
+                      <div className="flex gap-lg">
+                        <SettingTile label={<Label>World Avatar</Label>}>
+                          <AvatarPicker url={httpAvatarUrl} onAvatarPick={pickAvatar} onAvatarDrop={dropAvatar} />
+                        </SettingTile>
+                      </div>
+                    )}
+                    {(canSendStateEvent("m.room.name", myPowerLevel) ||
+                      canSendStateEvent("m.room.join_rules", myPowerLevel)) && (
+                      <div className="flex gap-lg">
+                        {canSendStateEvent("m.room.name", myPowerLevel) && (
+                          <SettingTile className="grow basis-0" label={<Label>World Name *</Label>}>
+                            <Input onChange={handleNameChange} defaultValue={roomName} required />
+                          </SettingTile>
+                        )}
+                        {canSendStateEvent("m.room.join_rules", myPowerLevel) && (
+                          <SettingTile className="grow basis-0" label={<Label>Private</Label>}>
+                            <Switch checked={isPrivate} onCheckedChange={setIsPrivate} />
+                          </SettingTile>
+                        )}
+                      </div>
+                    )}
+                    {canSendStateEvent("org.matrix.msc3815.world", myPowerLevel) && (
+                      <div className="flex gap-lg">
+                        <SettingTile className="grow basis-0" label={<Label>Scene</Label>}>
+                          <AutoFileUpload
+                            mimeType=".glb"
+                            onUploadInfo={setSceneInfo}
+                            renderButton={(pickFile) => (
+                              <Button fill="outline" onClick={pickFile}>
+                                <Icon src={UploadIC} color="primary" />
+                                Change Scene
+                              </Button>
+                            )}
+                          />
+                        </SettingTile>
+                        <SettingTile className="grow basis-0" label={<Label>Scene Preview</Label>}>
+                          <AutoFileUpload
+                            mimeType="image/*"
+                            onUploadInfo={setPreviewInfo}
+                            renderButton={(pickFile) => (
+                              <Button fill="outline" onClick={pickFile}>
+                                <Icon src={UploadIC} color="primary" />
+                                Change Preview
+                              </Button>
+                            )}
+                          />
+                        </SettingTile>
+                      </div>
+                    )}
+                    {canSendStateEvent("org.matrix.msc3815.world", myPowerLevel) && (
+                      <div className="flex gap-lg">
+                        <SettingTile className="grow basis-0" label={<Label>Max Spawned Objects Per User</Label>}>
+                          <Input type="number" value={maxObjectCap} onChange={handleMaxObjectCapChange} required />
+                        </SettingTile>
+                      </div>
+                    )}
+                    {canSendStateEvent("org.matrix.msc3815.world", myPowerLevel) && (
+                      <div className="flex gap-lg">
+                        <SettingTile className="grow basis-0" label={<Label>Script (EXPERIMENTAL)</Label>}>
+                          <AutoFileUpload
+                            mimeType=".js,.wasm"
+                            onUploadInfo={setScriptInfo}
+                            renderButton={(pickFile) => (
+                              <Button fill="outline" onClick={pickFile}>
+                                <Icon src={UploadIC} color="primary" />
+                                Change Script
+                              </Button>
+                            )}
+                          />
+                        </SettingTile>
+                      </div>
+                    )}
+                    <EmptyState
+                      className="WorldSettings__empty-state"
+                      heading="Permission Required"
+                      text="You do not have sufficient permissions to change any of the settings."
+                    />
                   </div>
                 </Scroll>
               }
