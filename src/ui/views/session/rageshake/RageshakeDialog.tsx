@@ -53,7 +53,7 @@ export function RageshakeDialog({ open, requestClose }: RageshakeDialogProps) {
 
   const handleSubmit: FormEventHandler<HTMLFormElement> = (evt) => {
     evt.preventDefault();
-    console.log(evt);
+
     const { descInput } = evt.target as typeof evt.target & { descInput: HTMLInputElement };
     const desc = descInput.value.trim() || undefined;
     submitLogs(desc);
