@@ -139,3 +139,25 @@ export const editorAtom = atom<EditorState, [EditorStateAction], void>(
     }
   }
 );
+
+export const DEFAULT_SCRIPT_SOURCE = `
+
+
+onload = () => {
+
+};
+
+onenter = () => {
+  
+};
+
+onupdate = (dt) => {
+  
+};
+`;
+
+export const scriptSourceAtom = atom<string>(DEFAULT_SCRIPT_SOURCE);
+
+export const showCodeEditorAtom = atom<boolean>(false);
+
+export const editorEnabledAtom = atom<boolean>(false);

@@ -16,12 +16,12 @@ import { usePermissionState } from "../../../hooks/usePermissionState";
 import { exceptionToString, useStreamRequest, RequestException } from "../../../hooks/useStreamRequest";
 import { AlertDialog } from "../dialogs/AlertDialog";
 import { Text } from "../../../atoms/text/Text";
-import { useWorldAction } from "../../../hooks/useWorldAction";
 import { useUnknownWorldPath } from "../../../hooks/useWorld";
 import { useAsyncCallback } from "../../../hooks/useAsyncCallback";
 import { useUpdateScene } from "../../../hooks/useUpdateScene";
 import { overlayWorldAtom } from "../../../state/overlayWorld";
 import { worldAtom } from "../../../state/world";
+import { useWorldNavigator } from "../../../hooks/useWorldNavigator";
 
 interface InviteWorldPreviewProps {
   session: Session;
@@ -104,14 +104,15 @@ function EnterWorldButton({ room }: { room: Room }) {
   const micPermission = usePermissionState("microphone");
   const requestStream = useStreamRequest(platform, micPermission);
   const [micException, setMicException] = useState<RequestException>();
-  const { enterWorld } = useWorldAction(session);
   const [needsUpdate, setNeedsUpdate] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { navigateEnterWorld, navigateExitWorld } = useWorldNavigator(session);
 
   const { checkForUpdate, updateScene } = useUpdateScene(session, room);
 
-  const handleLoadWorld = () => {
-    enterWorld(room.id);
+  const handleLoadWorld = async () => {
+    navigateExitWorld();
+    navigateEnterWorld(room);
   };
 
   const handleEnterWorld = async (checkUpdate = false) => {

@@ -24,6 +24,9 @@ import { getHttpUrl } from "../../../utils/avatar";
 import { UploadScene } from "./UploadScene";
 import { MAX_OBJECT_CAP } from "../../../../engine/config.common";
 import "./CreateWorldForm.css";
+import { AutoFileUpload, AutoUploadInfo } from "../../components/AutoFileUpload";
+import { Icon } from "../../../atoms/icon/Icon";
+import UploadIC from "../../../../../res/ic/upload.svg";
 
 export function AliasAvailabilityProvider({
   session,
@@ -65,6 +68,7 @@ export type CreateWorldContent = {
   scene_url: string;
   scene_preview_url: string;
   max_member_object_cap?: number;
+  script_url?: string;
 } & Record<string, any>;
 export interface CreateWorldOptions {
   avatar?: IBlobHandle;
@@ -165,6 +169,7 @@ export function CreateWorldForm({ scene, onSceneChange, onCreate, onClose }: Cre
 
   const [uploadScene, setUploadScene] = useState<{ url: string; previewUrl: string } | undefined>(controlledScene);
   const [selectedScene, setSelectedScene] = useState<{ url: string; previewUrl: string } | undefined>(controlledScene);
+  const [scriptInfo, setScriptInfo] = useState<AutoUploadInfo>({});
   const [creatingRoom, setCreatingRoom] = useState(false);
 
   const handleCreateWorld = async (options: CreateWorldOptions) => {
@@ -193,6 +198,9 @@ export function CreateWorldForm({ scene, onSceneChange, onCreate, onClose }: Cre
       scene_preview_url: selectedScene.previewUrl,
       max_member_object_cap: parseInt(maxObjectCapInput.value) || undefined,
     };
+    if (scriptInfo.mxc) {
+      content.script_url = scriptInfo.mxc;
+    }
     if (controlledScene && scene) {
       content.scene = scene.event.content.scene;
       content.scene_from = {
@@ -299,9 +307,23 @@ export function CreateWorldForm({ scene, onSceneChange, onCreate, onClose }: Cre
                 <Input name="maxObjectCapInput" type="number" defaultValue={MAX_OBJECT_CAP} required />
               </SettingTile>
             </div>
-            <SettingTile className="grow basis-0" label={<Label>Private</Label>}>
-              <Switch name="isPrivateInput" defaultChecked={true} />
-            </SettingTile>
+            <div className="flex gap-lg">
+              <SettingTile className="grow basis-0" label={<Label>Private</Label>}>
+                <Switch name="isPrivateInput" defaultChecked={true} />
+              </SettingTile>
+              <SettingTile className="grow basis-0" label={<Label>Script (EXPERIMENTAL)</Label>}>
+                <AutoFileUpload
+                  mimeType=".js,.wasm"
+                  onUploadInfo={setScriptInfo}
+                  renderButton={(pickFile) => (
+                    <Button fill="outline" onClick={pickFile}>
+                      <Icon src={UploadIC} color="primary" />
+                      Upload Script
+                    </Button>
+                  )}
+                />
+              </SettingTile>
+            </div>
             <SettingTile label={<Label>World Avatar</Label>}>
               <AvatarPicker url={avatarData.url} onAvatarPick={pickAvatar} onAvatarDrop={dropAvatar} />
             </SettingTile>

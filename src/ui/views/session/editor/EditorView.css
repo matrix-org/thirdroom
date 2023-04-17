@@ -1,25 +1,23 @@
+.EditorView {
+  --status-bar-height: 48px;
+  pointer-events: none;
+  padding: calc(var(--status-bar-height) + var(--sp-xs)) var(--sp-md) var(--sp-md);
+  width: 100%;
+  height: 100%;
+}
+
 .EditorView__leftPanel,
 .EditorView__rightPanel {
-  --status-bar-height: 48px;
-  --controls-height: 58px;
-  --controls-top: calc(var(--controls-height) + var(--sp-xs));
-  position: absolute;
-  top: calc(var(--status-bar-height) + var(--sp-xs));
-  bottom: calc(var(--controls-top) + var(--sp-xs));
-  pointer-events: none;
-  display: flex;
-  flex-direction: column;
-  width: 100%;
   max-width: 320px;
+  width: 100vw;
+}
+
+.EditorView__leftPanel,
+.EditorView__rightPanel,
+.EditorView__centerPanel {
+  pointer-events: none;
 
   & > * {
     pointer-events: all;
   }
-}
-.EditorView__leftPanel {
-  left: var(--sp-md);
-}
-
-.EditorView__rightPanel {
-  right: var(--sp-md);
 }

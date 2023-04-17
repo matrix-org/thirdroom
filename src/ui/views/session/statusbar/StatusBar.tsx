@@ -14,6 +14,7 @@ import { useWorldPath } from "../../../hooks/useWorld";
 import { activeChatsAtom } from "../../../state/overlayChat";
 import { worldChatVisibilityAtom } from "../../../state/worldChatVisibility";
 import { overlayVisibilityAtom } from "../../../state/overlayVisibility";
+import { sidebarTabAtom, SidebarTab } from "../../../state/sidebarTab";
 
 function OverlayButton({
   style,
@@ -103,13 +104,14 @@ export function StatusBar() {
   const { session } = useHydrogen(true);
   const [overlayVisible, setOverlayVisibility] = useAtom(overlayVisibilityAtom);
   const setWorldChatVisibility = useSetAtom(worldChatVisibilityAtom);
+  const setSidebarTab = useSetAtom(sidebarTabAtom);
 
   const homeMatch = useMatch({ path: "/", end: true });
   const isHome = homeMatch !== null;
   const [knownWorldId] = useWorldPath();
   const world = knownWorldId ? session.rooms.get(knownWorldId) : undefined;
 
-  const handleTipClick = () => {
+  const openOverlay = () => {
     if (overlayVisible) {
       setOverlayVisibility(false);
     } else {
@@ -119,11 +121,22 @@ export function StatusBar() {
     }
   };
 
+  const openNotifications = () => {
+    if (overlayVisible) {
+      setOverlayVisibility(false);
+    } else {
+      document.exitPointerLock();
+      setWorldChatVisibility(false);
+      setOverlayVisibility(true);
+      setSidebarTab(SidebarTab.Notifications);
+    }
+  };
+
   return (
     <div className="StatusBar shrink-0 flex items-center">
-      <div className="StatusBar__left grow basis-0">
+      <div className="StatusBar__left grow basis-0 flex">
         {knownWorldId && (
-          <OverlayButton style={{ paddingLeft: "var(--sp-xxs)" }} onClick={handleTipClick}>
+          <OverlayButton style={{ paddingLeft: "var(--sp-xxs)" }} onClick={openOverlay}>
             <Text
               color="world"
               weight="medium"
@@ -148,7 +161,7 @@ export function StatusBar() {
         </Text>
       </div>
       <div className="StatusBar__right grow basis-0 flex justify-end">
-        {knownWorldId && <NotificationButton onClick={handleTipClick} />}
+        {knownWorldId && <NotificationButton onClick={openNotifications} />}
       </div>
     </div>
   );

@@ -339,8 +339,10 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     url: string;
     size: number;
     mimeType: string;
-    readAsBuffer(): BufferSource;
+    readAsBuffer(): Promise<unknown>;
     dispose(): void;
+    // TODO: remove when hydrogen is updated
+    _blob: Blob;
   }
   export class SettingsStorage {
     constructor(prefix: string);
@@ -379,6 +381,8 @@ declare module "@thirdroom/hydrogen-view-sdk" {
       | undefined
     >;
     openUrl(url: string): void;
+    createBlob(buffer: ArrayBuffer, mimetype?: string): IBlobHandle;
+    saveFileAs(blobHandle: IBlobHandle, filename: string): void;
 
     dispose(): void;
   }

@@ -28,7 +28,6 @@ import { WorldSettings } from "../world-settings/WorldSettings";
 import { RoomListNotifications } from "../sidebar/RoomListNotifications";
 import { NowPlayingWorld } from "./NowPlayingWorld";
 import { NowPlayingControls } from "./NowPlayingControls";
-import { useWorldAction } from "../../../hooks/useWorldAction";
 import { useCalls } from "../../../hooks/useCalls";
 import { useRoomCall } from "../../../hooks/useRoomCall";
 import { DiscoverView } from "../discover/DiscoverView";
@@ -39,6 +38,7 @@ import { SidebarTab, sidebarTabAtom } from "../../../state/sidebarTab";
 import { OverlayWindow, overlayWindowAtom } from "../../../state/overlayWindow";
 import { worldAtom } from "../../../state/world";
 import { useDisableInput } from "../../../hooks/useDisableInput";
+import { useWorldNavigator } from "../../../hooks/useWorldNavigator";
 
 export function Overlay() {
   const { session, platform } = useHydrogen(true);
@@ -54,13 +54,18 @@ export function Overlay() {
   const repositoryRoom = useRoom(session, config.repositoryRoomIdOrAlias);
 
   const activeCall = useRoomCall(calls, worldId);
-  const { exitWorld } = useWorldAction(session);
+  const { navigateExitWorld } = useWorldNavigator(session);
   const world = useRoom(session, isWorldEntered ? worldId : undefined);
   const selectedChat = useRoom(session, openedChatId);
   const selectedChatInvite = useInvite(session, openedChatId);
   const overlayWindow = useAtomValue(overlayWindowAtom);
   const groupCalls = new Map<string, GroupCall>();
   Array.from(calls).flatMap(([, groupCall]) => groupCalls.set(groupCall.roomId, groupCall));
+
+  const worldSettingRoom = useRoom(
+    session,
+    overlayWindow.type === OverlayWindow.WorldSettings ? overlayWindow.roomId : undefined
+  );
 
   useDisableInput();
 
@@ -82,7 +87,12 @@ export function Overlay() {
               }
               footer={
                 world && activeCall ? (
-                  <NowPlayingWorld world={world} activeCall={activeCall} onExitWorld={exitWorld} platform={platform} />
+                  <NowPlayingWorld
+                    world={world}
+                    activeCall={activeCall}
+                    onExitWorld={navigateExitWorld}
+                    platform={platform}
+                  />
                 ) : (
                   <NowPlayingControls />
                 )
@@ -95,7 +105,9 @@ export function Overlay() {
         <div className="Overlay__window grow flex">
           {overlayWindow.type === OverlayWindow.CreateWorld && <CreateWorld />}
           {overlayWindow.type === OverlayWindow.UserProfile && <UserProfile />}
-          {overlayWindow.type === OverlayWindow.WorldSettings && <WorldSettings roomId={overlayWindow.roomId} />}
+          {overlayWindow.type === OverlayWindow.WorldSettings && worldSettingRoom && (
+            <WorldSettings room={worldSettingRoom} />
+          )}
           {overlayWindow.type === OverlayWindow.Discover && repositoryRoom && <DiscoverView room={repositoryRoom} />}
         </div>
       ) : (
