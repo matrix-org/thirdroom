@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema",
+  "title": "MX_postprocessing extension",
+  "type": "object",
+  "allOf": [{ "$ref": "glTFProperty.schema.json" }],
+  "properties": {
+    "spot": {
+      "type": "object",
+      "$ref": "bloom.schema.json"
+    },
+    "extensions": {},
+    "extras": {}
+  }
+}
