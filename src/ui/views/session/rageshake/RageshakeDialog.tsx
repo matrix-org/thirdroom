@@ -1,3 +1,4 @@
+import { IBlobHandle } from "@thirdroom/hydrogen-view-sdk";
 import React, { FormEventHandler } from "react";
 
 import { Text } from "../../../atoms/text/Text";
@@ -14,6 +15,7 @@ import { Button } from "../../../atoms/button/Button";
 import { submitLogsToRageshakeServer } from "./rageshake";
 import { Dots } from "../../../atoms/loading/Dots";
 import { useAsyncCallback } from "../../../hooks/useAsyncCallback";
+import { saveData } from "../../../utils/common";
 
 interface RageshakeDialogProps {
   open: boolean;
@@ -57,6 +59,14 @@ export function RageshakeDialog({ open, requestClose }: RageshakeDialogProps) {
     const { descInput } = evt.target as typeof evt.target & { descInput: HTMLInputElement };
     const desc = descInput.value.trim() || undefined;
     submitLogs(desc);
+  };
+
+  const downloadLogs = async () => {
+    const persister = platform.logger.reporters.find((r) => typeof r.export === "function");
+    const logExport = await persister.export();
+    const logs = logExport.asBlob() as IBlobHandle;
+
+    saveData(logs.nativeBlob, `thirdroom-logs-${new Date()}.json`);
   };
 
   return (
@@ -103,9 +113,14 @@ export function RageshakeDialog({ open, requestClose }: RageshakeDialogProps) {
             )}
           </div>
         </SettingTile>
-        <Button type="submit" disabled={submitting}>
-          {submitting ? <Dots color="on-primary" /> : "Submit Logs"}
-        </Button>
+        <div className="flex flex-column gap-sm">
+          <Button type="submit" disabled={submitting}>
+            {submitting ? <Dots color="on-primary" /> : "Submit Logs"}
+          </Button>
+          <Button type="button" onClick={downloadLogs} fill="outline">
+            Download Logs
+          </Button>
+        </div>
       </form>
     </Dialog>
   );

@@ -125,3 +125,15 @@ export function convertRGBA(
 export function inputFocused(): boolean {
   return document.activeElement?.tagName.toLowerCase() === "input";
 }
+
+export function saveData(blob: Blob, fileName: string) {
+  const a = document.createElement("a");
+  const url = window.URL.createObjectURL(blob);
+  document.body.appendChild(a);
+  a.style.display = "none";
+  a.href = url;
+  a.download = fileName;
+  a.click();
+  window.URL.revokeObjectURL(url);
+  document.body.removeChild(a);
+}
