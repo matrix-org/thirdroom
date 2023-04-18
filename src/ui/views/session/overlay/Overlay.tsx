@@ -62,6 +62,11 @@ export function Overlay() {
   const groupCalls = new Map<string, GroupCall>();
   Array.from(calls).flatMap(([, groupCall]) => groupCalls.set(groupCall.roomId, groupCall));
 
+  const worldSettingRoom = useRoom(
+    session,
+    overlayWindow.type === OverlayWindow.WorldSettings ? overlayWindow.roomId : undefined
+  );
+
   useDisableInput();
 
   const isChatOpen = selectedChat || selectedChatInvite;
@@ -100,7 +105,9 @@ export function Overlay() {
         <div className="Overlay__window grow flex">
           {overlayWindow.type === OverlayWindow.CreateWorld && <CreateWorld />}
           {overlayWindow.type === OverlayWindow.UserProfile && <UserProfile />}
-          {overlayWindow.type === OverlayWindow.WorldSettings && <WorldSettings roomId={overlayWindow.roomId} />}
+          {overlayWindow.type === OverlayWindow.WorldSettings && worldSettingRoom && (
+            <WorldSettings room={worldSettingRoom} />
+          )}
           {overlayWindow.type === OverlayWindow.Discover && repositoryRoom && <DiscoverView room={repositoryRoom} />}
         </div>
       ) : (
