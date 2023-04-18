@@ -352,7 +352,7 @@ import_websg(world_find_material_by_name) material_id_t websg_world_find_materia
 import_websg(material_get_base_color_factor) int32_t websg_material_get_base_color_factor(material_id_t material_id, float_t *base_color_factor);
 import_websg(material_set_base_color_factor) int32_t websg_material_set_base_color_factor(material_id_t material_id, float_t *base_color_factor);
 import_websg(material_get_base_color_factor_element) float_t websg_material_get_base_color_factor_element(material_id_t material_id, uint32_t index);
-import_websg(material_set_base_color_factor) int32_t websg_material_set_base_color_factor_element(material_id_t material_id, uint32_t index, float_t value);
+import_websg(material_set_base_color_factor_element) int32_t websg_material_set_base_color_factor_element(material_id_t material_id, uint32_t index, float_t value);
 import_websg(material_get_metallic_factor) float_t websg_material_get_metallic_factor(material_id_t material_id);
 import_websg(material_set_metallic_factor) int32_t websg_material_set_metallic_factor(material_id_t material_id, float_t metallic_factor);
 import_websg(material_get_roughness_factor) float_t websg_material_get_roughness_factor(material_id_t material_id);
@@ -360,7 +360,7 @@ import_websg(material_set_roughness_factor) int32_t websg_material_set_roughness
 import_websg(material_get_emissive_factor) int32_t websg_material_get_emissive_factor(material_id_t material_id, float_t *emissive_factor);
 import_websg(material_set_emissive_factor) int32_t websg_material_set_emissive_factor(material_id_t material_id, float_t *emissive_factor);
 import_websg(material_get_emissive_factor_element) float_t websg_material_get_emissive_factor_element(material_id_t material_id, uint32_t index);
-import_websg(material_set_emissive_factor) int32_t websg_material_set_emissive_factor_element(material_id_t material_id, uint32_t index, float_t value);
+import_websg(material_set_emissive_factor_element) int32_t websg_material_set_emissive_factor_element(material_id_t material_id, uint32_t index, float_t value);
 import_websg(material_get_base_color_texture) texture_id_t websg_material_get_base_color_texture(material_id_t material_id);
 import_websg(material_set_base_color_texture) int32_t websg_material_set_base_color_texture(material_id_t material_id, texture_id_t texture_id);
 
