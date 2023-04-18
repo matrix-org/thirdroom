@@ -1,6 +1,6 @@
 let boxNode3;
 
-onenter = () => {
+onenterworld = () => {
   const scene = WebSG.getEnvironmentScene();
   const boxNode = WebSG.createNode();
   WebSG.nodeSetPosition(boxNode, new Float32Array([0, 10, 0]));
@@ -77,7 +77,7 @@ let elapsed = 0;
 
 const position = new Float32Array([-2, 10, 0]);
 
-onupdate = (dt) => {
+onupdateworld = (dt) => {
   elapsed += dt;
 
   if (boxNode3) {

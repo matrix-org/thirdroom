@@ -1,12 +1,12 @@
 let tv;
 let tvState = false;
 
-onload = () => {
+onloadworld = () => {
   tv = world.findNodeByName("TV");
   tv.addInteractable();
 };
 
-onupdate = (dt) => {
+onupdateworld = (dt) => {
   if (tv.interactable.pressed) {
     tvState = !tvState;
     thirdroom.enableMatrixMaterial(tvState);
