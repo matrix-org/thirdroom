@@ -8,7 +8,6 @@ import { HeaderTitle } from "../../../atoms/header/HeaderTitle";
 import { IconButton } from "../../../atoms/button/IconButton";
 import CrossIC from "../../../../../res/ic/cross.svg";
 import { useHydrogen } from "../../../hooks/useHydrogen";
-import { Input } from "../../../atoms/input/Input";
 import { SettingTile } from "../../components/setting-tile/SettingTile";
 import { Label } from "../../../atoms/text/Label";
 import { Button } from "../../../atoms/button/Button";
@@ -16,6 +15,7 @@ import { submitLogsToRageshakeServer } from "./rageshake";
 import { Dots } from "../../../atoms/loading/Dots";
 import { useAsyncCallback } from "../../../hooks/useAsyncCallback";
 import { saveData } from "../../../utils/common";
+import { Textarea } from "../../../atoms/input/Textarea";
 
 interface RageshakeDialogProps {
   open: boolean;
@@ -105,7 +105,7 @@ export function RageshakeDialog({ open, requestClose }: RageshakeDialogProps) {
         </div>
         <SettingTile label={<Label>Description</Label>}>
           <div className="flex flex-column gap-xxs">
-            <Input name="descInput" />
+            <Textarea style={{ height: "100px" }} name="descInput" />
             {error && (
               <Text variant="b3" color="danger">
                 {error.message || "Failed to submit logs."}
