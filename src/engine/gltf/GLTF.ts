@@ -530,9 +530,12 @@ export interface GLTFNode extends GLTFChildOfRootProperty {
     MOZ_hubs_components?: GLTFHubsComponents;
     MX_tiles_renderer?: GLTFTilesRenderer;
     OMI_collider?: GLTFColliderRef;
+    OMI_physics_body?: GLTFPhysicsBodyRef;
     MX_portal?: GLTFPortal;
     OMI_link?: GLTFLink;
     MX_spawn_point?: {};
+    MX_static?: {};
+    MX_lights_shadows?: GLTFLightsShadows;
   };
 }
 
@@ -578,6 +581,11 @@ export interface GLTFPortal extends GLTFProperty {
   uri: string;
 }
 
+export interface GLTFLightsShadows extends GLTFProperty {
+  castShadow: boolean;
+  receiveShadow: boolean;
+}
+
 export interface GLTFInstancedMeshExtension extends GLTFProperty {
   /**
    * A plain JSON object, where each key corresponds to a mesh attribute semantic and each value is the index of the accessor containing attribute's data.
@@ -600,6 +608,14 @@ export interface GLTFReflectionProbeRef extends GLTFProperty {
 
 export interface GLTFColliderRef extends GLTFProperty {
   collider: GLTFId;
+}
+
+export interface GLTFPhysicsBodyRef extends GLTFProperty {
+  type: "static" | "kinematic" | "character" | "rigid" | "vehicle" | "trigger";
+  mass?: number;
+  linearVelocity?: number[];
+  angularVelocity?: number[];
+  inertiaTensor?: number[];
 }
 
 /**

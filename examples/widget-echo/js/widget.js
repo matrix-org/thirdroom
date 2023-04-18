@@ -2,9 +2,9 @@ const loadTimestamp = Date.now();
 let requestCounter = 0;
 
 onenter = () => {
-  Matrix.listen();
+  matrix.listen();
 
-  Matrix.send({
+  matrix.send({
     api: "fromWidget",
     requestId: `request${requestCounter++}`,
     widgetId: "test",
@@ -16,7 +16,7 @@ onenter = () => {
 onupdate = (dt) => {
   let event;
 
-  while ((event = Matrix.receive())) {
+  while ((event = matrix.receive())) {
     const { api, action, data } = event;
 
     if (api === "toWidget" && action === "send_event") {
@@ -31,7 +31,7 @@ onupdate = (dt) => {
           const timestamp = data.origin_server_ts || 0;
 
           if (match && timestamp > loadTimestamp) {
-            Matrix.send({
+            matrix.send({
               api: "fromWidget",
               requestId: `request${requestCounter++}`,
               widgetId: "test",
@@ -48,7 +48,7 @@ onupdate = (dt) => {
         }
       }
 
-      Matrix.send({
+      matrix.send({
         ...event,
         response: {},
       });

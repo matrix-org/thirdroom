@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAtom, useSetAtom } from "jotai";
 import { BlobHandle, Room } from "@thirdroom/hydrogen-view-sdk";
-import Editor, { OnChange } from "@monaco-editor/react";
+import Editor, { OnChange, useMonaco } from "@monaco-editor/react";
 
 import { Button } from "../../../atoms/button/Button";
 import { Dots } from "../../../atoms/loading/Dots";
@@ -19,6 +19,7 @@ import DarkLightIC from "../../../../../res/ic/dark-light.svg";
 import ArrowBackIC from "../../../../../res/ic/arrow-back.svg";
 import { Tooltip } from "../../../atoms/tooltip/Tooltip";
 import { Icon } from "../../../atoms/icon/Icon";
+import websgTypes from "../../../../../packages/websg-types/types/websg.d.ts?raw";
 
 const MONACO_THEME_KEY = "monaco_theme";
 
@@ -38,6 +39,22 @@ export function ScriptEditor({ room }: { room: Room }) {
   const [reloading, setReloading] = useState(false);
   const [saved, setSavedState] = useState(true);
   const [showResetModal, setShowResetModal] = useState(false);
+
+  const monaco = useMonaco();
+
+  useEffect(() => {
+    if (!monaco) return;
+
+    const options = monaco.languages.typescript.javascriptDefaults.getCompilerOptions();
+    monaco.languages.typescript.javascriptDefaults.setCompilerOptions({
+      ...options,
+      target: monaco.languages.typescript.ScriptTarget.ES2020,
+      checkJs: true,
+      strictNullChecks: false,
+      lib: ["esnext"],
+    });
+    monaco.languages.typescript.javascriptDefaults.addExtraLib(websgTypes, "websg.d.ts");
+  }, [monaco]);
 
   /**
    *  Set saved to true if active script is equal to persisted script
