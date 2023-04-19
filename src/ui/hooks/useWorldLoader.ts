@@ -51,11 +51,6 @@ export function useWorldLoader(): WorldLoader {
     async (world: Room, content: Content) => {
       const roomId = world.id;
 
-      provideMatrixNetworkInterface((matrixNetworkInterface) => {
-        matrixNetworkInterface?.dispose();
-      });
-      disposeActiveMatrixRoom(mainThread);
-
       setWorld({ type: "LOAD", roomId });
 
       const maxObjectCap = content.max_member_object_cap;

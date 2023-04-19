@@ -213,12 +213,12 @@ export async function createMatrixNetworkInterface(
   };
 }
 
-let baseMxNetworkInterfaceAtom: MatrixNetworkInterface | undefined;
+let baseMxNetworkInterface: MatrixNetworkInterface | undefined;
 export const registerMatrixNetworkInterface = (matrixNetworkInterface: MatrixNetworkInterface) => {
-  baseMxNetworkInterfaceAtom = matrixNetworkInterface;
+  baseMxNetworkInterface = matrixNetworkInterface;
 };
 export const provideMatrixNetworkInterface = (
   update: (mxNetworkInterface: MatrixNetworkInterface | undefined) => void
 ) => {
-  update(baseMxNetworkInterfaceAtom);
+  update(baseMxNetworkInterface);
 };
