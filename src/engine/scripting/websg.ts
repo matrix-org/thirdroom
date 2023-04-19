@@ -1,6 +1,7 @@
 import { hasComponent } from "bitecs";
 import RAPIER from "@dimforge/rapier3d-compat";
 import { BoxGeometry } from "three";
+import { vec2, vec4 } from "gl-matrix";
 
 import { GameState } from "../GameTypes";
 import { IRemoteResourceClass, RemoteResourceConstructor } from "../resource/RemoteResourceClass";
@@ -9,14 +10,17 @@ import {
   readFloat32ArrayInto,
   readSharedArrayBuffer,
   readString,
+  readStringFromCursorView,
   readUint8Array,
   WASMModuleContext,
   writeFloat32Array,
+  writeString,
 } from "./WASMModuleContext";
 import {
   RemoteAccessor,
   RemoteBuffer,
   RemoteBufferView,
+  RemoteCamera,
   RemoteCollider,
   RemoteInteractable,
   RemoteLight,
@@ -25,13 +29,20 @@ import {
   RemoteMeshPrimitive,
   RemoteNode,
   RemoteScene,
+  RemoteSkin,
   RemoteTexture,
+  RemoteUIButton,
+  RemoteUICanvas,
+  RemoteUIElement,
+  RemoteUIText,
 } from "../resource/RemoteResources";
 import { addChild, removeChild, traverse } from "../component/transform";
 import {
   AccessorComponentType,
   AccessorType,
   ColliderType,
+  ElementType,
+  ElementPositionType,
   InteractableType,
   LightType,
   MaterialType,
@@ -39,6 +50,10 @@ import {
   MeshPrimitiveMode,
   PhysicsBodyType,
   ResourceType,
+  FlexAlign,
+  FlexDirection,
+  FlexWrap,
+  FlexJustify,
 } from "../resource/schema";
 import {
   moveCursorView,
@@ -46,7 +61,8 @@ import {
   readFloat32Array,
   readUint32,
   readUint32Array,
-  writeUint32,
+  rewindCursorView,
+  skipUint32,
 } from "../allocator/CursorView";
 import { AccessorComponentTypeToTypedArray, AccessorTypeToElementSize } from "../accessor/accessor.common";
 import {
@@ -58,6 +74,8 @@ import {
 } from "../physics/physics.game";
 import { getModule } from "../module/module.common";
 import { createMesh } from "../mesh/mesh.game";
+import { addInteractableComponent } from "../../plugins/interaction/interaction.game";
+import { addUIElementChild, initNodeUICanvas, removeUIElementChild } from "../ui/ui.game";
 import { startOrbit, stopOrbit } from "../../plugins/camera/CameraRig.game";
 
 export function getScriptResource<T extends RemoteResourceConstructor>(
@@ -205,6 +223,318 @@ function scriptGetChildAt(wasmCtx: WASMModuleContext, parent: RemoteNode | Remot
   return 0;
 }
 
+function getScriptUIElementChildCount(wasmCtx: WASMModuleContext, element: RemoteUIElement): number {
+  const resourceIds = wasmCtx.resourceManager.resourceIds;
+
+  let count = 0;
+  let cursor = element.firstChild;
+
+  while (cursor) {
+    // Only count the resources owned by the script.
+    if (resourceIds.has(cursor.eid)) {
+      count++;
+    }
+
+    cursor = cursor.nextSibling;
+  }
+
+  return count;
+}
+
+function getScriptUIElementChildren(
+  wasmCtx: WASMModuleContext,
+  element: RemoteUIElement,
+  elArrPtr: number,
+  maxCount: number
+): number {
+  const resourceIds = wasmCtx.resourceManager.resourceIds;
+  const U32Heap = wasmCtx.U32Heap;
+
+  let i = 0;
+  let cursor = element.firstChild;
+
+  while (cursor && i < maxCount) {
+    // Only write the resources owned by the script.
+    if (resourceIds.has(cursor.eid)) {
+      U32Heap[elArrPtr / 4 + i] = cursor.eid;
+      i++;
+    }
+
+    cursor = cursor.nextSibling;
+  }
+
+  // Return the number of ids written into the array
+  return i;
+}
+
+function scriptGetUIElementChildAt(wasmCtx: WASMModuleContext, parent: RemoteUIElement, index: number): number {
+  const resourceIds = wasmCtx.resourceManager.resourceIds;
+
+  let i = 0;
+  let cursor = parent.firstChild;
+
+  while (cursor && i < index) {
+    // Only count the resources owned by the script.
+    if (resourceIds.has(cursor.eid)) {
+      i++;
+    }
+
+    cursor = cursor.nextSibling;
+  }
+
+  if (i === index && cursor && resourceIds.has(cursor.eid)) {
+    return cursor.eid;
+  }
+
+  return 0;
+}
+
+function readExtensionsAndExtras<T extends { [key: string]: unknown }>(
+  wasmCtx: WASMModuleContext,
+  parseExtension: (name: string) => T | undefined = () => undefined
+) {
+  const itemsPtr = readUint32(wasmCtx.cursorView);
+  const count = readUint32(wasmCtx.cursorView);
+  // TODO: Implement glTF extras in WebSG API
+  skipUint32(wasmCtx.cursorView); // Skip extras pointer
+
+  const extensions = {};
+
+  if (count > 0) {
+    const rewind = rewindCursorView(wasmCtx.cursorView);
+
+    moveCursorView(wasmCtx.cursorView, itemsPtr);
+
+    for (let i = 0; i < count; i++) {
+      const name = readStringFromCursorView(wasmCtx);
+      const extensionPtr = readUint32(wasmCtx.cursorView);
+      const itemRewind = rewindCursorView(wasmCtx.cursorView);
+      moveCursorView(wasmCtx.cursorView, extensionPtr);
+      Object.assign(extensions, parseExtension(name));
+      itemRewind();
+    }
+
+    rewind();
+  }
+
+  return extensions as Partial<T>;
+}
+
+function readFloatList(wasmCtx: WASMModuleContext): Float32Array | undefined {
+  const itemsPtr = readUint32(wasmCtx.cursorView);
+  const count = readUint32(wasmCtx.cursorView);
+
+  if (count === 0) {
+    return undefined;
+  }
+
+  const rewind = rewindCursorView(wasmCtx.cursorView);
+  moveCursorView(wasmCtx.cursorView, itemsPtr);
+  const arr = readFloat32Array(wasmCtx.cursorView, count);
+  rewind();
+  return arr;
+}
+
+function readStringLen(wasmCtx: WASMModuleContext): string {
+  const strPtr = readUint32(wasmCtx.cursorView);
+  const byteLength = readUint32(wasmCtx.cursorView);
+  const rewind = rewindCursorView(wasmCtx.cursorView);
+  const value = readString(wasmCtx, strPtr, byteLength);
+  rewind();
+  return value;
+}
+
+function readList<T>(wasmCtx: WASMModuleContext, readItem: (wasmCtx: WASMModuleContext, index: number) => T): T[] {
+  const items: T[] = [];
+
+  const itemsPtr = readUint32(wasmCtx.cursorView);
+  const count = readUint32(wasmCtx.cursorView);
+  const rewind = rewindCursorView(wasmCtx.cursorView);
+  moveCursorView(wasmCtx.cursorView, itemsPtr);
+
+  for (let i = 0; i < count; i++) {
+    items.push(readItem(wasmCtx, i));
+  }
+
+  rewind();
+
+  return items;
+}
+
+function readEnum<T extends {}>(wasmCtx: WASMModuleContext, enumType: T, enumName: string): number {
+  const enumValue = readUint32(wasmCtx.cursorView);
+
+  if (enumValue in enumType) {
+    return enumValue;
+  }
+
+  throw new Error(`WebSG: ${enumValue} is not a valid ${enumName} `);
+}
+
+function readResourceRef<T extends RemoteResourceConstructor>(
+  wasmCtx: WASMModuleContext,
+  resourceConstructor: T
+): InstanceType<T> | undefined {
+  const resourceId = readUint32(wasmCtx.cursorView);
+  return resourceId ? getScriptResource(wasmCtx, resourceConstructor, resourceId) : undefined;
+}
+
+function readRefMap<T extends RemoteResourceConstructor>(
+  wasmCtx: WASMModuleContext,
+  resourceConstructor: T
+): { [key: string]: InstanceType<T> } {
+  const map: { [key: number]: InstanceType<T> } = {};
+
+  const itemsPtr = readUint32(wasmCtx.cursorView);
+  const count = readUint32(wasmCtx.cursorView);
+  const rewind = rewindCursorView(wasmCtx.cursorView);
+  moveCursorView(wasmCtx.cursorView, itemsPtr);
+
+  for (let i = 0; i < count; i++) {
+    const key = readEnum(wasmCtx, MeshPrimitiveAttributeIndex, "MeshPrimitiveAttributeIndex");
+    const value = readResourceRef(wasmCtx, resourceConstructor);
+
+    if (!value) {
+      throw new Error(`Failed to read resource ref for key ${key}`);
+    }
+
+    map[key] = value;
+  }
+
+  rewind();
+
+  return map;
+}
+
+// MaterialTextureInfoProps
+function readBaseTextureInfo(
+  wasmCtx: WASMModuleContext
+): [RemoteTexture, vec2 | undefined, number | undefined, vec2 | undefined] {
+  const { offset, rotation, scale } = readExtensionsAndExtras(wasmCtx, (name) => {
+    if (name == "KHR_textures_transform") {
+      readExtensionsAndExtras(wasmCtx);
+      const offset = readFloat32Array(wasmCtx.cursorView, 2);
+      const rotation = readFloat32(wasmCtx.cursorView);
+      const scale = readFloat32Array(wasmCtx.cursorView, 2);
+      readUint32(wasmCtx.cursorView); // texCoord (currently unused);
+      return { offset, rotation, scale };
+    }
+  });
+
+  const texture = readResourceRef(wasmCtx, RemoteTexture);
+
+  if (!texture) {
+    throw new Error("Failed to read texture");
+  }
+
+  skipUint32(wasmCtx.cursorView); // skip texCoord
+
+  return [texture, offset, rotation, scale];
+}
+
+function readTextureInfo(
+  wasmCtx: WASMModuleContext
+): [RemoteTexture | undefined, vec2 | undefined, number | undefined, vec2 | undefined] {
+  const textureInfoPtr = readUint32(wasmCtx.cursorView);
+
+  if (textureInfoPtr === 0) {
+    return [undefined, undefined, undefined, undefined];
+  } else {
+    const rewind = rewindCursorView(wasmCtx.cursorView);
+    moveCursorView(wasmCtx.cursorView, textureInfoPtr);
+    const [texture, offset, rotation, scale] = readBaseTextureInfo(wasmCtx);
+    rewind();
+    return [texture, offset, rotation, scale];
+  }
+}
+
+function readNormalTextureInfo(
+  wasmCtx: WASMModuleContext
+): [RemoteTexture | undefined, number | undefined, vec2 | undefined, number | undefined, vec2 | undefined] {
+  const textureInfoPtr = readUint32(wasmCtx.cursorView);
+
+  if (textureInfoPtr === 0) {
+    return [undefined, undefined, undefined, undefined, undefined];
+  } else {
+    const rewind = rewindCursorView(wasmCtx.cursorView);
+    moveCursorView(wasmCtx.cursorView, textureInfoPtr);
+    const [texture, offset, rotation, scale] = readBaseTextureInfo(wasmCtx);
+    const normalScale = readFloat32(wasmCtx.cursorView);
+    rewind();
+    return [texture, normalScale, offset, rotation, scale];
+  }
+}
+
+function readOcclusionTextureInfo(
+  wasmCtx: WASMModuleContext
+): [RemoteTexture | undefined, number | undefined, vec2 | undefined, number | undefined, vec2 | undefined] {
+  const textureInfoPtr = readUint32(wasmCtx.cursorView);
+
+  if (textureInfoPtr === 0) {
+    return [undefined, undefined, undefined, undefined, undefined];
+  } else {
+    const rewind = rewindCursorView(wasmCtx.cursorView);
+    moveCursorView(wasmCtx.cursorView, textureInfoPtr);
+    const [texture, offset, rotation, scale] = readBaseTextureInfo(wasmCtx);
+    const occlusionStrength = readFloat32(wasmCtx.cursorView);
+    rewind();
+    return [texture, occlusionStrength, offset, rotation, scale];
+  }
+}
+
+interface PBRMetallicRoughnessProps {
+  baseColorFactor?: vec4;
+  baseColorTexture?: RemoteTexture;
+  baseColorTextureOffset?: vec2;
+  baseColorTextureRotation?: number;
+  baseColorTextureScale?: vec2;
+  metallicFactor?: number;
+  roughnessFactor?: number;
+  metallicRoughnessTexture?: RemoteTexture;
+  metallicRoughnessTextureOffset?: vec2;
+  metallicRoughnessTextureRotation?: number;
+  metallicRoughnessTextureScale?: vec2;
+}
+
+function readPBRMetallicRoughness(wasmCtx: WASMModuleContext): PBRMetallicRoughnessProps {
+  const pbrMetallicRoughnessPtr = readUint32(wasmCtx.cursorView);
+
+  if (pbrMetallicRoughnessPtr === 0) {
+    return {};
+  } else {
+    const rewind = rewindCursorView(wasmCtx.cursorView);
+    moveCursorView(wasmCtx.cursorView, pbrMetallicRoughnessPtr);
+    readExtensionsAndExtras(wasmCtx); // pbrMetallicRoughness extensions
+    const baseColorFactor = readFloat32Array(wasmCtx.cursorView, 4);
+    const [baseColorTexture, baseColorTextureOffset, baseColorTextureRotation, baseColorTextureScale] =
+      readTextureInfo(wasmCtx);
+    const metallicFactor = readFloat32(wasmCtx.cursorView);
+    const roughnessFactor = readFloat32(wasmCtx.cursorView);
+    const [
+      metallicRoughnessTexture,
+      metallicRoughnessTextureOffset,
+      metallicRoughnessTextureRotation,
+      metallicRoughnessTextureScale,
+    ] = readTextureInfo(wasmCtx);
+
+    rewind();
+
+    return {
+      baseColorFactor,
+      baseColorTexture,
+      baseColorTextureOffset,
+      baseColorTextureRotation,
+      baseColorTextureScale,
+      metallicFactor,
+      roughnessFactor,
+      metallicRoughnessTexture,
+      metallicRoughnessTextureOffset,
+      metallicRoughnessTextureRotation,
+      metallicRoughnessTextureScale,
+    };
+  }
+}
+
 interface MeshPrimitiveProps {
   attributes: { [key: number]: RemoteAccessor };
   indices?: RemoteAccessor;
@@ -219,11 +549,13 @@ interface MeshPrimitiveProps {
 // TODO: the mesh.primitives array is allocated whenever we request it but it's now immutable
 
 export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
+  const physics = getModule(ctx, PhysicsModule);
+
   return {
-    get_environment_scene() {
+    world_get_environment() {
       return ctx.worldResource.environment?.publicScene.eid || 0;
     },
-    set_environment_scene(sceneId: number) {
+    world_set_environment(sceneId: number) {
       if (!ctx.worldResource.environment) {
         console.error(`WebSG: environment not set`);
         return -1;
@@ -238,15 +570,20 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
         return -1;
       }
     },
-    create_scene() {
+    world_create_scene(propsPtr: number) {
       try {
-        return new RemoteScene(wasmCtx.resourceManager).eid;
+        moveCursorView(wasmCtx.cursorView, propsPtr);
+        const name = readStringFromCursorView(wasmCtx);
+        readExtensionsAndExtras(wasmCtx);
+        return new RemoteScene(wasmCtx.resourceManager, {
+          name,
+        }).eid;
       } catch (error) {
         console.error("WebSG: Error creating scene:", error);
         return 0;
       }
     },
-    scene_find_by_name(namePtr: number, byteLength: number) {
+    world_find_scene_by_name(namePtr: number, byteLength: number) {
       const scene = getScriptResourceByNamePtr(ctx, wasmCtx, RemoteScene, namePtr, byteLength);
       return scene ? scene.eid : 0;
     },
@@ -311,15 +648,47 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       return scriptGetChildAt(wasmCtx, scene, index);
     },
-    create_node() {
+    world_create_node(propsPtr: number) {
       try {
-        return new RemoteNode(wasmCtx.resourceManager).eid;
+        moveCursorView(wasmCtx.cursorView, propsPtr);
+
+        const name = readStringFromCursorView(wasmCtx);
+        const { uiCanvas } = readExtensionsAndExtras(wasmCtx, (name) => {
+          if (name === "MX_ui") {
+            readExtensionsAndExtras(wasmCtx);
+            return { uiCanvas: readResourceRef(wasmCtx, RemoteUICanvas) };
+          }
+        });
+        const camera = readResourceRef(wasmCtx, RemoteCamera);
+        const skin = readResourceRef(wasmCtx, RemoteSkin);
+        const mesh = readResourceRef(wasmCtx, RemoteMesh);
+        const quaternion = readFloat32Array(wasmCtx.cursorView, 4); // rotation
+        const scale = readFloat32Array(wasmCtx.cursorView, 3);
+        const position = readFloat32Array(wasmCtx.cursorView, 3); // translation
+        readFloatList(wasmCtx); // weights (currently unused)
+
+        const node = new RemoteNode(wasmCtx.resourceManager, {
+          camera,
+          skin,
+          mesh,
+          quaternion,
+          scale,
+          position,
+          name,
+          uiCanvas,
+        });
+
+        if (uiCanvas) {
+          initNodeUICanvas(ctx, physics, node);
+        }
+
+        return node.eid;
       } catch (error) {
         console.error("WebSG: Error creating node:", error);
         return 0;
       }
     },
-    node_find_by_name(namePtr: number, byteLength: number) {
+    world_find_node_by_name(namePtr: number, byteLength: number) {
       const node = getScriptResourceByNamePtr(ctx, wasmCtx, RemoteNode, namePtr, byteLength);
       return node ? node.eid : 0;
     },
@@ -422,47 +791,107 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       return parentScene.eid;
     },
-    node_get_position(nodeId: number, positionPtr: number) {
+    node_get_translation_element(nodeId: number, index: number) {
       const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
 
       if (!node) {
         return -1;
       }
 
-      writeFloat32Array(wasmCtx, positionPtr, node.position);
+      return node.position[index];
+    },
+    node_set_translation_element(nodeId: number, index: number, value: number) {
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+      if (!node) {
+        return -1;
+      }
+
+      node.position[index] = value;
 
       return 0;
     },
-    node_set_position(nodeId: number, positionPtr: number) {
+    node_get_translation(nodeId: number, translationPtr: number) {
       const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
 
       if (!node) {
         return -1;
       }
 
-      readFloat32ArrayInto(wasmCtx, positionPtr, node.position);
+      writeFloat32Array(wasmCtx, translationPtr, node.position);
 
       return 0;
     },
-    node_get_quaternion(nodeId: number, quaternionPtr: number) {
+    node_set_translation(nodeId: number, translationPtr: number) {
       const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
 
       if (!node) {
         return -1;
       }
 
-      writeFloat32Array(wasmCtx, quaternionPtr, node.quaternion);
+      readFloat32ArrayInto(wasmCtx, translationPtr, node.position);
 
       return 0;
     },
-    node_set_quaternion(nodeId: number, quaternionPtr: number) {
+    node_get_rotation_element(nodeId: number, index: number) {
       const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
 
       if (!node) {
         return -1;
       }
 
-      readFloat32ArrayInto(wasmCtx, quaternionPtr, node.quaternion);
+      return node.quaternion[index];
+    },
+    node_set_rotation_element(nodeId: number, index: number, value: number) {
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+      if (!node) {
+        return -1;
+      }
+
+      node.quaternion[index] = value;
+
+      return 0;
+    },
+    node_get_rotation(nodeId: number, rotationPtr: number) {
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+      if (!node) {
+        return -1;
+      }
+
+      writeFloat32Array(wasmCtx, rotationPtr, node.quaternion);
+
+      return 0;
+    },
+    node_set_rotation(nodeId: number, rotationPtr: number) {
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+      if (!node) {
+        return -1;
+      }
+
+      readFloat32ArrayInto(wasmCtx, rotationPtr, node.quaternion);
+
+      return 0;
+    },
+    node_get_scale_element(nodeId: number, index: number) {
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+      if (!node) {
+        return -1;
+      }
+
+      return node.scale[index];
+    },
+    node_set_scale_element(nodeId: number, index: number, value: number) {
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+      if (!node) {
+        return -1;
+      }
+
+      node.scale[index] = value;
 
       return 0;
     },
@@ -488,27 +917,56 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       return 0;
     },
-    node_get_local_matrix(nodeId: number, localMatrixPtr: number) {
+    node_get_matrix_element(nodeId: number, index: number) {
       const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
 
       if (!node) {
         return -1;
       }
 
-      writeFloat32Array(wasmCtx, localMatrixPtr, node.localMatrix);
+      return node.localMatrix[index];
+    },
+    node_set_matrix_element(nodeId: number, index: number, value: number) {
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+      if (!node) {
+        return -1;
+      }
+
+      node.localMatrix[index] = value;
 
       return 0;
     },
-    node_set_local_matrix(nodeId: number, localMatrixPtr: number) {
+    node_get_matrix(nodeId: number, matrixPtr: number) {
       const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
 
       if (!node) {
         return -1;
       }
 
-      readFloat32ArrayInto(wasmCtx, localMatrixPtr, node.localMatrix);
+      writeFloat32Array(wasmCtx, matrixPtr, node.localMatrix);
 
       return 0;
+    },
+    node_set_matrix(nodeId: number, matrixPtr: number) {
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+      if (!node) {
+        return -1;
+      }
+
+      readFloat32ArrayInto(wasmCtx, matrixPtr, node.localMatrix);
+
+      return 0;
+    },
+    node_get_world_matrix_element(nodeId: number, index: number) {
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+      if (!node) {
+        return -1;
+      }
+
+      return node.worldMatrix[index];
     },
     node_get_world_matrix(nodeId: number, worldMatrixPtr: number) {
       const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
@@ -642,78 +1100,52 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       return 0;
     },
-    create_mesh(primitivesPtr: number, primitiveCount: number) {
+    node_start_orbit(nodeId: number, propsPtr: number) {
+      moveCursorView(wasmCtx.cursorView, propsPtr);
+      const pitch = readFloat32(wasmCtx.cursorView);
+      const yaw = readFloat32(wasmCtx.cursorView);
+      const zoom = readFloat32(wasmCtx.cursorView);
+
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+      if (!node) {
+        return -1;
+      }
+
+      startOrbit(ctx, node, { pitch, yaw, zoom });
+
+      return 1;
+    },
+    world_stop_orbit() {
+      stopOrbit(ctx);
+      return 1;
+    },
+    world_create_mesh(propsPtr: number) {
       try {
-        const primitiveProps: MeshPrimitiveProps[] = [];
-        const MESH_PRIMITIVE_PROPS_BYTE_LENGTH = 20;
+        moveCursorView(wasmCtx.cursorView, propsPtr);
+        const name = readStringFromCursorView(wasmCtx);
+        readExtensionsAndExtras(wasmCtx);
+        readFloatList(wasmCtx); // Weights (currently unused)
 
-        for (let primitiveIndex = 0; primitiveIndex < primitiveCount; primitiveIndex++) {
-          moveCursorView(wasmCtx.cursorView, primitivesPtr + primitiveIndex * MESH_PRIMITIVE_PROPS_BYTE_LENGTH);
-
+        const primitiveProps: MeshPrimitiveProps[] = readList(wasmCtx, () => {
+          readExtensionsAndExtras(wasmCtx);
+          const attributes = readRefMap(wasmCtx, RemoteAccessor);
+          const indices = readResourceRef(wasmCtx, RemoteAccessor);
+          const material = readResourceRef(wasmCtx, RemoteMaterial);
           const mode = readUint32(wasmCtx.cursorView);
+          readRefMap(wasmCtx, RemoteAccessor); // targets (currently unused)
 
           if (MeshPrimitiveMode[mode] === undefined) {
-            console.error(`WebSG: invalid mesh primitive mode: ${mode}`);
-            return -1;
+            throw new Error(`WebSG: invalid mesh primitive mode: ${mode}`);
           }
 
-          const indicesAccessorId = readUint32(wasmCtx.cursorView);
-
-          let indices: RemoteAccessor | undefined;
-
-          if (indicesAccessorId) {
-            indices = getScriptResource(wasmCtx, RemoteAccessor, indicesAccessorId);
-
-            if (!indices) {
-              return -1;
-            }
-          }
-
-          const materialId = readUint32(wasmCtx.cursorView);
-
-          let material: RemoteMaterial | undefined;
-
-          if (materialId) {
-            material = getScriptResource(wasmCtx, RemoteMaterial, materialId);
-
-            if (!material) {
-              return -1;
-            }
-          }
-
-          const attributeCount = readUint32(wasmCtx.cursorView);
-          const attributesPtr = readUint32(wasmCtx.cursorView);
-          const MESH_PRIMITIVE_ATTRIBUTE_BYTE_LENGTH = 8;
-
-          const attributes: { [key: number]: RemoteAccessor } = {};
-
-          for (let attributeIndex = 0; attributeIndex < attributeCount; attributeIndex++) {
-            moveCursorView(wasmCtx.cursorView, attributesPtr + attributeIndex * MESH_PRIMITIVE_ATTRIBUTE_BYTE_LENGTH);
-            const attributeKey = readUint32(wasmCtx.cursorView);
-
-            if (MeshPrimitiveAttributeIndex[attributeKey] === undefined) {
-              console.error(`WebSG: invalid mesh primitive key: ${attributeKey}`);
-              return -1;
-            }
-
-            const attributeAccessorId = readUint32(wasmCtx.cursorView);
-
-            const accessor = getScriptResource(wasmCtx, RemoteAccessor, attributeAccessorId);
-
-            if (accessor === undefined) {
-              return -1;
-            }
-
-            attributes[attributeKey] = accessor;
-          }
-
-          primitiveProps.push({
+          return {
             mode,
             indices,
             material,
             attributes,
-          });
-        }
+          };
+        });
 
         const primitives: RemoteMeshPrimitive[] = [];
 
@@ -724,7 +1156,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
           primitives.push(new RemoteMeshPrimitive(wasmCtx.resourceManager, props));
         }
 
-        const mesh = new RemoteMesh(wasmCtx.resourceManager, { primitives });
+        const mesh = new RemoteMesh(wasmCtx.resourceManager, { name, primitives });
 
         return mesh.eid;
       } catch (error) {
@@ -732,7 +1164,29 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
         return 0;
       }
     },
-    mesh_find_by_name(namePtr: number, byteLength: number) {
+    world_create_box_mesh(propsPtr: number) {
+      moveCursorView(wasmCtx.cursorView, propsPtr);
+      const size = readFloat32Array(wasmCtx.cursorView, 3);
+      const segments = readUint32Array(wasmCtx.cursorView, 3);
+      const materialId = readUint32(wasmCtx.cursorView);
+
+      const geometry = new BoxGeometry(size[0], size[1], size[2], segments[0], segments[1], segments[2]);
+
+      let material: RemoteMaterial | undefined = undefined;
+
+      if (materialId) {
+        material = getScriptResource(wasmCtx, RemoteMaterial, materialId);
+
+        if (!material) {
+          return -1;
+        }
+      }
+
+      const mesh = createMesh(ctx, geometry, material, wasmCtx.resourceManager);
+
+      return mesh.eid;
+    },
+    world_find_mesh_by_name(namePtr: number, byteLength: number) {
       const mesh = getScriptResourceByNamePtr(ctx, wasmCtx, RemoteMesh, namePtr, byteLength);
       return mesh ? mesh.eid : 0;
     },
@@ -771,19 +1225,6 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       return 0;
     },
-    mesh_set_primitive_hologram_material_enabled(meshId: number, index: number, enabled: number) {
-      const mesh = getScriptResource(wasmCtx, RemoteMesh, meshId);
-
-      const primitive = mesh?.primitives[index];
-
-      if (!primitive) {
-        return -1;
-      }
-
-      primitive.hologramMaterialEnabled = !!enabled;
-
-      return 0;
-    },
     mesh_get_primitive_mode(meshId: number, index: number) {
       const mesh = getScriptResource(wasmCtx, RemoteMesh, meshId);
       return mesh?.primitives[index]?.mode || 0;
@@ -802,50 +1243,30 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       return 0;
     },
-    create_box_mesh(propsPtr: number) {
-      moveCursorView(wasmCtx.cursorView, propsPtr);
-      const size = readFloat32Array(wasmCtx.cursorView, 3);
-      const segments = readUint32Array(wasmCtx.cursorView, 3);
-      const materialId = readUint32(wasmCtx.cursorView);
+    mesh_set_primitive_hologram_material_enabled(meshId: number, index: number, enabled: number) {
+      const mesh = getScriptResource(wasmCtx, RemoteMesh, meshId);
 
-      const geometry = new BoxGeometry(size[0], size[1], size[2], segments[0], segments[1], segments[2]);
+      const primitive = mesh?.primitives[index];
 
-      let material: RemoteMaterial | undefined = undefined;
-
-      if (materialId) {
-        material = getScriptResource(wasmCtx, RemoteMaterial, materialId);
-
-        if (!material) {
-          return -1;
-        }
+      if (!primitive) {
+        return -1;
       }
 
-      const mesh = createMesh(ctx, geometry, material, wasmCtx.resourceManager);
+      primitive.hologramMaterialEnabled = !!enabled;
 
-      return mesh.eid;
+      return 0;
     },
-    create_accessor_from(dataPtr: number, byteLength: number, propsPtr: number) {
+    world_create_accessor_from(dataPtr: number, byteLength: number, propsPtr: number) {
       try {
         const data = readSharedArrayBuffer(wasmCtx, dataPtr, byteLength);
         moveCursorView(wasmCtx.cursorView, propsPtr);
-        const type = readUint32(wasmCtx.cursorView);
-
-        if (AccessorType[type] === undefined) {
-          console.error(`WebSG: invalid accessor type: ${type}`);
-          return 0;
-        }
-
-        const componentType = readUint32(wasmCtx.cursorView);
-
-        if (AccessorComponentType[componentType] === undefined) {
-          console.error(`WebSG: invalid accessor component type: ${componentType}`);
-          return 0;
-        }
-
+        const type = readEnum(wasmCtx, AccessorType, "AccessorType");
+        const componentType = readEnum(wasmCtx, AccessorComponentType, "AccessorComponentType");
         const count = readUint32(wasmCtx.cursorView);
         const normalized = !!readUint32(wasmCtx.cursorView);
         const dynamic = !!readUint32(wasmCtx.cursorView);
-        // TODO: read min/max props
+        readFloatList(wasmCtx); // min (currently unused)
+        readFloatList(wasmCtx); // max (currently unused)
 
         const buffer = new RemoteBuffer(wasmCtx.resourceManager, { data });
         const bufferView = new RemoteBufferView(wasmCtx.resourceManager, { buffer, byteLength });
@@ -864,7 +1285,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
         return 0;
       }
     },
-    accessor_find_by_name(namePtr: number, byteLength: number) {
+    world_find_accessor_by_name(namePtr: number, byteLength: number) {
       const accessor = getScriptResourceByNamePtr(ctx, wasmCtx, RemoteAccessor, namePtr, byteLength);
       return accessor ? accessor.eid : 0;
     },
@@ -919,17 +1340,94 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
         return -1;
       }
     },
-    create_material(type: number) {
-      if (MaterialType[type] === undefined) {
-        console.error("WebSG: Invalid material type.");
-        return -1;
+    world_create_material(propsPtr: number) {
+      try {
+        moveCursorView(wasmCtx.cursorView, propsPtr);
+        const name = readStringFromCursorView(wasmCtx);
+        const extensions = readExtensionsAndExtras(wasmCtx);
+
+        const {
+          baseColorFactor,
+          baseColorTexture,
+          baseColorTextureOffset,
+          baseColorTextureRotation,
+          baseColorTextureScale,
+          metallicFactor,
+          roughnessFactor,
+          metallicRoughnessTexture,
+          metallicRoughnessTextureOffset,
+          metallicRoughnessTextureRotation,
+          metallicRoughnessTextureScale,
+        } = readPBRMetallicRoughness(wasmCtx);
+
+        if ("KHR_materials_unlit" in extensions) {
+          const material = new RemoteMaterial(wasmCtx.resourceManager, {
+            type: MaterialType.Unlit,
+            name,
+            baseColorFactor,
+            baseColorTexture,
+            baseColorTextureOffset,
+            baseColorTextureRotation,
+            baseColorTextureScale,
+          });
+
+          return material.eid;
+        }
+
+        const [normalTexture, normalScale, normalTextureOffset, normalTextureRotation, normalTextureScale] =
+          readNormalTextureInfo(wasmCtx);
+        const [
+          occlusionTexture,
+          occlusionTextureStrength,
+          occlusionTextureOffset,
+          occlusionTextureRotation,
+          occlusionTextureScale,
+        ] = readOcclusionTextureInfo(wasmCtx);
+        const [emissiveTexture, emissiveTextureOffset, emissiveTextureRotation, emissiveTextureScale] =
+          readTextureInfo(wasmCtx);
+        const emissiveFactor = readFloat32Array(wasmCtx.cursorView, 3);
+        const alphaMode = readUint32(wasmCtx.cursorView);
+        const alphaCutoff = readFloat32(wasmCtx.cursorView);
+        const doubleSided = !!readUint32(wasmCtx.cursorView);
+
+        const material = new RemoteMaterial(wasmCtx.resourceManager, {
+          type: MaterialType.Standard,
+          name,
+          baseColorFactor,
+          baseColorTexture,
+          metallicFactor,
+          roughnessFactor,
+          metallicRoughnessTexture,
+          metallicRoughnessTextureOffset,
+          metallicRoughnessTextureRotation,
+          metallicRoughnessTextureScale,
+          normalTexture,
+          normalScale,
+          normalTextureOffset,
+          normalTextureRotation,
+          normalTextureScale,
+          occlusionTexture,
+          occlusionTextureStrength,
+          occlusionTextureOffset,
+          occlusionTextureRotation,
+          occlusionTextureScale,
+          emissiveFactor,
+          emissiveTexture,
+          emissiveTextureOffset,
+          emissiveTextureRotation,
+          emissiveTextureScale,
+          alphaMode,
+          alphaCutoff,
+          doubleSided,
+        });
+
+        return material.eid;
+      } catch (error) {
+        console.error(`WebSG: error creating material:`, error);
+        return 0;
       }
-
-      const material = new RemoteMaterial(wasmCtx.resourceManager, { type });
-
-      return material.eid;
     },
-    material_find_by_name(namePtr: number, byteLength: number) {
+    world_find_material_by_name(namePtr: number, byteLength: number) {
       const material = getScriptResourceByNamePtr(ctx, wasmCtx, RemoteMaterial, namePtr, byteLength);
       return material ? material.eid : 0;
     },
@@ -952,6 +1450,26 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       }
 
       readFloat32ArrayInto(wasmCtx, colorPtr, material.baseColorFactor);
+
+      return 0;
+    },
+    material_get_base_color_factor_element(materialId: number, index: number) {
+      const material = getScriptResource(wasmCtx, RemoteMaterial, materialId);
+
+      if (!material) {
+        return -1;
+      }
+
+      return material.baseColorFactor[index];
+    },
+    material_set_base_color_factor_element(materialId: number, index: number, value: number) {
+      const material = getScriptResource(wasmCtx, RemoteMaterial, materialId);
+
+      if (!material) {
+        return -1;
+      }
+
+      material.baseColorFactor[index] = value;
 
       return 0;
     },
@@ -1007,6 +1525,26 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       return 0;
     },
+    material_get_emissive_factor_element(materialId: number, index: number) {
+      const material = getScriptResource(wasmCtx, RemoteMaterial, materialId);
+
+      if (!material) {
+        return -1;
+      }
+
+      return material.emissiveFactor[index];
+    },
+    material_set_emissive_factor_element(materialId: number, index: number, value: number) {
+      const material = getScriptResource(wasmCtx, RemoteMaterial, materialId);
+
+      if (!material) {
+        return -1;
+      }
+
+      material.emissiveFactor[index] = value;
+
+      return 0;
+    },
     material_get_base_color_texture(materialId: number) {
       const material = getScriptResource(wasmCtx, RemoteMaterial, materialId);
 
@@ -1033,15 +1571,42 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       return 0;
     },
-    create_light(type: number) {
-      if (LightType[type] === undefined) {
-        console.error("WebSG: Invalid light type.");
-        return -1;
+    world_find_texture_by_name(namePtr: number, byteLength: number) {
+      const texture = getScriptResourceByNamePtr(ctx, wasmCtx, RemoteTexture, namePtr, byteLength);
+      return texture ? texture.eid : 0;
+    },
+    world_create_light(propsPtr: number) {
+      try {
+        moveCursorView(wasmCtx.cursorView, propsPtr);
+        const name = readStringFromCursorView(wasmCtx);
+        readExtensionsAndExtras(wasmCtx);
+        const color = readFloat32Array(wasmCtx.cursorView, 3);
+        const intensity = readFloat32(wasmCtx.cursorView);
+        const type = readEnum(wasmCtx, LightType, "LightType");
+        const range = readFloat32(wasmCtx.cursorView);
+        readExtensionsAndExtras(wasmCtx); // Spot extensions
+        const innerConeAngle = readFloat32(wasmCtx.cursorView);
+        const outerConeAngle = readFloat32(wasmCtx.cursorView);
+
+        const light = new RemoteLight(wasmCtx.resourceManager, {
+          name,
+          type,
+          color,
+          intensity,
+          range,
+          innerConeAngle,
+          outerConeAngle,
+        });
+
+        return light.eid;
+      } catch (error) {
+        console.error(`WebSG: error creating light:`, error);
+        return 0;
       }
-
-      const light = new RemoteLight(wasmCtx.resourceManager, { type });
-
-      return light.eid;
+    },
+    world_find_light_by_name(namePtr: number, byteLength: number) {
+      const light = getScriptResourceByNamePtr(ctx, wasmCtx, RemoteLight, namePtr, byteLength);
+      return light ? light.eid : 0;
     },
     light_get_color(lightId: number, colorPtr: number) {
       const light = getScriptResource(wasmCtx, RemoteLight, lightId);
@@ -1065,6 +1630,26 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       return 0;
     },
+    light_get_color_element(lightId: number, index: number) {
+      const light = getScriptResource(wasmCtx, RemoteLight, lightId);
+
+      if (!light) {
+        return -1;
+      }
+
+      return light.color[index];
+    },
+    light_set_color_element(lightId: number, index: number, value: number) {
+      const light = getScriptResource(wasmCtx, RemoteLight, lightId);
+
+      if (!light) {
+        return -1;
+      }
+
+      light.color[index] = value;
+
+      return 0;
+    },
     light_get_intensity(lightId: number) {
       const light = getScriptResource(wasmCtx, RemoteLight, lightId);
       return light?.intensity || 0;
@@ -1080,28 +1665,37 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       return 0;
     },
-    add_interactable(nodeId: number, type: number) {
-      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+    node_add_interactable(nodeId: number, propsPtr: number) {
+      try {
+        const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
 
-      if (!node) {
+        if (!node) {
+          return -1;
+        }
+
+        if (node.interactable) {
+          console.error("WebSG: node is already interactable.");
+          return -1;
+        }
+
+        moveCursorView(wasmCtx.cursorView, propsPtr);
+        readExtensionsAndExtras(wasmCtx);
+        const type = readEnum(wasmCtx, InteractableType, "InteractableType");
+
+        if (type !== InteractableType.Interactable) {
+          console.error("WebSG: Invalid interactable type.");
+          return -1;
+        }
+
+        node.interactable = new RemoteInteractable(wasmCtx.resourceManager, { type });
+
+        return 0;
+      } catch (error) {
+        console.error(`WebSG: error adding interactable:`, error);
         return -1;
       }
-
-      if (node.interactable) {
-        console.error("WebSG: node is already interactable.");
-        return -1;
-      }
-
-      if (type !== InteractableType.Interactable) {
-        console.error("WebSG: Invalid interactable type.");
-        return -1;
-      }
-
-      node.interactable = new RemoteInteractable(wasmCtx.resourceManager, { type });
-
-      return 0;
     },
-    remove_interactable(nodeId: number) {
+    node_remove_interactable(nodeId: number) {
       const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
 
       if (!node) {
@@ -1117,32 +1711,11 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       return 0;
     },
-    has_interactable(nodeId: number) {
+    node_has_interactable(nodeId: number) {
       const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
       return node?.interactable ? 1 : 0;
     },
-    get_interactable(nodeId: number, interactablePtr: number) {
-      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
-
-      if (!node) {
-        return -1;
-      }
-
-      const interactable = node.interactable;
-
-      if (!interactable) {
-        return -1;
-      }
-
-      moveCursorView(wasmCtx.cursorView, interactablePtr);
-      writeUint32(wasmCtx.cursorView, interactable.type); // Note we might be exposing other interactable types here
-      writeUint32(wasmCtx.cursorView, interactable.pressed ? 1 : 0);
-      writeUint32(wasmCtx.cursorView, interactable.held ? 1 : 0);
-      writeUint32(wasmCtx.cursorView, interactable.released ? 1 : 0);
-
-      return 0;
-    },
-    get_interactable_pressed(nodeId: number, interactablePtr: number) {
+    node_get_interactable_pressed(nodeId: number) {
       const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
 
       if (!node) {
@@ -1157,7 +1730,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       return interactable.pressed ? 1 : 0;
     },
-    get_interactable_held(nodeId: number, interactablePtr: number) {
+    node_get_interactable_held(nodeId: number) {
       const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
 
       if (!node) {
@@ -1172,7 +1745,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       return interactable.held ? 1 : 0;
     },
-    get_interactable_released(nodeId: number, interactablePtr: number) {
+    node_get_interactable_released(nodeId: number) {
       const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
 
       if (!node) {
@@ -1187,107 +1760,112 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       return interactable.released ? 1 : 0;
     },
-    create_collider(colliderPropsPtr: number) {
-      moveCursorView(wasmCtx.cursorView, colliderPropsPtr);
+    world_create_collider(propsPtr: number) {
+      try {
+        moveCursorView(wasmCtx.cursorView, propsPtr);
+        const name = readStringFromCursorView(wasmCtx);
+        readExtensionsAndExtras(wasmCtx);
+        const type = readEnum(wasmCtx, ColliderType, "ColliderType");
 
-      const type = readUint32(wasmCtx.cursorView);
+        // TODO: Add more checks for valid props per type
+        const isTrigger = !!readUint32(wasmCtx.cursorView);
+        const size = readFloat32Array(wasmCtx.cursorView, 3);
+        const radius = readFloat32(wasmCtx.cursorView);
+        const height = readFloat32(wasmCtx.cursorView);
+        const mesh = readResourceRef(wasmCtx, RemoteMesh);
 
-      if (ColliderType[type] === undefined) {
-        console.error(`WebSG: invalid collider type: ${type}`);
+        const collider = new RemoteCollider(wasmCtx.resourceManager, {
+          name,
+          type,
+          isTrigger,
+          size,
+          radius,
+          height,
+          mesh,
+        });
+
+        return collider.eid;
+      } catch (error) {
+        console.error(`WebSG: error creating collider:`, error);
         return -1;
       }
-
-      // TODO: Add more checks for valid props per type
-      const isTrigger = !!readUint32(wasmCtx.cursorView);
-      const size = readFloat32Array(wasmCtx.cursorView, 3);
-      const radius = readFloat32(wasmCtx.cursorView);
-      const height = readFloat32(wasmCtx.cursorView);
-      const meshId = readUint32(wasmCtx.cursorView);
-      const mesh = meshId ? getScriptResource(wasmCtx, RemoteMesh, meshId) : undefined;
-
-      const collider = new RemoteCollider(wasmCtx.resourceManager, {
-        type,
-        isTrigger,
-        size,
-        radius,
-        height,
-        mesh,
-      });
-
-      return collider.eid;
     },
-    add_physics_body(nodeId: number, propsPtr: number) {
-      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+    world_find_collider_by_name(namePtr: number, byteLength: number) {
+      const collider = getScriptResourceByNamePtr(ctx, wasmCtx, RemoteCollider, namePtr, byteLength);
+      return collider ? collider.eid : 0;
+    },
+    node_add_physics_body(nodeId: number, propsPtr: number) {
+      try {
+        const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
 
-      if (!node) {
-        return -1;
-      }
-
-      if (hasComponent(ctx.world, RigidBody, node.eid)) {
-        console.error("WebSG: node already has a rigid body.");
-        return -1;
-      }
-
-      moveCursorView(wasmCtx.cursorView, propsPtr);
-
-      const type = readUint32(wasmCtx.cursorView);
-
-      if (PhysicsBodyType[type] === undefined) {
-        console.error(`WebSG: invalid physics body type: ${type}`);
-        return -1;
-      }
-
-      let rigidBodyDesc: RAPIER.RigidBodyDesc;
-      let meshResource: RemoteMesh | undefined;
-      let primitiveResource: RemoteMeshPrimitive | undefined;
-
-      if (type === PhysicsBodyType.Rigid) {
-        rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic();
-      } else if (type === PhysicsBodyType.Kinematic) {
-        rigidBodyDesc = RAPIER.RigidBodyDesc.kinematicPositionBased();
-      } else {
-        rigidBodyDesc = RAPIER.RigidBodyDesc.fixed();
-      }
-
-      rigidBodyDesc.linvel.x = readFloat32(wasmCtx.cursorView);
-      rigidBodyDesc.linvel.y = readFloat32(wasmCtx.cursorView);
-      rigidBodyDesc.linvel.z = readFloat32(wasmCtx.cursorView);
-
-      rigidBodyDesc.angvel.x = readFloat32(wasmCtx.cursorView);
-      rigidBodyDesc.angvel.y = readFloat32(wasmCtx.cursorView);
-      rigidBodyDesc.angvel.z = readFloat32(wasmCtx.cursorView);
-
-      // const inertiaTensor = readFloat32Array(wasmCtx.cursorView, 9);
-
-      const { physicsWorld } = getModule(ctx, PhysicsModule);
-
-      const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
-
-      const nodeColliderDesc = createNodeColliderDesc(node);
-
-      if (nodeColliderDesc) {
-        physicsWorld.createCollider(nodeColliderDesc, rigidBody);
-      }
-
-      let curChild = node.firstChild;
-
-      while (curChild) {
-        if (!hasComponent(ctx.world, RigidBody, curChild.eid)) {
-          const childColliderDesc = createNodeColliderDesc(curChild);
-
-          if (childColliderDesc) {
-            physicsWorld.createCollider(childColliderDesc, rigidBody);
-          }
+        if (!node) {
+          return -1;
         }
 
-        curChild = curChild.nextSibling;
+        if (hasComponent(ctx.world, RigidBody, node.eid)) {
+          console.error("WebSG: node already has a rigid body.");
+          return -1;
+        }
+
+        moveCursorView(wasmCtx.cursorView, propsPtr);
+        readExtensionsAndExtras(wasmCtx);
+        const type = readEnum(wasmCtx, PhysicsBodyType, "PhysicsBodyType");
+
+        let rigidBodyDesc: RAPIER.RigidBodyDesc;
+        let meshResource: RemoteMesh | undefined;
+        let primitiveResource: RemoteMeshPrimitive | undefined;
+
+        if (type === PhysicsBodyType.Rigid) {
+          rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic();
+        } else if (type === PhysicsBodyType.Kinematic) {
+          rigidBodyDesc = RAPIER.RigidBodyDesc.kinematicPositionBased();
+        } else {
+          rigidBodyDesc = RAPIER.RigidBodyDesc.fixed();
+        }
+
+        rigidBodyDesc.linvel.x = readFloat32(wasmCtx.cursorView);
+        rigidBodyDesc.linvel.y = readFloat32(wasmCtx.cursorView);
+        rigidBodyDesc.linvel.z = readFloat32(wasmCtx.cursorView);
+
+        rigidBodyDesc.angvel.x = readFloat32(wasmCtx.cursorView);
+        rigidBodyDesc.angvel.y = readFloat32(wasmCtx.cursorView);
+        rigidBodyDesc.angvel.z = readFloat32(wasmCtx.cursorView);
+
+        readFloat32Array(wasmCtx.cursorView, 9); // Inertia tensor (currently unused)
+
+        const { physicsWorld } = getModule(ctx, PhysicsModule);
+
+        const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
+
+        const nodeColliderDesc = createNodeColliderDesc(node);
+
+        if (nodeColliderDesc) {
+          physicsWorld.createCollider(nodeColliderDesc, rigidBody);
+        }
+
+        let curChild = node.firstChild;
+
+        while (curChild) {
+          if (!hasComponent(ctx.world, RigidBody, curChild.eid)) {
+            const childColliderDesc = createNodeColliderDesc(curChild);
+
+            if (childColliderDesc) {
+              physicsWorld.createCollider(childColliderDesc, rigidBody);
+            }
+          }
+
+          curChild = curChild.nextSibling;
+        }
+
+        addRigidBody(ctx, node, rigidBody, meshResource, primitiveResource);
+
+        return 0;
+      } catch (error) {
+        console.error(`WebSG: error adding physics body:`, error);
+        return -1;
       }
-
-      addRigidBody(ctx, node, rigidBody, meshResource, primitiveResource);
-
-      return 0;
     },
-    remove_physics_body(nodeId: number) {
+    node_remove_physics_body(nodeId: number) {
       const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
 
       if (!node) {
@@ -1298,26 +1876,1433 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       return 0;
     },
-    has_physics_body(nodeId: number) {
+    node_has_physics_body(nodeId: number) {
       const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
       return node && hasComponent(ctx.world, RigidBody, node.eid) ? 1 : 0;
     },
-    start_orbit(nodeId: number, propsPtr: number) {
-      moveCursorView(wasmCtx.cursorView, propsPtr);
-      const pitch = readFloat32(wasmCtx.cursorView);
-      const yaw = readFloat32(wasmCtx.cursorView);
-      const zoom = readFloat32(wasmCtx.cursorView);
+    // UI Canvas
+    world_create_ui_canvas(propsPtr: number) {
+      try {
+        moveCursorView(wasmCtx.cursorView, propsPtr);
+        const name = readStringFromCursorView(wasmCtx);
+        readExtensionsAndExtras(wasmCtx);
+        const root = readResourceRef(wasmCtx, RemoteUIElement);
+        const size = readFloat32Array(wasmCtx.cursorView, 2);
+        const width = readFloat32(wasmCtx.cursorView);
+        const height = readFloat32(wasmCtx.cursorView);
 
-      const options = { pitch, yaw, zoom };
+        const uiCanvas = new RemoteUICanvas(wasmCtx.resourceManager, {
+          name,
+          root,
+          size,
+          width,
+          height,
+        });
 
-      const node = getScriptResource(wasmCtx, RemoteNode, nodeId)!;
-
-      startOrbit(ctx, node, options);
-
-      return node;
+        return uiCanvas.eid;
+      } catch (error) {
+        console.error(`WebSG: error creating ui canvas:`, error);
+        return -1;
+      }
     },
-    stop_orbit() {
-      stopOrbit(ctx);
+    world_find_ui_canvas_by_name(namePtr: number, byteLength: number) {
+      const uiCanvas = getScriptResourceByNamePtr(ctx, wasmCtx, RemoteUICanvas, namePtr, byteLength);
+      return uiCanvas ? uiCanvas.eid : 0;
+    },
+    node_set_ui_canvas(nodeId: number, canvasId: number) {
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+      const canvas = getScriptResource(wasmCtx, RemoteUICanvas, canvasId);
+
+      if (!canvas || !node) {
+        return -1;
+      }
+
+      node.uiCanvas = canvas;
+      initNodeUICanvas(ctx, physics, node);
+
+      return 0;
+    },
+    node_get_ui_canvas(nodeId: number) {
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+      return node?.uiCanvas?.eid ?? 0;
+    },
+    ui_canvas_get_root(canvasId: number) {
+      const canvas = getScriptResource(wasmCtx, RemoteUICanvas, canvasId);
+
+      if (!canvas) {
+        return 0; // This function returns a u32 so errors returned as 0 / null eid
+      }
+
+      const root = canvas.root;
+
+      if (!root) {
+        return 0;
+      }
+
+      if (!wasmCtx.resourceManager.resourceIds.has(root.eid)) {
+        return 0;
+      }
+
+      return root.eid;
+    },
+    ui_canvas_set_root(canvasId: number, rootId: number) {
+      const canvas = getScriptResource(wasmCtx, RemoteUICanvas, canvasId);
+
+      if (!canvas) {
+        return -1;
+      }
+
+      const flex = getScriptResource(wasmCtx, RemoteUIElement, rootId);
+
+      if (!flex) {
+        return -1;
+      }
+
+      canvas.root = flex;
+
+      return 0;
+    },
+    ui_canvas_get_size(uiCanvasId: number, sizePtr: number) {
+      const uiCanvas = getScriptResource(wasmCtx, RemoteUICanvas, uiCanvasId);
+
+      if (!uiCanvas) {
+        return -1;
+      }
+
+      writeFloat32Array(wasmCtx, sizePtr, uiCanvas.size);
+
+      return 0;
+    },
+    ui_canvas_set_size(uiCanvasId: number, sizePtr: number) {
+      const uiCanvas = getScriptResource(wasmCtx, RemoteUICanvas, uiCanvasId);
+
+      if (!uiCanvas) {
+        return -1;
+      }
+
+      readFloat32ArrayInto(wasmCtx, sizePtr, uiCanvas.size);
+
+      return 0;
+    },
+    ui_canvas_get_size_element(uiCanvasId: number, index: number) {
+      const uiCanvas = getScriptResource(wasmCtx, RemoteUICanvas, uiCanvasId);
+
+      if (!uiCanvas) {
+        return -1;
+      }
+
+      return uiCanvas.size[index];
+    },
+    ui_canvas_set_size_element(uiCanvasId: number, index: number, value: number) {
+      const uiCanvas = getScriptResource(wasmCtx, RemoteUICanvas, uiCanvasId);
+
+      if (!uiCanvas) {
+        return -1;
+      }
+
+      uiCanvas.size[index] = value;
+
+      return 0;
+    },
+    ui_canvas_get_width(canvasId: number) {
+      const canvas = getScriptResource(wasmCtx, RemoteUICanvas, canvasId);
+
+      if (!canvas) {
+        return -1;
+      }
+
+      return canvas.width;
+    },
+    ui_canvas_set_width(canvasId: number, width: number) {
+      const canvas = getScriptResource(wasmCtx, RemoteUICanvas, canvasId);
+
+      if (!canvas) {
+        return -1;
+      }
+
+      canvas.width = width;
+
+      return 0;
+    },
+    ui_canvas_get_height(canvasId: number) {
+      const canvas = getScriptResource(wasmCtx, RemoteUICanvas, canvasId);
+
+      if (!canvas) {
+        return -1;
+      }
+
+      return canvas.height;
+    },
+    ui_canvas_set_height(canvasId: number, height: number) {
+      const canvas = getScriptResource(wasmCtx, RemoteUICanvas, canvasId);
+
+      if (!canvas) {
+        return -1;
+      }
+
+      canvas.height = height;
+
+      return 0;
+    },
+    ui_canvas_redraw(canvasId: number) {
+      const canvas = getScriptResource(wasmCtx, RemoteUICanvas, canvasId);
+
+      if (!canvas) {
+        return -1;
+      }
+
+      canvas.redraw++;
+
+      return 0;
+    },
+
+    // UI Element
+
+    world_create_ui_element(propsPtr: number) {
+      moveCursorView(wasmCtx.cursorView, propsPtr);
+      const name = readStringFromCursorView(wasmCtx);
+      readExtensionsAndExtras(wasmCtx);
+      const type = readEnum(wasmCtx, ElementType, "ElementType");
+      const position = readFloat32Array(wasmCtx.cursorView, 4);
+      const positionType = readEnum(wasmCtx, ElementPositionType, "PositionType");
+      const alignContent = readEnum(wasmCtx, FlexAlign, "FlexAlign");
+      const alignItems = readEnum(wasmCtx, FlexAlign, "FlexAlign");
+      const alignSelf = readEnum(wasmCtx, FlexAlign, "FlexAlign");
+      const flexDirection = readEnum(wasmCtx, FlexDirection, "FlexDirection");
+      const flexWrap = readEnum(wasmCtx, FlexWrap, "FlexWrap");
+      const flexBasis = readFloat32(wasmCtx.cursorView);
+      const flexGrow = readFloat32(wasmCtx.cursorView);
+      const flexShrink = readFloat32(wasmCtx.cursorView);
+      const justifyContent = readEnum(wasmCtx, FlexJustify, "FlexJustify");
+      const width = readFloat32(wasmCtx.cursorView);
+      const height = readFloat32(wasmCtx.cursorView);
+      const minWidth = readFloat32(wasmCtx.cursorView);
+      const minHeight = readFloat32(wasmCtx.cursorView);
+      const maxWidth = readFloat32(wasmCtx.cursorView);
+      const maxHeight = readFloat32(wasmCtx.cursorView);
+      const backgroundColor = readFloat32Array(wasmCtx.cursorView, 4);
+      const borderColor = readFloat32Array(wasmCtx.cursorView, 4);
+      const padding = readFloat32Array(wasmCtx.cursorView, 4);
+      const margin = readFloat32Array(wasmCtx.cursorView, 4);
+      const borderWidth = readFloat32Array(wasmCtx.cursorView, 4);
+      const borderRadius = readFloat32Array(wasmCtx.cursorView, 4);
+      const buttonPtr = readUint32(wasmCtx.cursorView);
+      const textPtr = readUint32(wasmCtx.cursorView);
+
+      let button: RemoteUIButton | undefined = undefined;
+
+      if (type === ElementType.Button) {
+        const rewind = rewindCursorView(wasmCtx.cursorView);
+        moveCursorView(wasmCtx.cursorView, buttonPtr);
+
+        readExtensionsAndExtras(wasmCtx);
+        const label = readStringLen(wasmCtx);
+
+        button = new RemoteUIButton(wasmCtx.resourceManager, {
+          label,
+        });
+
+        addInteractableComponent(ctx, physics, button, InteractableType.UI);
+
+        rewind();
+      }
+
+      skipUint32(wasmCtx.cursorView); // Button ptr
+
+      let text: RemoteUIText | undefined = undefined;
+
+      if (type === ElementType.Text || type === ElementType.Button) {
+        const rewind = rewindCursorView(wasmCtx.cursorView);
+        moveCursorView(wasmCtx.cursorView, textPtr);
+        readExtensionsAndExtras(wasmCtx);
+        const value = readStringLen(wasmCtx);
+        const fontFamily = readStringLen(wasmCtx);
+        const fontWeight = readStringLen(wasmCtx);
+        const fontStyle = readStringLen(wasmCtx);
+        const fontSize = readFloat32(wasmCtx.cursorView);
+        const color = readFloat32Array(wasmCtx.cursorView, 4);
+
+        text = new RemoteUIText(wasmCtx.resourceManager, {
+          value,
+          fontFamily,
+          fontWeight,
+          fontStyle,
+          fontSize,
+          color,
+        });
+
+        rewind();
+      }
+
+      try {
+        const uiElement = new RemoteUIElement(wasmCtx.resourceManager, {
+          name,
+          type,
+          position,
+          positionType,
+          alignContent,
+          alignItems,
+          alignSelf,
+          flexDirection,
+          flexWrap,
+          flexBasis,
+          flexGrow,
+          flexShrink,
+          justifyContent,
+          width,
+          height,
+          minWidth,
+          minHeight,
+          maxWidth,
+          maxHeight,
+          backgroundColor,
+          borderColor,
+          padding,
+          margin,
+          borderWidth,
+          borderRadius,
+          button,
+          text,
+        });
+        return uiElement.eid;
+      } catch (e) {
+        console.error("WebSG: error creating ui flex", e);
+        return -1;
+      }
+    },
+    world_find_ui_element_by_name(namePtr: number, byteLength: number) {
+      const uiElement = getScriptResourceByNamePtr(ctx, wasmCtx, RemoteUIElement, namePtr, byteLength);
+      return uiElement ? uiElement.eid : 0;
+    },
+    ui_element_get_position(lightId: number, positionPtr: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, lightId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      writeFloat32Array(wasmCtx, positionPtr, uiElement.position);
+
+      return 0;
+    },
+    ui_element_set_position(uiElementId: number, positionPtr: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      readFloat32ArrayInto(wasmCtx, positionPtr, uiElement.position);
+
+      return 0;
+    },
+    ui_element_get_position_element(uiElementId: number, index: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      return uiElement.position[index];
+    },
+    ui_element_set_position_element(uiElementId: number, index: number, value: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      uiElement.position[index] = value;
+
+      return 0;
+    },
+    ui_element_get_position_type(uiElementId: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      return uiElement.positionType;
+    },
+    ui_element_set_position_type(uiElementId: number, positionType: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      if (ElementPositionType[positionType] === undefined) {
+        console.error(`WebSG: invalid position type ${positionType}`);
+        return -1;
+      }
+
+      uiElement.positionType = positionType;
+
+      return 0;
+    },
+    ui_element_get_align_content(uiElementId: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      return uiElement.alignContent;
+    },
+    ui_element_set_align_content(uiElementId: number, alignContent: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      if (FlexAlign[alignContent] === undefined) {
+        console.error(`WebSG: invalid flex alignment ${alignContent}`);
+        return -1;
+      }
+
+      uiElement.alignContent = alignContent;
+
+      return 0;
+    },
+    ui_element_get_align_items(uiElementId: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      return uiElement.alignItems;
+    },
+    ui_element_set_align_items(uiElementId: number, alignItems: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      if (FlexAlign[alignItems] === undefined) {
+        console.error(`WebSG: invalid flex alignment ${alignItems}`);
+        return -1;
+      }
+
+      uiElement.alignItems = alignItems;
+
+      return 0;
+    },
+    ui_element_get_align_self(uiElementId: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      return uiElement.alignSelf;
+    },
+    ui_element_set_align_self(uiElementId: number, alignSelf: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      if (FlexAlign[alignSelf] === undefined) {
+        console.error(`WebSG: invalid flex alignment ${alignSelf}`);
+        return -1;
+      }
+
+      uiElement.alignSelf = alignSelf;
+
+      return 0;
+    },
+    ui_element_get_flex_direction(uiElementId: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      return uiElement.flexDirection;
+    },
+    ui_element_set_flex_direction(uiElementId: number, flexDirection: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      if (FlexDirection[flexDirection] === undefined) {
+        console.error(`WebSG: invalid flex direction ${flexDirection}`);
+        return -1;
+      }
+
+      uiElement.flexDirection = flexDirection;
+
+      return 0;
+    },
+    ui_element_get_flex_wrap(uiElementId: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      return uiElement.flexWrap;
+    },
+    ui_element_set_flex_wrap(uiElementId: number, flexWrap: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      if (FlexWrap[flexWrap] === undefined) {
+        console.error(`WebSG: invalid flex direction ${flexWrap}`);
+        return -1;
+      }
+
+      uiElement.flexWrap = flexWrap;
+
+      return 0;
+    },
+    ui_element_get_flex_basis(uiElementId: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      return uiElement.flexBasis;
+    },
+    ui_element_set_flex_basis(uiElementId: number, flexBasis: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      uiElement.flexBasis = flexBasis;
+
+      return 0;
+    },
+    ui_element_get_flex_grow(uiElementId: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      return uiElement.flexGrow;
+    },
+    ui_element_set_flex_grow(uiElementId: number, flexGrow: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      uiElement.flexGrow = flexGrow;
+
+      return 0;
+    },
+    ui_element_get_flex_shrink(uiElementId: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      return uiElement.flexShrink;
+    },
+    ui_element_set_flex_shrink(uiElementId: number, flexShrink: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      uiElement.flexShrink = flexShrink;
+
+      return 0;
+    },
+    ui_element_get_justify_content(uiElementId: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      return uiElement.justifyContent;
+    },
+    ui_element_set_justify_content(uiElementId: number, justifyContent: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      if (FlexJustify[justifyContent] === undefined) {
+        console.error(`WebSG: invalid flex direction ${justifyContent}`);
+        return -1;
+      }
+
+      uiElement.justifyContent = justifyContent;
+
+      return 0;
+    },
+    ui_element_get_width(uiElementId: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      return uiElement.width;
+    },
+    ui_element_set_width(uiElementId: number, width: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      uiElement.width = width;
+
+      return 0;
+    },
+    ui_element_get_height(uiElementId: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      return uiElement.height;
+    },
+    ui_element_set_height(uiElementId: number, height: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      uiElement.height = height;
+
+      return 0;
+    },
+    ui_element_get_min_width(uiElementId: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      return uiElement.minWidth;
+    },
+    ui_element_set_min_width(uiElementId: number, minWidth: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      uiElement.minWidth = minWidth;
+
+      return 0;
+    },
+    ui_element_get_min_height(uiElementId: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      return uiElement.minHeight;
+    },
+    ui_element_set_min_height(uiElementId: number, minHeight: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      uiElement.minHeight = minHeight;
+
+      return 0;
+    },
+    ui_element_get_max_width(uiElementId: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      return uiElement.maxWidth;
+    },
+    ui_element_set_max_width(uiElementId: number, maxWidth: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      uiElement.maxWidth = maxWidth;
+
+      return 0;
+    },
+    ui_element_get_max_height(uiElementId: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      return uiElement.maxHeight;
+    },
+    ui_element_set_max_height(uiElementId: number, maxHeight: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      uiElement.maxHeight = maxHeight;
+
+      return 0;
+    },
+    ui_element_get_background_color(uiElementId: number, colorPtr: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      writeFloat32Array(wasmCtx, colorPtr, uiElement.backgroundColor);
+
+      return 0;
+    },
+    ui_element_set_background_color(uiElementId: number, colorPtr: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      readFloat32ArrayInto(wasmCtx, colorPtr, uiElement.backgroundColor);
+
+      return 0;
+    },
+    ui_element_get_background_color_element(uiElementId: number, index: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      return uiElement.backgroundColor[index];
+    },
+    ui_element_set_background_color_element(uiElementId: number, index: number, value: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      uiElement.backgroundColor[index] = value;
+
+      return 0;
+    },
+    ui_element_get_border_color(lightId: number, colorPtr: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, lightId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      writeFloat32Array(wasmCtx, colorPtr, uiElement.borderColor);
+
+      return 0;
+    },
+    ui_element_set_border_color(uiElementId: number, colorPtr: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      readFloat32ArrayInto(wasmCtx, colorPtr, uiElement.borderColor);
+
+      return 0;
+    },
+    ui_element_get_border_color_element(uiElementId: number, index: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      return uiElement.borderColor[index];
+    },
+    ui_element_set_border_color_element(uiElementId: number, index: number, value: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      uiElement.borderColor[index] = value;
+
+      return 0;
+    },
+    ui_element_get_padding(lightId: number, paddingPtr: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, lightId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      writeFloat32Array(wasmCtx, paddingPtr, uiElement.padding);
+
+      return 0;
+    },
+    ui_element_set_padding(uiElementId: number, paddingPtr: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      readFloat32ArrayInto(wasmCtx, paddingPtr, uiElement.padding);
+
+      return 0;
+    },
+    ui_element_get_padding_element(uiElementId: number, index: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      return uiElement.padding[index];
+    },
+    ui_element_set_padding_element(uiElementId: number, index: number, value: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      uiElement.padding[index] = value;
+
+      return 0;
+    },
+    ui_element_get_margin(lightId: number, marginPtr: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, lightId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      writeFloat32Array(wasmCtx, marginPtr, uiElement.margin);
+
+      return 0;
+    },
+    ui_element_set_margin(uiElementId: number, marginPtr: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      readFloat32ArrayInto(wasmCtx, marginPtr, uiElement.margin);
+
+      return 0;
+    },
+    ui_element_get_margin_element(uiElementId: number, index: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      return uiElement.margin[index];
+    },
+    ui_element_set_margin_element(uiElementId: number, index: number, value: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      uiElement.margin[index] = value;
+
+      return 0;
+    },
+    ui_element_get_border_width(lightId: number, borderWidth: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, lightId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      writeFloat32Array(wasmCtx, borderWidth, uiElement.borderWidth);
+
+      return 0;
+    },
+    ui_element_set_border_width(uiElementId: number, borderWidth: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      readFloat32ArrayInto(wasmCtx, borderWidth, uiElement.borderWidth);
+
+      return 0;
+    },
+    ui_element_get_border_width_element(uiElementId: number, index: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      return uiElement.borderWidth[index];
+    },
+    ui_element_set_border_width_element(uiElementId: number, index: number, value: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      uiElement.borderWidth[index] = value;
+
+      return 0;
+    },
+    ui_element_get_border_radius(lightId: number, borderRadius: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, lightId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      writeFloat32Array(wasmCtx, borderRadius, uiElement.borderRadius);
+
+      return 0;
+    },
+    ui_element_set_border_radius(uiElementId: number, borderRadius: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      readFloat32ArrayInto(wasmCtx, borderRadius, uiElement.borderRadius);
+
+      return 0;
+    },
+    ui_element_get_border_radius_element(uiElementId: number, index: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      return uiElement.borderRadius[index];
+    },
+    ui_element_set_border_radius_element(uiElementId: number, index: number, value: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      uiElement.borderRadius[index] = value;
+
+      return 0;
+    },
+    ui_element_get_element_type(uiElementId: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      return uiElement.type;
+    },
+    ui_element_add_child(uiElementId: number, childId: number) {
+      const flex = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!flex) {
+        return -1;
+      }
+
+      const child = getScriptResource(wasmCtx, RemoteUIElement, childId);
+
+      if (!child) {
+        return -1;
+      }
+
+      addUIElementChild(flex, child);
+
+      return 0;
+    },
+    ui_element_remove_child(uiElementId: number, childId: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      const child = getScriptResource(wasmCtx, RemoteUIElement, childId);
+
+      if (!child) {
+        return -1;
+      }
+
+      removeUIElementChild(uiElement, child);
+
+      return 0;
+    },
+    ui_element_get_child_count(uiElementId: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      return getScriptUIElementChildCount(wasmCtx, uiElement);
+    },
+    ui_element_get_children(uiElementId: number, childArrPtr: number, maxCount: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      return getScriptUIElementChildren(wasmCtx, uiElement, childArrPtr, maxCount);
+    },
+    ui_element_get_child(uiElementId: number, index: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return 0; // This function returns a u32 so errors returned as 0 / null eid
+      }
+
+      return scriptGetUIElementChildAt(wasmCtx, uiElement, index);
+    },
+    ui_element_get_parent(uiElementId: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return 0; // This function returns a u32 so errors returned as 0 / null eid
+      }
+
+      const parent = uiElement.parent;
+
+      if (!parent) {
+        return 0;
+      }
+
+      if (!wasmCtx.resourceManager.resourceIds.has(parent.eid)) {
+        return 0;
+      }
+
+      return parent.eid;
+    },
+
+    // UI Button
+    ui_button_get_label_length(uiElementId: number) {
+      const el = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!el) {
+        return -1;
+      }
+
+      if (!el.button) {
+        return -1;
+      }
+
+      return el.button.label.length;
+    },
+    ui_button_get_label(uiElementId: number, labelPtr: number, length: number) {
+      const el = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!el) {
+        return -1;
+      }
+
+      if (!el.button) {
+        return -1;
+      }
+
+      writeString(wasmCtx, labelPtr, el.button.label, length);
+
+      return 0;
+    },
+    ui_button_set_label(uiElementId: number, labelPtr: number, length: number) {
+      const el = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!el) {
+        return -1;
+      }
+
+      if (!el.button) {
+        return -1;
+      }
+
+      const label = readString(wasmCtx, labelPtr, length);
+
+      if (!label) {
+        return -1;
+      }
+
+      el.button.label = label;
+
+      return 0;
+    },
+    ui_button_get_pressed(uiElementId: number) {
+      const el = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!el) {
+        return -1;
+      }
+
+      if (!el.button) {
+        return -1;
+      }
+
+      const interactable = el.button.interactable;
+
+      if (!interactable) {
+        return -1;
+      }
+
+      return interactable.pressed ? 1 : 0;
+    },
+    ui_button_get_held(uiElementId: number) {
+      const el = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!el) {
+        return -1;
+      }
+
+      if (!el.button) {
+        return -1;
+      }
+
+      const interactable = el.button.interactable;
+
+      if (!interactable) {
+        return -1;
+      }
+
+      return interactable.held ? 1 : 0;
+    },
+    ui_button_get_released(uiElementId: number) {
+      const el = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!el) {
+        return -1;
+      }
+
+      if (!el.button) {
+        return -1;
+      }
+
+      const interactable = el.button.interactable;
+
+      if (!interactable) {
+        return -1;
+      }
+
+      return interactable.released ? 1 : 0;
+    },
+
+    // UI Text
+
+    ui_text_get_value_length(uiElementId: number) {
+      const el = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!el) {
+        return -1;
+      }
+
+      if (!el.text) {
+        return -1;
+      }
+
+      return el.text.value.length;
+    },
+    ui_text_get_value(uiElementId: number, valuePtr: number, length: number) {
+      const el = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!el) {
+        return -1;
+      }
+
+      if (!el.text) {
+        return -1;
+      }
+
+      writeString(wasmCtx, valuePtr, el.text.value, length);
+
+      return 0;
+    },
+    ui_text_set_value(uiElementId: number, valuePtr: number, length: number) {
+      const el = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!el) {
+        return -1;
+      }
+
+      if (!el.text) {
+        return -1;
+      }
+
+      const value = readString(wasmCtx, valuePtr, length);
+
+      if (!value) {
+        return -1;
+      }
+
+      el.text.value = value;
+
+      return 0;
+    },
+    ui_text_get_font_family_length(uiElementId: number) {
+      const el = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!el) {
+        return -1;
+      }
+
+      if (!el.text) {
+        return -1;
+      }
+
+      return el.text.fontFamily.length;
+    },
+    ui_text_get_font_family(uiElementId: number, fontFamilyPtr: number, length: number) {
+      const el = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!el) {
+        return -1;
+      }
+
+      if (!el.text) {
+        return -1;
+      }
+
+      writeString(wasmCtx, fontFamilyPtr, el.text.fontFamily, length);
+
+      return 0;
+    },
+    ui_text_set_font_family(uiElementId: number, fontFamilyPtr: number, length: number) {
+      const el = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!el) {
+        return -1;
+      }
+
+      if (!el.text) {
+        return -1;
+      }
+
+      const fontFamily = readString(wasmCtx, fontFamilyPtr, length);
+
+      if (!fontFamily) {
+        return -1;
+      }
+
+      el.text.fontFamily = fontFamily;
+
+      return 0;
+    },
+    ui_text_get_font_style_length(uiElementId: number) {
+      const el = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!el) {
+        return -1;
+      }
+
+      if (!el.text) {
+        return -1;
+      }
+
+      return el.text.fontStyle.length;
+    },
+    ui_text_get_font_style(uiElementId: number, fontStylePtr: number, length: number) {
+      const el = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!el) {
+        return -1;
+      }
+
+      if (!el.text) {
+        return -1;
+      }
+
+      writeString(wasmCtx, fontStylePtr, el.text.fontStyle, length);
+
+      return 0;
+    },
+    ui_text_set_font_style(uiElementId: number, fontStylePtr: number, length: number) {
+      const el = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!el) {
+        return -1;
+      }
+
+      if (!el.text) {
+        return -1;
+      }
+
+      const fontStyle = readString(wasmCtx, fontStylePtr, length);
+
+      if (!fontStyle) {
+        return -1;
+      }
+
+      el.text.fontStyle = fontStyle;
+
+      return 0;
+    },
+    ui_text_get_font_weight_length(uiElementId: number) {
+      const el = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!el) {
+        return -1;
+      }
+
+      if (!el.text) {
+        return -1;
+      }
+
+      return el.text.fontWeight.length;
+    },
+    ui_text_get_font_weight(uiElementId: number, fontWeightPtr: number, length: number) {
+      const el = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!el) {
+        return -1;
+      }
+
+      if (!el.text) {
+        return -1;
+      }
+
+      writeString(wasmCtx, fontWeightPtr, el.text.fontWeight, length);
+
+      return 0;
+    },
+    ui_text_set_font_weight(uiElementId: number, fontWeightPtr: number, length: number) {
+      const el = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!el) {
+        return -1;
+      }
+
+      if (!el.text) {
+        return -1;
+      }
+
+      const fontWeight = readString(wasmCtx, fontWeightPtr, length);
+
+      if (!fontWeight) {
+        return -1;
+      }
+
+      el.text.fontWeight = fontWeight;
+
+      return 0;
+    },
+    ui_text_get_font_size(uiElementId: number) {
+      const el = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!el) {
+        return -1;
+      }
+
+      if (!el.text) {
+        return -1;
+      }
+
+      return el.text.fontSize;
+    },
+    ui_text_set_font_size(uiElementId: number, fontSize: number) {
+      const el = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!el) {
+        return -1;
+      }
+
+      if (!el.text) {
+        return -1;
+      }
+
+      el.text.fontSize = fontSize;
+
+      return 0;
+    },
+    ui_text_get_color(uiElementId: number, colorPtr: number) {
+      const el = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!el) {
+        return -1;
+      }
+
+      if (!el.text) {
+        return -1;
+      }
+
+      writeFloat32Array(wasmCtx, colorPtr, el.text.color);
+
+      return 0;
+    },
+    ui_text_set_color(uiElementId: number, colorPtr: number) {
+      const el = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!el) {
+        return -1;
+      }
+
+      if (!el.text) {
+        return -1;
+      }
+
+      readFloat32ArrayInto(wasmCtx, colorPtr, el.text.color);
+
+      return 0;
+    },
+    ui_text_get_color_element(uiElementId: number, index: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      if (!uiElement.text) {
+        return -1;
+      }
+
+      return uiElement.text.color[index];
+    },
+    ui_text_set_color_element(uiElementId: number, index: number, value: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      if (!uiElement.text) {
+        return -1;
+      }
+
+      uiElement.text.color[index] = value;
+
       return 0;
     },
   };

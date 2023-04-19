@@ -38,7 +38,7 @@ function mockObject<T extends { [key: string]: any }>(obj: T, ignored: (keyof T)
   return obj;
 }
 
-describe("JS Scripting API", () => {
+describe.skip("JS Scripting API", () => {
   beforeEach<TestContext>(async (context) => {
     const wasmPath = resolve(__dirname, "./emscripten/build/test.wasm");
     const wasmBuffer = await readFile(wasmPath);

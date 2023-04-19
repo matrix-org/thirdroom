@@ -13,7 +13,7 @@ const pixelDensity = 1000;
 
 let tick = 0;
 
-onload = () => {
+onloadworld = () => {
   node = WebSG.createNode();
 
   WebSG.nodeSetPosition(node, new Float32Array([width / 2, height / 2, 0]));
@@ -73,7 +73,7 @@ onload = () => {
 };
 
 let x = 0;
-onupdate = (dt) => {
+onupdateworld = (dt) => {
   if (button && WebSG.UI.uiButtonGetPressed(button)) {
     x++;
     WebSG.UI.uiTextSetValue(text, "button pressed " + x + " times");

@@ -109,50 +109,51 @@ SphereData *generate_sphere_mesh(
     }
   }
 
-  AccessorProps *indices_props = malloc(sizeof(AccessorProps));
+  MeshPrimitiveProps *primitive_props = malloc(sizeof(MeshPrimitiveProps));
+  primitive_props->mode = MeshPrimitiveMode_TRIANGLES;
+  
+  AccessorFromProps *indices_props = malloc(sizeof(AccessorFromProps));
   indices_props->component_type = AccessorComponentType_Uint16;
   indices_props->count = indices_count;
   indices_props->type = AccessorType_SCALAR;
-  accessor_id_t indices_accessor = websg_create_accessor_from(indices, indices_byte_length, indices_props);
+  accessor_id_t indices_accessor = websg_world_create_accessor_from(indices, indices_byte_length, indices_props);
+  primitive_props->indices = indices_accessor;
 
-  AccessorProps *positions_props = malloc(sizeof(AccessorProps));
+  primitive_props->attributes.items = malloc(sizeof(MeshPrimitiveAttributeItem) * 3);
+  primitive_props->attributes.count = 3;
+
+  AccessorFromProps *positions_props = malloc(sizeof(AccessorFromProps));
   positions_props->component_type = AccessorComponentType_Float32;
   positions_props->count = positions_count;
   positions_props->type = AccessorType_VEC3;
   positions_props->dynamic = true;
-  accessor_id_t positions_accessor = websg_create_accessor_from(positions, positions_byte_length, positions_props);
+  accessor_id_t positions_accessor = websg_world_create_accessor_from(positions, positions_byte_length, positions_props);
+  primitive_props->attributes.items[0].key = MeshPrimitiveAttribute_POSITION;
+  primitive_props->attributes.items[0].accessor_id = positions_accessor;
 
-  AccessorProps *normals_props = malloc(sizeof(AccessorProps));
+  AccessorFromProps *normals_props = malloc(sizeof(AccessorFromProps));
   normals_props->component_type = AccessorComponentType_Float32;
   normals_props->count = normals_count;
   normals_props->type = AccessorType_VEC3;
   normals_props->normalized = true;
   normals_props->dynamic = true;
-  accessor_id_t normals_accessor = websg_create_accessor_from(normals, normals_byte_length, normals_props);
+  accessor_id_t normals_accessor = websg_world_create_accessor_from(normals, normals_byte_length, normals_props);
+  primitive_props->attributes.items[1].key = MeshPrimitiveAttribute_NORMAL;
+  primitive_props->attributes.items[1].accessor_id = normals_accessor;
 
-  AccessorProps *uvs_props = malloc(sizeof(AccessorProps));
+  AccessorFromProps *uvs_props = malloc(sizeof(AccessorFromProps));
   uvs_props->component_type = AccessorComponentType_Float32;
   uvs_props->count = uvs_count;
   uvs_props->type = AccessorType_VEC2;
-  accessor_id_t uvs_accessor = websg_create_accessor_from(uvs, uvs_byte_length, uvs_props);
+  accessor_id_t uvs_accessor = websg_world_create_accessor_from(uvs, uvs_byte_length, uvs_props);
+  primitive_props->attributes.items[2].key = MeshPrimitiveAttribute_TEXCOORD_0;
+  primitive_props->attributes.items[2].accessor_id = uvs_accessor;
 
-  MeshPrimitiveProps *primitive_props = malloc(sizeof(MeshPrimitiveProps));
-  
-  primitive_props->mode = MeshPrimitiveMode_TRIANGLES;
-  primitive_props->indices = indices_accessor;
+  MeshProps *mesh_props = malloc(sizeof(MeshProps));
+  mesh_props->primitives.items = primitive_props;
+  mesh_props->primitives.count = 1;
 
-  int attribute_count = 3;
-  MeshPrimitiveAttributeItem *attributes = malloc(sizeof(MeshPrimitiveAttributeItem) * attribute_count);
-  attributes[0].key = MeshPrimitiveAttribute_POSITION;
-  attributes[0].accessor_id = positions_accessor;
-  attributes[1].key = MeshPrimitiveAttribute_NORMAL;
-  attributes[1].accessor_id = normals_accessor;
-  attributes[2].key = MeshPrimitiveAttribute_TEXCOORD_0;
-  attributes[2].accessor_id = uvs_accessor;
-  primitive_props->attribute_count = attribute_count;
-  primitive_props->attributes = attributes;
-
-  mesh_id_t mesh_id = websg_create_mesh(primitive_props, 1);
+  mesh_id_t mesh_id = websg_world_create_mesh(mesh_props);
 
   SphereData *sphere_data = malloc(sizeof(SphereData));
   sphere_data->vertex_count = vertexIndex;
@@ -173,37 +174,45 @@ float_t *beam_emissive_factor;
 unsigned char *audio_data;
 
 export int32_t websg_load() {
-  material_id_t mesh_material = websg_create_material(MaterialType_Standard);
-  float_t *base_color_factor = malloc(sizeof(float_t) * 4);
-  base_color_factor[0] = 0;
-  base_color_factor[1] = 0;
-  base_color_factor[2] = 0;
-  base_color_factor[3] = 1;
-  websg_material_set_base_color_factor(mesh_material, base_color_factor);
-  websg_material_set_metallic_factor(mesh_material, 0.5f);
-  websg_material_set_roughness_factor(mesh_material, 0.7f);
+  MaterialProps *material_props = malloc(sizeof(MaterialProps));
+  MaterialPbrMetallicRoughnessProps *pbr_metallic_roughness_props = malloc(sizeof(MaterialPbrMetallicRoughnessProps));
+  pbr_metallic_roughness_props->base_color_factor[0] = 0;
+  pbr_metallic_roughness_props->base_color_factor[1] = 0;
+  pbr_metallic_roughness_props->base_color_factor[2] = 0;
+  pbr_metallic_roughness_props->base_color_factor[3] = 1;
+  pbr_metallic_roughness_props->metallic_factor = 0.5f;
+  pbr_metallic_roughness_props->roughness_factor = 0.7f;
+  material_props->pbr_metallic_roughness = pbr_metallic_roughness_props;
 
+  material_id_t mesh_material = websg_world_create_material(material_props);
   sphere_data = generate_sphere_mesh(1, 32, 16, M_PI, 0, M_PI * 2, 0);
   websg_mesh_set_primitive_material(sphere_data->mesh_id, 0, mesh_material);
 
-  sphere_node = websg_create_node();
-  float_t *position = malloc(sizeof(float_t) * 3);
-  position[0] = 7;
-  position[1] = 8;
-  position[2] = -17;
-  websg_node_set_position(sphere_node, position);
   sphere_scale = malloc(sizeof(float_t) * 3);
   sphere_scale[0] = 3;
   sphere_scale[1] = 3;
   sphere_scale[2] = 3;
-  websg_node_set_scale(sphere_node, sphere_scale);
-  websg_node_set_mesh(sphere_node, sphere_data->mesh_id);
 
-  scene_id_t scene = websg_get_environment_scene();
+
+  NodeProps *node_props = malloc(sizeof(NodeProps));
+  node_props->translation[0] = 7;
+  node_props->translation[1] = 8;
+  node_props->translation[2] = -17;
+  node_props->rotation[0] = 0;
+  node_props->rotation[1] = 0;
+  node_props->rotation[2] = 0;
+  node_props->rotation[3] = 1;
+  node_props->scale[0] = sphere_scale[0];
+  node_props->scale[1] = sphere_scale[1];
+  node_props->scale[2] = sphere_scale[2];
+  node_props->mesh = sphere_data->mesh_id;
+  sphere_node = websg_world_create_node(node_props);
+
+  scene_id_t scene = websg_world_get_environment();
   websg_scene_add_node(scene, sphere_node);
 
   const char *beam_name = "Tube_Light_01";
-  mesh_id_t beam_mesh = websg_mesh_find_by_name(beam_name, strlen(beam_name));
+  mesh_id_t beam_mesh = websg_world_find_mesh_by_name(beam_name, strlen(beam_name));
   beam_material = websg_mesh_get_primitive_material(beam_mesh, 0);
   beam_emissive_factor = malloc(sizeof(float_t) * 3);
   beam_emissive_factor[0] = 1;
