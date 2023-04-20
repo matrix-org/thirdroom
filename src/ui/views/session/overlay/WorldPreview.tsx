@@ -22,6 +22,7 @@ import { useUpdateScene } from "../../../hooks/useUpdateScene";
 import { overlayWorldAtom } from "../../../state/overlayWorld";
 import { worldAtom } from "../../../state/world";
 import { useWorldNavigator } from "../../../hooks/useWorldNavigator";
+import { useWorldLoader } from "../../../hooks/useWorldLoader";
 
 interface InviteWorldPreviewProps {
   session: Session;
@@ -106,12 +107,13 @@ function EnterWorldButton({ room }: { room: Room }) {
   const [micException, setMicException] = useState<RequestException>();
   const [needsUpdate, setNeedsUpdate] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { navigateEnterWorld, navigateExitWorld } = useWorldNavigator(session);
+  const { navigateEnterWorld } = useWorldNavigator(session);
+  const { exitWorld } = useWorldLoader();
 
   const { checkForUpdate, updateScene } = useUpdateScene(session, room);
 
   const handleLoadWorld = async () => {
-    navigateExitWorld();
+    exitWorld();
     navigateEnterWorld(room);
   };
 

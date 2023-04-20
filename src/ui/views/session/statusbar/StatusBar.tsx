@@ -1,7 +1,7 @@
 import { CSSProperties, ReactNode, useReducer, useRef } from "react";
 import { useMatch } from "react-router-dom";
 import { Session } from "@thirdroom/hydrogen-view-sdk";
-import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import { useAtom, useSetAtom } from "jotai";
 
 import { Text } from "../../../atoms/text/Text";
 import { useHydrogen } from "../../../hooks/useHydrogen";
@@ -107,8 +107,6 @@ export function StatusBar() {
   const [overlayVisible, setOverlayVisibility] = useAtom(overlayVisibilityAtom);
   const setWorldChatVisibility = useSetAtom(worldChatVisibilityAtom);
   const setSidebarTab = useSetAtom(sidebarTabAtom);
-  const [showCodeEditor, setShowCodeEditor] = useAtom(showCodeEditorAtom);
-  const editorEnabled = useAtomValue(editorEnabledAtom);
 
   const homeMatch = useMatch({ path: "/", end: true });
   const isHome = homeMatch !== null;
@@ -136,17 +134,9 @@ export function StatusBar() {
     }
   };
 
-  const openCodeEditor = () => {
-    if (showCodeEditor) {
-      setShowCodeEditor(false);
-    } else {
-      setShowCodeEditor(true);
-    }
-  };
-
   return (
     <div className="StatusBar shrink-0 flex items-center">
-      <div className="StatusBar__left grow basis-0">
+      <div className="StatusBar__left grow basis-0 flex">
         {knownWorldId && (
           <OverlayButton style={{ paddingLeft: "var(--sp-xxs)" }} onClick={openOverlay}>
             <Text
@@ -163,29 +153,6 @@ export function StatusBar() {
             </Text>
             <Text className="flex items-center" color="world" variant="b3">
               {overlayVisible ? "Close Overlay" : "Open Overlay"}
-            </Text>
-          </OverlayButton>
-        )}
-        {editorEnabled && (
-          <OverlayButton style={{ paddingLeft: "var(--sp-xxs)" }} onClick={openCodeEditor}>
-            <Text
-              color="world"
-              weight="medium"
-              variant="b3"
-              style={{
-                padding: "0 3px",
-                borderRadius: "var(--br-xxs)",
-                border: "1px solid var(--bg-world-border)",
-              }}
-            >
-              SHIFT
-            </Text>
-            <Text className="flex items-center" color="world" variant="b3">
-              + `
-            </Text>
-
-            <Text className="flex items-center" color="world" variant="b3">
-              {showCodeEditor ? "Close Code Editor" : "Open Code Editor"}
             </Text>
           </OverlayButton>
         )}

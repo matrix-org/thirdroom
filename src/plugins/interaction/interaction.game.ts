@@ -962,9 +962,9 @@ export function sendInteractionMessage(ctx: GameState, action: InteractableActio
     }
 
     const name =
+      getRemoteResource<RemoteUIButton>(ctx, eid)?.label ||
       Prefab.get(eid) ||
-      getRemoteResource<RemoteNode>(ctx, eid)?.name ||
-      getRemoteResource<RemoteUIButton>(ctx, eid)?.label;
+      getRemoteResource<RemoteNode>(ctx, eid)?.name;
 
     ctx.sendMessage<InteractionMessage>(Thread.Main, {
       type: InteractionMessageType,

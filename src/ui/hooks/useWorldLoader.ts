@@ -1,5 +1,5 @@
 import { Room, CallIntent, LocalMedia, Content, GroupCall, Session } from "@thirdroom/hydrogen-view-sdk";
-import { useAtom, useSetAtom } from "jotai";
+import { useSetAtom } from "jotai";
 import { useCallback } from "react";
 
 import { AudioModule, setLocalMediaStream } from "../../engine/audio/audio.main";
@@ -7,7 +7,8 @@ import { disposeActiveMatrixRoom, setActiveMatrixRoom } from "../../engine/matri
 import { getModule, Thread } from "../../engine/module/module.common";
 import {
   createMatrixNetworkInterface,
-  matrixNetworkInterfaceAtom,
+  registerMatrixNetworkInterface,
+  provideMatrixNetworkInterface,
 } from "../../engine/network/createMatrixNetworkInterface";
 import { connectToTestNet, reconnectPeers } from "../../engine/network/network.main";
 import { SetObjectCapMessage, SetObjectCapMessageType } from "../../plugins/spawnables/spawnables.common";
@@ -29,19 +30,22 @@ export interface WorldLoader {
   exitWorld: () => void;
 }
 
+const getWorldGroupCall = (session: Session, world: Room) => getRoomCall(session.callHandler.calls, world.id);
+
 export function useWorldLoader(): WorldLoader {
   const { session, platform, client } = useHydrogen(true);
   const mainThread = useMainThreadContext();
-  const [matrixNetworkInterface, setMatrixNetworkInterface] = useAtom(matrixNetworkInterfaceAtom);
   const setWorld = useSetAtom(worldAtom);
 
   const exitWorldCallback = useCallback(async () => {
-    matrixNetworkInterface?.dispose();
+    provideMatrixNetworkInterface((matrixNetworkInterface) => {
+      matrixNetworkInterface?.dispose();
+    });
 
     disposeActiveMatrixRoom(mainThread);
 
     setWorld({ type: "CLOSE" });
-  }, [setWorld, matrixNetworkInterface, mainThread]);
+  }, [setWorld, mainThread]);
 
   const loadWorldCallback = useCallback(
     async (world: Room, content: Content) => {
@@ -82,8 +86,6 @@ export function useWorldLoader(): WorldLoader {
     },
     [mainThread, session, setWorld]
   );
-
-  const getWorldGroupCall = (session: Session, world: Room) => getRoomCall(session.callHandler.calls, world.id);
 
   const connectGroupCall = useCallback(
     async (world: Room, groupCall?: GroupCall) => {
@@ -134,7 +136,7 @@ export function useWorldLoader(): WorldLoader {
           powerLevels.get(),
           groupCall
         );
-        setMatrixNetworkInterface(matrixNetworkInterface);
+        registerMatrixNetworkInterface(matrixNetworkInterface);
 
         await enterWorld(mainThread);
 
@@ -152,7 +154,7 @@ export function useWorldLoader(): WorldLoader {
         throw err;
       }
     },
-    [session, mainThread, connectGroupCall, client, setMatrixNetworkInterface, setWorld]
+    [session, mainThread, connectGroupCall, client, setWorld]
   );
 
   // keeps the call established and reloads the scene/script

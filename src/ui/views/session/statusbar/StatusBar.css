@@ -9,9 +9,8 @@
   pointer-events: all;
 }
 
-.StatusBar__left {
-  display: flex;
-  flex-direction: row;
+.StatusBar__left,
+.StatusBar__right {
   padding: 0 var(--sp-xs);
 }
 
