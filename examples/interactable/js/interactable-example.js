@@ -13,7 +13,7 @@ let room2Light;
 let room2Switch;
 let room2LightState = true;
 
-onloadworld = () => {
+world.onload = () => {
   materialButton = world.findNodeByName("MaterialButton");
   materialButton.addInteractable();
 
@@ -36,7 +36,7 @@ onloadworld = () => {
   room2Light = room2LightNode.light;
 };
 
-onupdateworld = (dt) => {
+world.onupdate = (dt) => {
   if (materialButton.interactable.pressed) {
     materialState = !materialState;
     leftCubeMaterial.baseColorTexture = materialState ? bricksTexture : planksTexture;

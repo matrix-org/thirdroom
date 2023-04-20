@@ -1,7 +1,7 @@
 const loadTimestamp = Date.now();
 let requestCounter = 0;
 
-onenterworld = () => {
+world.onenter = () => {
   matrix.listen();
 
   matrix.send({
@@ -13,7 +13,7 @@ onenterworld = () => {
   });
 };
 
-onupdateworld = (dt) => {
+world.onupdate = (dt) => {
   let event;
 
   while ((event = matrix.receive())) {

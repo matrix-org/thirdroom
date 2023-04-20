@@ -1,4 +1,4 @@
-onloadworld = () => {
+world.onload = () => {
   const canvasNode = world.createNode({
     translation: [0, 2, 0],
     uiCanvas: world.createUICanvas({
