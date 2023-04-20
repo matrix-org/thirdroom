@@ -30,7 +30,7 @@ export default defineConfig({
         items: [
           { text: "Overview", link: "/websg/" },
           { text: "Tutorial", link: "/websg/tutorial" },
-          { text: "API Reference", link: "/websg/api" },
+          { text: "API Reference", link: "/websg/api/modules" },
         ],
       },
       {
