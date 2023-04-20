@@ -15,7 +15,6 @@ import { activeChatsAtom } from "../../../state/overlayChat";
 import { worldChatVisibilityAtom } from "../../../state/worldChatVisibility";
 import { overlayVisibilityAtom } from "../../../state/overlayVisibility";
 import { sidebarTabAtom, SidebarTab } from "../../../state/sidebarTab";
-import { editorEnabledAtom, showCodeEditorAtom } from "../../../state/editor";
 import { WhatsNewNotification } from "../whats-new/WhatsNewNotification";
 
 function OverlayButton({
