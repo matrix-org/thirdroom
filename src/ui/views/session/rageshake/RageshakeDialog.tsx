@@ -42,7 +42,7 @@ export function RageshakeDialog({ open, requestClose }: RageshakeDialogProps) {
     const logExport = await exportReporter.export();
     await submitLogsToRageshakeServer(
       {
-        app: "hydrogen",
+        app: "thirdroom",
         userAgent: platform.description,
         version: platform.version,
         text: `Third Room user ${session.userId} on device ${session.deviceId}: ${text ?? "No description provided."}`,
