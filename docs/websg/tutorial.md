@@ -6,27 +6,31 @@ The WebSG scripting API allows you to build 3D scenes and UI elements in a brows
 
 The `world` global is the central hub for managing all objects and interactions in a WebSG scene. It is similar to the `document` global in a typical browser context.
 
-Existing objects can be queried for in a loaded scene by calling their relatively named find functions:
+### Factories
 
-```typescript
-const foundNode = world.findNodeByName("nodeName");
-const foundLight = world.findLightByName("lightName");
-```
-
-Create new objects like so:
+Create new objects with the relatively named create function.
 
 ```typescript
 const newNode = world.createNode({ name: "nodeName" });
 const newLight = world.createLight({ name: "lightName" });
+const newMesh = world.createMesh({ name: "meshName" });
 ```
 
-## Global Event Handlers
+### Querying
 
-WebSG provides global event handlers to manage key events in the lifecycle of a 3D world. This guide provides an overview of these event handlers and how to use them in your applications.
+Existing objects can be queried for in a loaded scene by calling their type's relatively named find function.
 
-### onloadworld
+```typescript
+const foundNode = world.findNodeByName("nodeName");
+const foundLight = world.findLightByName("lightName");
+const foundMesh = world.findMeshByName("meshName");
+```
 
-The `onloadworld` event handler is called when the world is loaded.
+### Events
+
+The `world` has event handlers to manage key events in the lifecycle of a 3D world.
+
+The `world.onload` event handler is called when the world is loaded.
 
 ::: warning
 One important concept to understand in WebSG is that objects cannot be created, queried for, or otherwise interfaced with until the world is loaded.
@@ -35,29 +39,25 @@ One important concept to understand in WebSG is that objects cannot be created, 
 ```typescript
 let node;
 
-onloadworld = () => {
+world.onload = () => {
   // Perform actions when the world is loaded
   node = world.findNodeByName("myNode");
 };
 ```
 
-### onenterworld
-
-The `onenterworld` event handler is called when the user enters the world.
+The `world.onenter` event handler is called when the user enters the world.
 
 ```typescript
-onenterworld = () => {
+world.onenter = () => {
   // Perform actions when the user enters the world
   node.translation.y = 1;
 };
 ```
 
-### onupdateworld
-
-The `onupdateworld` event handler is called when the world is updated. It receives two parameters: `dt`, the time since the last update in seconds, and `time`, the total time since the start of the world in seconds.
+The `world.onupdate` event handler is called when the world is updated. It receives two parameters: `dt`, the time since the last update in seconds, and `time`, the total time since the start of the world in seconds.
 
 ```typescript
-onupdateworld = (dt: number, time: number) => {
+world.onupdate = (dt: number, time: number) => {
   // Perform actions on each world update
   // dt: time since the last update in seconds
   // time: total time since the start of the world in seconds
@@ -67,6 +67,8 @@ onupdateworld = (dt: number, time: number) => {
 ```
 
 ## Basic Usage
+
+Nodes are the base entity in WebSG which can be decorated with various types of resources.
 
 ### Creating a Node
 
