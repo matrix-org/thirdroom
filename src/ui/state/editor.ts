@@ -151,7 +151,7 @@ world.onenter = () => {
   
 };
 
-world.onupdate = (dt) => {
+world.onupdate = (dt, time) => {
   
 };
 `;
