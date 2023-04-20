@@ -15,7 +15,7 @@ const panelStyle = {
   padding: [12, 12, 12, 12],
 };
 
-onloadworld = () => {
+world.onload = () => {
   node = world.createNode();
   node.translation.x = 2.5;
   node.translation.y = 1.25;
@@ -75,7 +75,7 @@ onloadworld = () => {
 };
 
 let x = 0;
-onupdateworld = (dt) => {
+world.onupdate = (dt) => {
   if (button.pressed) {
     button.value = "button pressed " + x++ + " times";
     canvas.redraw();

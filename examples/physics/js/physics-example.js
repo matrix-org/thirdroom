@@ -1,6 +1,6 @@
 let boxNode3;
 
-onenterworld = () => {
+world.onenter = () => {
   const scene = world.environment;
 
   for (let i = 0; i < 3; i++) {
@@ -53,6 +53,6 @@ onenterworld = () => {
 
 const translation = new Float32Array([-2, 2, 0]);
 
-onupdateworld = (dt, elapsed) => {
+world.onupdate = (dt, elapsed) => {
   if (boxNode3) boxNode3.translation[1] = Math.sin(elapsed) * 1 + 2;
 };
