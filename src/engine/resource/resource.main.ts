@@ -1,4 +1,4 @@
-import Yoga from "@react-pdf/yoga";
+import { Node } from "yoga-wasm-web";
 import { CanvasTexture } from "three";
 
 import { AudioModule } from "../audio/audio.main";
@@ -44,7 +44,7 @@ import {
   TilesRendererResource,
   UIButtonResource,
   UICanvasResource,
-  UIFlexResource,
+  UIElementResource,
   UIImageResource,
   UITextResource,
   WorldResource,
@@ -237,25 +237,25 @@ export class MainUIImage extends defineLocalResourceClass(UIImageResource) {
   domElement?: HTMLImageElement;
 }
 
-export class MainUIFlex extends defineLocalResourceClass(UIFlexResource) {
-  declare parent: MainUIFlex | undefined;
-  declare firstChild: MainUIFlex | undefined;
-  declare prevSibling: MainUIFlex | undefined;
-  declare nextSibling: MainUIFlex | undefined;
+export class MainUIElement extends defineLocalResourceClass(UIElementResource) {
+  declare parent: MainUIElement | undefined;
+  declare firstChild: MainUIElement | undefined;
+  declare prevSibling: MainUIElement | undefined;
+  declare nextSibling: MainUIElement | undefined;
 
   declare text: MainUIText;
   declare button: MainUIButton;
   declare image: MainUIImage;
 
-  yogaNode: Yoga.Node;
+  yogaNode?: Node;
 }
 
 export class MainUICanvas extends defineLocalResourceClass(UICanvasResource) {
-  declare root: MainUIFlex;
+  declare root: MainUIElement;
 
   canvasTexture?: CanvasTexture;
   canvas?: HTMLCanvasElement;
-  yogaNode: Yoga.Node;
+  yogaNode?: Node;
 }
 export class MainCollider extends defineLocalResourceClass(ColliderResource) {
   declare mesh: MainMesh | undefined;
@@ -352,7 +352,7 @@ const {
   MainNode,
   MainUIButton,
   MainUICanvas,
-  MainUIFlex,
+  MainUIElement,
   MainUIImage,
   MainUIText,
   MainAudioData,

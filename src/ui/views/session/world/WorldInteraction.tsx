@@ -17,6 +17,7 @@ import { getModule } from "../../../../engine/module/module.common";
 import { CameraRigModule } from "../../../../plugins/camera/CameraRig.main";
 import { Reticle } from "../reticle/Reticle";
 import { useWorldNavigator } from "../../../hooks/useWorldNavigator";
+import { useWorldLoader } from "../../../hooks/useWorldLoader";
 
 export interface IPortalProcess {
   joining?: boolean;
@@ -37,7 +38,8 @@ export function WorldInteraction({ session, world, activeCall }: WorldInteractio
   const [portalProcess, setPortalProcess] = useMemoizedState<IPortalProcess>({});
   const [members, setMembers] = useState(false);
 
-  const { navigateExitWorld, navigateEnterWorld } = useWorldNavigator(session);
+  const { navigateEnterWorld } = useWorldNavigator(session);
+  const { exitWorld } = useWorldLoader();
   const selectWorld = useSetAtom(overlayWorldAtom);
   const isMounted = useIsMounted();
 
@@ -76,7 +78,7 @@ export function WorldInteraction({ session, world, activeCall }: WorldInteractio
 
             selectWorld(roomId);
 
-            navigateExitWorld();
+            exitWorld();
             navigateEnterWorld(newWorld);
           });
 
@@ -91,7 +93,7 @@ export function WorldInteraction({ session, world, activeCall }: WorldInteractio
 
           selectWorld(roomId);
 
-          navigateExitWorld();
+          exitWorld();
           navigateEnterWorld(newWorld);
           return;
         }
@@ -103,7 +105,7 @@ export function WorldInteraction({ session, world, activeCall }: WorldInteractio
         unSubStatusObserver?.();
       };
     },
-    [session, selectWorld, navigateExitWorld, navigateEnterWorld, isMounted, setPortalProcess]
+    [session, selectWorld, exitWorld, navigateEnterWorld, isMounted, setPortalProcess]
   );
 
   const handleInteraction = useCallback(

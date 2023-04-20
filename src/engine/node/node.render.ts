@@ -75,7 +75,7 @@ export function updateLocalNodeResources(
       node.needsUpdate = true;
     }
 
-    const needsUpdate = node.needsUpdate;
+    const needsUpdate = node.needsUpdate || !node.isStatic;
 
     if (!needsUpdate) {
       continue;
