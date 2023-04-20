@@ -662,6 +662,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
         const camera = readResourceRef(wasmCtx, RemoteCamera);
         const skin = readResourceRef(wasmCtx, RemoteSkin);
         const mesh = readResourceRef(wasmCtx, RemoteMesh);
+        const collider = readResourceRef(wasmCtx, RemoteCollider);
         const quaternion = readFloat32Array(wasmCtx.cursorView, 4); // rotation
         const scale = readFloat32Array(wasmCtx.cursorView, 3);
         const position = readFloat32Array(wasmCtx.cursorView, 3); // translation
@@ -671,6 +672,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
           camera,
           skin,
           mesh,
+          collider,
           quaternion,
           scale,
           position,

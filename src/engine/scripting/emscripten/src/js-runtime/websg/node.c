@@ -494,6 +494,19 @@ JSValue js_websg_world_create_node(JSContext *ctx, JSValue this_val, int argc, J
       props->mesh = mesh_data->mesh_id;
     }
 
+    JSValue collider_val = JS_GetPropertyStr(ctx, argv[0], "collider");
+
+    if (!JS_IsUndefined(collider_val)) {
+      WebSGColliderData *collider_data = JS_GetOpaque2(ctx, collider_val, js_websg_collider_class_id);
+
+      if (collider_data == NULL) {
+        js_free(ctx, props);
+        return JS_EXCEPTION;
+      }
+
+      props->collider = collider_data->collider_id;
+    }
+
     JSValue ui_canvas_val = JS_GetPropertyStr(ctx, argv[0], "uiCanvas");
 
     UIExtensionNodeCanvasRef *ui_extension = NULL;

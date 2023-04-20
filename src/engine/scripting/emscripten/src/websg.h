@@ -88,6 +88,7 @@ typedef struct NodeProps {
   camera_id_t camera;
   skin_id_t skin;
   mesh_id_t mesh;
+  collider_id_t collider;
   float_t rotation[4];
   float_t scale[3];
   float_t translation[3];
