@@ -143,15 +143,15 @@ export const editorAtom = atom<EditorState, [EditorStateAction], void>(
 export const DEFAULT_SCRIPT_SOURCE = `
 
 
-onload = () => {
+onloadworld = () => {
 
 };
 
-onenter = () => {
+onenterworld = () => {
   
 };
 
-onupdate = (dt) => {
+onupdateworld = (dt) => {
   
 };
 `;
