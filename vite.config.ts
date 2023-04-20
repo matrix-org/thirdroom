@@ -44,6 +44,7 @@ export default defineConfig({
   css: {
     postcss: {
       plugins: [
+        //@ts-expect-error: not sure where this type error came from, must be a package update
         postcssPresetEnv({
           stage: 1,
           browsers: "last 2 versions",
