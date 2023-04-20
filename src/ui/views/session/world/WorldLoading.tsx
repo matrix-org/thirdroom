@@ -81,13 +81,7 @@ export function WorldLoading({ world, loading, error }: { world: Room; loading: 
                 >
                   Reload
                 </Button>
-                <Button
-                  onClick={() => {
-                    navigateExitWorld();
-                  }}
-                >
-                  Exit
-                </Button>
+                <Button onClick={navigateExitWorld}>Exit</Button>
               </>
             }
           />

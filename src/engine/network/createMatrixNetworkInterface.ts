@@ -1,5 +1,4 @@
 import { Client, GroupCall, Member, PowerLevels, SubscriptionHandle } from "@thirdroom/hydrogen-view-sdk";
-import { atom } from "jotai";
 
 import { exitWorld } from "../../plugins/thirdroom/thirdroom.main";
 import { setLocalMediaStream } from "../audio/audio.main";
@@ -214,4 +213,12 @@ export async function createMatrixNetworkInterface(
   };
 }
 
-export const matrixNetworkInterfaceAtom = atom<MatrixNetworkInterface | undefined>(undefined);
+let baseMxNetworkInterface: MatrixNetworkInterface | undefined;
+export const registerMatrixNetworkInterface = (matrixNetworkInterface: MatrixNetworkInterface) => {
+  baseMxNetworkInterface = matrixNetworkInterface;
+};
+export const provideMatrixNetworkInterface = (
+  update: (mxNetworkInterface: MatrixNetworkInterface | undefined) => void
+) => {
+  update(baseMxNetworkInterface);
+};
