@@ -209,7 +209,7 @@ const canvas = world.createUICanvas({
 
 const button = world.createUIButton({
   label: "Click me!", // shows as a cursor tooltip
-  text: "Hello World", // shows as text on the button
+  value: "Hello World", // shows as text on the button
   width: 100,
   height: 100,
 });
