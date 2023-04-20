@@ -35,7 +35,7 @@ let verticalPlatform;
 let horizontalPlatform;
 let spinner;
 
-onload = () => {
+world.onload = () => {
   verticalPlatform = world.findNodeByName("VerticalPlatform");
   horizontalPlatform = world.findNodeByName("HorizontalPlatform");
   spinner = world.findNodeByName("Spinner");
