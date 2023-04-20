@@ -105,6 +105,21 @@ function removeUIElementFromLinkedList(parent: RemoteUIElement, child: RemoteUIE
   }
 }
 
+export function initNodeUICanvas(ctx: GameState, physics: PhysicsModuleState, node: RemoteNode) {
+  const { size } = node.uiCanvas!;
+
+  // setup collider
+  const rigidBodyDesc = RAPIER.RigidBodyDesc.kinematicPositionBased();
+  const rigidBody = physics.physicsWorld.createRigidBody(rigidBodyDesc);
+  const colliderDesc = RAPIER.ColliderDesc.cuboid(size[0] / 2, size[1] / 2, 0.01)
+    .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS)
+    .setCollisionGroups(dynamicObjectCollisionGroups);
+  physics.physicsWorld.createCollider(colliderDesc, rigidBody);
+
+  addRigidBody(ctx, node, rigidBody);
+  addInteractableComponent(ctx, physics, node, InteractableType.UI);
+}
+
 export function getLastUIElementChild(parent: RemoteUIElement): RemoteUIElement | undefined {
   let cursor = parent.firstChild;
 

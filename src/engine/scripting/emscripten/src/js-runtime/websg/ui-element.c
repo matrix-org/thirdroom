@@ -4,6 +4,8 @@
 #include "../../websg.h"
 #include "./websg-js.h"
 #include "./ui-element.h"
+#include "./ui-text.h"
+#include "./ui-button.h"
 #include "./rgba.h"
 #include "./vector4.h"
 #include "./ui-element-iterator.h"
@@ -225,54 +227,6 @@ static JSClassDef js_websg_ui_element_class = {
   "UIElement",
   .finalizer = js_websg_ui_element_finalizer
 };
-
-static float_t js_websg_ui_element_get_background_color_element(uint32_t ui_element_id, float_t *background_color, int index) {
-  return websg_ui_element_get_background_color_element(ui_element_id, index);
-}
-
-static void js_websg_ui_element_set_background_color_element(uint32_t ui_element_id, float_t *background_color, int index, float_t value) {
-  websg_ui_element_set_background_color_element(ui_element_id, index, value);
-}
-
-static float_t js_websg_ui_element_get_border_color_element(uint32_t ui_element_id, float_t *border_color, int index) {
-  return websg_ui_element_get_border_color_element(ui_element_id, index);
-}
-
-static void js_websg_ui_element_set_border_color_element(uint32_t ui_element_id, float_t *border_color, int index, float_t value) {
-  websg_ui_element_set_border_color_element(ui_element_id, index, value);
-}
-
-static float_t js_websg_ui_element_get_padding_element(uint32_t ui_element_id, float_t *padding, int index) {
-  return websg_ui_element_get_padding_element(ui_element_id, index);
-}
-
-static void js_websg_ui_element_set_padding_element(uint32_t ui_element_id, float_t *padding, int index, float_t value) {
-  websg_ui_element_set_padding_element(ui_element_id, index, value);
-}
-
-static float_t js_websg_ui_element_get_margin_element(uint32_t ui_element_id, float_t *margin, int index) {
-  return websg_ui_element_get_margin_element(ui_element_id, index);
-}
-
-static void js_websg_ui_element_set_margin_element(uint32_t ui_element_id, float_t *margin, int index, float_t value) {
-  websg_ui_element_set_margin_element(ui_element_id, index, value);
-}
-
-static float_t js_websg_ui_element_get_border_width_element(uint32_t ui_element_id, float_t *border_width, int index) {
-  return websg_ui_element_get_border_width_element(ui_element_id, index);
-}
-
-static void js_websg_ui_element_set_border_width_element(uint32_t ui_element_id, float_t *border_width, int index, float_t value) {
-  websg_ui_element_set_border_width_element(ui_element_id, index, value);
-}
-
-static float_t js_websg_ui_element_get_border_radius_element(uint32_t ui_element_id, float_t *border_radius, int index) {
-  return websg_ui_element_get_border_radius_element(ui_element_id, index);
-}
-
-static void js_websg_ui_element_set_border_radius_element(uint32_t ui_element_id, float_t *border_radius, int index, float_t value) {
-  websg_ui_element_set_border_radius_element(ui_element_id, index, value);
-}
 
 static JSValue js_websg_ui_element_get_flex_direction(JSContext *ctx, JSValueConst this_val) {
   WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
@@ -771,9 +725,18 @@ static JSValue js_websg_ui_element_add_child(JSContext *ctx, JSValueConst this_v
 
   ui_element_id_t ui_element_id = ui_element_data->ui_element_id;
 
-  WebSGUIElementData *child_data = JS_GetOpaque2(ctx, argv[0], js_websg_ui_element_class_id);
+  WebSGUIElementData *child_data = JS_GetOpaque(argv[0], js_websg_ui_element_class_id);
 
   if (child_data == NULL) {
+    child_data = JS_GetOpaque(argv[0], js_websg_ui_text_class_id);
+  }
+
+  if (child_data == NULL) {
+    child_data = JS_GetOpaque(argv[0], js_websg_ui_button_class_id);
+  }
+
+  if (child_data == NULL) {
+    JS_ThrowTypeError(ctx, "WebSG: Invalid child UIElement.");
     return JS_EXCEPTION;
   }
 
@@ -782,7 +745,7 @@ static JSValue js_websg_ui_element_add_child(JSContext *ctx, JSValueConst this_v
     return JS_EXCEPTION;
   }
 
-  return this_val;
+  return JS_DupValue(ctx, this_val);
 }
 
 static JSValue js_websg_ui_element_remove_child(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
@@ -790,9 +753,18 @@ static JSValue js_websg_ui_element_remove_child(JSContext *ctx, JSValueConst thi
 
   ui_element_id_t ui_element_id = ui_element_data->ui_element_id;
 
-  WebSGUIElementData *child_data = JS_GetOpaque2(ctx, argv[0], js_websg_ui_element_class_id);
+  WebSGUIElementData *child_data = JS_GetOpaque(argv[0], js_websg_ui_element_class_id);
 
   if (child_data == NULL) {
+    child_data = JS_GetOpaque(argv[0], js_websg_ui_text_class_id);
+  }
+
+  if (child_data == NULL) {
+    child_data = JS_GetOpaque(argv[0], js_websg_ui_button_class_id);
+  }
+
+  if (child_data == NULL) {
+    JS_ThrowTypeError(ctx, "WebSG: Invalid child UIElement.");
     return JS_EXCEPTION;
   }
 
@@ -801,7 +773,7 @@ static JSValue js_websg_ui_element_remove_child(JSContext *ctx, JSValueConst thi
     return JS_EXCEPTION;
   }
 
-  return this_val;
+  return JS_DupValue(ctx, this_val);
 }
 
 static JSValue js_websg_ui_element_get_child(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
@@ -833,7 +805,7 @@ JSValue js_websg_ui_element_children(JSContext *ctx, JSValueConst this_val, int 
     return JS_EXCEPTION;
   }
 
-  ui_element_id_t *children = js_malloc(ctx, sizeof(ui_element_id_t) * count);
+  ui_element_id_t *children = js_mallocz(ctx, sizeof(ui_element_id_t) * count);
 
   if (websg_ui_element_get_children(ui_element_data->ui_element_id, children, count) == -1) {
     JS_ThrowInternalError(ctx, "WebSG: Error getting UIElement children.");
@@ -953,20 +925,20 @@ void js_websg_define_ui_element(JSContext *ctx, JSValue websg) {
   JS_SetPropertyStr(ctx, websg, "UIElementType", element_type);
 }
 
-JSValue js_websg_new_ui_element_instance(JSContext *ctx, WebSGWorldData *world_data, ui_element_id_t ui_element_id) {
-  JSValue ui_element = JS_NewObjectClass(ctx, js_websg_ui_element_class_id);
-
-  if (JS_IsException(ui_element)) {
-    return ui_element;
-  }
-
+void js_define_ui_element_props(
+  JSContext *ctx,
+  WebSGWorldData *world_data,
+  ui_element_id_t ui_element_id,
+  JSValue ui_element
+) {
   js_websg_define_rgba_prop(
     ctx,
     ui_element,
     "backgroundColor",
     ui_element_id,
-    &js_websg_ui_element_get_background_color_element,
-    &js_websg_ui_element_set_background_color_element
+    &websg_ui_element_get_background_color_element,
+    &websg_ui_element_set_background_color_element,
+    &websg_ui_element_set_background_color
   );
 
   js_websg_define_rgba_prop(
@@ -974,8 +946,9 @@ JSValue js_websg_new_ui_element_instance(JSContext *ctx, WebSGWorldData *world_d
     ui_element,
     "borderColor",
     ui_element_id,
-    &js_websg_ui_element_get_border_color_element,
-    &js_websg_ui_element_set_border_color_element
+    &websg_ui_element_get_border_color_element,
+    &websg_ui_element_set_border_color_element,
+    &websg_ui_element_set_border_color
   );
 
   js_websg_define_vector4_prop(
@@ -983,8 +956,9 @@ JSValue js_websg_new_ui_element_instance(JSContext *ctx, WebSGWorldData *world_d
     ui_element,
     "padding",
     ui_element_id,
-    &js_websg_ui_element_get_padding_element,
-    &js_websg_ui_element_set_padding_element
+    &websg_ui_element_get_padding_element,
+    &websg_ui_element_set_padding_element,
+    &websg_ui_element_set_padding
   );
 
   js_websg_define_vector4_prop(
@@ -992,8 +966,9 @@ JSValue js_websg_new_ui_element_instance(JSContext *ctx, WebSGWorldData *world_d
     ui_element,
     "margin",
     ui_element_id,
-    &js_websg_ui_element_get_margin_element,
-    &js_websg_ui_element_set_margin_element
+    &websg_ui_element_get_margin_element,
+    &websg_ui_element_set_margin_element,
+    &websg_ui_element_set_margin
   );
 
   js_websg_define_vector4_prop(
@@ -1001,8 +976,9 @@ JSValue js_websg_new_ui_element_instance(JSContext *ctx, WebSGWorldData *world_d
     ui_element,
     "borderWidth",
     ui_element_id,
-    &js_websg_ui_element_get_border_width_element,
-    &js_websg_ui_element_set_border_width_element
+    &websg_ui_element_get_border_width_element,
+    &websg_ui_element_set_border_width_element,
+    &websg_ui_element_set_border_width
   );
 
   js_websg_define_vector4_prop(
@@ -1010,14 +986,25 @@ JSValue js_websg_new_ui_element_instance(JSContext *ctx, WebSGWorldData *world_d
     ui_element,
     "borderRadius",
     ui_element_id,
-    &js_websg_ui_element_get_border_radius_element,
-    &js_websg_ui_element_set_border_radius_element
+    &websg_ui_element_get_border_radius_element,
+    &websg_ui_element_set_border_radius_element,
+    &websg_ui_element_set_border_radius
   );
+}
 
-  WebSGUIElementData *ui_element_data = js_mallocz(ctx, sizeof(WebSGUIElementData));
-  ui_element_data->world_data = world_data;
-  ui_element_data->ui_element_id = ui_element_id;
-  JS_SetOpaque(ui_element, ui_element_data);
+JSValue js_websg_new_ui_element_instance(JSContext *ctx, WebSGWorldData *world_data, ui_element_id_t ui_element_id) {
+  JSValue ui_element = JS_NewObjectClass(ctx, js_websg_ui_element_class_id);
+
+  if (JS_IsException(ui_element)) {
+    return ui_element;
+  }
+
+  js_define_ui_element_props(ctx, world_data, ui_element_id, ui_element);
+
+  WebSGUIElementData *element_data = js_mallocz(ctx, sizeof(WebSGUIElementData));
+  element_data->world_data = world_data;
+  element_data->ui_element_id = ui_element_id;
+  JS_SetOpaque(ui_element, element_data);
 
   JS_SetPropertyUint32(ctx, world_data->ui_elements, ui_element_id, JS_DupValue(ctx, ui_element));
   
@@ -1035,14 +1022,24 @@ JSValue js_websg_get_ui_element_by_id(JSContext *ctx, WebSGWorldData *world_data
     return JS_DupValue(ctx, ui_element);
   }
 
-  return js_websg_new_ui_element_instance(ctx, world_data, ui_element_id);
+  ElementType type = websg_ui_element_get_element_type(ui_element_id);
+
+  if (type == ElementType_FLEX) {
+    return js_websg_new_ui_element_instance(ctx, world_data, ui_element_id);
+  } else if (type == ElementType_TEXT) {
+    return js_websg_new_ui_text_instance(ctx, world_data, ui_element_id);
+  } else if (type == ElementType_BUTTON) {
+    return js_websg_new_ui_button_instance(ctx, world_data, ui_element_id);
+  } else {
+    return JS_UNDEFINED;
+  }
 }
 
 /**
  * World Methods
  **/
 
-static int js_websg_parse_ui_element_props(
+int js_websg_parse_ui_element_props(
   JSContext *ctx,
   WebSGWorldData *world_data,
   UIElementProps *props,
@@ -1101,7 +1098,7 @@ static int js_websg_parse_ui_element_props(
   if (!JS_IsUndefined(position_val)) {
     ElementPositionType position_type = get_element_position_from_atom(JS_ValueToAtom(ctx, position_val));
 
-    if (position_type < 0) {
+    if (position_type == -1) {
       JS_ThrowTypeError(ctx, "WebSG: Invalid position type");
       return -1;
     }
@@ -1114,7 +1111,7 @@ static int js_websg_parse_ui_element_props(
   if (!JS_IsUndefined(align_content_val)) {
     FlexAlign align_content = get_flex_align_from_atom(JS_ValueToAtom(ctx, align_content_val));
 
-    if (align_content < 0) {
+    if (align_content == -1) {
       JS_ThrowTypeError(ctx, "WebSG: Invalid alignContent type");
       return -1;
     }
@@ -1127,7 +1124,7 @@ static int js_websg_parse_ui_element_props(
   if (!JS_IsUndefined(align_items_val)) {
     FlexAlign align_items = get_flex_align_from_atom(JS_ValueToAtom(ctx, align_items_val));
 
-    if (align_items < 0) {
+    if (align_items == -1) {
       JS_ThrowTypeError(ctx, "WebSG: Invalid alignItems type");
       return -1;
     }
@@ -1140,7 +1137,7 @@ static int js_websg_parse_ui_element_props(
   if (!JS_IsUndefined(align_self_val)) {
     FlexAlign align_self = get_flex_align_from_atom(JS_ValueToAtom(ctx, align_self_val));
 
-    if (align_self < 0) {
+    if (align_self == -1) {
       JS_ThrowTypeError(ctx, "WebSG: Invalid alignSelf type");
       return -1;
     }
@@ -1153,7 +1150,7 @@ static int js_websg_parse_ui_element_props(
   if (!JS_IsUndefined(flex_direction_val)) {
     FlexDirection flex_direction = get_flex_direction_from_atom(JS_ValueToAtom(ctx, flex_direction_val));
 
-    if (flex_direction < 0) {
+    if (flex_direction == -1) {
       JS_ThrowTypeError(ctx, "WebSG: Invalid flexDirection type");
       return -1;
     }
@@ -1166,7 +1163,7 @@ static int js_websg_parse_ui_element_props(
   if (!JS_IsUndefined(flex_wrap_val)) {
     FlexWrap flex_wrap = get_flex_wrap_from_atom(JS_ValueToAtom(ctx, flex_wrap_val));
 
-    if (flex_wrap < 0) {
+    if (flex_wrap == -1) {
       JS_ThrowTypeError(ctx, "WebSG: Invalid flexWrap type");
       return -1;
     }
@@ -1215,7 +1212,7 @@ static int js_websg_parse_ui_element_props(
   if (!JS_IsUndefined(justify_content_val)) {
     FlexJustify justify_content = get_flex_justify_from_atom(JS_ValueToAtom(ctx, justify_content_val));
 
-    if (justify_content < 0) {
+    if (justify_content == -1) {
       JS_ThrowTypeError(ctx, "WebSG: Invalid justifyContent type");
       return -1;
     }
@@ -1375,7 +1372,7 @@ JSValue js_websg_world_create_ui_element(JSContext *ctx, JSValueConst this_val, 
   ui_element_id_t ui_element_id = websg_world_create_ui_element(props);
 
   if (ui_element_id == 0) {
-    JS_ThrowInternalError(ctx, "WebSG UI: Error creating UI canvas.");
+    JS_ThrowInternalError(ctx, "WebSG UI: Error creating UIElement.");
     return JS_EXCEPTION;
   }
 

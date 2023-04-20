@@ -18,6 +18,7 @@ import { MemberListDialog } from "../../dialogs/MemberListDialog";
 import { useDialog } from "../../../../hooks/useDialog";
 import { OverlayWindow, overlayWindowAtom } from "../../../../state/overlayWindow";
 import { activeChatsAtom } from "../../../../state/overlayChat";
+import { usePowerLevels } from "../../../../hooks/usePowerLevels";
 
 interface WorldSelectorProps {
   isSelected: boolean;
@@ -29,6 +30,7 @@ interface WorldSelectorProps {
 }
 
 export function WorldSelector({ isSelected, onSelect, room, groupCall, platform, session }: WorldSelectorProps) {
+  const { getPowerLevel, canSendStateEvent } = usePowerLevels(room);
   const setOverlayWindow = useSetAtom(overlayWindowAtom);
   const setActiveChat = useSetAtom(activeChatsAtom);
   const [focused, setFocused] = useState(false);
@@ -89,16 +91,18 @@ export function WorldSelector({ isSelected, onSelect, room, groupCall, platform,
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={openInviteDialog}>Invite</DropdownMenuItem>
                 <DropdownMenuItem onSelect={openMemberDialog}>Members</DropdownMenuItem>
-                <DropdownMenuItem
-                  onSelect={() =>
-                    setOverlayWindow({
-                      type: OverlayWindow.WorldSettings,
-                      roomId: room.id,
-                    })
-                  }
-                >
-                  Settings
-                </DropdownMenuItem>
+                {canSendStateEvent(undefined, getPowerLevel(session.userId)) && (
+                  <DropdownMenuItem
+                    onSelect={() =>
+                      setOverlayWindow({
+                        type: OverlayWindow.WorldSettings,
+                        roomId: room.id,
+                      })
+                    }
+                  >
+                    Settings
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem
                   variant="danger"
                   onSelect={() => {

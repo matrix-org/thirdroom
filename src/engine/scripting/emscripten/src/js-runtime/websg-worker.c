@@ -29,10 +29,6 @@ JSContext *ctx;
  * Web Scene Graph (WebSG) Implementation
  **/
 
-JSAtom on_update_atom;
-JSAtom on_load_atom;
-JSAtom on_enter_atom;
-
 /*********************
  * Exported Functions
  *********************/
@@ -47,12 +43,8 @@ export int32_t websg_initialize() {
   js_define_websg_api(ctx);
   js_define_websg_network_api(ctx);
 
-  on_update_atom = JS_NewAtom(ctx, "onupdate");
-  on_load_atom = JS_NewAtom(ctx, "onload");
-  on_enter_atom = JS_NewAtom(ctx, "onenter");
-
   int32_t source_len = thirdroom_get_js_source_size();
-  char *source = js_malloc(ctx, source_len); // TODO: can we free this after JS_Eval?
+  char *source = js_mallocz(ctx, source_len); // TODO: can we free this after JS_Eval?
   int32_t read_source_len = thirdroom_get_js_source(source);
 
   JSValue val = JS_Eval(ctx, source, read_source_len, "<environment-script>", JS_EVAL_TYPE_GLOBAL);
@@ -67,18 +59,18 @@ export int32_t websg_initialize() {
 
 export int32_t websg_load() {
   JSValue global = JS_GetGlobalObject(ctx);
+  JSValue world = JS_GetPropertyStr(ctx, global, "world");
+  JSValue world_on_load_func = JS_GetPropertyStr(ctx, world, "onload");
 
-  JSValue on_load_func = JS_GetProperty(ctx, global, on_load_atom);
-
-  if (js_handle_exception(ctx, on_load_func)) {
+  if (js_handle_exception(ctx, world_on_load_func)) {
     return -1;
-  } else if (JS_IsUndefined(on_load_func)) {
+  } else if (JS_IsUndefined(world_on_load_func)) {
     return 0;
   }
 
   JSValueConst args[] = {};
-  JSValue val = JS_Call(ctx, on_load_func, JS_UNDEFINED, 0, args);
-  JS_FreeValue(ctx, on_load_func);
+  JSValue val = JS_Call(ctx, world_on_load_func, JS_UNDEFINED, 0, args);
+  JS_FreeValue(ctx, world_on_load_func);
 
   if (js_handle_exception(ctx, val) < 0) {
     return -1;
@@ -90,18 +82,18 @@ export int32_t websg_load() {
 
 export int32_t websg_enter() {
   JSValue global = JS_GetGlobalObject(ctx);
+  JSValue world = JS_GetPropertyStr(ctx, global, "world");
+  JSValue world_on_enter_func = JS_GetPropertyStr(ctx, world, "onenter");
 
-  JSValue on_enter_func = JS_GetProperty(ctx, global, on_enter_atom);
-
-  if (js_handle_exception(ctx, on_enter_func) < 0) {
+  if (js_handle_exception(ctx, world_on_enter_func) < 0) {
     return -1;
-  } else if (JS_IsUndefined(on_enter_func)) {
+  } else if (JS_IsUndefined(world_on_enter_func)) {
     return 0;
   }
 
   JSValueConst args[] = {};
-  JSValue val = JS_Call(ctx, on_enter_func, JS_UNDEFINED, 0, args);
-  JS_FreeValue(ctx, on_enter_func);
+  JSValue val = JS_Call(ctx, world_on_enter_func, JS_UNDEFINED, 0, args);
+  JS_FreeValue(ctx, world_on_enter_func);
 
   if (js_handle_exception(ctx, val) < 0) {
     return -1;
@@ -113,12 +105,12 @@ export int32_t websg_enter() {
 
 export int32_t websg_update(float_t dt, float_t time) {
   JSValue global = JS_GetGlobalObject(ctx);
+  JSValue world = JS_GetPropertyStr(ctx, global, "world");
+  JSValue world_on_update_func = JS_GetPropertyStr(ctx, world, "onupdate");
 
-  JSValue on_update_func = JS_GetProperty(ctx, global, on_update_atom);
-
-  if (js_handle_exception(ctx, on_update_func) < 0) {
+  if (js_handle_exception(ctx, world_on_update_func) < 0) {
     return -1;
-  } else if (JS_IsUndefined(on_update_func)) {
+  } else if (JS_IsUndefined(world_on_update_func)) {
     return 0;
   }
 
@@ -135,8 +127,8 @@ export int32_t websg_update(float_t dt, float_t time) {
   }
 
   JSValueConst args[] = { dt_val, time_val };
-  JSValue val = JS_Call(ctx, on_update_func, JS_UNDEFINED, 2, args);
-  JS_FreeValue(ctx, on_update_func);
+  JSValue val = JS_Call(ctx, world_on_update_func, JS_UNDEFINED, 2, args);
+  JS_FreeValue(ctx, world_on_update_func);
 
   if (js_handle_exception(ctx, val) < 0) {
     return -1;

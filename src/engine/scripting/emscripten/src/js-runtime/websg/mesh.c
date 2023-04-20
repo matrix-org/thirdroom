@@ -4,6 +4,8 @@
 #include "../../websg.h"
 #include "./mesh.h"
 #include "./mesh-primitive.h"
+#include "./accessor.h"
+#include "./material.h"
 #include "../utils/array.h"
 
 JSClassID js_websg_mesh_class_id;
@@ -127,21 +129,40 @@ JSValue js_websg_world_create_mesh(JSContext *ctx, JSValueConst this_val, int ar
     }
   }
 
-  JSValue lengthVal = JS_GetPropertyStr(ctx, argv[0], "length");
+  // TODO: Parse primitives array
+  JSValue primitives_arr = JS_GetPropertyStr(ctx, argv[0], "primitives");
 
-  if (JS_IsException(lengthVal)) {
+  if (JS_IsUndefined(primitives_arr)) {
+    JS_ThrowTypeError(ctx, "WebSG: Mesh must have at least one primitive.");
+    js_free(ctx, props);
+    return JS_EXCEPTION;
+  }
+
+  if (JS_IsException(primitives_arr)) {
+    js_free(ctx, props);
+    return JS_EXCEPTION;
+  }
+
+  JSValue length_arr = JS_GetPropertyStr(ctx, primitives_arr, "length");
+
+  if (JS_IsException(length_arr)) {
     js_free(ctx, props);
     return JS_EXCEPTION;
   }
 
   uint32_t count = 0;
 
-  if (JS_ToUint32(ctx, &count, lengthVal) == -1) {
+  if (JS_ToUint32(ctx, &count, length_arr) == -1) {
     js_free(ctx, props);
     return JS_EXCEPTION;
   }
 
-  JSValue primitives_arr = argv[0];
+  if (count == 0) {
+    JS_ThrowTypeError(ctx, "WebSG: Mesh must have at least one primitive.");
+    js_free(ctx, props);
+    return JS_EXCEPTION;
+  }
+
   MeshPrimitiveProps *primitives = js_mallocz(ctx, sizeof(MeshPrimitiveProps) * count);
   int error = 0;
 
@@ -165,22 +186,30 @@ JSValue js_websg_world_create_mesh(JSContext *ctx, JSValueConst this_val, int ar
       primitive_props->mode = MeshPrimitiveMode_TRIANGLES;
     }
 
-    JSValue indicesVal = JS_GetPropertyStr(ctx, primitive_obj, "indices");
+    JSValue indices_val = JS_GetPropertyStr(ctx, primitive_obj, "indices");
 
-    if (!JS_IsUndefined(indicesVal)) {
-      if (JS_ToUint32(ctx, &primitive_props->indices, indicesVal) == -1) {
+    if (!JS_IsUndefined(indices_val)) {
+      WebSGAccessorData *indices_data = JS_GetOpaque2(ctx, indices_val, js_websg_accessor_class_id);
+
+      if (indices_data == NULL) {
         error = 1;
         break;
       }
+
+      primitive_props->indices = indices_data->accessor_id;
     }
 
-    JSValue materialVal = JS_GetPropertyStr(ctx, primitive_obj, "material");
+    JSValue material_val = JS_GetPropertyStr(ctx, primitive_obj, "material");
 
-    if (!JS_IsUndefined(materialVal)) {
-      if (JS_ToUint32(ctx, &primitive_props->material, materialVal) == -1) {
+    if (!JS_IsUndefined(material_val)) {
+       WebSGMaterialData *material_data = JS_GetOpaque2(ctx, material_val, js_websg_material_class_id);
+
+      if (material_data == NULL) {
         error = 1;
         break;
       }
+
+      primitive_props->material = material_data->material_id;
     }
 
     JSValue attributes_obj = JS_GetPropertyStr(ctx, primitive_obj, "attributes");
@@ -210,10 +239,14 @@ JSValue js_websg_world_create_mesh(JSContext *ctx, JSValueConst this_val, int ar
         attribute->key = get_primitive_attribute_from_atom(prop_name_atom);
         JSValue attribute_prop = JS_GetProperty(ctx, attributes_obj, prop_name_atom);
 
-        if (JS_ToUint32(ctx, &attribute->accessor_id, attribute_prop) == -1) {
+        WebSGAccessorData *accessor_data = JS_GetOpaque2(ctx, attribute_prop, js_websg_accessor_class_id);
+
+        if (accessor_data == NULL) {
           error = 1;
           break;
         }
+
+        attribute->accessor_id = accessor_data->accessor_id;
       }
 
       primitive_props->attributes.count = attribute_count;
@@ -287,12 +320,16 @@ JSValue js_websg_world_create_box_mesh(JSContext *ctx, JSValueConst this_val, in
     }
   }
 
-  JSValue materialVal = JS_GetPropertyStr(ctx, argv[0], "material");
+  JSValue material_val = JS_GetPropertyStr(ctx, argv[0], "material");
 
-  if (!JS_IsUndefined(materialVal)) {
-    if (JS_ToUint32(ctx, &props->material, materialVal) == -1) {
+  if (!JS_IsUndefined(material_val)) {
+      WebSGMaterialData *material_data = JS_GetOpaque2(ctx, material_val, js_websg_material_class_id);
+
+    if (material_data == NULL) {
       return JS_EXCEPTION;
     }
+
+    props->material = material_data->material_id;
   }
 
   mesh_id_t mesh_id = websg_world_create_box_mesh(props);

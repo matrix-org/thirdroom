@@ -12,10 +12,18 @@
   height: 100%;
 }
 
-.AssetPipeline__message {
+.AssetPipeline__content {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+  background-color: #fff;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  padding: 40px;
+}
+
+.AssetPipeline__message {
   text-align: center;
 }

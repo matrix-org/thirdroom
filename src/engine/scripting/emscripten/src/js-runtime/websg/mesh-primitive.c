@@ -205,7 +205,7 @@ static JSValue js_websg_set_mesh_primitive_hologram_material_enabled(
 ) {
   WebSGMeshPrimitiveData *mesh_primitive_data = JS_GetOpaque(this_val, js_websg_mesh_primitive_class_id);
 
-  int enabled = JS_ToBool(ctx, argv[2]);
+  int enabled = JS_ToBool(ctx, argv[0]);
 
   if (enabled < 0) {
     return JS_EXCEPTION;

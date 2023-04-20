@@ -1,7 +1,7 @@
 import { Component, defineQuery, hasComponent, Not } from "bitecs";
 import RAPIER from "@dimforge/rapier3d-compat";
 import { BoxGeometry } from "three";
-import { vec2 } from "@gltf-transform/core";
+import { vec2, vec4 } from "gl-matrix";
 
 import { GameState } from "../GameTypes";
 import { IRemoteResourceClass, RemoteResourceConstructor } from "../resource/RemoteResourceClass";
@@ -64,7 +64,6 @@ import {
   readUint32Array,
   readUint8,
   rewindCursorView,
-  skipBytes,
   skipUint32,
 } from "../allocator/CursorView";
 import { AccessorComponentTypeToTypedArray, AccessorTypeToElementSize } from "../accessor/accessor.common";
@@ -78,8 +77,7 @@ import {
 import { getModule } from "../module/module.common";
 import { createMesh } from "../mesh/mesh.game";
 import { addInteractableComponent } from "../../plugins/interaction/interaction.game";
-import { dynamicObjectCollisionGroups } from "../physics/CollisionGroups";
-import { addUIElementChild, removeUIElementChild } from "../ui/ui.game";
+import { addUIElementChild, initNodeUICanvas, removeUIElementChild } from "../ui/ui.game";
 import { startOrbit, stopOrbit } from "../../plugins/camera/CameraRig.game";
 import { ComponentPropertyType } from "../component/types";
 
@@ -294,30 +292,38 @@ function scriptGetUIElementChildAt(wasmCtx: WASMModuleContext, parent: RemoteUIE
   return 0;
 }
 
-function readExtensionsAndExtras(
+function readExtensionsAndExtras<T extends { [key: string]: unknown }>(
   wasmCtx: WASMModuleContext,
-  parseExtension: (wasmCtx: WASMModuleContext, name: string) => any = () => {}
+  parseExtension: (name: string) => T | undefined = () => undefined
 ) {
   const itemsPtr = readUint32(wasmCtx.cursorView);
   const count = readUint32(wasmCtx.cursorView);
   // TODO: Implement glTF extras in WebSG API
   skipUint32(wasmCtx.cursorView); // Skip extras pointer
 
-  const extensionItemLength = 8;
+  const extensions = {};
 
-  const extensions: { [key: string]: any } = {};
+  if (count > 0) {
+    const rewind = rewindCursorView(wasmCtx.cursorView);
 
-  for (let i = 0; i < count; i++) {
-    moveCursorView(wasmCtx.cursorView, itemsPtr + i * extensionItemLength);
-    const name = readStringFromCursorView(wasmCtx);
-    extensions[name] = parseExtension(wasmCtx, name);
+    moveCursorView(wasmCtx.cursorView, itemsPtr);
+
+    for (let i = 0; i < count; i++) {
+      const name = readStringFromCursorView(wasmCtx);
+      const extensionPtr = readUint32(wasmCtx.cursorView);
+      const itemRewind = rewindCursorView(wasmCtx.cursorView);
+      moveCursorView(wasmCtx.cursorView, extensionPtr);
+      Object.assign(extensions, parseExtension(name));
+      itemRewind();
+    }
+
+    rewind();
   }
 
-  return extensions;
+  return extensions as Partial<T>;
 }
 
 function readFloatList(wasmCtx: WASMModuleContext): Float32Array | undefined {
-  const rewind = rewindCursorView(wasmCtx.cursorView);
   const itemsPtr = readUint32(wasmCtx.cursorView);
   const count = readUint32(wasmCtx.cursorView);
 
@@ -325,29 +331,28 @@ function readFloatList(wasmCtx: WASMModuleContext): Float32Array | undefined {
     return undefined;
   }
 
+  const rewind = rewindCursorView(wasmCtx.cursorView);
   moveCursorView(wasmCtx.cursorView, itemsPtr);
   const arr = readFloat32Array(wasmCtx.cursorView, count);
   rewind();
-  skipBytes(wasmCtx.cursorView, 8);
   return arr;
 }
 
 function readStringLen(wasmCtx: WASMModuleContext): string {
-  const rewind = rewindCursorView(wasmCtx.cursorView);
   const strPtr = readUint32(wasmCtx.cursorView);
   const byteLength = readUint32(wasmCtx.cursorView);
+  const rewind = rewindCursorView(wasmCtx.cursorView);
   const value = readString(wasmCtx, strPtr, byteLength);
   rewind();
-  skipBytes(wasmCtx.cursorView, 8);
   return value;
 }
 
 function readList<T>(wasmCtx: WASMModuleContext, readItem: (wasmCtx: WASMModuleContext, index: number) => T): T[] {
   const items: T[] = [];
 
-  const rewind = rewindCursorView(wasmCtx.cursorView);
   const itemsPtr = readUint32(wasmCtx.cursorView);
   const count = readUint32(wasmCtx.cursorView);
+  const rewind = rewindCursorView(wasmCtx.cursorView);
   moveCursorView(wasmCtx.cursorView, itemsPtr);
 
   for (let i = 0; i < count; i++) {
@@ -355,7 +360,6 @@ function readList<T>(wasmCtx: WASMModuleContext, readItem: (wasmCtx: WASMModuleC
   }
 
   rewind();
-  skipBytes(wasmCtx.cursorView, 8);
 
   return items;
 }
@@ -382,15 +386,15 @@ function readRefMap<T extends RemoteResourceConstructor>(
   wasmCtx: WASMModuleContext,
   resourceConstructor: T
 ): { [key: string]: InstanceType<T> } {
-  const map: { [key: string]: InstanceType<T> } = {};
+  const map: { [key: number]: InstanceType<T> } = {};
 
-  const rewind = rewindCursorView(wasmCtx.cursorView);
   const itemsPtr = readUint32(wasmCtx.cursorView);
   const count = readUint32(wasmCtx.cursorView);
+  const rewind = rewindCursorView(wasmCtx.cursorView);
   moveCursorView(wasmCtx.cursorView, itemsPtr);
 
   for (let i = 0; i < count; i++) {
-    const key = readStringFromCursorView(wasmCtx);
+    const key = readEnum(wasmCtx, MeshPrimitiveAttributeIndex, "MeshPrimitiveAttributeIndex");
     const value = readResourceRef(wasmCtx, resourceConstructor);
 
     if (!value) {
@@ -401,7 +405,6 @@ function readRefMap<T extends RemoteResourceConstructor>(
   }
 
   rewind();
-  skipBytes(wasmCtx.cursorView, 8);
 
   return map;
 }
@@ -437,20 +440,18 @@ function readQuery(wasmCtx: WASMModuleContext, queryPtr: number, baseComponent: 
 }
 
 // MaterialTextureInfoProps
-function readTextureInfo(
+function readBaseTextureInfo(
   wasmCtx: WASMModuleContext
 ): [RemoteTexture, vec2 | undefined, number | undefined, vec2 | undefined] {
-  const extensions = readExtensionsAndExtras(wasmCtx, (wasmCtx, name) => {
+  const { offset, rotation, scale } = readExtensionsAndExtras(wasmCtx, (name) => {
     if (name == "KHR_textures_transform") {
       readExtensionsAndExtras(wasmCtx);
       const offset = readFloat32Array(wasmCtx.cursorView, 2);
       const rotation = readFloat32(wasmCtx.cursorView);
       const scale = readFloat32Array(wasmCtx.cursorView, 2);
       readUint32(wasmCtx.cursorView); // texCoord (currently unused);
-      return [offset, rotation, scale];
+      return { offset, rotation, scale };
     }
-
-    return {};
   });
 
   const texture = readResourceRef(wasmCtx, RemoteTexture);
@@ -461,28 +462,110 @@ function readTextureInfo(
 
   skipUint32(wasmCtx.cursorView); // skip texCoord
 
-  if ("KHR_textures_transform" in extensions) {
-    const [offset, rotation, scale] = extensions["KHR_textures_transform"];
+  return [texture, offset, rotation, scale];
+}
+
+function readTextureInfo(
+  wasmCtx: WASMModuleContext
+): [RemoteTexture | undefined, vec2 | undefined, number | undefined, vec2 | undefined] {
+  const textureInfoPtr = readUint32(wasmCtx.cursorView);
+
+  if (textureInfoPtr === 0) {
+    return [undefined, undefined, undefined, undefined];
+  } else {
+    const rewind = rewindCursorView(wasmCtx.cursorView);
+    moveCursorView(wasmCtx.cursorView, textureInfoPtr);
+    const [texture, offset, rotation, scale] = readBaseTextureInfo(wasmCtx);
+    rewind();
     return [texture, offset, rotation, scale];
   }
-
-  return [texture, undefined, undefined, undefined];
 }
 
 function readNormalTextureInfo(
   wasmCtx: WASMModuleContext
-): [RemoteTexture, number | undefined, vec2 | undefined, number | undefined, vec2 | undefined] {
-  const [texture, offset, rotation, scale] = readTextureInfo(wasmCtx);
-  const normalScale = readFloat32(wasmCtx.cursorView);
-  return [texture, normalScale, offset, rotation, scale];
+): [RemoteTexture | undefined, number | undefined, vec2 | undefined, number | undefined, vec2 | undefined] {
+  const textureInfoPtr = readUint32(wasmCtx.cursorView);
+
+  if (textureInfoPtr === 0) {
+    return [undefined, undefined, undefined, undefined, undefined];
+  } else {
+    const rewind = rewindCursorView(wasmCtx.cursorView);
+    moveCursorView(wasmCtx.cursorView, textureInfoPtr);
+    const [texture, offset, rotation, scale] = readBaseTextureInfo(wasmCtx);
+    const normalScale = readFloat32(wasmCtx.cursorView);
+    rewind();
+    return [texture, normalScale, offset, rotation, scale];
+  }
 }
 
 function readOcclusionTextureInfo(
   wasmCtx: WASMModuleContext
-): [RemoteTexture, number | undefined, vec2 | undefined, number | undefined, vec2 | undefined] {
-  const [texture, offset, rotation, scale] = readTextureInfo(wasmCtx);
-  const occlusionStrength = readFloat32(wasmCtx.cursorView);
-  return [texture, occlusionStrength, offset, rotation, scale];
+): [RemoteTexture | undefined, number | undefined, vec2 | undefined, number | undefined, vec2 | undefined] {
+  const textureInfoPtr = readUint32(wasmCtx.cursorView);
+
+  if (textureInfoPtr === 0) {
+    return [undefined, undefined, undefined, undefined, undefined];
+  } else {
+    const rewind = rewindCursorView(wasmCtx.cursorView);
+    moveCursorView(wasmCtx.cursorView, textureInfoPtr);
+    const [texture, offset, rotation, scale] = readBaseTextureInfo(wasmCtx);
+    const occlusionStrength = readFloat32(wasmCtx.cursorView);
+    rewind();
+    return [texture, occlusionStrength, offset, rotation, scale];
+  }
+}
+
+interface PBRMetallicRoughnessProps {
+  baseColorFactor?: vec4;
+  baseColorTexture?: RemoteTexture;
+  baseColorTextureOffset?: vec2;
+  baseColorTextureRotation?: number;
+  baseColorTextureScale?: vec2;
+  metallicFactor?: number;
+  roughnessFactor?: number;
+  metallicRoughnessTexture?: RemoteTexture;
+  metallicRoughnessTextureOffset?: vec2;
+  metallicRoughnessTextureRotation?: number;
+  metallicRoughnessTextureScale?: vec2;
+}
+
+function readPBRMetallicRoughness(wasmCtx: WASMModuleContext): PBRMetallicRoughnessProps {
+  const pbrMetallicRoughnessPtr = readUint32(wasmCtx.cursorView);
+
+  if (pbrMetallicRoughnessPtr === 0) {
+    return {};
+  } else {
+    const rewind = rewindCursorView(wasmCtx.cursorView);
+    moveCursorView(wasmCtx.cursorView, pbrMetallicRoughnessPtr);
+    readExtensionsAndExtras(wasmCtx); // pbrMetallicRoughness extensions
+    const baseColorFactor = readFloat32Array(wasmCtx.cursorView, 4);
+    const [baseColorTexture, baseColorTextureOffset, baseColorTextureRotation, baseColorTextureScale] =
+      readTextureInfo(wasmCtx);
+    const metallicFactor = readFloat32(wasmCtx.cursorView);
+    const roughnessFactor = readFloat32(wasmCtx.cursorView);
+    const [
+      metallicRoughnessTexture,
+      metallicRoughnessTextureOffset,
+      metallicRoughnessTextureRotation,
+      metallicRoughnessTextureScale,
+    ] = readTextureInfo(wasmCtx);
+
+    rewind();
+
+    return {
+      baseColorFactor,
+      baseColorTexture,
+      baseColorTextureOffset,
+      baseColorTextureRotation,
+      baseColorTextureScale,
+      metallicFactor,
+      roughnessFactor,
+      metallicRoughnessTexture,
+      metallicRoughnessTextureOffset,
+      metallicRoughnessTextureRotation,
+      metallicRoughnessTextureScale,
+    };
+  }
 }
 
 interface MeshPrimitiveProps {
@@ -603,7 +686,12 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
         moveCursorView(wasmCtx.cursorView, propsPtr);
 
         const name = readStringFromCursorView(wasmCtx);
-        readExtensionsAndExtras(wasmCtx);
+        const { uiCanvas } = readExtensionsAndExtras(wasmCtx, (name) => {
+          if (name === "MX_ui") {
+            readExtensionsAndExtras(wasmCtx);
+            return { uiCanvas: readResourceRef(wasmCtx, RemoteUICanvas) };
+          }
+        });
         const camera = readResourceRef(wasmCtx, RemoteCamera);
         const skin = readResourceRef(wasmCtx, RemoteSkin);
         const mesh = readResourceRef(wasmCtx, RemoteMesh);
@@ -612,7 +700,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
         const position = readFloat32Array(wasmCtx.cursorView, 3); // translation
         readFloatList(wasmCtx); // weights (currently unused)
 
-        return new RemoteNode(wasmCtx.resourceManager, {
+        const node = new RemoteNode(wasmCtx.resourceManager, {
           camera,
           skin,
           mesh,
@@ -620,7 +708,14 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
           scale,
           position,
           name,
-        }).eid;
+          uiCanvas,
+        });
+
+        if (uiCanvas) {
+          initNodeUICanvas(ctx, physics, node);
+        }
+
+        return node.eid;
       } catch (error) {
         console.error("WebSG: Error creating node:", error);
         return 0;
@@ -1176,11 +1271,11 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       startOrbit(ctx, node, { pitch, yaw, zoom });
 
-      return 0;
+      return 1;
     },
-    stop_orbit() {
+    world_stop_orbit() {
       stopOrbit(ctx);
-      return 0;
+      return 1;
     },
     world_create_mesh(propsPtr: number) {
       try {
@@ -1407,10 +1502,20 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
         moveCursorView(wasmCtx.cursorView, propsPtr);
         const name = readStringFromCursorView(wasmCtx);
         const extensions = readExtensionsAndExtras(wasmCtx);
-        readExtensionsAndExtras(wasmCtx); // pbrMetallicRoughness extensions
-        const baseColorFactor = readFloat32Array(wasmCtx.cursorView, 4);
-        const [baseColorTexture, baseColorTextureOffset, baseColorTextureRotation, baseColorTextureScale] =
-          readTextureInfo(wasmCtx);
+
+        const {
+          baseColorFactor,
+          baseColorTexture,
+          baseColorTextureOffset,
+          baseColorTextureRotation,
+          baseColorTextureScale,
+          metallicFactor,
+          roughnessFactor,
+          metallicRoughnessTexture,
+          metallicRoughnessTextureOffset,
+          metallicRoughnessTextureRotation,
+          metallicRoughnessTextureScale,
+        } = readPBRMetallicRoughness(wasmCtx);
 
         if ("KHR_materials_unlit" in extensions) {
           const material = new RemoteMaterial(wasmCtx.resourceManager, {
@@ -1426,14 +1531,6 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
           return material.eid;
         }
 
-        const metallicFactor = readFloat32(wasmCtx.cursorView);
-        const roughnessFactor = readFloat32(wasmCtx.cursorView);
-        const [
-          metallicRoughnessTexture,
-          metallicRoughnessTextureOffset,
-          metallicRoughnessTextureRotation,
-          metallicRoughnessTextureScale,
-        ] = readTextureInfo(wasmCtx);
         const [normalTexture, normalScale, normalTextureOffset, normalTextureRotation, normalTextureScale] =
           readNormalTextureInfo(wasmCtx);
         const [
@@ -1513,6 +1610,26 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       return 0;
     },
+    material_get_base_color_factor_element(materialId: number, index: number) {
+      const material = getScriptResource(wasmCtx, RemoteMaterial, materialId);
+
+      if (!material) {
+        return -1;
+      }
+
+      return material.baseColorFactor[index];
+    },
+    material_set_base_color_factor_element(materialId: number, index: number, value: number) {
+      const material = getScriptResource(wasmCtx, RemoteMaterial, materialId);
+
+      if (!material) {
+        return -1;
+      }
+
+      material.baseColorFactor[index] = value;
+
+      return 0;
+    },
     material_get_metallic_factor(materialId: number) {
       const material = getScriptResource(wasmCtx, RemoteMaterial, materialId);
       return material?.metallicFactor || 0;
@@ -1562,6 +1679,26 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       }
 
       readFloat32ArrayInto(wasmCtx, colorPtr, material.emissiveFactor);
+
+      return 0;
+    },
+    material_get_emissive_factor_element(materialId: number, index: number) {
+      const material = getScriptResource(wasmCtx, RemoteMaterial, materialId);
+
+      if (!material) {
+        return -1;
+      }
+
+      return material.emissiveFactor[index];
+    },
+    material_set_emissive_factor_element(materialId: number, index: number, value: number) {
+      const material = getScriptResource(wasmCtx, RemoteMaterial, materialId);
+
+      if (!material) {
+        return -1;
+      }
+
+      material.emissiveFactor[index] = value;
 
       return 0;
     },
@@ -1647,6 +1784,26 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       }
 
       readFloat32ArrayInto(wasmCtx, colorPtr, light.color);
+
+      return 0;
+    },
+    light_get_color_element(lightId: number, index: number) {
+      const light = getScriptResource(wasmCtx, RemoteLight, lightId);
+
+      if (!light) {
+        return -1;
+      }
+
+      return light.color[index];
+    },
+    light_set_color_element(lightId: number, index: number, value: number) {
+      const light = getScriptResource(wasmCtx, RemoteLight, lightId);
+
+      if (!light) {
+        return -1;
+      }
+
+      light.color[index] = value;
 
       return 0;
     },
@@ -1918,20 +2075,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       }
 
       node.uiCanvas = canvas;
-
-      const { size } = canvas;
-
-      // setup collider
-      const rigidBodyDesc = RAPIER.RigidBodyDesc.kinematicPositionBased();
-      const rigidBody = physics.physicsWorld.createRigidBody(rigidBodyDesc);
-      const colliderDesc = RAPIER.ColliderDesc.cuboid(size[0] / 2, size[1] / 2, 0.01)
-        .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS)
-        .setCollisionGroups(dynamicObjectCollisionGroups);
-      physics.physicsWorld.createCollider(colliderDesc, rigidBody);
-
-      addRigidBody(ctx, node, rigidBody);
-
-      addInteractableComponent(ctx, physics, node, InteractableType.UI);
+      initNodeUICanvas(ctx, physics, node);
 
       return 0;
     },
@@ -2099,11 +2243,14 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       const margin = readFloat32Array(wasmCtx.cursorView, 4);
       const borderWidth = readFloat32Array(wasmCtx.cursorView, 4);
       const borderRadius = readFloat32Array(wasmCtx.cursorView, 4);
+      const buttonPtr = readUint32(wasmCtx.cursorView);
+      const textPtr = readUint32(wasmCtx.cursorView);
 
       let button: RemoteUIButton | undefined = undefined;
 
       if (type === ElementType.Button) {
         const rewind = rewindCursorView(wasmCtx.cursorView);
+        moveCursorView(wasmCtx.cursorView, buttonPtr);
 
         readExtensionsAndExtras(wasmCtx);
         const label = readStringLen(wasmCtx);
@@ -2121,9 +2268,10 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       let text: RemoteUIText | undefined = undefined;
 
-      if (type === ElementType.Text) {
-        readExtensionsAndExtras(wasmCtx);
+      if (type === ElementType.Text || type === ElementType.Button) {
         const rewind = rewindCursorView(wasmCtx.cursorView);
+        moveCursorView(wasmCtx.cursorView, textPtr);
+        readExtensionsAndExtras(wasmCtx);
         const value = readStringLen(wasmCtx);
         const fontFamily = readStringLen(wasmCtx);
         const fontWeight = readStringLen(wasmCtx);
@@ -2142,8 +2290,6 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
         rewind();
       }
-
-      skipUint32(wasmCtx.cursorView); // Text ptr
 
       try {
         const uiElement = new RemoteUIElement(wasmCtx.resourceManager, {
@@ -3181,6 +3327,55 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       return 0;
     },
+    ui_text_get_font_weight_length(uiElementId: number) {
+      const el = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!el) {
+        return -1;
+      }
+
+      if (!el.text) {
+        return -1;
+      }
+
+      return el.text.fontWeight.length;
+    },
+    ui_text_get_font_weight(uiElementId: number, fontWeightPtr: number, length: number) {
+      const el = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!el) {
+        return -1;
+      }
+
+      if (!el.text) {
+        return -1;
+      }
+
+      writeString(wasmCtx, fontWeightPtr, el.text.fontWeight, length);
+
+      return 0;
+    },
+    ui_text_set_font_weight(uiElementId: number, fontWeightPtr: number, length: number) {
+      const el = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!el) {
+        return -1;
+      }
+
+      if (!el.text) {
+        return -1;
+      }
+
+      const fontWeight = readString(wasmCtx, fontWeightPtr, length);
+
+      if (!fontWeight) {
+        return -1;
+      }
+
+      el.text.fontWeight = fontWeight;
+
+      return 0;
+    },
     ui_text_get_font_size(uiElementId: number) {
       const el = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
 
@@ -3236,6 +3431,34 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       }
 
       readFloat32ArrayInto(wasmCtx, colorPtr, el.text.color);
+
+      return 0;
+    },
+    ui_text_get_color_element(uiElementId: number, index: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      if (!uiElement.text) {
+        return -1;
+      }
+
+      return uiElement.text.color[index];
+    },
+    ui_text_set_color_element(uiElementId: number, index: number, value: number) {
+      const uiElement = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
+
+      if (!uiElement) {
+        return -1;
+      }
+
+      if (!uiElement.text) {
+        return -1;
+      }
+
+      uiElement.text.color[index] = value;
 
       return 0;
     },

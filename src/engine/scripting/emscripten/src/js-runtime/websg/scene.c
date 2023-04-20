@@ -79,7 +79,7 @@ static JSValue js_websg_scene_nodes(JSContext *ctx, JSValueConst this_val, int a
     return JS_EXCEPTION;
   }
 
-  node_id_t *nodes = js_malloc(ctx, sizeof(node_id_t) * count);
+  node_id_t *nodes = js_mallocz(ctx, sizeof(node_id_t) * count);
 
   if (websg_scene_get_nodes(scene_data->scene_id, nodes, count) == -1) {
     JS_ThrowInternalError(ctx, "WebSG: Error getting scene nodes.");
@@ -203,14 +203,16 @@ JSValue js_websg_world_create_scene(JSContext *ctx, JSValue this_val, int argc, 
 
   SceneProps *props = js_mallocz(ctx, sizeof(SceneProps));
 
-  JSValue name_val = JS_GetPropertyStr(ctx, argv[0], "name");
+  if (!JS_IsUndefined(argv[0])) {
+    JSValue name_val = JS_GetPropertyStr(ctx, argv[0], "name");
 
-  if (!JS_IsUndefined(name_val)) {
-    props->name = JS_ToCString(ctx, name_val);
+    if (!JS_IsUndefined(name_val)) {
+      props->name = JS_ToCString(ctx, name_val);
 
-    if (props->name == NULL) {
-      js_free(ctx, props);
-      return JS_EXCEPTION;
+      if (props->name == NULL) {
+        js_free(ctx, props);
+        return JS_EXCEPTION;
+      }
     }
   }
 

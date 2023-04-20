@@ -3,6 +3,7 @@
 #include "../../websg.h"
 #include "./websg-js.h"
 #include "./collider.h"
+#include "./mesh.h"
 #include "../utils/array.h"
 
 JSClassID js_websg_collider_class_id;
@@ -206,14 +207,14 @@ JSValue js_websg_world_create_collider(JSContext *ctx, JSValueConst this_val, in
   JSValue mesh_val = JS_GetPropertyStr(ctx, argv[0], "mesh");
 
   if (!JS_IsUndefined(mesh_val)) {
-    mesh_id_t mesh_id;
+    WebSGMeshData *mesh_data = JS_GetOpaque2(ctx, mesh_val, js_websg_mesh_class_id);
 
-    if (JS_ToUint32(ctx, &mesh_id, mesh_val) == -1) {
+    if (mesh_data == NULL) {
       js_free(ctx, props);
       return JS_EXCEPTION;
     }
 
-    props->mesh = mesh_id;
+    props->mesh = mesh_data->mesh_id;
   }
 
   collider_id_t collider_id = websg_world_create_collider(props);

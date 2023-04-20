@@ -1,4 +1,32 @@
-import Yoga from "@react-pdf/yoga";
+import {
+  FLEX_DIRECTION_COLUMN,
+  FLEX_DIRECTION_COLUMN_REVERSE,
+  FLEX_DIRECTION_ROW,
+  FLEX_DIRECTION_ROW_REVERSE,
+  POSITION_TYPE_ABSOLUTE,
+  POSITION_TYPE_RELATIVE,
+  ALIGN_AUTO,
+  ALIGN_BASELINE,
+  ALIGN_CENTER,
+  ALIGN_FLEX_END,
+  ALIGN_FLEX_START,
+  ALIGN_SPACE_AROUND,
+  ALIGN_SPACE_BETWEEN,
+  ALIGN_STRETCH,
+  JUSTIFY_CENTER,
+  JUSTIFY_FLEX_END,
+  JUSTIFY_FLEX_START,
+  JUSTIFY_SPACE_AROUND,
+  JUSTIFY_SPACE_BETWEEN,
+  JUSTIFY_SPACE_EVENLY,
+  WRAP_NO_WRAP,
+  WRAP_WRAP,
+  WRAP_WRAP_REVERSE,
+  EDGE_LEFT,
+  EDGE_TOP,
+  EDGE_RIGHT,
+  EDGE_BOTTOM,
+} from "yoga-wasm-web";
 
 import { defineResource, PropType } from "./ResourceDefinition";
 
@@ -436,48 +464,48 @@ export enum ElementType {
 }
 
 export enum FlexDirection {
-  Column = Yoga.FLEX_DIRECTION_COLUMN,
-  ColumnReverse = Yoga.FLEX_DIRECTION_COLUMN_REVERSE,
-  Row = Yoga.FLEX_DIRECTION_ROW,
-  RowReverse = Yoga.FLEX_DIRECTION_ROW_REVERSE,
+  Column = FLEX_DIRECTION_COLUMN,
+  ColumnReverse = FLEX_DIRECTION_COLUMN_REVERSE,
+  Row = FLEX_DIRECTION_ROW,
+  RowReverse = FLEX_DIRECTION_ROW_REVERSE,
 }
 
 export enum ElementPositionType {
-  Relative = Yoga.POSITION_TYPE_RELATIVE,
-  Absolute = Yoga.POSITION_TYPE_ABSOLUTE,
+  Relative = POSITION_TYPE_RELATIVE,
+  Absolute = POSITION_TYPE_ABSOLUTE,
 }
 
 export enum FlexAlign {
-  Auto = Yoga.ALIGN_AUTO,
-  FlexStart = Yoga.ALIGN_FLEX_START,
-  Center = Yoga.ALIGN_CENTER,
-  FlexEnd = Yoga.ALIGN_FLEX_END,
-  Stretch = Yoga.ALIGN_STRETCH,
-  Baseline = Yoga.ALIGN_BASELINE,
-  SpaceBetween = Yoga.ALIGN_SPACE_BETWEEN,
-  SpaceAround = Yoga.ALIGN_SPACE_AROUND,
+  Auto = ALIGN_AUTO,
+  FlexStart = ALIGN_FLEX_START,
+  Center = ALIGN_CENTER,
+  FlexEnd = ALIGN_FLEX_END,
+  Stretch = ALIGN_STRETCH,
+  Baseline = ALIGN_BASELINE,
+  SpaceBetween = ALIGN_SPACE_BETWEEN,
+  SpaceAround = ALIGN_SPACE_AROUND,
 }
 
 export enum FlexJustify {
-  FlexStart = Yoga.JUSTIFY_FLEX_START,
-  Center = Yoga.JUSTIFY_CENTER,
-  FlexEnd = Yoga.JUSTIFY_FLEX_END,
-  SpaceBetween = Yoga.JUSTIFY_SPACE_BETWEEN,
-  SpaceAround = Yoga.JUSTIFY_SPACE_AROUND,
-  SpaceEvenly = Yoga.JUSTIFY_SPACE_EVENLY,
+  FlexStart = JUSTIFY_FLEX_START,
+  Center = JUSTIFY_CENTER,
+  FlexEnd = JUSTIFY_FLEX_END,
+  SpaceBetween = JUSTIFY_SPACE_BETWEEN,
+  SpaceAround = JUSTIFY_SPACE_AROUND,
+  SpaceEvenly = JUSTIFY_SPACE_EVENLY,
 }
 
 export enum FlexWrap {
-  NoWrap = Yoga.WRAP_NO_WRAP,
-  Wrap = Yoga.WRAP_WRAP,
-  WrapReverse = Yoga.WRAP_WRAP_REVERSE,
+  NoWrap = WRAP_NO_WRAP,
+  Wrap = WRAP_WRAP,
+  WrapReverse = WRAP_WRAP_REVERSE,
 }
 
 export enum FlexEdge {
-  LEFT = Yoga.EDGE_LEFT,
-  TOP = Yoga.EDGE_TOP,
-  RIGHT = Yoga.EDGE_RIGHT,
-  BOTTOM = Yoga.EDGE_BOTTOM,
+  LEFT = EDGE_LEFT,
+  TOP = EDGE_TOP,
+  RIGHT = EDGE_RIGHT,
+  BOTTOM = EDGE_BOTTOM,
 }
 
 export const UITextResource = defineResource("ui-text", ResourceType.UIText, {
@@ -568,8 +596,8 @@ export const UIElementResource = defineResource("ui-element", ResourceType.UIEle
   borderColor: PropType.rgba({ script: true, mutable: true }),
 
   // TODO: vec4 alias
-  padding: PropType.rgba({ script: true, mutable: true }),
-  margin: PropType.rgba({ script: true, mutable: true }),
+  padding: PropType.vec4({ script: true, mutable: true }),
+  margin: PropType.vec4({ script: true, mutable: true }),
   borderWidth: PropType.vec4({ script: true, mutable: true }),
   borderRadius: PropType.vec4({ script: true, mutable: true }),
 

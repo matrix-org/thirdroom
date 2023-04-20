@@ -1,4 +1,4 @@
-import Yoga from "@react-pdf/yoga";
+import { Node } from "yoga-wasm-web";
 import { CanvasTexture } from "three";
 
 import { AudioModule } from "../audio/audio.main";
@@ -247,7 +247,7 @@ export class MainUIElement extends defineLocalResourceClass(UIElementResource) {
   declare button: MainUIButton;
   declare image: MainUIImage;
 
-  yogaNode: Yoga.Node;
+  yogaNode?: Node;
 }
 
 export class MainUICanvas extends defineLocalResourceClass(UICanvasResource) {
@@ -255,7 +255,7 @@ export class MainUICanvas extends defineLocalResourceClass(UICanvasResource) {
 
   canvasTexture?: CanvasTexture;
   canvas?: HTMLCanvasElement;
-  yogaNode: Yoga.Node;
+  yogaNode?: Node;
 }
 export class MainCollider extends defineLocalResourceClass(ColliderResource) {
   declare mesh: MainMesh | undefined;

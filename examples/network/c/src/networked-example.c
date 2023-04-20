@@ -42,11 +42,9 @@ export void websg_load() {
   room2_switch = websg_world_find_node_by_name(room2_switch_name, strlen(room2_switch_name));
   const char *room1_light_name = "Room1Light";
   node_id_t room1_light_node = websg_world_find_node_by_name(room1_light_name, strlen(room1_light_name));
-  websg_node_set_is_static(room1_light_node, 0);
   room1_light = websg_node_get_light(room1_light_node);
   const char *room2_light_name = "Room2Light";
   node_id_t room2_light_node = websg_world_find_node_by_name(room2_light_name, strlen(room2_light_name));
-  websg_node_set_is_static(room2_light_node, 0);
   room2_light = websg_node_get_light(room2_light_node);
 
   mesh_id_t right_cube_mesh = websg_node_get_mesh(right_cube);

@@ -1,3 +1,4 @@
+#include <string.h>
 #include "../quickjs/cutils.h"
 #include "../quickjs/quickjs.h"
 #include "../../websg.h"
@@ -45,22 +46,6 @@ static JSClassDef js_websg_material_class = {
   "Material",
   .finalizer = js_websg_material_finalizer
 };
-
-static float_t js_websg_material_get_base_color_factor_element(uint32_t material_id, float_t *color, int index) {
-  websg_material_get_base_color_factor(material_id, color);
-  return color[index];
-}
-
-static void js_websg_material_set_base_color_factor_element(
-  uint32_t material_id,
-  float_t *color,
-  int index,
-  float_t value
-) {
-  websg_material_get_base_color_factor(material_id, color);
-  color[index] = value;
-  websg_material_set_base_color_factor(material_id, color);
-}
 
 static JSValue js_websg_material_get_metallic_factor(JSContext *ctx, JSValueConst this_val) {
   WebSGMaterialData *material_data = JS_GetOpaque(this_val, js_websg_material_class_id);
@@ -114,22 +99,6 @@ static JSValue js_websg_material_set_roughness_factor(JSContext *ctx, JSValueCon
   }
 
   return JS_UNDEFINED;
-}
-
-static float_t js_websg_material_get_emissive_factor_element(uint32_t material_id, float_t *color, int index) {
-  websg_material_get_emissive_factor(material_id, color);
-  return color[index];
-}
-
-static void js_websg_material_set_emissive_factor_element(
-  uint32_t material_id,
-  float_t *color,
-  int index,
-  float_t value
-) {
-  websg_material_get_emissive_factor(material_id, color);
-  color[index] = value;
-  websg_material_set_emissive_factor(material_id, color);
 }
 
 static JSValue js_websg_material_get_base_color_texture(JSContext *ctx, JSValueConst this_val) {
@@ -201,8 +170,9 @@ JSValue js_websg_new_material_instance(JSContext *ctx, WebSGWorldData *world_dat
     material,
     "baseColorFactor",
     material_id,
-    &js_websg_material_get_base_color_factor_element,
-    &js_websg_material_set_base_color_factor_element
+    &websg_material_get_base_color_factor_element,
+    &websg_material_set_base_color_factor_element,
+    &websg_material_set_base_color_factor
   );
 
   js_websg_define_rgb_prop(
@@ -210,8 +180,9 @@ JSValue js_websg_new_material_instance(JSContext *ctx, WebSGWorldData *world_dat
     material,
     "emissiveFactor",
     material_id,
-    &js_websg_material_get_emissive_factor_element,
-    &js_websg_material_set_emissive_factor_element
+    &websg_material_get_emissive_factor_element,
+    &websg_material_set_emissive_factor_element,
+    &websg_material_set_emissive_factor
   );
 
   WebSGMaterialData *material_data = js_mallocz(ctx, sizeof(WebSGMaterialData));
@@ -246,7 +217,7 @@ JSValue js_websg_world_create_unlit_material(JSContext *ctx, JSValueConst this_v
   MaterialProps *props = js_mallocz(ctx, sizeof(MaterialProps));
   props->extensions.count = 1;
   props->extensions.items = js_mallocz(ctx, sizeof(ExtensionItem));
-  props->extensions.items[0].name = "KHR_materials_unlit";
+  props->extensions.items[0].name = strdup("KHR_materials_unlit");
   props->extensions.items[0].extension = NULL;
 
   JSValue name_val = JS_GetPropertyStr(ctx, argv[0], "name");
@@ -260,17 +231,20 @@ JSValue js_websg_world_create_unlit_material(JSContext *ctx, JSValueConst this_v
     }
   }
 
+  MaterialPbrMetallicRoughnessProps *pbr = js_mallocz(ctx, sizeof(MaterialPbrMetallicRoughnessProps));
+  props->pbr_metallic_roughness = pbr;
+
   JSValue base_color_factor_val = JS_GetPropertyStr(ctx, argv[0], "baseColorFactor");
 
   if (!JS_IsUndefined(base_color_factor_val)) {
-    if (js_get_float_array_like(ctx, base_color_factor_val, props->pbr_metallic_roughness.base_color_factor, 4) < 0) {
+    if (js_get_float_array_like(ctx, base_color_factor_val, pbr->base_color_factor, 4) < 0) {
       return JS_EXCEPTION;
     }
   } else {
-    props->pbr_metallic_roughness.base_color_factor[0] = 1.0f;
-    props->pbr_metallic_roughness.base_color_factor[1] = 1.0f;
-    props->pbr_metallic_roughness.base_color_factor[2] = 1.0f;
-    props->pbr_metallic_roughness.base_color_factor[3] = 1.0f;
+    pbr->base_color_factor[0] = 1.0f;
+    pbr->base_color_factor[1] = 1.0f;
+    pbr->base_color_factor[2] = 1.0f;
+    pbr->base_color_factor[3] = 1.0f;
   }
 
   JSValue base_color_texture_val = JS_GetPropertyStr(ctx, argv[0], "baseColorTexture");
@@ -282,7 +256,7 @@ JSValue js_websg_world_create_unlit_material(JSContext *ctx, JSValueConst this_v
       return JS_EXCEPTION;
     }
 
-    props->pbr_metallic_roughness.base_color_texture.texture = base_color_texture_data->texture_id;
+    pbr->base_color_texture->texture = base_color_texture_data->texture_id;
   }
 
   JSValue double_sided_val = JS_GetPropertyStr(ctx, argv[0], "doubleSided");
@@ -316,7 +290,7 @@ JSValue js_websg_world_create_unlit_material(JSContext *ctx, JSValueConst this_v
   if (!JS_IsUndefined(alpha_mode_val)) {
     MaterialAlphaMode alpha_mode = get_alpha_mode_from_atom(JS_ValueToAtom(ctx, alpha_mode_val));
 
-    if (alpha_mode < 0) {
+    if (alpha_mode == -1) {
       JS_ThrowTypeError(ctx, "WebSG: Invalid alpha mode.");
       return JS_EXCEPTION;
     }
@@ -325,6 +299,16 @@ JSValue js_websg_world_create_unlit_material(JSContext *ctx, JSValueConst this_v
   }
 
   material_id_t material_id = websg_world_create_material(props);
+
+  if (props->pbr_metallic_roughness != NULL) {
+    if (props->pbr_metallic_roughness->base_color_texture != NULL) {
+      js_free(ctx, props->pbr_metallic_roughness->base_color_texture);
+    }
+
+    js_free(ctx, props->pbr_metallic_roughness);
+  }
+
+  js_free(ctx, props);
 
   if (material_id == 0) {
     JS_ThrowInternalError(ctx, "WebSG: Couldn't create material.");
@@ -383,7 +367,7 @@ JSValue js_websg_world_create_material(JSContext *ctx, JSValueConst this_val, in
   if (!JS_IsUndefined(alpha_mode_val)) {
     MaterialAlphaMode alpha_mode = get_alpha_mode_from_atom(JS_ValueToAtom(ctx, alpha_mode_val));
 
-    if (alpha_mode < 0) {
+    if (alpha_mode == -1) {
       JS_ThrowTypeError(ctx, "WebSG: Invalid alpha mode.");
       js_free(ctx, props);
       return JS_EXCEPTION;
@@ -392,18 +376,21 @@ JSValue js_websg_world_create_material(JSContext *ctx, JSValueConst this_val, in
     props->alpha_mode = alpha_mode;
   }
 
+  MaterialPbrMetallicRoughnessProps *pbr = js_mallocz(ctx, sizeof(MaterialPbrMetallicRoughnessProps));
+  props->pbr_metallic_roughness = pbr;
+
   JSValue base_color_factor_val = JS_GetPropertyStr(ctx, argv[0], "baseColorFactor");
 
   if (!JS_IsUndefined(base_color_factor_val)) {
-    if (js_get_float_array_like(ctx, base_color_factor_val, props->pbr_metallic_roughness.base_color_factor, 4) < 0) {
+    if (js_get_float_array_like(ctx, base_color_factor_val, pbr->base_color_factor, 4) < 0) {
       js_free(ctx, props);
       return JS_EXCEPTION;
     }
   } else {
-    props->pbr_metallic_roughness.base_color_factor[0] = 1.0f;
-    props->pbr_metallic_roughness.base_color_factor[1] = 1.0f;
-    props->pbr_metallic_roughness.base_color_factor[2] = 1.0f;
-    props->pbr_metallic_roughness.base_color_factor[3] = 1.0f;
+    pbr->base_color_factor[0] = 1.0f;
+    pbr->base_color_factor[1] = 1.0f;
+    pbr->base_color_factor[2] = 1.0f;
+    pbr->base_color_factor[3] = 1.0f;
   }
 
   JSValue base_color_texture_val = JS_GetPropertyStr(ctx, argv[0], "baseColorTexture");
@@ -416,7 +403,9 @@ JSValue js_websg_world_create_material(JSContext *ctx, JSValueConst this_val, in
       return JS_EXCEPTION;
     }
 
-    props->pbr_metallic_roughness.base_color_texture.texture = base_color_texture_data->texture_id;
+    MaterialTextureInfoProps *base_color_texture = js_mallocz(ctx, sizeof(MaterialTextureInfoProps));
+    base_color_texture->texture = base_color_texture_data->texture_id;
+    pbr->base_color_texture = base_color_texture;
   }
 
   JSValue metallic_factor_val = JS_GetPropertyStr(ctx, argv[0], "metallicFactor");
@@ -429,9 +418,9 @@ JSValue js_websg_world_create_material(JSContext *ctx, JSValueConst this_val, in
       return JS_EXCEPTION;
     }
 
-    props->pbr_metallic_roughness.metallic_factor = metallic_factor;
+    pbr->metallic_factor = metallic_factor;
   } else {
-    props->pbr_metallic_roughness.metallic_factor = 1.0f;
+    pbr->metallic_factor = 1.0f;
   }
 
   JSValue roughness_factor_val = JS_GetPropertyStr(ctx, argv[0], "roughnessFactor");
@@ -444,9 +433,9 @@ JSValue js_websg_world_create_material(JSContext *ctx, JSValueConst this_val, in
       return JS_EXCEPTION;
     }
 
-    props->pbr_metallic_roughness.roughness_factor = roughness_factor;
+    pbr->roughness_factor = roughness_factor;
   } else {
-    props->pbr_metallic_roughness.roughness_factor = 1.0f;
+    pbr->roughness_factor = 1.0f;
   }
 
   JSValue metallic_roughness_texture_val = JS_GetPropertyStr(ctx, argv[0], "metallicRoughnessTexture");
@@ -459,7 +448,9 @@ JSValue js_websg_world_create_material(JSContext *ctx, JSValueConst this_val, in
       return JS_EXCEPTION;
     }
 
-    props->pbr_metallic_roughness.metallic_roughness_texture.texture = metallic_roughness_texture_data->texture_id;
+    MaterialTextureInfoProps *metallic_roughness_texture = js_mallocz(ctx, sizeof(MaterialTextureInfoProps));
+    metallic_roughness_texture->texture = metallic_roughness_texture_data->texture_id;
+    pbr->metallic_roughness_texture = metallic_roughness_texture;
   }
 
   JSValue normal_texture_val = JS_GetPropertyStr(ctx, argv[0], "normalTexture");
@@ -472,22 +463,25 @@ JSValue js_websg_world_create_material(JSContext *ctx, JSValueConst this_val, in
       return JS_EXCEPTION;
     }
 
-    props->normal_texture.texture = normal_texture_data->texture_id;
-  }
+    MaterialNormalTextureInfoProps *normal_texture = js_mallocz(ctx, sizeof(MaterialNormalTextureInfoProps));
+    normal_texture->texture = normal_texture_data->texture_id;
 
-  JSValue normal_scale_val = JS_GetPropertyStr(ctx, argv[0], "normalScale");
+    JSValue normal_scale_val = JS_GetPropertyStr(ctx, argv[0], "normalScale");
 
-  if (!JS_IsUndefined(normal_scale_val)) {
-    double normal_scale;
+    if (!JS_IsUndefined(normal_scale_val)) {
+      double normal_scale;
 
-    if (JS_ToFloat64(ctx, &normal_scale, normal_scale_val) < 0) {
-      js_free(ctx, props);
-      return JS_EXCEPTION;
+      if (JS_ToFloat64(ctx, &normal_scale, normal_scale_val) < 0) {
+        js_free(ctx, props);
+        return JS_EXCEPTION;
+      }
+
+      normal_texture->scale = normal_scale;
+    } else {
+      normal_texture->scale = 1.0f;
     }
 
-    props->normal_texture.scale = normal_scale;
-  } else {
-    props->normal_texture.scale = 1.0f;
+    props->normal_texture = normal_texture;
   }
 
   JSValue occlusion_texture_val = JS_GetPropertyStr(ctx, argv[0], "occlusionTexture");
@@ -500,22 +494,25 @@ JSValue js_websg_world_create_material(JSContext *ctx, JSValueConst this_val, in
       return JS_EXCEPTION;
     }
 
-    props->occlusion_texture.texture = occlusion_texture_data->texture_id;
-  }
+    MaterialOcclusionTextureInfoProps *occlusion_texture = js_mallocz(ctx, sizeof(MaterialOcclusionTextureInfoProps));
+    occlusion_texture->texture = occlusion_texture_data->texture_id;
 
-  JSValue occlusion_strength_val = JS_GetPropertyStr(ctx, argv[0], "occlusionStrength");
+    JSValue occlusion_strength_val = JS_GetPropertyStr(ctx, argv[0], "occlusionStrength");
 
-  if (!JS_IsUndefined(occlusion_strength_val)) {
-    double occlusion_strength;
+    if (!JS_IsUndefined(occlusion_strength_val)) {
+      double occlusion_strength;
 
-    if (JS_ToFloat64(ctx, &occlusion_strength, occlusion_strength_val) < 0) {
-      js_free(ctx, props);
-      return JS_EXCEPTION;
+      if (JS_ToFloat64(ctx, &occlusion_strength, occlusion_strength_val) < 0) {
+        js_free(ctx, props);
+        return JS_EXCEPTION;
+      }
+
+      occlusion_texture->strength = occlusion_strength;
+    } else {
+      occlusion_texture->strength = 1.0f;
     }
 
-    props->occlusion_texture.strength = occlusion_strength;
-  } else {
-    props->occlusion_texture.strength = 1.0f;
+    props->occlusion_texture = occlusion_texture;
   }
 
   JSValue emissive_factor_val = JS_GetPropertyStr(ctx, argv[0], "emissiveFactor");
@@ -541,10 +538,36 @@ JSValue js_websg_world_create_material(JSContext *ctx, JSValueConst this_val, in
       return JS_EXCEPTION;
     }
 
-    props->emissive_texture.texture = emissive_texture_data->texture_id;
+    MaterialTextureInfoProps *emissive_texture = js_mallocz(ctx, sizeof(MaterialTextureInfoProps));
+    emissive_texture->texture = emissive_texture_data->texture_id;
+    props->emissive_texture = emissive_texture;
   }
 
   material_id_t material_id = websg_world_create_material(props);
+
+  if (props->pbr_metallic_roughness != NULL) {
+    if (props->pbr_metallic_roughness->base_color_texture != NULL) {
+      js_free(ctx, props->pbr_metallic_roughness->base_color_texture);
+    }
+
+    if (props->pbr_metallic_roughness->metallic_roughness_texture != NULL) {
+      js_free(ctx, props->pbr_metallic_roughness->metallic_roughness_texture);
+    }
+
+    js_free(ctx, props->pbr_metallic_roughness);
+  }
+
+  if (props->normal_texture != NULL) {
+    js_free(ctx, props->normal_texture);
+  }
+
+  if (props->occlusion_texture != NULL) {
+    js_free(ctx, props->occlusion_texture);
+  }
+
+  if (props->emissive_texture != NULL) {
+    js_free(ctx, props->emissive_texture);
+  }
 
   js_free(ctx, props);
 
