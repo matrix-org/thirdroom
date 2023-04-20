@@ -106,10 +106,10 @@ export function ScriptEditor({ room }: { room: Room }) {
     }
   }, [session, room, setActiveScriptSource, localScriptSource]);
 
-  const [, dropTarget] = useDrop(
+  const [{ canDrop }, dropTarget] = useDrop(
     () => ({
       accept: DnDItemTypes.Node,
-      drop(item: NodeDragItem, monitor) {
+      drop(item: NodeDragItem) {
         const { activeNodeId } = item;
         if (!item) return;
         const resource = getLocalResource(mainThread, activeNodeId) as unknown as MainThreadResource;
@@ -129,6 +129,9 @@ export function ScriptEditor({ room }: { room: Room }) {
         };
         editor.executeEdits("my-source", [edit]);
       },
+      collect: (monitor) => ({
+        canDrop: monitor.canDrop(),
+      }),
     }),
     [monaco]
   );
@@ -230,6 +233,18 @@ export function ScriptEditor({ room }: { room: Room }) {
               <IconButton iconSrc={DarkLightIC} label="Toggle Editor Theme" onClick={handleToggleTheme} />
             </Tooltip>
           </div>
+          {canDrop && (
+            <div className="ScriptEditor__dropOverlay flex flex-column items-center justify-center">
+              <div className="ScriptEditor__dropContainer flex flex-column items-center gap-xs">
+                <Text variant="s1" color="world" weight="bold" className="text-center">
+                  Drop Node
+                </Text>
+                <Text color="world" weight="medium" className="text-center">
+                  Insert code at your cursor to access node in script
+                </Text>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </>
