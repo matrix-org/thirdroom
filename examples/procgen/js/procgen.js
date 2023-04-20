@@ -194,7 +194,7 @@ let sphereNode;
 let beamMaterial;
 let accNoise = 0;
 
-onloadworld = () => {
+world.onload = () => {
   const meshMaterial = world.createMaterial({
     baseColorFactor: [0, 0, 0, 1],
     metallicFactor: 0.5,
@@ -227,7 +227,7 @@ onloadworld = () => {
   audioData = new Uint8Array(audioDataSize);
 };
 
-onupdateworld = (dt, elapsed) => {
+world.onupdate = (dt, elapsed) => {
   thirdroom.getAudioFrequencyData(audioData);
 
   let lowFreqAvg = 0;

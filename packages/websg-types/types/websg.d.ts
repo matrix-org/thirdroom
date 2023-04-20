@@ -2017,28 +2017,28 @@ declare namespace WebSG {
      * @returns {undefined}
      */
     stopOrbit(): undefined;
+
+    /**
+     * Called when the world is loaded.
+     * @method onload
+     */
+    onload: (() => any) | null;
+
+    /**
+     * Called when the user enters the world.
+     * @method onenter
+     */
+    onenter: (() => any) | null;
+
+    /**
+     * Called when the world is updated.
+     * @method onupdate
+     * @param {number} dt - The time since the last update in seconds.
+     * @param {number} time - The total time since the start of the world in seconds.
+     */
+    onupdate: ((dt: number, time: number) => any) | null;
   }
 }
-
-/**
- * Called when the world is loaded.
- * @global {(() => any) | null} onloadworld
- */
-declare let onloadworld: (() => any) | null;
-
-/**
- * Called when the user enters the world.
- * @global {(() => any) | null} onenterworld
- */
-declare let onenterworld: (() => any) | null;
-
-/**
- * Called when the world is updated.
- * @global {((dt: number, time: number) => any) | null} onupdateworld
- * @param {number} dt - The time since the last update in seconds.
- * @param {number} time - The total time since the start of the world in seconds.
- */
-declare let onupdateworld: ((dt: number, time: number) => any) | null;
 
 /**
  * The global world instance.

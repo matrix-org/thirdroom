@@ -5,7 +5,7 @@ let nextButton;
 let currentSlide = 0;
 const slides = [];
 
-onloadworld = () => {
+world.onload = () => {
   const screenNode = world.findNodeByName("PresentationScreen");
   screenMaterial = screenNode.mesh.primitives[0].material;
 
@@ -21,7 +21,7 @@ onloadworld = () => {
   nextButton.addInteractable();
 };
 
-onupdateworld = (dt) => {
+world.onupdate = (dt) => {
   if (nextButton.interactable.pressed) {
     currentSlide = (currentSlide + 1) % slides.length;
     screenMaterial.baseColorTexture = slides[currentSlide];
