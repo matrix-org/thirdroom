@@ -197,7 +197,7 @@ function drawNode(
       ctx2d.textBaseline = "top";
       ctx2d.font = createFontString(element.text);
       ctx2d.fillStyle = rgbaToString(element.text.color);
-      ctx2d.fillText(element.text.value, layout.x + element.padding[0], layout.y + element.padding[3]);
+      ctx2d.fillText(element.text.value, layout.x + element.padding[3], layout.y + element.padding[0]);
     }
   }
 
