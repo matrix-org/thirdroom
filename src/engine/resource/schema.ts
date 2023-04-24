@@ -71,6 +71,12 @@ export enum ResourceType {
   PhysicsBody,
 }
 
+export enum QueryModifier {
+  All,
+  None,
+  Any,
+}
+
 export const NametagResource = defineResource("nametag", ResourceType.Nametag, {
   name: PropType.string(),
   screenX: PropType.f32(),

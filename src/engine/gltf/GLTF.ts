@@ -536,7 +536,12 @@ export interface GLTFNode extends GLTFChildOfRootProperty {
     MX_spawn_point?: {};
     MX_static?: {};
     MX_lights_shadows?: GLTFLightsShadows;
+    MX_components?: GLTFNodeComponents;
   };
+}
+
+export interface GLTFNodeComponents extends GLTFProperty {
+  [propName: string]: unknown;
 }
 
 interface GLTFLightRef extends GLTFProperty {
@@ -791,8 +796,19 @@ export interface GLTFRoot extends GLTFProperty {
     KHR_lights_punctual?: GLTFKHRLightsExtension;
     MX_reflection_probes?: GLTFRootReflectionProbesExtension;
     OMI_collider?: GLTFColliders;
+    MX_components?: GLTFComponentDefinitions;
   };
 }
+
+interface GLTFComponentPropertyDefinition {
+  name: string;
+  type: string;
+  defaultValue?: boolean | number | number[];
+}
+
+export type GLTFComponentDefinitions = {
+  [componentName: string]: GLTFComponentPropertyDefinition[];
+} & GLTFProperty;
 
 interface GLTFKHRAudioExtension extends GLTFProperty {
   audio?: GLTFAudio[];

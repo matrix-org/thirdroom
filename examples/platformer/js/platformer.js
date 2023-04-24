@@ -1,65 +1,44 @@
-const Player = world.defineComponent("Player", {
-  coins: {
-    type: WebSG.Property.Float32,
-  },
-  lives: {
-    type: WebSG.Property.Float32,
-    default: 3,
-  },
-  lastSpawnPoint: {
-    type: WebSG.Property.Node,
-  },
-});
+const Player = world.findComponentDefinitionByName("Player");
+const Mover = world.findComponentDefinitionByName("Mover");
+const Spinner = world.findComponentDefinitionByName("Spinner");
+const Coin = world.findComponentDefinitionByName("Coin");
+const ExtraLife = world.findComponentDefinitionByName("ExtraLife");
+const Obstacle = world.findComponentDefinitionByName("Obstacle");
+const Conveyer = world.findComponentDefinitionByName("Conveyer");
+const Checkpoint = world.findComponentDefinitionByName("Checkpoint");
+const Goal = world.findComponentDefinitionByName("Goal");
 
-const Mover = world.defineComponent("Mover", {
-  startPosition: {
-    type: WebSG.Property.Vector3,
-  },
-  endPosition: {
-    type: WebSG.Property.Vector3,
-  },
-  duration: {
-    type: WebSG.Property.Float32,
-  },
-});
-const moverQuery = world.createNodeQuery([Mover]);
+const moverQuery = world.createQuery([Mover]);
+const spinnerQuery = world.createQuery([Spinner]);
+const coinQuery = world.createQuery([Coin]);
+const extraLifeQuery = world.createQuery([ExtraLife]);
+const obstacleQuery = world.createQuery([Obstacle]);
+const conveyerQuery = world.createQuery([Conveyer]);
+const checkpointQuery = world.createQuery([Checkpoint]);
+const goalQuery = world.createQuery([Goal]);
+
+const coinCollision = new WebSG.Collision();
+const extraLifeCollision = new WebSG.Collision();
+const obstacleCollision = new WebSG.Collision();
+const converyerCollision = new WebSG.Collision();
+const checkpointCollision = new WebSG.Collision();
+const goalCollision = new WebSG.Collision();
 
 function MoverSystem(time) {
-  for (const node of moverQuery()) {
+  for (const node of moverQuery) {
     node.position.lerp(node.startPosition, node.endPosition, time / node.duration);
   }
 }
 
-const Spinner = world.defineComponent("Spinner", {
-  axis: {
-    type: WebSG.Property.Vector3,
-    default: new WebSG.Vector3(0, 1, 0),
-  },
-  speed: {
-    type: WebSG.Property.Float32,
-    default: 1,
-  },
-});
-const spinnerQuery = world.createNodeQuery([Spinner]);
-
 function SpinnerSystem(time) {
-  for (const node of spinnerQuery()) {
-    const spinner = node.getComponent(spinnerQuery);
+  for (const node of spinnerQuery) {
+    const spinner = node.getComponent(Spinner);
     node.rotation.setRotationAxis(spinner.axis, time * spinner.speed);
   }
 }
 
-const Coin = world.defineComponent("Coin", {
-  taken: {
-    type: WebSG.Property.Boolean,
-  },
-});
-const coinQuery = world.createNodeQuery([Coin]);
-
-const coinCollision = new WebSG.Collision();
-
 function CoinSystem() {
-  for (const node of coinQuery()) {
+  for (const node of coinQuery) {
     if (node.physicsBody.getCollision(coinCollision)) {
       const coin = node.getComponent(Coin);
       const player = coinCollision.node.getComponent(Player);
@@ -74,17 +53,8 @@ function CoinSystem() {
   }
 }
 
-const ExtraLife = world.defineComponent("ExtraLife", {
-  taken: {
-    type: WebSG.Property.Boolean,
-  },
-});
-const extraLifeQuery = world.createNodeQuery([ExtraLife]);
-
-const extraLifeCollision = new WebSG.Collision();
-
 function ExtraLifeSystem() {
-  for (const node of extraLifeQuery()) {
+  for (const node of extraLifeQuery) {
     if (node.physicsBody.getCollision(extraLifeCollision)) {
       const extraLife = node.getComponent(ExtraLife);
       const player = coinCollision.node.getComponent(Player);
@@ -99,13 +69,8 @@ function ExtraLifeSystem() {
   }
 }
 
-const Obstacle = world.defineComponent("Obstacle");
-const obstacleQuery = world.createNodeQuery([Obstacle]);
-
-const obstacleCollision = new WebSG.Collision();
-
 function ObstacleSystem() {
-  for (const node of obstacleQuery()) {
+  for (const node of obstacleQuery) {
     if (node.physicsBody.getCollision(obstacleCollision)) {
       const player = obstacleCollision.node.getComponent(Player);
 
@@ -123,22 +88,11 @@ function ObstacleSystem() {
   }
 }
 
-const Conveyer = world.defineComponent("Conveyer", {
-  direction: {
-    type: WebSG.Property.Vector3,
-    default: new WebSG.Vector3(0, 0, 1),
-  },
-  speed: {
-    type: WebSG.Property.Float32,
-    default: 1,
-  },
-});
-const conveyerQuery = world.createNodeQuery([Conveyer]);
-
-const converyerCollision = new WebSG.Collision();
+let conveyerMaterial;
+const conveyerSpeed = 1;
 
 function ConveyerSystem() {
-  for (const node of conveyerQuery()) {
+  for (const node of conveyerQuery) {
     if (node.physicsBody.getCollision(obstacleCollision)) {
       const player = obstacleCollision.node.getComponent(Player);
 
@@ -146,36 +100,17 @@ function ConveyerSystem() {
       }
     }
   }
+
+  conveyerMaterial.baseColorTextureOffset.y += conveyerSpeed * dt;
 }
 
-const ScrollingMaterial = world.defineComponent("ScrollingMaterial", {
-  direction: {
-    type: WebSG.Property.Vector3,
-    default: new WebSG.Vector2(0, 1),
-  },
-  speed: {
-    type: WebSG.Property.Float32,
-    default: 1,
-  },
-});
-const scrollingMaterialQuery = world.createMaterialQuery([ScrollingMaterial]);
-const tempOffset = new WebSG.Vector2();
-
 function ScrollingMaterialSystem(dt) {
-  for (const material of scrollingMaterialQuery()) {
-    const scrollingMaterial = material.getComponent(ScrollingMaterial);
-    tempOffset.copy(scrollingMaterial.direction).multiplyScalar(scrollingMaterial.speed * dt);
-    material.baseColorTextureOffset.add(tempOffset);
+  for (const material of scrollingMaterialQuery) {
   }
 }
 
-const Checkpoint = world.defineComponent("Checkpoint");
-const checkpointQuery = world.createNodeQuery([Checkpoint]);
-
-const checkpointCollision = new WebSG.Collision();
-
 function CheckpointSystem() {
-  for (const node of checkPointQuery()) {
+  for (const node of checkPointQuery) {
     if (node.physicsBody.getCollision(checkpointCollision)) {
       const player = checkpointCollision.node.getComponent(Player);
 
@@ -187,13 +122,8 @@ function CheckpointSystem() {
   }
 }
 
-const Goal = world.defineComponent();
-const goalQuery = world.createNodeQuery([Goal]);
-
-const goalCollision = new WebSG.Collision();
-
 function GoalSystem() {
-  for (const node of goalQuery()) {
+  for (const node of goalQuery) {
     if (node.physicsBody.getCollision(goalCollision)) {
       const player = goalCollision.node.getComponent(Player);
 
@@ -206,11 +136,15 @@ function GoalSystem() {
   }
 }
 
-onenter = (playerRig) => {
+world.onload = () => {
+  conveyerMaterial = world.findMaterialByName("ConveyerMaterial");
+};
+
+world.onenter = (playerRig) => {
   playerRig.addComponent(Player);
 };
 
-onupdate = (dt, time) => {
+world.onupdate = (dt, time) => {
   MoverSystem(time);
   SpinnerSystem(time);
   ConveyerSystem();

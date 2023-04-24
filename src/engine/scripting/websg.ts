@@ -1,4 +1,4 @@
-import { Component, defineQuery, hasComponent, Not } from "bitecs";
+import { defineQuery, hasComponent, IComponent, QueryModifier as IQueryModifier, Not, IWorld } from "bitecs";
 import RAPIER from "@dimforge/rapier3d-compat";
 import { BoxGeometry } from "three";
 import { vec2, vec4 } from "gl-matrix";
@@ -13,8 +13,8 @@ import {
   readStringFromCursorView,
   readUint8Array,
   WASMModuleContext,
-  writeEncodedString,
   writeFloat32Array,
+  writeNumberArray,
   writeString,
 } from "./WASMModuleContext";
 import {
@@ -55,6 +55,7 @@ import {
   FlexDirection,
   FlexWrap,
   FlexJustify,
+  QueryModifier,
 } from "../resource/schema";
 import {
   moveCursorView,
@@ -62,7 +63,7 @@ import {
   readFloat32Array,
   readUint32,
   readUint32Array,
-  readUint8,
+  readUint32List,
   rewindCursorView,
   skipUint32,
 } from "../allocator/CursorView";
@@ -79,7 +80,6 @@ import { createMesh } from "../mesh/mesh.game";
 import { addInteractableComponent } from "../../plugins/interaction/interaction.game";
 import { addUIElementChild, initNodeUICanvas, removeUIElementChild } from "../ui/ui.game";
 import { startOrbit, stopOrbit } from "../../plugins/camera/CameraRig.game";
-import { ComponentPropertyType } from "../component/types";
 
 export function getScriptResource<T extends RemoteResourceConstructor>(
   wasmCtx: WASMModuleContext,
@@ -409,36 +409,6 @@ function readRefMap<T extends RemoteResourceConstructor>(
   return map;
 }
 
-enum QueryModifier {
-  Not = 1,
-}
-
-function readQuery(wasmCtx: WASMModuleContext, queryPtr: number, baseComponent: Component) {
-  moveCursorView(wasmCtx.cursorView, queryPtr);
-
-  const components = readList(wasmCtx, (wasmCtx, index) => {
-    const componentName = readStringFromCursorView(wasmCtx);
-    const modifier = readUint8(wasmCtx.cursorView);
-
-    const component = wasmCtx.registeredComponents.get(componentName);
-
-    if (!component) {
-      throw new Error(`WebSG: Component ${componentName} is not registered`);
-    }
-
-    if (modifier & QueryModifier.Not) {
-      return Not(component);
-    }
-
-    return component;
-  });
-
-  const query = defineQuery([baseComponent, ...components]);
-  const queryId = wasmCtx.nextQueryId++;
-  wasmCtx.registeredQueries.set(queryId, query);
-  return queryId;
-}
-
 // MaterialTextureInfoProps
 function readBaseTextureInfo(
   wasmCtx: WASMModuleContext
@@ -603,6 +573,394 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
         return -1;
       }
     },
+    world_create_query(queryPtr: number) {
+      try {
+        const resourceManager = wasmCtx.resourceManager;
+        const components: (IComponent | IQueryModifier<IWorld>)[] = [];
+        moveCursorView(wasmCtx.cursorView, queryPtr);
+        readList(wasmCtx, () => {
+          const componentIds = readUint32List(wasmCtx.cursorView);
+          const modifier = readEnum(wasmCtx, QueryModifier, "QueryModifier");
+
+          for (let i = 0; i < componentIds.length; i++) {
+            const componentId = componentIds[i];
+            const component = resourceManager.registeredComponents.get(componentId);
+            if (component) {
+              if (modifier == QueryModifier.All) {
+                components.push(component);
+              } else if (modifier == QueryModifier.None) {
+                components.push(Not(component));
+              } else if (modifier == QueryModifier.Any) {
+                throw new Error(`WebSG: QueryModifier.Any not supported`);
+              }
+            } else {
+              console.error(`WebSG: component not registered`);
+            }
+          }
+        });
+        const query = defineQuery(components);
+        const queryId = resourceManager.nextQueryId++;
+        resourceManager.registeredQueries.set(queryId, query);
+        return queryId;
+      } catch (e) {
+        console.error(e);
+        return -1;
+      }
+    },
+    query_get_results_count(queryId: number) {
+      const query = wasmCtx.resourceManager.registeredQueries.get(queryId);
+
+      if (query) {
+        return query(ctx.world).length;
+      } else {
+        console.error(`WebSG: query not registered`);
+        return -1;
+      }
+    },
+    query_get_results(queryId: number, resultsPtr: number, maxCount: number) {
+      const query = wasmCtx.resourceManager.registeredQueries.get(queryId);
+
+      if (query) {
+        const results = query(ctx.world);
+
+        if (results.length > maxCount) {
+          console.error(`WebSG: query results array larger than maxCount`);
+          return -1;
+        }
+
+        writeNumberArray(wasmCtx, resultsPtr, results);
+
+        return results.length;
+      } else {
+        console.error(`WebSG: query not registered`);
+        return -1;
+      }
+    },
+    world_find_component_definition_by_name(namePtr: number, byteLength: number) {
+      const name = readString(wasmCtx, namePtr, byteLength);
+      const componentId = wasmCtx.resourceManager.registeredComponentIdsByName.get(name);
+
+      if (componentId) {
+        return componentId;
+      } else {
+        console.error(`WebSG: component not registered`);
+        return 0;
+      }
+    },
+    component_definition_get_prop_count(componentId: number) {
+      const component = wasmCtx.resourceManager.registeredComponents.get(componentId);
+
+      if (component) {
+        return component.props.length;
+      } else {
+        console.error(`WebSG: component not registered`);
+        return -1;
+      }
+    },
+    component_definition_get_prop_name_length(componentId: number, propIdx: number) {
+      const component = wasmCtx.resourceManager.registeredComponents.get(componentId);
+
+      if (component) {
+        const prop = component.props[propIdx];
+
+        if (!prop) {
+          console.error(`WebSG: invalid prop index`);
+          return -1;
+        }
+
+        return prop.name.length;
+      } else {
+        console.error(`WebSG: component not registered`);
+        return -1;
+      }
+    },
+    component_definition_get_prop_name(
+      componentId: number,
+      propIdx: number,
+      propTypePtr: number,
+      maxByteLength: number
+    ) {
+      const component = wasmCtx.resourceManager.registeredComponents.get(componentId);
+
+      if (component) {
+        const prop = component.props[propIdx];
+
+        if (!prop) {
+          console.error(`WebSG: invalid prop index`);
+          return -1;
+        }
+
+        return writeString(wasmCtx, propTypePtr, prop.name, maxByteLength);
+      } else {
+        console.error(`WebSG: component not registered`);
+        return -1;
+      }
+    },
+    component_definition_get_prop_type_length(componentId: number, propIdx: number) {
+      const component = wasmCtx.resourceManager.registeredComponents.get(componentId);
+
+      if (component) {
+        const prop = component.props[propIdx];
+
+        if (!prop) {
+          console.error(`WebSG: invalid prop index`);
+          return -1;
+        }
+
+        return prop.type.length;
+      } else {
+        console.error(`WebSG: component not registered`);
+        return -1;
+      }
+    },
+    component_definition_get_prop_type(
+      componentId: number,
+      propIdx: number,
+      propTypePtr: number,
+      maxByteLength: number
+    ) {
+      const component = wasmCtx.resourceManager.registeredComponents.get(componentId);
+
+      if (component) {
+        const prop = component.props[propIdx];
+
+        if (!prop) {
+          console.error(`WebSG: invalid prop index`);
+          return -1;
+        }
+
+        return writeString(wasmCtx, propTypePtr, prop.type, maxByteLength);
+      } else {
+        console.error(`WebSG: component not registered`);
+        return -1;
+      }
+    },
+    node_add_component(nodeId: number, componentId: number) {
+      const component = wasmCtx.resourceManager.registeredComponents.get(componentId);
+
+      if (!component) {
+        console.error(`WebSG: component not registered`);
+        return -1;
+      }
+
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+      if (!node) {
+        return -1;
+      }
+
+      try {
+        component.add(ctx, node.eid);
+        return 0;
+      } catch (error) {
+        console.error(`WebSG: Error adding component: ${error}`);
+        return -1;
+      }
+    },
+    node_remove_component(nodeId: number, componentId: number) {
+      const component = wasmCtx.resourceManager.registeredComponents.get(componentId);
+
+      if (!component) {
+        console.error(`WebSG: component not registered`);
+        return -1;
+      }
+
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+      if (!node) {
+        return -1;
+      }
+
+      component.remove(ctx, node.eid);
+
+      return 0;
+    },
+    node_has_component(nodeId: number, componentId: number) {
+      const component = wasmCtx.resourceManager.registeredComponents.get(componentId);
+
+      if (!component) {
+        console.error(`WebSG: component not registered`);
+        return -1;
+      }
+
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+      if (!node) {
+        return -1;
+      }
+
+      return component.has(ctx, node.eid) ? 1 : 0;
+    },
+    node_get_component_prop_i32(nodeId: number, componentId: number, propIdx: number) {
+      if (!wasmCtx.resourceManager.resourceIds.has(nodeId)) {
+        console.error(`WebSG: missing or unpermitted use of node: ${nodeId}`);
+        return -1;
+      }
+
+      const component = wasmCtx.resourceManager.registeredComponents.get(componentId);
+
+      if (!component) {
+        console.error(`WebSG: component not registered`);
+        return -1;
+      }
+
+      const propStore = component.props[propIdx];
+
+      if (!propStore) {
+        console.error(`WebSG: component not added to node: ${nodeId}`);
+        return -1;
+      }
+
+      if (propStore.type !== "i32") {
+        console.error(`WebSG: prop is not i32 type`);
+        return -1;
+      }
+
+      return propStore.value[propIdx];
+    },
+    node_set_component_prop_i32(nodeId: number, componentId: number, propIdx: number, value: number) {
+      if (!wasmCtx.resourceManager.resourceIds.has(nodeId)) {
+        console.error(`WebSG: missing or unpermitted use of node: ${nodeId}`);
+        return -1;
+      }
+
+      const component = wasmCtx.resourceManager.registeredComponents.get(componentId);
+
+      if (!component) {
+        console.error(`WebSG: component not registered`);
+        return -1;
+      }
+
+      const propStore = component.props[propIdx];
+
+      if (!propStore) {
+        console.error(`WebSG: component not added to node: ${nodeId}`);
+        return -1;
+      }
+
+      if (propStore.type !== "i32") {
+        console.error(`WebSG: prop is not i32 type`);
+        return -1;
+      }
+
+      propStore.value[nodeId] = value;
+
+      return 0;
+    },
+    node_get_component_prop_f32(nodeId: number, componentId: number, propIdx: number) {
+      if (!wasmCtx.resourceManager.resourceIds.has(nodeId)) {
+        console.error(`WebSG: missing or unpermitted use of node: ${nodeId}`);
+        return -1;
+      }
+
+      const component = wasmCtx.resourceManager.registeredComponents.get(componentId);
+
+      if (!component) {
+        console.error(`WebSG: component not registered`);
+        return -1;
+      }
+
+      const propStore = component.props[propIdx];
+
+      if (!propStore) {
+        console.error(`WebSG: component not added to node: ${nodeId}`);
+        return -1;
+      }
+
+      if (propStore.type !== "f32") {
+        console.error(`WebSG: prop is not f32 type`);
+        return -1;
+      }
+
+      return propStore.value[propIdx];
+    },
+    node_set_component_prop_f32(nodeId: number, componentId: number, propIdx: number, value: number) {
+      if (!wasmCtx.resourceManager.resourceIds.has(nodeId)) {
+        console.error(`WebSG: missing or unpermitted use of node: ${nodeId}`);
+        return -1;
+      }
+
+      const component = wasmCtx.resourceManager.registeredComponents.get(componentId);
+
+      if (!component) {
+        console.error(`WebSG: component not registered`);
+        return -1;
+      }
+
+      const propStore = component.props[propIdx];
+
+      if (!propStore) {
+        console.error(`WebSG: component not added to node: ${nodeId}`);
+        return -1;
+      }
+
+      if (propStore.type !== "f32") {
+        console.error(`WebSG: prop is not f32 type`);
+        return -1;
+      }
+
+      propStore.value[nodeId] = value;
+
+      return 0;
+    },
+    node_get_component_prop_f32_vec(nodeId: number, componentId: number, propIdx: number, valuePtr: number) {
+      if (!wasmCtx.resourceManager.resourceIds.has(nodeId)) {
+        console.error(`WebSG: missing or unpermitted use of node: ${nodeId}`);
+        return -1;
+      }
+
+      const component = wasmCtx.resourceManager.registeredComponents.get(componentId);
+
+      if (!component) {
+        console.error(`WebSG: component not registered`);
+        return -1;
+      }
+
+      const propStore = component.props[propIdx];
+
+      if (!propStore) {
+        console.error(`WebSG: component not added to node: ${nodeId}`);
+        return -1;
+      }
+
+      if (propStore.size <= 1) {
+        console.error(`WebSG: prop is not vec type`);
+        return -1;
+      }
+
+      writeFloat32Array(wasmCtx, valuePtr, propStore.value[nodeId] as Float32Array);
+
+      return 0;
+    },
+    node_set_component_prop_f32_vec(nodeId: number, componentId: number, propIdx: number, valuePtr: number) {
+      if (!wasmCtx.resourceManager.resourceIds.has(nodeId)) {
+        console.error(`WebSG: missing or unpermitted use of node: ${nodeId}`);
+        return -1;
+      }
+
+      const component = wasmCtx.resourceManager.registeredComponents.get(componentId);
+
+      if (!component) {
+        console.error(`WebSG: component not registered`);
+        return -1;
+      }
+
+      const propStore = component.props[propIdx];
+
+      if (!propStore) {
+        console.error(`WebSG: component not added to node: ${nodeId}`);
+        return -1;
+      }
+
+      if (propStore.size <= 1) {
+        console.error(`WebSG: prop is not vec type`);
+        return -1;
+      }
+
+      readFloat32ArrayInto(wasmCtx, valuePtr, propStore.value[nodeId] as Float32Array);
+
+      return 0;
+    },
     world_create_scene(propsPtr: number) {
       try {
         moveCursorView(wasmCtx.cursorView, propsPtr);
@@ -724,130 +1082,6 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
     world_find_node_by_name(namePtr: number, byteLength: number) {
       const node = getScriptResourceByNamePtr(ctx, wasmCtx, RemoteNode, namePtr, byteLength);
       return node ? node.eid : 0;
-    },
-    world_define_component(namePtr: number, byteLength: number, propsPtr: number) {
-      try {
-        const name = readString(wasmCtx, namePtr, byteLength);
-        moveCursorView(wasmCtx.cursorView, propsPtr);
-
-        readList(wasmCtx, () => {
-          const propName = readStringFromCursorView(wasmCtx);
-          const propType = read
-        });
-
-        wasmCtx.registeredComponents.set(name, component);
-      }
-    },
-    world_get_component_id(namePtr: number, byteLength: number) {
-      const name = readString(wasmCtx, namePtr, byteLength);
-      const component = wasmCtx.registeredComponents.get(name);
-
-      if (!component) {
-        return 0;
-      }
-
-      return wasmCtx.componentIdsByName.get(name) || 0;
-    },
-    world_get_component_property_count(componentId: number) {
-      const componentProperties = wasmCtx.componentPropertiesMap.get(componentId);
-      return componentProperties.length || 0;
-    },
-    world_get_component_property_definition(componentId: number, propertyIndex: number, outPtr: number) {
-      const componentProperties = wasmCtx.componentPropertiesMap.get(componentId);
-      const propertyDefinition = componentProperties[propertyIndex];
-      moveCursorView(wasmCtx.cursorView, outPtr);
-      writeStringToCursorView(wasmCtx, propertyDefinition.name);
-      writeEnumToCursorView(wasmCtx, ComponentPropertyType propertyDefinition.type);
-    },
-    node_get_component_property_vector3(nodeId: number, componentId: number, propertyIndex: number, outPtr: number) {
-      const component = wasmCtx.registeredComponentsById.get(componentId);
-
-      if (!component) {
-        return -1;
-      }
-
-      const propName = wasmCtx.componentPropertiesMap.get(componentId)[propertyIndex].name;
-
-      writeFloat32Array(wasmCtx, outPtr, component[propertyIndex])
-      
-    },
-    node_set_component_property_vector3(nodeId: number, componentId: number, propertyId: number, outPtr: number) {
-      
-    },
-    node_get_component_property_vector3_element(nodeId: number, componentId: number, propertyId: number, index: number) {
-
-    },
-    node_set_component_property_vector3_element(nodeId: number, componentId: number, propertyId: number, index: number, value: number) {
-
-    },
-    node_get_component_property_float(nodeId: number, componentId: number, propertyId: number) {
-
-    },
-    node_get_component_property_node(nodeId: number, componentId: number, propertyId: number) {
-
-    },
-    node_get_component_property_boolean(nodeId: number, componentId: number, propertyId: number) {
-
-    },
-    world_create_node_query(queryPtr: number) {
-      try {
-        return readQuery(wasmCtx, queryPtr, RemoteNode);
-      } catch (error) {
-        console.error(error);
-        return -1;
-      }
-    },
-    world_get_node_query_count(queryId: number) {
-      const query = wasmCtx.registeredQueries.get(queryId);
-
-      if (!query) {
-        console.error("WebSG: Query not found");
-        return -1;
-      }
-
-      const entities = query(ctx.world);
-
-      let count = 0;
-
-      for (let i = 0; i < entities.length; i++) {
-        const eid = entities[i];
-
-        if (wasmCtx.resourceManager.resourceIds.has(eid)) {
-          count++;
-        }
-      }
-
-      return count;
-    },
-    world_execute_node_query(queryId: number, nodeArrPtr: number, maxCount: number) {
-      const query = wasmCtx.registeredQueries.get(queryId);
-
-      if (!query) {
-        console.error("WebSG: Query not found");
-        return -1;
-      }
-
-      const entities = query(ctx.world);
-
-      if (entities.length > maxCount) {
-        console.error("WebSG: Query result count exceeds maxCount");
-        return -1;
-      }
-
-      const U32Heap = wasmCtx.U32Heap;
-
-      let idx = 0;
-
-      for (let i = 0; i < entities.length && i < maxCount; i++) {
-        const eid = entities[i];
-
-        if (wasmCtx.resourceManager.resourceIds.has(eid)) {
-          U32Heap[nodeArrPtr / 4 + idx] = eid;
-          idx++;
-        }
-      }
-
-      return idx;
     },
     node_add_child(nodeId: number, childId: number) {
       const node = getScriptResource(wasmCtx, RemoteNode, nodeId);

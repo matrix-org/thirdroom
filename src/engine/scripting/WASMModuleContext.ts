@@ -1,5 +1,3 @@
-import { Component, Query } from "bitecs";
-
 import { CursorView, readUint32 } from "../allocator/CursorView";
 import { RemoteResourceManager } from "../GameTypes";
 import { toSharedArrayBuffer } from "../utils/arraybuffer";
@@ -8,15 +6,13 @@ export interface WASMModuleContext {
   memory: WebAssembly.Memory;
   U8Heap: Uint8Array;
   U32Heap: Uint32Array;
+  I32Heap: Int32Array;
   F32Heap: Float32Array;
   textEncoder: TextEncoder;
   textDecoder: TextDecoder;
   cursorView: CursorView;
   encodedJSSource?: Uint8Array;
   resourceManager: RemoteResourceManager;
-  registeredComponents: Map<string, Component>;
-  nextQueryId: number;
-  registeredQueries: Map<number, Query>;
 }
 
 export function writeString(wasmCtx: WASMModuleContext, ptr: number, value: string, maxBufLength?: number) {
@@ -92,8 +88,24 @@ export function writeUint32Array(wasmCtx: WASMModuleContext, ptr: number, array:
   return array.byteLength;
 }
 
+export function writeInt32Array(wasmCtx: WASMModuleContext, ptr: number, array: Int32Array) {
+  wasmCtx.I32Heap.set(array, ptr / 4);
+  return array.byteLength;
+}
+
 export function readUint32Array(wasmCtx: WASMModuleContext, ptr: number, byteLength: number) {
   return wasmCtx.U32Heap.subarray(ptr / 4, (ptr + byteLength) / 4);
+}
+
+export function readInt32ArrayInto(wasmCtx: WASMModuleContext, ptr: number, target: Int32Array) {
+  const I32Heap = wasmCtx.I32Heap;
+  const offset = ptr / 4;
+
+  for (let i = 0; i < target.length; i++) {
+    target[i] = I32Heap[offset + i];
+  }
+
+  return target;
 }
 
 export function writeFloat32Array(wasmCtx: WASMModuleContext, ptr: number, array: Float32Array) {
@@ -126,4 +138,14 @@ export function readArrayBuffer(wasmCtx: WASMModuleContext, ptr: number, byteLen
 
 export function readSharedArrayBuffer(wasmCtx: WASMModuleContext, ptr: number, byteLength: number) {
   return toSharedArrayBuffer(wasmCtx.memory.buffer, ptr, byteLength);
+}
+
+export function writeNumberArray(wasmCtx: WASMModuleContext, ptr: number, array: ArrayLike<number>) {
+  const offset = ptr / 4;
+
+  for (let i = 0; i < array.length; i++) {
+    wasmCtx.U32Heap[offset + i] = array[i];
+  }
+
+  return array.length;
 }

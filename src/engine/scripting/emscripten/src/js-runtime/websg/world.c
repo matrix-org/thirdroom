@@ -18,6 +18,8 @@
 #include "./ui-element.h"
 #include "./ui-text.h"
 #include "./ui-button.h"
+#include "./component-definition.h"
+#include "./query.h"
 
 JSClassID js_websg_world_class_id;
 
@@ -85,7 +87,9 @@ static const JSCFunctionListEntry js_websg_world_proto_funcs[] = {
   JS_CFUNC_DEF("createUIText", 1, js_websg_world_create_ui_text),
   JS_CFUNC_DEF("createUIButton", 1, js_websg_world_create_ui_button),
   JS_CFUNC_DEF("findUIElementByName", 1, js_websg_world_find_ui_element_by_name),
+  JS_CFUNC_DEF("findComponentDefinitionByName", 1, js_websg_world_find_component_definition_by_name),
   JS_CFUNC_DEF("stopOrbit", 0, js_websg_world_stop_orbit),
+  JS_CFUNC_DEF("createQuery", 1, js_websg_world_create_query),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "World", JS_PROP_CONFIGURABLE),
 };
 
@@ -144,6 +148,7 @@ JSValue js_websg_new_world(JSContext *ctx) {
   world_data->textures = JS_NewObject(ctx);
   world_data->ui_canvases = JS_NewObject(ctx);
   world_data->ui_elements = JS_NewObject(ctx);
+  world_data->component_definitions = JS_NewObject(ctx);
   JS_SetOpaque(world, world_data);
 
   return world;

@@ -14,7 +14,8 @@
 /*************
  * WebSG IDs *
  *************/
-
+typedef uint32_t query_id_t;
+typedef uint32_t component_id_t;
 typedef uint32_t scene_id_t;
 typedef uint32_t camera_id_t;
 typedef uint32_t skin_id_t;
@@ -52,64 +53,56 @@ typedef struct Extensions {
   uint32_t count;
 } Extensions;
 
-typedef struct QueryItem {
-  const char *component_name;
-  uint8_t modifier;
-} QueryItem;
-
-typedef struct Query {
-  QueryItem *items;
-  uint32_t count;
-} Query;
-
-typedef enum ComponentPropertyType {
-  Int8,
-  Int16,
-  Int32,
-  Uint8,
-  Uint16,
-  Uint32,
-  Float32,
-  Float64,
-  Boolean,
-  String,
-  Vector2,
-  Vector3,
-  Vector4,
-  Quaternion,
-  RGB,
-  RGBA,
-  Matrix3,
-  Matrix4,
-  Node,
-} ComponentPropertyType;
-
-typedef struct ComponentProperty {
-  const char *name;
-  ComponentPropertyType type;
-  void *default_value;
-  Extensions extensions;
-  void *extras;
-} ComponentProperty;
-
-typedef struct ComponentPropertyList {
-  ComponentProperty *items;
-  uint32_t count;
-} ComponentPropertyList;
-
-typedef struct ComponentDefinition {
-  WebSGString name;
-  ComponentPropertyList *props;
-  Extensions extensions;
-  void *extras;
-} ComponentDefinition;
-
 /*********
  * World *
  *********/
 
 import_websg(world_get_environment) scene_id_t websg_world_get_environment();
 import_websg(world_set_environment) int32_t websg_world_set_environment(scene_id_t scene_id);
+
+/***********
+ * Queries *
+ ***********/
+typedef enum QueryModifier {
+  QueryModifierAll,
+  QueryModifierNone,
+  QueryModifierAny,
+} QueryModifier;
+
+typedef struct QueryItem {
+  component_id_t *component_ids;
+  uint32_t component_count;
+  QueryModifier modifier;
+} QueryItem;
+
+typedef struct QueryList {
+  QueryItem *items;
+  uint32_t count;
+} QueryList;
+
+import_websg(world_create_query) query_id_t websg_world_create_query(QueryList *query);
+import_websg(query_get_results_count) int32_t websg_query_get_results_count(query_id_t query_id);
+import_websg(query_get_results) int32_t websg_query_get_results(query_id_t query_id, node_id_t *results, uint32_t max_count);
+
+/**************
+ * Components *
+ **************/
+
+import_websg(world_find_component_definition_by_name) component_id_t websg_world_find_component_definition_by_name(const char *name, uint32_t length);
+import_websg(component_definition_get_prop_count) int32_t websg_component_definition_get_prop_count(component_id_t component_id);
+import_websg(component_definition_get_prop_type_length) uint32_t websg_component_definition_get_prop_type_length(component_id_t component_id, uint32_t prop_idx);
+import_websg(component_definition_get_prop_type) int32_t websg_component_definition_get_prop_type(component_id_t component_id, uint32_t prop_idx, const char *prop_type, size_t length);
+import_websg(component_definition_get_prop_name_length) uint32_t websg_component_definition_get_prop_name_length(component_id_t component_id, uint32_t prop_idx);
+import_websg(component_definition_get_prop_name) int32_t websg_component_definition_get_prop_name(component_id_t component_id, uint32_t prop_idx, const char *prop_name, size_t length);
+import_websg(node_add_component) int32_t websg_node_add_component(node_id_t node_id, component_id_t component_id);
+import_websg(node_remove_component) int32_t websg_node_remove_component(node_id_t node_id, component_id_t component_id);
+import_websg(node_has_component) int32_t websg_node_has_component(node_id_t node_id, component_id_t component_id);
+import_websg(node_get_component_prop_i32) int32_t websg_node_get_component_prop_i32(node_id_t node_id, component_id_t component_id, uint32_t prop_idx);
+import_websg(node_set_component_prop_i32) int32_t websg_node_set_component_prop_i32(node_id_t node_id, component_id_t component_id, uint32_t prop_idx, int32_t value);
+import_websg(node_get_component_prop_f32) float_t websg_node_get_component_prop_f32(node_id_t node_id, component_id_t component_id, uint32_t prop_idx);
+import_websg(node_set_component_prop_f32) float_t websg_node_set_component_prop_f32(node_id_t node_id, component_id_t component_id, uint32_t prop_idx, float_t value);
+import_websg(node_get_component_prop_i32_vec) int32_t websg_node_get_component_prop_i32_vec(node_id_t node_id, component_id_t component_id, uint32_t prop_idx, int32_t *value);
+import_websg(node_set_component_prop_i32_vec) int32_t websg_node_set_component_prop_i32_vec(node_id_t node_id, component_id_t component_id, uint32_t prop_idx, int32_t *value);
 
 /*********
  * Scene *
@@ -148,7 +141,6 @@ typedef struct NodeProps {
 
 import_websg(world_create_node) node_id_t websg_world_create_node(NodeProps *props);
 import_websg(world_find_node_by_name) node_id_t websg_world_find_node_by_name(const char *name, uint32_t length);
-import_websg(world_create_node_query) node_id_t websg_world_create_node_query(Query *query);
 import_websg(node_add_child) int32_t websg_node_add_child(node_id_t node_id, node_id_t child_id);
 import_websg(node_remove_child) int32_t websg_node_remove_child(node_id_t node_id, node_id_t child_id);
 import_websg(node_get_child_count) int32_t websg_node_get_child_count(node_id_t node_id);

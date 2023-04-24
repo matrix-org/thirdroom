@@ -1,4 +1,4 @@
-import { addComponent, defineQuery, exitQuery, removeQuery } from "bitecs";
+import { addComponent, defineQuery, exitQuery } from "bitecs";
 
 import scriptingRuntimeWASMUrl from "./emscripten/build/scripting-runtime.wasm?url";
 import { createCursorView } from "../allocator/CursorView";
@@ -10,6 +10,7 @@ import { createThirdroomModule } from "./thirdroom";
 import { createWASIModule } from "./wasi";
 import { WASMModuleContext } from "./WASMModuleContext";
 import { createWebSGModule } from "./websg";
+import { disposeRemoteResourceManager } from "../resource/resource.game";
 
 export enum ScriptState {
   Uninitialized,
@@ -72,14 +73,12 @@ export async function loadScript(
     resourceManager,
     memory,
     U8Heap: new Uint8Array(memory.buffer),
+    I32Heap: new Int32Array(memory.buffer),
     U32Heap: new Uint32Array(memory.buffer),
     F32Heap: new Float32Array(memory.buffer),
     cursorView: createCursorView(memory.buffer, true),
     textDecoder: new TextDecoder(),
     textEncoder: new TextEncoder(),
-    registeredComponents: new Map(),
-    nextQueryId: 0,
-    registeredQueries: new Map(),
   };
 
   let wasmBuffer: ArrayBuffer | undefined;
@@ -226,12 +225,7 @@ export async function loadScript(
     dispose() {
       disposeMatrixWASMModule(ctx);
       disposeWebSGNetworkModule(ctx);
-
-      for (const query of wasmCtx.registeredQueries.values()) {
-        removeQuery(ctx.world, query);
-      }
-
-      // TODO: Figure out how to free component bit
+      disposeRemoteResourceManager(resourceManager);
     },
   };
 

@@ -13,6 +13,7 @@ typedef struct WebSGWorldData {
   JSValue textures;
   JSValue ui_canvases;
   JSValue ui_elements;
+  JSValue component_definitions;
 } WebSGWorldData;
 
 extern JSClassID js_websg_world_class_id;
