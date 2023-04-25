@@ -653,16 +653,25 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
         moveCursorView(wasmCtx.cursorView, propsPtr);
 
         const name = readStringFromCursorView(wasmCtx);
-        const { uiCanvas } = readExtensionsAndExtras(wasmCtx, (name) => {
+        const { uiCanvas, collider } = readExtensionsAndExtras(wasmCtx, (name) => {
+          let uiCanvas: RemoteUICanvas | undefined;
+          let collider: RemoteCollider | undefined;
+
+          if (name === "OMI_collider") {
+            readExtensionsAndExtras(wasmCtx);
+            collider = readResourceRef(wasmCtx, RemoteCollider);
+          }
+
           if (name === "MX_ui") {
             readExtensionsAndExtras(wasmCtx);
-            return { uiCanvas: readResourceRef(wasmCtx, RemoteUICanvas) };
+            uiCanvas = readResourceRef(wasmCtx, RemoteUICanvas);
           }
+
+          return { uiCanvas, collider };
         });
         const camera = readResourceRef(wasmCtx, RemoteCamera);
         const skin = readResourceRef(wasmCtx, RemoteSkin);
         const mesh = readResourceRef(wasmCtx, RemoteMesh);
-        const collider = readResourceRef(wasmCtx, RemoteCollider);
         const quaternion = readFloat32Array(wasmCtx.cursorView, 4); // rotation
         const scale = readFloat32Array(wasmCtx.cursorView, 3);
         const position = readFloat32Array(wasmCtx.cursorView, 3); // translation

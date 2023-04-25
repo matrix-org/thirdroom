@@ -496,6 +496,8 @@ JSValue js_websg_world_create_node(JSContext *ctx, JSValue this_val, int argc, J
 
     JSValue collider_val = JS_GetPropertyStr(ctx, argv[0], "collider");
 
+    ExtensionNodeColliderRef *collider_extension = NULL;
+
     if (!JS_IsUndefined(collider_val)) {
       WebSGColliderData *collider_data = JS_GetOpaque2(ctx, collider_val, js_websg_collider_class_id);
 
@@ -504,8 +506,11 @@ JSValue js_websg_world_create_node(JSContext *ctx, JSValue this_val, int argc, J
         return JS_EXCEPTION;
       }
 
-      props->collider = collider_data->collider_id;
+      collider_extension = js_mallocz(ctx, sizeof(ExtensionNodeColliderRef));
+      collider_extension->collider = collider_data->collider_id;
+      extension_count++;
     }
+
 
     JSValue ui_canvas_val = JS_GetPropertyStr(ctx, argv[0], "uiCanvas");
 
@@ -551,17 +556,23 @@ JSValue js_websg_world_create_node(JSContext *ctx, JSValue this_val, int argc, J
       }
     }
 
-    if (ui_extension != NULL) {
+    if (ui_extension != NULL || collider_extension != NULL) {
       props->extensions.count = extension_count;
       props->extensions.items = js_mallocz(ctx, sizeof(ExtensionItem) * extension_count);
+    }
 
-      uint32_t extension_index = 0;
+    uint32_t extension_index = 0;
 
-      if (ui_extension != NULL) {
-        props->extensions.items[extension_index].name = strdup("MX_ui");
-        props->extensions.items[extension_index].extension = ui_extension;
-        extension_index++;
-      }
+    if (ui_extension != NULL) {
+      props->extensions.items[extension_index].name = strdup("MX_ui");
+      props->extensions.items[extension_index].extension = ui_extension;
+      extension_index++;
+    }
+
+    if (collider_extension != NULL) {
+      props->extensions.items[extension_index].name = strdup("OMI_collider");
+      props->extensions.items[extension_index].extension = collider_extension;
+      extension_index++;
     }
 
   }
