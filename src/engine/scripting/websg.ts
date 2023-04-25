@@ -653,11 +653,21 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
         moveCursorView(wasmCtx.cursorView, propsPtr);
 
         const name = readStringFromCursorView(wasmCtx);
-        const { uiCanvas } = readExtensionsAndExtras(wasmCtx, (name) => {
+        const { uiCanvas, collider } = readExtensionsAndExtras(wasmCtx, (name) => {
+          let uiCanvas: RemoteUICanvas | undefined;
+          let collider: RemoteCollider | undefined;
+
+          if (name === "OMI_collider") {
+            readExtensionsAndExtras(wasmCtx);
+            collider = readResourceRef(wasmCtx, RemoteCollider);
+          }
+
           if (name === "MX_ui") {
             readExtensionsAndExtras(wasmCtx);
-            return { uiCanvas: readResourceRef(wasmCtx, RemoteUICanvas) };
+            uiCanvas = readResourceRef(wasmCtx, RemoteUICanvas);
           }
+
+          return { uiCanvas, collider };
         });
         const camera = readResourceRef(wasmCtx, RemoteCamera);
         const skin = readResourceRef(wasmCtx, RemoteSkin);
@@ -671,6 +681,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
           camera,
           skin,
           mesh,
+          collider,
           quaternion,
           scale,
           position,

@@ -89,7 +89,7 @@ import { getAvatar } from "../avatars/getAvatar";
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
 import { createLineMesh } from "../../engine/mesh/mesh.game";
 import { RemoteResource } from "../../engine/resource/RemoteResourceClass";
-import { addCameraRig, CameraRigType } from "../camera/CameraRig.game";
+import { addCameraRig, CameraRigModule, CameraRigType } from "../camera/CameraRig.game";
 
 type ThirdRoomModuleState = {};
 
@@ -721,6 +721,13 @@ function updateCharacterController(
   player: RemoteNode
 ) {
   const toggleFlyMode = controller.actionStates.get("toggleFlyMode") as ButtonActionState;
+
+  const camRigModule = getModule(ctx, CameraRigModule);
+
+  if (camRigModule.orbiting) {
+    return;
+  }
+
   if (toggleFlyMode.pressed) {
     if (hasComponent(ctx.world, FlyControls, player.eid)) {
       swapToPlayerRig(ctx, physics, player);
