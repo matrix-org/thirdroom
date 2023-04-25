@@ -4905,6 +4905,11 @@ static int JS_SetObjectData(JSContext *ctx, JSValueConst obj, JSValue val)
     return -1;
 }
 
+int JS_GetClassID(JSValue obj)
+{
+    return JS_VALUE_GET_OBJ(obj)->class_id;
+}
+
 JSValue JS_NewObjectClass(JSContext *ctx, int class_id)
 {
     return JS_NewObjectProtoClass(ctx, ctx->class_proto[class_id], class_id);

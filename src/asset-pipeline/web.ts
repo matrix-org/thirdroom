@@ -1,7 +1,7 @@
 import { Document, WebIO, Logger, Verbosity, JSONDocument, Extension, PlatformIO } from "@gltf-transform/core";
 
 import { downloadFile } from "../engine/utils/downloadFile";
-import { registerExtensions, transformGLTF } from "./pipeline";
+import { registerExtensions, transformGLTF, AssetPipelineOptions } from "./pipeline";
 
 export class CustomWebIO extends WebIO {
   fileMap: Map<string, string> = new Map();
@@ -13,7 +13,7 @@ export class CustomWebIO extends WebIO {
     return this.read(uri);
   }
 
-  registerExtensions(extensions: typeof Extension[]): this {
+  registerExtensions(extensions: (typeof Extension)[]): this {
     super.registerExtensions(extensions);
 
     for (const extension of extensions) {
@@ -56,6 +56,7 @@ export type GLTFTransformProgressCallback = (message: GLTFTransformProgressMessa
 export async function transformGLTFWeb(
   url: string,
   fileMap: Map<string, string>,
+  options?: AssetPipelineOptions,
   onProgress?: GLTFTransformProgressCallback
 ) {
   const logger = new Logger(Verbosity.DEBUG);
@@ -80,7 +81,7 @@ export async function transformGLTFWeb(
     });
   }
 
-  await transformGLTF(doc, onProgress);
+  await transformGLTF(doc, options, onProgress);
 
   if (onProgress) {
     onProgress({

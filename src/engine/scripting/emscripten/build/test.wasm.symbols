@@ -109,7 +109,7 @@
 108:js_get_audio_data_size
 109:js_get_audio_time_data
 110:js_get_audio_frequency_data
-111:js_define_websg_api
+111:js_websg_define_api
 112:js_get_environment_scene
 113:js_set_environment_scene
 114:js_create_scene
@@ -176,7 +176,7 @@
 175:js_get_interactable_pressed
 176:js_get_interactable_held
 177:js_get_interactable_released
-178:js_define_websg_network_api
+178:js_websg_define_network_api
 179:js_listen.1
 180:js_close.1
 181:js_receive.1

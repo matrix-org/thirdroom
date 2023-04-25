@@ -3,7 +3,7 @@ import { quat, vec3 } from "gl-matrix";
 import RAPIER from "@dimforge/rapier3d-compat";
 
 import { SpawnPoint } from "../../engine/component/SpawnPoint";
-import { addChild, traverse } from "../../engine/component/transform";
+import { addChild } from "../../engine/component/transform";
 import { GameState } from "../../engine/GameTypes";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
 import { associatePeerWithEntity, GameNetworkState, NetworkModule } from "../../engine/network/network.game";
@@ -89,7 +89,7 @@ import { getAvatar } from "../avatars/getAvatar";
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
 import { createLineMesh } from "../../engine/mesh/mesh.game";
 import { RemoteResource } from "../../engine/resource/RemoteResourceClass";
-import { addCameraRig, CameraRigType } from "../camera/CameraRig.game";
+import { addCameraRig, CameraRigModule, CameraRigType } from "../camera/CameraRig.game";
 
 type ThirdRoomModuleState = {};
 
@@ -486,6 +486,7 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
   const environmentGLTFResource = await loadGLTF(ctx, url, { fileMap, resourceManager });
   const environmentScene = (await loadDefaultGLTFScene(ctx, environmentGLTFResource, {
     createDefaultMeshColliders: true,
+    rootIsStatic: true,
   })) as RemoteScene;
 
   if (!environmentScene.reflectionProbe || !environmentScene.backgroundTexture) {
@@ -518,12 +519,6 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
   });
 
   await waitForCurrentSceneToRender(ctx);
-
-  if (ctx.worldResource.environment) {
-    traverse(ctx.worldResource.environment.publicScene, (node) => {
-      node.isStatic = true;
-    });
-  }
 
   const spawnPoints = getSpawnPoints(ctx);
 
@@ -726,6 +721,13 @@ function updateCharacterController(
   player: RemoteNode
 ) {
   const toggleFlyMode = controller.actionStates.get("toggleFlyMode") as ButtonActionState;
+
+  const camRigModule = getModule(ctx, CameraRigModule);
+
+  if (camRigModule.orbiting) {
+    return;
+  }
+
   if (toggleFlyMode.pressed) {
     if (hasComponent(ctx.world, FlyControls, player.eid)) {
       swapToPlayerRig(ctx, physics, player);

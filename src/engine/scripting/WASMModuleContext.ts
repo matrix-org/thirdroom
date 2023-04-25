@@ -1,4 +1,4 @@
-import { CursorView } from "../allocator/CursorView";
+import { CursorView, readUint32 } from "../allocator/CursorView";
 import { RemoteResourceManager } from "../GameTypes";
 import { toSharedArrayBuffer } from "../utils/arraybuffer";
 
@@ -38,6 +38,25 @@ export function readString(wasmCtx: WASMModuleContext, ptr: number, byteLength: 
   }
 
   const maxPtr = ptr + byteLength;
+  let end = ptr;
+
+  // Find the end of the null-terminated C string on the heap
+  while (!(end >= maxPtr) && wasmCtx.U8Heap[end]) {
+    ++end;
+  }
+
+  // create a new subarray to store the string so that this always works with SharedArrayBuffer
+  return wasmCtx.textDecoder.decode(wasmCtx.U8Heap.slice(ptr, end));
+}
+
+export function readStringFromCursorView(wasmCtx: WASMModuleContext, maxByteLength = 255) {
+  const ptr = readUint32(wasmCtx.cursorView);
+
+  if (!ptr) {
+    return "";
+  }
+
+  const maxPtr = ptr + maxByteLength;
   let end = ptr;
 
   // Find the end of the null-terminated C string on the heap

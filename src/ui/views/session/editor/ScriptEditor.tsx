@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAtom, useSetAtom } from "jotai";
 import { BlobHandle, Room } from "@thirdroom/hydrogen-view-sdk";
-import Editor, { OnChange } from "@monaco-editor/react";
+import Editor, { Monaco, OnChange } from "@monaco-editor/react";
 
 import { Button } from "../../../atoms/button/Button";
 import { Dots } from "../../../atoms/loading/Dots";
@@ -19,6 +19,7 @@ import DarkLightIC from "../../../../../res/ic/dark-light.svg";
 import ArrowBackIC from "../../../../../res/ic/arrow-back.svg";
 import { Tooltip } from "../../../atoms/tooltip/Tooltip";
 import { Icon } from "../../../atoms/icon/Icon";
+import websgTypes from "../../../../../packages/websg-types/types/websg.d.ts?raw";
 
 const MONACO_THEME_KEY = "monaco_theme";
 
@@ -119,8 +120,21 @@ export function ScriptEditor({ room }: { room: Room }) {
     if (persistedScriptSource) setActiveScriptSource(persistedScriptSource);
     setShowResetModal(false);
   }
+
   function handleToggleTheme() {
     setEditorTheme(editorTheme === "light" ? "vs-dark" : "light");
+  }
+
+  function configureMonaco(monaco: Monaco) {
+    const options = monaco.languages.typescript.javascriptDefaults.getCompilerOptions();
+    monaco.languages.typescript.javascriptDefaults.setCompilerOptions({
+      ...options,
+      target: monaco.languages.typescript.ScriptTarget.ES2020,
+      checkJs: true,
+      strictNullChecks: false,
+      lib: ["esnext"],
+    });
+    monaco.languages.typescript.javascriptDefaults.addExtraLib(websgTypes, "websg.d.ts");
   }
 
   return (
@@ -166,6 +180,7 @@ export function ScriptEditor({ room }: { room: Room }) {
             defaultValue={DEFAULT_SCRIPT_SOURCE}
             value={activeScriptSource}
             onChange={handleEditorChange as OnChange}
+            beforeMount={configureMonaco}
             theme={editorTheme}
           />
           <div className="ScriptEditor__themeBtn">

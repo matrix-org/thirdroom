@@ -44,6 +44,8 @@ type RemoteResourcePropValue<
   ? Float32Array
   : Def["schema"][Prop]["type"] extends "vec3"
   ? Float32Array
+  : Def["schema"][Prop]["type"] extends "vec4"
+  ? Float32Array
   : Def["schema"][Prop]["type"] extends "quat"
   ? Float32Array
   : Def["schema"][Prop]["type"] extends "bitmask"
@@ -109,6 +111,8 @@ type InitialRemoteResourcePropValue<
   : Def["schema"][Prop]["type"] extends "vec2"
   ? ArrayLike<number>
   : Def["schema"][Prop]["type"] extends "vec3"
+  ? ArrayLike<number>
+  : Def["schema"][Prop]["type"] extends "vec4"
   ? ArrayLike<number>
   : Def["schema"][Prop]["type"] extends "quat"
   ? ArrayLike<number>

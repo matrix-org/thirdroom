@@ -219,6 +219,20 @@ function createVec3PropDef<O extends VectorPropOptions>(options?: O) {
   );
 }
 
+function createVec4PropDef<O extends VectorPropOptions>(options?: O) {
+  return createPropDef(
+    {
+      type: "vec4",
+      arrayType: Float32Array,
+      size: 4,
+      mutable: true,
+      required: false,
+      default: vec4.create() as ArrayLike<number>,
+    },
+    options
+  );
+}
+
 function createRGBPropDef<O extends VectorPropOptions>(options?: O) {
   return createPropDef(
     {
@@ -415,6 +429,7 @@ export type PropTypeType = {
   f32: ReturnType<typeof createF32PropDef>;
   vec2: ReturnType<typeof createVec2PropDef>;
   vec3: ReturnType<typeof createVec3PropDef>;
+  vec4: ReturnType<typeof createVec4PropDef>;
   rgb: ReturnType<typeof createRGBPropDef>;
   rgba: ReturnType<typeof createRGBAPropDef>;
   quat: ReturnType<typeof createQuatPropDef>;
@@ -436,6 +451,7 @@ export const PropType = {
   f32: createF32PropDef,
   vec2: createVec2PropDef,
   vec3: createVec3PropDef,
+  vec4: createVec4PropDef,
   rgb: createRGBPropDef,
   rgba: createRGBAPropDef,
   quat: createQuatPropDef,
@@ -523,6 +539,8 @@ type LocalResourcePropValue<
   : Def["schema"][Prop]["type"] extends "vec2"
   ? Float32Array
   : Def["schema"][Prop]["type"] extends "vec3"
+  ? Float32Array
+  : Def["schema"][Prop]["type"] extends "vec4"
   ? Float32Array
   : Def["schema"][Prop]["type"] extends "quat"
   ? Float32Array
