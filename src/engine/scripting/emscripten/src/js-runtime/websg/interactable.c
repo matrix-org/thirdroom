@@ -6,8 +6,8 @@
 
 JSClassID js_websg_interactable_class_id;
 
-JSAtom interactableTypeInteractable;
-JSAtom interactableTypeGrabbable;
+JSAtom interactable_type_interactable;
+JSAtom interactable_type_grabbable;
 
 /**
  * Class Definition
@@ -104,12 +104,12 @@ void js_websg_define_interactable(JSContext *ctx, JSValue websg) {
     constructor
   );
 
-  interactableTypeInteractable = JS_NewAtomUInt32(ctx, InteractableType_Interactable);
-  interactableTypeGrabbable = JS_NewAtomUInt32(ctx, InteractableType_Grabbable);
+  interactable_type_interactable = JS_NewAtomUInt32(ctx, InteractableType_Interactable);
+  interactable_type_grabbable = JS_NewAtomUInt32(ctx, InteractableType_Grabbable);
 
   JSValue interactable_type = JS_NewObject(ctx);
-  JS_SetPropertyStr(ctx, interactable_type, "Interactable", JS_AtomToValue(ctx, interactableTypeInteractable));
-  JS_SetPropertyStr(ctx, interactable_type, "Grabbable", JS_AtomToValue(ctx, interactableTypeGrabbable));
+  JS_SetPropertyStr(ctx, interactable_type, "Interactable", JS_AtomToValue(ctx, interactable_type_interactable));
+  JS_SetPropertyStr(ctx, interactable_type, "Grabbable", JS_AtomToValue(ctx, interactable_type_grabbable));
   JS_SetPropertyStr(ctx, websg, "InteractableType", interactable_type);
 }
 
