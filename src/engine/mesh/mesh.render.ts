@@ -314,10 +314,6 @@ function createMeshPrimitiveObject(
     object.geometry.setAttribute("uv2", object.geometry.attributes.uv);
   }
 
-  // TODO: Move to glTF extension
-  object.castShadow = true;
-  object.receiveShadow = true;
-
   return object;
 }
 
@@ -390,6 +386,9 @@ export function updateNodeMesh(ctx: RenderThreadState, node: RenderNode) {
   }
 
   if (node.meshPrimitiveObjects) {
+    const castShadow = node.castShadow;
+    const receiveShadow = node.receiveShadow;
+
     for (let i = 0; i < node.meshPrimitiveObjects.length; i++) {
       const primitiveObject = node.meshPrimitiveObjects[i];
       const meshPrimitive = node.mesh.primitives[i];
@@ -414,6 +413,9 @@ export function updateNodeMesh(ctx: RenderThreadState, node: RenderNode) {
       if (meshPrimitive.drawCount !== 0) {
         meshPrimitive.geometryObj.setDrawRange(meshPrimitive.drawStart, meshPrimitive.drawCount);
       }
+
+      primitiveObject.castShadow = castShadow;
+      primitiveObject.receiveShadow = receiveShadow;
 
       updateTransformFromNode(ctx, node, primitiveObject);
 

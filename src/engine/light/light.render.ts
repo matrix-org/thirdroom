@@ -40,10 +40,10 @@ export function updateNodeLight(ctx: RenderThreadState, scene: Scene, node: Rend
       directionalLight.add(directionalLight.target);
 
       // TODO: Move to CSM
-      directionalLight.shadow.camera.top = 100;
-      directionalLight.shadow.camera.bottom = -100;
-      directionalLight.shadow.camera.left = -100;
-      directionalLight.shadow.camera.right = 100;
+      directionalLight.shadow.camera.top = 10;
+      directionalLight.shadow.camera.bottom = -10;
+      directionalLight.shadow.camera.left = -10;
+      directionalLight.shadow.camera.right = 10;
       directionalLight.shadow.camera.near = 10;
       directionalLight.shadow.camera.far = 600;
       directionalLight.shadow.bias = 0.0001;
@@ -58,7 +58,7 @@ export function updateNodeLight(ctx: RenderThreadState, scene: Scene, node: Rend
 
     directionalLight.color.fromArray(localLight.color);
     directionalLight.intensity = localLight.intensity;
-    directionalLight.castShadow = localLight.castShadow;
+    directionalLight.castShadow = node.castShadow;
 
     light = directionalLight;
   } else if (lightType === LightType.Point) {
@@ -72,7 +72,7 @@ export function updateNodeLight(ctx: RenderThreadState, scene: Scene, node: Rend
 
     pointLight.color.fromArray(localLight.color);
     pointLight.intensity = localLight.intensity;
-    pointLight.castShadow = localLight.castShadow;
+    pointLight.castShadow = node.castShadow;
     pointLight.distance = localLight.range;
 
     if (renderPipeline.shadowMapSize) {
@@ -93,7 +93,7 @@ export function updateNodeLight(ctx: RenderThreadState, scene: Scene, node: Rend
 
     spotLight.color.fromArray(localLight.color);
     spotLight.intensity = localLight.intensity;
-    spotLight.castShadow = localLight.castShadow;
+    spotLight.castShadow = node.castShadow;
     spotLight.distance = localLight.range;
     spotLight.angle = localLight.outerConeAngle;
     spotLight.penumbra = 1.0 - localLight.innerConeAngle / localLight.outerConeAngle;

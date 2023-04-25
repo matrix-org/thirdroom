@@ -7,7 +7,7 @@ import { registerExtensions, transformGLTF } from "./pipeline";
 class CustomNodeIO extends NodeIO {
   private beforeReadDocumentHooks: ((io: PlatformIO, jsonDoc: JSONDocument) => Promise<void>)[] = [];
 
-  registerExtensions(extensions: typeof Extension[]): this {
+  registerExtensions(extensions: (typeof Extension)[]): this {
     super.registerExtensions(extensions);
 
     for (const extension of extensions) {

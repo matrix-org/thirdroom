@@ -13,44 +13,43 @@ let room2Light;
 let room2Switch;
 let room2LightState = true;
 
-onload = () => {
-  materialButton = WebSG.nodeFindByName("MaterialButton");
-  WebSG.addInteractable(materialButton);
+world.onload = () => {
+  materialButton = world.findNodeByName("MaterialButton");
+  materialButton.addInteractable();
 
-  leftCubeMaterial = WebSG.materialFindByName("Bricks");
-  bricksTexture = WebSG.materialGetBaseColorTexture(leftCubeMaterial);
-  rightCubeMaterial = WebSG.materialFindByName("Planks");
-  planksTexture = WebSG.materialGetBaseColorTexture(rightCubeMaterial);
+  leftCubeMaterial = world.findNodeByName("LeftCube").mesh.primitives[0].material;
+  bricksTexture = leftCubeMaterial.baseColorTexture;
 
-  room1Switch = WebSG.nodeFindByName("Room1Switch");
-  WebSG.addInteractable(room1Switch);
+  rightCubeMaterial = world.findNodeByName("RightCube").mesh.primitives[0].material;
+  planksTexture = rightCubeMaterial.baseColorTexture;
 
-  const room1LightNode = WebSG.nodeFindByName("Room1Light");
-  WebSG.nodeSetIsStatic(room1LightNode, false);
-  room1Light = WebSG.nodeGetLight(room1LightNode);
+  room1Switch = world.findNodeByName("Room1Switch");
+  room1Switch.addInteractable();
 
-  room2Switch = WebSG.nodeFindByName("Room2Switch");
-  WebSG.addInteractable(room2Switch);
+  const room1LightNode = world.findNodeByName("Room1Light");
+  room1Light = room1LightNode.light;
 
-  const room2LightNode = WebSG.nodeFindByName("Room2Light");
-  WebSG.nodeSetIsStatic(room2LightNode, false);
-  room2Light = WebSG.nodeGetLight(room2LightNode);
+  room2Switch = world.findNodeByName("Room2Switch");
+  room2Switch.addInteractable();
+
+  const room2LightNode = world.findNodeByName("Room2Light");
+  room2Light = room2LightNode.light;
 };
 
-onupdate = (dt) => {
-  if (WebSG.getInteractablePressed(materialButton)) {
+world.onupdate = (dt) => {
+  if (materialButton.interactable.pressed) {
     materialState = !materialState;
-    WebSG.materialSetBaseColorTexture(leftCubeMaterial, materialState ? bricksTexture : planksTexture);
-    WebSG.materialSetBaseColorTexture(rightCubeMaterial, materialState ? planksTexture : bricksTexture);
+    leftCubeMaterial.baseColorTexture = materialState ? bricksTexture : planksTexture;
+    rightCubeMaterial.baseColorTexture = materialState ? planksTexture : bricksTexture;
   }
 
-  if (WebSG.getInteractablePressed(room1Switch)) {
+  if (room1Switch.interactable.pressed) {
     room1LightState = !room1LightState;
-    WebSG.lightSetIntensity(room1Light, room1LightState ? 20 : 0);
+    room1Light.intensity = room1LightState ? 20 : 0;
   }
 
-  if (WebSG.getInteractablePressed(room2Switch)) {
+  if (room2Switch.interactable.pressed) {
     room2LightState = !room2LightState;
-    WebSG.lightSetIntensity(room2Light, room2LightState ? 20 : 0);
+    room2Light.intensity = room2LightState ? 20 : 0;
   }
 };

@@ -187,6 +187,24 @@ const Vec3Property = memo<
   (prevProps, nextProps) => compareFloat32Array(prevProps.value, nextProps.value)
 );
 
+const Vec4Property = memo<
+  BasePropertyProps<Float32Array, ResourcePropDef<"vec4", ArrayLike<number>, true, false, unknown, unknown>>
+>(
+  ({ propName, value, propDef, setProp }) => {
+    return (
+      <PropertyContainer name={propName}>
+        <VectorInput
+          value={value ?? propDef.default}
+          type="vec4"
+          onChange={(value) => setProp(propName, value)}
+          disabled={!propDef.mutable}
+        />
+      </PropertyContainer>
+    );
+  },
+  (prevProps, nextProps) => compareFloat32Array(prevProps.value, nextProps.value)
+);
+
 const QuatProperty = memo<
   BasePropertyProps<Float32Array, ResourcePropDef<"quat", ArrayLike<number>, true, false, unknown, unknown>>
 >(
@@ -301,7 +319,6 @@ const StringProperty = memo<
 
     const handleKeyDown: KeyboardEventHandler<HTMLInputElement> = (evt) => {
       const newValue = evt.currentTarget.value.trim();
-      console.log(newValue, value, evt.key);
       if (newValue !== "" && value !== newValue) {
         if (evt.key === "Enter") setProp(propName, newValue);
         if (evt.key === "Escape") evt.currentTarget.value = value;
@@ -426,6 +443,11 @@ export function getPropComponents(ctx: IMainThreadContext, resource: MainNode) {
       const value = resource[propName];
       if (!ArrayBuffer.isView(value)) return null;
       return <Vec3Property key={propName} value={value} propName={propName} setProp={setProp} propDef={propDef} />;
+    },
+    vec4: (propName, propDef) => {
+      const value = resource[propName];
+      if (!ArrayBuffer.isView(value)) return null;
+      return <Vec4Property key={propName} value={value} propName={propName} setProp={setProp} propDef={propDef} />;
     },
     quat: (propName, propDef) => {
       const value = resource[propName];
