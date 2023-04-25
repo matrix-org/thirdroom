@@ -47,7 +47,15 @@ declare namespace WebSG {
 
   class Collider {}
 
-  type InteractableProps = {};
+  type InteractableType = 1 | 2 | 3 | 4 | 5;
+  const InteractableType: {
+    Interactable: 1;
+    Grabbable: 2;
+  };
+
+  type InteractableProps = {
+    type: InteractableType;
+  };
 
   class Interactable {
     get pressed(): boolean;
