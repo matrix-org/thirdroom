@@ -432,6 +432,12 @@ import_websg(node_get_interactable_released) int32_t websg_node_get_interactable
  * Collider
  */
 
+typedef struct ExtensionNodeColliderRef {
+  Extensions extensions;
+  void *extras;
+  collider_id_t collider;
+} ExtensionNodeColliderRef;
+
 typedef enum ColliderType {
   ColliderType_Box,
   ColliderType_Sphere,
@@ -451,7 +457,6 @@ typedef struct ColliderProps {
   float_t radius;
   float_t height;
   mesh_id_t mesh;
-  
 } ColliderProps;
 
 import_websg(world_create_collider) collider_id_t websg_world_create_collider(ColliderProps *props);

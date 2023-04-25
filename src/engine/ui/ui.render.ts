@@ -197,7 +197,7 @@ function drawNode(
       ctx2d.textBaseline = "top";
       ctx2d.font = createFontString(element.text);
       ctx2d.fillStyle = rgbaToString(element.text.color);
-      ctx2d.fillText(element.text.value, layout.x + element.padding[0], layout.y + element.padding[3]);
+      ctx2d.fillText(element.text.value, layout.x + element.padding[3], layout.y + element.padding[0]);
     }
   }
 
@@ -228,10 +228,10 @@ function getTextSize(ctx2d: OffscreenCanvasRenderingContext2D, text: RenderUITex
 function updateYogaNode(ctx2d: OffscreenCanvasRenderingContext2D, yogaNode: Node, child: RenderUIElement) {
   yogaNode.setPositionType(child.positionType as PositionType);
 
-  yogaNode.setPosition(FlexEdge.LEFT as Edge, child.position[FlexEdge.LEFT]);
   yogaNode.setPosition(FlexEdge.TOP as Edge, child.position[FlexEdge.TOP]);
   yogaNode.setPosition(FlexEdge.RIGHT as Edge, child.position[FlexEdge.RIGHT]);
   yogaNode.setPosition(FlexEdge.BOTTOM as Edge, child.position[FlexEdge.BOTTOM]);
+  yogaNode.setPosition(FlexEdge.LEFT as Edge, child.position[FlexEdge.LEFT]);
 
   yogaNode.setWidth(child.width >= 0 ? child.width : "auto");
   yogaNode.setHeight(child.height >= 0 ? child.height : "auto");

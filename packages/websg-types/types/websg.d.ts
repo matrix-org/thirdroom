@@ -514,12 +514,11 @@ declare namespace WebSG {
     createUIButton(props?: UIButtonProps): UIButton;
     findUIElementByName(name: string): UIElement | undefined;
     stopOrbit(): undefined;
+    onload: (() => any) | null;
+    onenter: (() => any) | null;
+    onupdate: ((dt: number, time: number) => any) | null;
   }
 }
-
-declare let onloadworld: (() => any) | null;
-declare let onenterworld: (() => any) | null;
-declare let onupdateworld: ((dt: number, time: number) => any) | null;
 
 declare const world: WebSG.World;
 
