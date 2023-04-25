@@ -1,6 +1,6 @@
 # Getting Started with WebSG
 
-The WebSG scripting API allows you to build 3D scenes and UI elements in a browser environment. This guide provides a quick introduction to working with various types of objects and interfaces available in the library, along with usage examples.
+This guide provides a quick introduction to working with various types of objects and interfaces available in WebSG, along with usage examples.
 
 ## World
 
@@ -271,10 +271,10 @@ boxNode.collider = boxCollider;
 
 You can interact with physics bodies by updating their properties.
 
-For dynamic rigid bodies, the linear and angular velocities of the `physicsBody` can be updated.
+For dynamic rigid bodies, only the linear and angular velocities of the `physicsBody` can be updated.
 
 ::: warning
-If a body type is `Rigid` then the body is dynamic. This means that the node's translation will be continuously updated by the physics engine, and therefor cannot be updated by any set operations.
+Nodes with a `Rigid` physics body will have their `translation` property continuously updated by the physics engine, and therefor cannot be updated by any set operations.
 :::
 
 ```typescript
