@@ -9,9 +9,11 @@ Third Room is the first implementation of this API, but it is intended for use i
 The following is a JavaScript program using the WebSG API which finds a light in the provided scene and changes its color every frame:
 
 ```js
-const directionalLight = world.findLightByName("DirectionalLight");
+let directionalLight;
 
-let elapsed = 0;
+world.onload = () => {
+  directionalLight = world.findLightByName("DirectionalLight");
+};
 
 world.onupdate = (dt, time) => {
   directionalLight.color[0] = (Math.sin(time) + 1) / 2;
@@ -27,11 +29,11 @@ The same program can be written in C and compiled as a standalone WASM module:
 Light *directionalLight;
 float_t elapsed = 0;
 
-export void initialize() {
+export void websg_load() {
   directionalLight = websg_world_find_light_by_name("DirectionalLight");
 }
 
-export void update(float_t dt, float_t time) {
+export void websg_update(float_t dt, float_t time) {
   directionalLight->color[0] = (sin(time) + 1.0) / 2.0;
 }
 ```
