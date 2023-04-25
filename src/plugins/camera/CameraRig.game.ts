@@ -210,6 +210,10 @@ export function startOrbit(ctx: GameState, nodeToOrbit: RemoteNode, options?: Ca
   const input = getModule(ctx, InputModule);
   const camRigModule = getModule(ctx, CameraRigModule);
 
+  if (camRigModule.orbiting) {
+    return;
+  }
+
   camRigModule.orbiting = true;
 
   const orbitAnchor = new RemoteNode(ctx.resourceManager);

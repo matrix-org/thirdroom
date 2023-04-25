@@ -35,7 +35,7 @@ let verticalPlatform;
 let horizontalPlatform;
 let spinner;
 
-onload = () => {
+world.onload = () => {
   verticalPlatform = world.findNodeByName("VerticalPlatform");
   horizontalPlatform = world.findNodeByName("HorizontalPlatform");
   spinner = world.findNodeByName("Spinner");
@@ -68,7 +68,7 @@ const verticalPlatformEndPos = [7.398, 0.246, 2.025];
 const horizontalPlatformStartPos = [11.56, 2.866, 2.025];
 const horizontalPlatformEndPos = [18.07, 2.866, 2.025];
 
-onupdateworld = (dt, time) => {
+world.onupdate = (dt, time) => {
   const t = (Math.sin(time) + 1) / 2;
   lerp(verticalPlatform.translation, verticalPlatformStartPos, verticalPlatformEndPos, t);
   lerp(horizontalPlatform.translation, horizontalPlatformStartPos, horizontalPlatformEndPos, t);

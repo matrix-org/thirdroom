@@ -93,6 +93,10 @@ static JSValue js_websg_world_constructor(JSContext *ctx, JSValueConst this_val,
   return JS_ThrowTypeError(ctx, "Illegal Constructor.");
 }
 
+static JSValue js_default_callback(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+    return JS_UNDEFINED;
+}
+
 void js_websg_define_world(JSContext *ctx, JSValue websg) {
   JS_NewClassID(&js_websg_world_class_id);
   JS_NewClass(JS_GetRuntime(ctx), js_websg_world_class_id, &js_websg_world_class);
@@ -115,6 +119,11 @@ void js_websg_define_world(JSContext *ctx, JSValue websg) {
     "World",
     constructor
   );
+
+  JS_SetPropertyStr(ctx, world_proto, "onload", JS_NewCFunction(ctx, js_default_callback, "onload", 0));
+  JS_SetPropertyStr(ctx, world_proto, "onenter", JS_NewCFunction(ctx, js_default_callback, "onenter", 0));
+  JS_SetPropertyStr(ctx, world_proto, "onupdate", JS_NewCFunction(ctx, js_default_callback, "onupdate", 2));
+
 }
 
 JSValue js_websg_new_world(JSContext *ctx) {

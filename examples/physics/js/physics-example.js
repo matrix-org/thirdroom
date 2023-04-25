@@ -1,87 +1,58 @@
 let boxNode3;
 
-onenterworld = () => {
-  const scene = WebSG.getEnvironmentScene();
-  const boxNode = WebSG.createNode();
-  WebSG.nodeSetPosition(boxNode, new Float32Array([0, 10, 0]));
-  WebSG.nodeSetMesh(
-    boxNode,
-    WebSG.createBoxMesh({
-      size: new Float32Array([1, 1, 1]),
-      segments: new Uint32Array([1, 1, 1]),
-    })
-  );
-  WebSG.nodeSetCollider(
-    boxNode,
-    WebSG.createCollider({
-      type: WebSG.ColliderType.Box,
-      size: new Float32Array([1, 1, 1]),
-    })
-  );
-  WebSG.addPhysicsBody(boxNode, {
-    type: WebSG.PhysicsBodyType.Rigid,
-  });
-  WebSG.sceneAddNode(scene, boxNode);
+world.onenter = () => {
+  const scene = world.environment;
 
-  const boxNode2 = WebSG.createNode();
-  const material = WebSG.createMaterial(WebSG.MaterialType.Standard);
-  WebSG.materialSetBaseColorFactor(material, new Float32Array([1, 1, 1, 1]));
-  // Currently needed to make sure the node with the default material renders correctly
-  WebSG.nodeSetPosition(boxNode2, new Float32Array([2, 10, 0]));
-  WebSG.nodeSetMesh(
-    boxNode2,
-    WebSG.createBoxMesh({
-      size: new Float32Array([1, 1, 1]),
-      segments: new Uint32Array([1, 1, 1]),
-      material,
-    })
-  );
-  WebSG.nodeSetCollider(
-    boxNode2,
-    WebSG.createCollider({
-      type: WebSG.ColliderType.Box,
-      size: new Float32Array([1, 1, 1]),
-    })
-  );
-  WebSG.addPhysicsBody(boxNode2, {
-    type: WebSG.PhysicsBodyType.Kinematic,
-  });
-  WebSG.sceneAddNode(scene, boxNode2);
+  for (let i = 0; i < 3; i++) {
+    const boxNode = world.createNode({
+      translation: [5, 1 + i, 0],
+      mesh: world.createBoxMesh({
+        size: [1, 1, 1],
+        segments: [1, 1, 1],
+      }),
+    });
+    boxNode.collider = world.createCollider({
+      type: "box",
+      size: [1, 1, 1],
+    });
+    boxNode.addPhysicsBody({ type: WebSG.PhysicsBodyType.Rigid });
 
-  boxNode3 = WebSG.createNode();
-  const material2 = WebSG.createMaterial(WebSG.MaterialType.Standard);
-  WebSG.materialSetBaseColorFactor(material2, new Float32Array([1, 1, 1, 1]));
-  WebSG.nodeSetPosition(boxNode3, new Float32Array([-2, 10, 0]));
-  WebSG.nodeSetMesh(
-    boxNode3,
-    WebSG.createBoxMesh({
-      size: new Float32Array([1, 1, 1]),
-      segments: new Uint32Array([1, 1, 1]),
-      material,
-    })
-  );
-  WebSG.nodeSetCollider(
-    boxNode3,
-    WebSG.createCollider({
-      type: WebSG.ColliderType.Box,
-      size: new Float32Array([1, 1, 1]),
-    })
-  );
-  WebSG.addPhysicsBody(boxNode3, {
-    type: WebSG.PhysicsBodyType.Kinematic,
+    scene.addNode(boxNode);
+  }
+
+  const boxNode2 = world.createNode({
+    translation: [2, 2, 0],
+    mesh: world.createBoxMesh({
+      size: [1, 1, 1],
+      segments: [1, 1, 1],
+      material: world.createMaterial({
+        baseColorFactor: [1, 1, 1, 1],
+      }),
+    }),
   });
-  WebSG.sceneAddNode(scene, boxNode3);
+  boxNode2.collider = world.createCollider({ type: "box", size: [1, 1, 1] });
+  boxNode2.addPhysicsBody({ type: WebSG.PhysicsBodyType.Kinematic });
+  scene.addNode(boxNode2);
+
+  boxNode3 = world.createNode({
+    translation: [-2, 2, 0],
+    mesh: world.createBoxMesh({
+      size: [1, 1, 1],
+      segments: [1, 1, 1],
+      material: world.createMaterial({
+        baseColorFactor: [1, 1, 1, 1],
+        metallicFactor: 0.5,
+        roughnessFactor: 0.7,
+      }),
+    }),
+  });
+  boxNode3.collider = world.createCollider({ type: "box", size: [1, 1, 1] });
+  boxNode3.addPhysicsBody({ type: WebSG.PhysicsBodyType.Kinematic });
+  scene.addNode(boxNode3);
 };
 
-let elapsed = 0;
+const translation = new Float32Array([-2, 2, 0]);
 
-const position = new Float32Array([-2, 10, 0]);
-
-onupdateworld = (dt) => {
-  elapsed += dt;
-
-  if (boxNode3) {
-    position[1] = Math.sin(elapsed) * 1 + 10;
-    WebSG.nodeSetPosition(boxNode3, position);
-  }
+world.onupdate = (dt, elapsed) => {
+  if (boxNode3) boxNode3.translation[1] = Math.sin(elapsed) * 1 + 2;
 };
