@@ -18,13 +18,14 @@ import { AutoFileUpload, AutoUploadInfo } from "../../components/AutoFileUpload"
 import { Label } from "../../../atoms/text/Label";
 import { Icon } from "../../../atoms/icon/Icon";
 import UploadIC from "../../../../../res/ic/upload.svg";
+import { setUserProfile } from "../../../utils/matrixUtils";
 
 interface Edit3DAvatarProps {
   renderTrigger: (openModal: () => void) => ReactNode;
 }
 
 export function Edit3DAvatar({ renderTrigger }: Edit3DAvatarProps) {
-  const { session, profileRoom } = useHydrogen(true);
+  const { session } = useHydrogen(true);
   const [isOpen, setIsOpen] = useState(false);
   const openModal = () => setIsOpen(true);
   const closeModal = () => setIsOpen(false);
@@ -34,21 +35,18 @@ export function Edit3DAvatar({ renderTrigger }: Edit3DAvatarProps) {
 
   const saveChanges = () => {
     if (!avatarInfo.mxc && !previewInfo.mxc) return;
-    const update = (avatarUrl: string, previewUrl: string) => {
-      session.hsApi.sendState(profileRoom.id, "org.matrix.msc3815.world.profile", "", {
+
+    const update = (avatarUrl?: string, previewUrl?: string) => {
+      setUserProfile(session, {
         avatar_url: avatarUrl,
         avatar_preview_url: previewUrl,
       });
     };
-    if (avatarInfo.mxc && previewInfo.mxc) {
+
+    if (avatarInfo.mxc || previewInfo.mxc) {
       update(avatarInfo.mxc, previewInfo.mxc);
-    } else {
-      profileRoom.getStateEvent("org.matrix.msc3815.world.profile").then((event) => {
-        const avatarUrl: string = event?.event.content.avatar_url;
-        const avatarPreviewUrl: string = event?.event.content.avatar_preview_url;
-        update(avatarInfo.mxc ?? avatarUrl, previewInfo.mxc ?? avatarPreviewUrl);
-      });
     }
+
     closeModal();
   };
 

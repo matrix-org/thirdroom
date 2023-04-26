@@ -125,7 +125,7 @@ export function useWorldLoader(): WorldLoader {
           groupCall = await connectGroupCall(world);
         }
 
-        await updateWorldProfile(session, world);
+        const profile = await updateWorldProfile(session, world);
 
         setLocalMediaStream(mainThread, groupCall.localMedia?.userMedia);
 
@@ -138,7 +138,7 @@ export function useWorldLoader(): WorldLoader {
         );
         registerMatrixNetworkInterface(matrixNetworkInterface);
 
-        await enterWorld(mainThread);
+        await enterWorld(mainThread, profile?.avatar_url);
 
         const audio = getModule(mainThread, AudioModule);
         audio.context.resume().catch(() => console.error("Couldn't resume audio context"));

@@ -71,24 +71,32 @@ export function roomIdToAlias(rooms: ObservableMap<string, Room>, roomId: string
   return rooms.get(roomId)?.canonicalAlias ?? undefined;
 }
 
-export function getProfileRoom(rooms: ObservableMap<string, Room>) {
-  const type = "org.matrix.msc3815.profile";
-  for (const room of rooms.values()) {
-    if (room.type === type) return room;
-  }
+interface UserProfile {
+  avatar_url?: string;
+  avatar_preview_url?: string;
 }
+
+export function getUserProfile(session: Session): Promise<UserProfile | undefined> {
+  return session.getAccountData("org.matrix.msc3815.profile");
+}
+
+export async function setUserProfile(session: Session, profile: UserProfile) {
+  await session.setAccountData("org.matrix.msc3815.profile", profile);
+}
+
 export async function updateWorldProfile(session: Session, world: Room) {
-  const profileRoom = getProfileRoom(session.rooms);
+  const profile = await getUserProfile(session);
 
-  if (profileRoom) {
-    const profileEvent = await profileRoom.getStateEvent("org.matrix.msc3815.world.profile", "");
-
-    if (profileEvent && profileEvent.event.content.avatar_url) {
+  if (profile) {
+    if (profile && profile.avatar_url) {
       await session.hsApi.sendState(world.id, "org.matrix.msc3815.world.member", session.userId, {
-        avatar_url: profileEvent.event.content.avatar_url,
+        avatar_url: profile.avatar_url,
+        avatar_preview_url: profile.avatar_preview_url,
       });
     }
   }
+
+  return profile;
 }
 
 export async function isValidUserId(hsApi: HomeServerApi, userId: string) {

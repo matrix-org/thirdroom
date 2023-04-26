@@ -370,6 +370,8 @@ async function onEnterWorld(ctx: GameState, message: EnterWorldMessage) {
     const physics = getModule(ctx, PhysicsModule);
     const input = getModule(ctx, InputModule);
 
+    console.log(message.avatarUrl);
+
     loadPlayerRig(ctx, physics, input, network);
 
     await waitUntil(() => ourPlayerQuery(ctx.world).length > 0);

@@ -109,7 +109,7 @@ export async function loadWorld(ctx: IMainThreadContext, url: string, scriptUrl:
   return loadingEnvironment.promise;
 }
 
-export async function enterWorld(ctx: IMainThreadContext) {
+export async function enterWorld(ctx: IMainThreadContext, avatarUrl?: string) {
   const thirdroom = getModule(ctx, ThirdroomModule);
   const enteringWorld = createDeferred(false);
 
@@ -141,6 +141,7 @@ export async function enterWorld(ctx: IMainThreadContext) {
   ctx.sendMessage<EnterWorldMessage>(Thread.Game, {
     type: ThirdRoomMessageType.EnterWorld,
     id,
+    avatarUrl,
   });
 
   return enteringWorld.promise;

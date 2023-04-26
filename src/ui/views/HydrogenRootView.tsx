@@ -366,15 +366,14 @@ function useSession(client: Client, platform: Platform, urlRouter: URLRouter) {
   }, [client, session]);
 
   const oidcCompleteError = useOidcComplete(platform, urlRouter, login);
-  const profileRoom = useUserProfile(client, session);
+  useUserProfile(client, session);
 
-  const loading = loadingInitialSession || loggingIn || loggingOut || (session && !profileRoom);
+  const loading = loadingInitialSession || loggingIn || loggingOut;
   const error = initialSessionLoadError || errorLoggingIn || errorLoggingOut;
   const errorMsg = oidcCompleteError ?? error?.message;
 
   return {
     session,
-    profileRoom,
     loadInitialSession,
     login,
     logout,
@@ -388,11 +387,7 @@ export function HydrogenRootView() {
 
   const [{ client, containerEl, platform, navigation, urlRouter, logger }] = useState(initHydrogen);
 
-  const { session, profileRoom, loadInitialSession, login, logout, loading, errorMsg } = useSession(
-    client,
-    platform,
-    urlRouter
-  );
+  const { session, loadInitialSession, login, logout, loading, errorMsg } = useSession(client, platform, urlRouter);
 
   useEffect(() => {
     return () => {
@@ -410,11 +405,10 @@ export function HydrogenRootView() {
       urlRouter,
       logger,
       session,
-      profileRoom,
       login,
       logout,
     }),
-    [client, platform, navigation, containerEl, urlRouter, logger, session, profileRoom, login, logout]
+    [client, platform, navigation, containerEl, urlRouter, logger, session, login, logout]
   );
 
   const previewPath = useMatch({ path: "/preview" });

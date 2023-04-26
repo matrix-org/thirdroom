@@ -19,6 +19,7 @@ export enum ThirdRoomMessageType {
 export interface EnterWorldMessage {
   type: ThirdRoomMessageType.EnterWorld;
   id: number;
+  avatarUrl?: string;
 }
 
 export interface EnteredWorldMessage {
