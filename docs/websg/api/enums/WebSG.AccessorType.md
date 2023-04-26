@@ -1,4 +1,4 @@
-[Exports](../modules.md) / [WebSG](../modules/websg) / AccessorType
+[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / AccessorType
 
 # Enumeration: AccessorType
 
@@ -26,9 +26,9 @@ Accessor
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:309](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L309)
+[src/engine/scripting/websg-api.d.ts:309](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L309)
 
----
+___
 
 ### MAT3
 
@@ -36,9 +36,9 @@ Accessor
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:310](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L310)
+[src/engine/scripting/websg-api.d.ts:310](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L310)
 
----
+___
 
 ### MAT4
 
@@ -46,9 +46,9 @@ Accessor
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:311](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L311)
+[src/engine/scripting/websg-api.d.ts:311](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L311)
 
----
+___
 
 ### SCALAR
 
@@ -56,9 +56,9 @@ Accessor
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:305](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L305)
+[src/engine/scripting/websg-api.d.ts:305](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L305)
 
----
+___
 
 ### VEC2
 
@@ -66,9 +66,9 @@ Accessor
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:306](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L306)
+[src/engine/scripting/websg-api.d.ts:306](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L306)
 
----
+___
 
 ### VEC3
 
@@ -76,9 +76,9 @@ Accessor
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:307](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L307)
+[src/engine/scripting/websg-api.d.ts:307](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L307)
 
----
+___
 
 ### VEC4
 
@@ -86,4 +86,4 @@ Accessor
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:308](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L308)
+[src/engine/scripting/websg-api.d.ts:308](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L308)

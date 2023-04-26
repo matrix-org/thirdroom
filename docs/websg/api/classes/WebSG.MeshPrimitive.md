@@ -1,4 +1,4 @@
-[Exports](../modules.md) / [WebSG](../modules/websg) / MeshPrimitive
+[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / MeshPrimitive
 
 # Class: MeshPrimitive
 
@@ -44,9 +44,9 @@ Returns the Accessor for the indices of the mesh primitive.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:511](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L511)
+[packages/websg-types/types/websg.d.ts:511](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L511)
 
----
+___
 
 ### material
 
@@ -60,7 +60,7 @@ Returns the Material of the mesh primitive.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:524](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L524)
+[packages/websg-types/types/websg.d.ts:524](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L524)
 
 • `set` **material**(`material`): `void`
 
@@ -68,8 +68,8 @@ Sets the Material for the mesh primitive.
 
 #### Parameters
 
-| Name       | Type                                           | Description          |
-| :--------- | :--------------------------------------------- | :------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `material` | `undefined` \| [`Material`](WebSG.Material.md) | The Material to set. |
 
 #### Returns
@@ -78,9 +78,9 @@ Sets the Material for the mesh primitive.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:530](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L530)
+[packages/websg-types/types/websg.d.ts:530](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L530)
 
----
+___
 
 ### mode
 
@@ -94,7 +94,7 @@ Returns the current rendering mode of the mesh primitive.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:505](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L505)
+[packages/websg-types/types/websg.d.ts:505](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L505)
 
 ## Methods
 
@@ -106,8 +106,8 @@ Returns the Accessor for the specified attribute name.
 
 #### Parameters
 
-| Name   | Type                                                                 | Description         |
-| :----- | :------------------------------------------------------------------- | :------------------ |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `name` | [`MeshPrimitiveAttribute`](../enums/WebSG.MeshPrimitiveAttribute.md) | The attribute name. |
 
 #### Returns
@@ -118,9 +118,9 @@ Returns the Accessor for the specified attribute name.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:518](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L518)
+[packages/websg-types/types/websg.d.ts:518](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L518)
 
----
+___
 
 ### setDrawRange
 
@@ -130,9 +130,9 @@ Sets the draw range for the mesh primitive.
 
 #### Parameters
 
-| Name    | Type     | Description                              |
-| :------ | :------- | :--------------------------------------- |
-| `start` | `number` | The starting index for the draw range.   |
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `start` | `number` | The starting index for the draw range. |
 | `count` | `number` | The number of indices in the draw range. |
 
 #### Returns
@@ -143,9 +143,9 @@ Sets the draw range for the mesh primitive.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:538](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L538)
+[packages/websg-types/types/websg.d.ts:538](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L538)
 
----
+___
 
 ### thirdroomSetHologramMaterialEnabled
 
@@ -155,8 +155,8 @@ Enables or disables the hologram material for the mesh primitive.
 
 #### Parameters
 
-| Name      | Type      | Description                                         |
-| :-------- | :-------- | :-------------------------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `enabled` | `boolean` | Whether to enable or disable the hologram material. |
 
 #### Returns
@@ -167,4 +167,4 @@ Enables or disables the hologram material for the mesh primitive.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:545](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L545)
+[packages/websg-types/types/websg.d.ts:545](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L545)

@@ -1,4 +1,4 @@
-[Exports](../modules.md) / [WebSG](../modules/websg) / FlexJustify
+[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / FlexJustify
 
 # Enumeration: FlexJustify
 
@@ -9,11 +9,11 @@
 ### Enumeration Members
 
 - [CENTER](WebSG.FlexJustify.md#center)
-- [FLEX_END](WebSG.FlexJustify.md#flex_end)
-- [FLEX_START](WebSG.FlexJustify.md#flex_start)
-- [SPACE_AROUND](WebSG.FlexJustify.md#space_around)
-- [SPACE_BETWEEN](WebSG.FlexJustify.md#space_between)
-- [SPACE_EVENLY](WebSG.FlexJustify.md#space_evenly)
+- [FLEX\_END](WebSG.FlexJustify.md#flex_end)
+- [FLEX\_START](WebSG.FlexJustify.md#flex_start)
+- [SPACE\_AROUND](WebSG.FlexJustify.md#space_around)
+- [SPACE\_BETWEEN](WebSG.FlexJustify.md#space_between)
+- [SPACE\_EVENLY](WebSG.FlexJustify.md#space_evenly)
 
 ## Enumeration Members
 
@@ -23,54 +23,54 @@
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:395](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L395)
+[src/engine/scripting/websg-api.d.ts:395](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L395)
 
----
+___
 
-### FLEX_END
+### FLEX\_END
 
-• **FLEX_END** = `number`
-
-#### Defined in
-
-[src/engine/scripting/websg-api.d.ts:396](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L396)
-
----
-
-### FLEX_START
-
-• **FLEX_START** = `number`
+• **FLEX\_END** = `number`
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:394](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L394)
+[src/engine/scripting/websg-api.d.ts:396](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L396)
 
----
+___
 
-### SPACE_AROUND
+### FLEX\_START
 
-• **SPACE_AROUND** = `number`
-
-#### Defined in
-
-[src/engine/scripting/websg-api.d.ts:398](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L398)
-
----
-
-### SPACE_BETWEEN
-
-• **SPACE_BETWEEN** = `number`
+• **FLEX\_START** = `number`
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:397](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L397)
+[src/engine/scripting/websg-api.d.ts:394](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L394)
 
----
+___
 
-### SPACE_EVENLY
+### SPACE\_AROUND
 
-• **SPACE_EVENLY** = `number`
+• **SPACE\_AROUND** = `number`
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:399](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L399)
+[src/engine/scripting/websg-api.d.ts:398](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L398)
+
+___
+
+### SPACE\_BETWEEN
+
+• **SPACE\_BETWEEN** = `number`
+
+#### Defined in
+
+[src/engine/scripting/websg-api.d.ts:397](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L397)
+
+___
+
+### SPACE\_EVENLY
+
+• **SPACE\_EVENLY** = `number`
+
+#### Defined in
+
+[src/engine/scripting/websg-api.d.ts:399](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L399)

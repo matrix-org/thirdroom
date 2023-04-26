@@ -1,4 +1,4 @@
-[Exports](../modules.md) / [WebSG](../modules/websg) / Material
+[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / Material
 
 # Class: Material
 
@@ -35,13 +35,13 @@ Creates a new Material instance.
 
 #### Parameters
 
-| Name    | Type                                                    | Description                                 |
-| :------ | :------------------------------------------------------ | :------------------------------------------ |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `props` | [`MaterialProps`](../interfaces/WebSG.MaterialProps.md) | The properties to create the material with. |
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:351](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L351)
+[packages/websg-types/types/websg.d.ts:351](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L351)
 
 ## Accessors
 
@@ -59,9 +59,9 @@ Returns the base color factor of the Material object as an RGBA instance.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:359](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L359)
+[packages/websg-types/types/websg.d.ts:359](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L359)
 
----
+___
 
 ### baseColorTexture
 
@@ -77,7 +77,7 @@ Gets the base color texture of the Material object.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:366](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L366)
+[packages/websg-types/types/websg.d.ts:366](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L366)
 
 • `set` **baseColorTexture**(`texture`): `void`
 
@@ -85,8 +85,8 @@ Sets the base color texture of the Material object.
 
 #### Parameters
 
-| Name      | Type                                         | Description                 |
-| :-------- | :------------------------------------------- | :-------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `texture` | `undefined` \| [`Texture`](WebSG.Texture.md) | The new base color texture. |
 
 #### Returns
@@ -95,9 +95,9 @@ Sets the base color texture of the Material object.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:372](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L372)
+[packages/websg-types/types/websg.d.ts:372](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L372)
 
----
+___
 
 ### emissiveFactor
 
@@ -113,9 +113,9 @@ Returns the emissive factor of the Material object as an RGB instance.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:406](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L406)
+[packages/websg-types/types/websg.d.ts:406](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L406)
 
----
+___
 
 ### metallicFactor
 
@@ -131,7 +131,7 @@ Gets the metallic factor of the Material object.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:379](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L379)
+[packages/websg-types/types/websg.d.ts:379](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L379)
 
 • `set` **metallicFactor**(`value`): `void`
 
@@ -139,8 +139,8 @@ Sets the metallic factor of the Material object.
 
 #### Parameters
 
-| Name    | Type     | Description                    |
-| :------ | :------- | :----------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `value` | `number` | The new metallic factor value. |
 
 #### Returns
@@ -149,9 +149,9 @@ Sets the metallic factor of the Material object.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:385](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L385)
+[packages/websg-types/types/websg.d.ts:385](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L385)
 
----
+___
 
 ### roughnessFactor
 
@@ -167,7 +167,7 @@ Gets the roughness factor of the Material object.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:392](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L392)
+[packages/websg-types/types/websg.d.ts:392](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L392)
 
 • `set` **roughnessFactor**(`value`): `void`
 
@@ -175,8 +175,8 @@ Sets the roughness factor of the Material object.
 
 #### Parameters
 
-| Name    | Type     | Description                     |
-| :------ | :------- | :------------------------------ |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `value` | `number` | The new roughness factor value. |
 
 #### Returns
@@ -185,7 +185,7 @@ Sets the roughness factor of the Material object.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:398](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L398)
+[packages/websg-types/types/websg.d.ts:398](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L398)
 
 ## Methods
 
@@ -199,9 +199,9 @@ Sets the roughness factor of the Material object.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:490](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L490)
+[src/engine/scripting/websg-api.d.ts:490](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L490)
 
----
+___
 
 ### setBaseColorTexture
 
@@ -209,8 +209,8 @@ Sets the roughness factor of the Material object.
 
 #### Parameters
 
-| Name      | Type                                         |
-| :-------- | :------------------------------------------- |
+| Name | Type |
+| :------ | :------ |
 | `texture` | `undefined` \| [`Texture`](WebSG.Texture.md) |
 
 #### Returns
@@ -219,4 +219,4 @@ Sets the roughness factor of the Material object.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:491](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L491)
+[src/engine/scripting/websg-api.d.ts:491](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L491)

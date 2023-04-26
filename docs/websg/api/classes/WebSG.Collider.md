@@ -1,4 +1,4 @@
-[Exports](../modules.md) / [WebSG](../modules/websg) / Collider
+[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / Collider
 
 # Class: Collider
 
@@ -33,10 +33,10 @@ const collider = world.createCollider({
 
 #### Parameters
 
-| Name    | Type                                                    | Description                     |
-| :------ | :------------------------------------------------------ | :------------------------------ |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `props` | [`ColliderProps`](../interfaces/WebSG.ColliderProps.md) | The properties of the Collider. |
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:143](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L143)
+[packages/websg-types/types/websg.d.ts:143](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L143)

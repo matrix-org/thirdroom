@@ -1,4 +1,4 @@
-[Exports](../modules.md) / [WebSG](../modules/websg) / PhysicsBody
+[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / PhysicsBody
 
 # Class: PhysicsBody
 

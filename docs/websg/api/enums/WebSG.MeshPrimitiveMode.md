@@ -1,4 +1,4 @@
-[Exports](../modules.md) / [WebSG](../modules/websg) / MeshPrimitiveMode
+[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / MeshPrimitiveMode
 
 # Enumeration: MeshPrimitiveMode
 
@@ -9,12 +9,12 @@
 ### Enumeration Members
 
 - [LINES](WebSG.MeshPrimitiveMode.md#lines)
-- [LINE_LOOP](WebSG.MeshPrimitiveMode.md#line_loop)
-- [LINE_STRIP](WebSG.MeshPrimitiveMode.md#line_strip)
+- [LINE\_LOOP](WebSG.MeshPrimitiveMode.md#line_loop)
+- [LINE\_STRIP](WebSG.MeshPrimitiveMode.md#line_strip)
 - [POINTS](WebSG.MeshPrimitiveMode.md#points)
 - [TRIANGLES](WebSG.MeshPrimitiveMode.md#triangles)
-- [TRIANGLE_FAN](WebSG.MeshPrimitiveMode.md#triangle_fan)
-- [TRIANGLE_STRIP](WebSG.MeshPrimitiveMode.md#triangle_strip)
+- [TRIANGLE\_FAN](WebSG.MeshPrimitiveMode.md#triangle_fan)
+- [TRIANGLE\_STRIP](WebSG.MeshPrimitiveMode.md#triangle_strip)
 
 ## Enumeration Members
 
@@ -24,29 +24,29 @@
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:230](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L230)
+[src/engine/scripting/websg-api.d.ts:230](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L230)
 
----
+___
 
-### LINE_LOOP
+### LINE\_LOOP
 
-• **LINE_LOOP** = `number`
-
-#### Defined in
-
-[src/engine/scripting/websg-api.d.ts:231](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L231)
-
----
-
-### LINE_STRIP
-
-• **LINE_STRIP** = `number`
+• **LINE\_LOOP** = `number`
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:232](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L232)
+[src/engine/scripting/websg-api.d.ts:231](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L231)
 
----
+___
+
+### LINE\_STRIP
+
+• **LINE\_STRIP** = `number`
+
+#### Defined in
+
+[src/engine/scripting/websg-api.d.ts:232](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L232)
+
+___
 
 ### POINTS
 
@@ -54,9 +54,9 @@
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:229](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L229)
+[src/engine/scripting/websg-api.d.ts:229](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L229)
 
----
+___
 
 ### TRIANGLES
 
@@ -64,24 +64,24 @@
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:233](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L233)
+[src/engine/scripting/websg-api.d.ts:233](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L233)
 
----
+___
 
-### TRIANGLE_FAN
+### TRIANGLE\_FAN
 
-• **TRIANGLE_FAN** = `number`
-
-#### Defined in
-
-[src/engine/scripting/websg-api.d.ts:235](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L235)
-
----
-
-### TRIANGLE_STRIP
-
-• **TRIANGLE_STRIP** = `number`
+• **TRIANGLE\_FAN** = `number`
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:234](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L234)
+[src/engine/scripting/websg-api.d.ts:235](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L235)
+
+___
+
+### TRIANGLE\_STRIP
+
+• **TRIANGLE\_STRIP** = `number`
+
+#### Defined in
+
+[src/engine/scripting/websg-api.d.ts:234](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L234)

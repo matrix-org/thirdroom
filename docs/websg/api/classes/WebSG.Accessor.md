@@ -1,4 +1,4 @@
-[Exports](../modules.md) / [WebSG](../modules/websg) / Accessor
+[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / Accessor
 
 # Class: Accessor
 
@@ -41,9 +41,9 @@ with new data.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:325](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L325)
+[src/engine/scripting/websg-api.d.ts:325](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L325)
 
----
+___
 
 ### count
 
@@ -51,9 +51,9 @@ with new data.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:326](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L326)
+[src/engine/scripting/websg-api.d.ts:326](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L326)
 
----
+___
 
 ### dynamic
 
@@ -61,9 +61,9 @@ with new data.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:328](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L328)
+[src/engine/scripting/websg-api.d.ts:328](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L328)
 
----
+___
 
 ### max
 
@@ -71,9 +71,9 @@ with new data.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:330](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L330)
+[src/engine/scripting/websg-api.d.ts:330](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L330)
 
----
+___
 
 ### min
 
@@ -81,9 +81,9 @@ with new data.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:329](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L329)
+[src/engine/scripting/websg-api.d.ts:329](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L329)
 
----
+___
 
 ### normalized
 
@@ -91,9 +91,9 @@ with new data.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:327](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L327)
+[src/engine/scripting/websg-api.d.ts:327](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L327)
 
----
+___
 
 ### type
 
@@ -101,7 +101,7 @@ with new data.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:324](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L324)
+[src/engine/scripting/websg-api.d.ts:324](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L324)
 
 ## Methods
 
@@ -116,9 +116,9 @@ Updates the existing ArrayBuffer with new data.
 ```ts
 // Create an instance of Accessor
 const accessor = world.createAccessorFrom(buffer, {
-  componentType: WebSG.AccessorComponentType.Uint16,
-  count: indicesCount,
-  type: WebSG.AccessorType.SCALAR,
+ componentType: WebSG.AccessorComponentType.Uint16,
+ count: indicesCount,
+ type: WebSG.AccessorType.SCALAR,
 });
 
 // Update the ArrayBuffer with new data
@@ -127,8 +127,8 @@ accessor.updateWith(newData);
 
 #### Parameters
 
-| Name   | Type          | Description                             |
-| :----- | :------------ | :-------------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `data` | `ArrayBuffer` | The new data to update the ArrayBuffer. |
 
 #### Returns
@@ -136,8 +136,8 @@ accessor.updateWith(newData);
 [`Accessor`](WebSG.Accessor.md)
 
 Returns the current Accessor instance to allow
-method chaining.
+                    method chaining.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:85](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L85)
+[packages/websg-types/types/websg.d.ts:85](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L85)

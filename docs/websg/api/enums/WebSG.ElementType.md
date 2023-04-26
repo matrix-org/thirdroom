@@ -1,4 +1,4 @@
-[Exports](../modules.md) / [WebSG](../modules/websg) / ElementType
+[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / ElementType
 
 # Enumeration: ElementType
 
@@ -23,9 +23,9 @@ UI
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:365](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L365)
+[src/engine/scripting/websg-api.d.ts:365](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L365)
 
----
+___
 
 ### FLEX
 
@@ -33,9 +33,9 @@ UI
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:363](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L363)
+[src/engine/scripting/websg-api.d.ts:363](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L363)
 
----
+___
 
 ### IMAGE
 
@@ -43,9 +43,9 @@ UI
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:366](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L366)
+[src/engine/scripting/websg-api.d.ts:366](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L366)
 
----
+___
 
 ### TEXT
 
@@ -53,4 +53,4 @@ UI
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:364](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L364)
+[src/engine/scripting/websg-api.d.ts:364](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L364)

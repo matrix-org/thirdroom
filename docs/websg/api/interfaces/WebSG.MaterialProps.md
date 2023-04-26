@@ -1,11 +1,11 @@
-[Exports](../modules.md) / [WebSG](../modules/websg) / MaterialProps
+[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / MaterialProps
 
 # Interface: MaterialProps
 
 [WebSG](../modules/WebSG.md).MaterialProps
 
 MaterialProps is an interface that defines the properties for creating a Material instance.
-MaterialProps
+ MaterialProps
 
 ## Table of contents
 
@@ -37,9 +37,9 @@ The optional alpha cutoff value for the material. Default is 0.5.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:328](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L328)
+[packages/websg-types/types/websg.d.ts:328](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L328)
 
----
+___
 
 ### alphaMode
 
@@ -49,9 +49,9 @@ The optional alpha mode for the material. Default is 'OPAQUE'.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:329](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L329)
+[packages/websg-types/types/websg.d.ts:329](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L329)
 
----
+___
 
 ### baseColorFactor
 
@@ -61,9 +61,9 @@ The optional RGBA base color factor.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:330](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L330)
+[packages/websg-types/types/websg.d.ts:330](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L330)
 
----
+___
 
 ### baseColorTexture
 
@@ -73,9 +73,9 @@ The optional base color texture.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:331](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L331)
+[packages/websg-types/types/websg.d.ts:331](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L331)
 
----
+___
 
 ### doubleSided
 
@@ -85,9 +85,9 @@ Whether the material is visible from both sides. Default is false.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:327](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L327)
+[packages/websg-types/types/websg.d.ts:327](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L327)
 
----
+___
 
 ### emissiveFactor
 
@@ -97,9 +97,9 @@ The optional RGB emissive factor.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:339](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L339)
+[packages/websg-types/types/websg.d.ts:339](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L339)
 
----
+___
 
 ### emissiveTexture
 
@@ -109,9 +109,9 @@ The optional emissive texture.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:340](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L340)
+[packages/websg-types/types/websg.d.ts:340](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L340)
 
----
+___
 
 ### metallicFactor
 
@@ -121,9 +121,9 @@ The optional metallic factor. Default is 1.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:332](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L332)
+[packages/websg-types/types/websg.d.ts:332](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L332)
 
----
+___
 
 ### metallicRoughnessTexture
 
@@ -133,9 +133,9 @@ The optional metallic-roughness texture.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:334](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L334)
+[packages/websg-types/types/websg.d.ts:334](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L334)
 
----
+___
 
 ### name
 
@@ -145,9 +145,9 @@ The optional name of the material.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:326](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L326)
+[packages/websg-types/types/websg.d.ts:326](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L326)
 
----
+___
 
 ### normalScale
 
@@ -157,9 +157,9 @@ The optional scale for the normal texture. Default is 1.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:336](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L336)
+[packages/websg-types/types/websg.d.ts:336](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L336)
 
----
+___
 
 ### normalTexture
 
@@ -169,9 +169,9 @@ The optional normal texture.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:335](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L335)
+[packages/websg-types/types/websg.d.ts:335](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L335)
 
----
+___
 
 ### occlusionStrength
 
@@ -181,9 +181,9 @@ The optional occlusion strength. Default is 1.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:338](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L338)
+[packages/websg-types/types/websg.d.ts:338](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L338)
 
----
+___
 
 ### occlusionTexture
 
@@ -193,9 +193,9 @@ The optional occlusion texture.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:337](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L337)
+[packages/websg-types/types/websg.d.ts:337](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L337)
 
----
+___
 
 ### roughnessFactor
 
@@ -205,4 +205,4 @@ The optional roughness factor. Default is 1.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:333](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L333)
+[packages/websg-types/types/websg.d.ts:333](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L333)

@@ -1,4 +1,4 @@
-[Exports](../modules.md) / [WebSG](../modules/websg) / UIElementIterator
+[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / UIElementIterator
 
 # Class: UIElementIterator
 
@@ -33,9 +33,9 @@
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1305](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1305)
+[packages/websg-types/types/websg.d.ts:1305](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1305)
 
----
+___
 
 ### next
 
@@ -45,11 +45,11 @@
 
 `Object`
 
-| Name    | Type                              |
-| :------ | :-------------------------------- |
-| `done`  | `boolean`                         |
+| Name | Type |
+| :------ | :------ |
+| `done` | `boolean` |
 | `value` | [`UIElement`](WebSG.UIElement.md) |
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1304](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1304)
+[packages/websg-types/types/websg.d.ts:1304](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1304)

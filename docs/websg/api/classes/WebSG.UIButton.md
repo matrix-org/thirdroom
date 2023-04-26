@@ -1,4 +1,4 @@
-[Exports](../modules.md) / [WebSG](../modules/websg) / UIButton
+[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / UIButton
 
 # Class: UIButton
 
@@ -103,9 +103,9 @@ Readonly RGBA object representing the background color of the UI element.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1594](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1594)
+[packages/websg-types/types/websg.d.ts:1594](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1594)
 
----
+___
 
 ### borderColor
 
@@ -119,9 +119,9 @@ Readonly RGBA object representing the border color of the UI element.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1600](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1600)
+[packages/websg-types/types/websg.d.ts:1600](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1600)
 
----
+___
 
 ### borderRadius
 
@@ -135,9 +135,9 @@ Readonly Vector4 object representing the border radius of the UI element.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1624](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1624)
+[packages/websg-types/types/websg.d.ts:1624](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1624)
 
----
+___
 
 ### borderWidth
 
@@ -151,9 +151,9 @@ Readonly Vector4 object representing the border width of the UI element.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1618](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1618)
+[packages/websg-types/types/websg.d.ts:1618](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1618)
 
----
+___
 
 ### color
 
@@ -167,9 +167,9 @@ Readonly property representing the color of the text as an RGBA object.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1738](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1738)
+[packages/websg-types/types/websg.d.ts:1738](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1738)
 
----
+___
 
 ### margin
 
@@ -183,9 +183,9 @@ Readonly Vector4 object representing the margin of the UI element.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1612](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1612)
+[packages/websg-types/types/websg.d.ts:1612](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1612)
 
----
+___
 
 ### padding
 
@@ -199,13 +199,13 @@ Readonly Vector4 object representing the padding of the UI element.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1606](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1606)
+[packages/websg-types/types/websg.d.ts:1606](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1606)
 
----
+___
 
 ### parent
 
-• **parent**: `null` \| [`UIElement`](WebSG.UIElement.md)
+• **parent**: ``null`` \| [`UIElement`](WebSG.UIElement.md)
 
 #### Inherited from
 
@@ -213,9 +213,9 @@ Readonly Vector4 object representing the padding of the UI element.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:457](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L457)
+[src/engine/scripting/websg-api.d.ts:457](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L457)
 
----
+___
 
 ### type
 
@@ -227,7 +227,7 @@ Readonly Vector4 object representing the padding of the UI element.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:458](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L458)
+[src/engine/scripting/websg-api.d.ts:458](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L458)
 
 ## Accessors
 
@@ -249,7 +249,7 @@ UIElement.alignContent
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1376](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1376)
+[packages/websg-types/types/websg.d.ts:1376](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1376)
 
 • `set` **alignContent**(`value`): `void`
 
@@ -257,8 +257,8 @@ Sets the align-content property of the UI element.
 
 #### Parameters
 
-| Name    | Type                                       | Description                                     |
-| :------ | :----------------------------------------- | :---------------------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `value` | [`FlexAlign`](../enums/WebSG.FlexAlign.md) | The new align-content value for the UI element. |
 
 #### Returns
@@ -271,9 +271,9 @@ UIElement.alignContent
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1382](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1382)
+[packages/websg-types/types/websg.d.ts:1382](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1382)
 
----
+___
 
 ### alignItems
 
@@ -293,7 +293,7 @@ UIElement.alignItems
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1388](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1388)
+[packages/websg-types/types/websg.d.ts:1388](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1388)
 
 • `set` **alignItems**(`value`): `void`
 
@@ -301,8 +301,8 @@ Sets the align-items property of the UI element.
 
 #### Parameters
 
-| Name    | Type                                       | Description                                   |
-| :------ | :----------------------------------------- | :-------------------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `value` | [`FlexAlign`](../enums/WebSG.FlexAlign.md) | The new align-items value for the UI element. |
 
 #### Returns
@@ -315,9 +315,9 @@ UIElement.alignItems
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1394](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1394)
+[packages/websg-types/types/websg.d.ts:1394](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1394)
 
----
+___
 
 ### alignSelf
 
@@ -337,7 +337,7 @@ UIElement.alignSelf
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1400](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1400)
+[packages/websg-types/types/websg.d.ts:1400](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1400)
 
 • `set` **alignSelf**(`value`): `void`
 
@@ -345,8 +345,8 @@ Sets the align-self property of the UI element.
 
 #### Parameters
 
-| Name    | Type                                       | Description                                  |
-| :------ | :----------------------------------------- | :------------------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `value` | [`FlexAlign`](../enums/WebSG.FlexAlign.md) | The new align-self value for the UI element. |
 
 #### Returns
@@ -359,9 +359,9 @@ UIElement.alignSelf
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1406](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1406)
+[packages/websg-types/types/websg.d.ts:1406](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1406)
 
----
+___
 
 ### bottom
 
@@ -381,7 +381,7 @@ UIElement.bottom
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1352](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1352)
+[packages/websg-types/types/websg.d.ts:1352](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1352)
 
 • `set` **bottom**(`value`): `void`
 
@@ -389,8 +389,8 @@ Sets the bottom position of the UI element.
 
 #### Parameters
 
-| Name    | Type     | Description                                       |
-| :------ | :------- | :------------------------------------------------ |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `value` | `number` | The new bottom position value for the UI element. |
 
 #### Returns
@@ -403,9 +403,9 @@ UIElement.bottom
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1358](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1358)
+[packages/websg-types/types/websg.d.ts:1358](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1358)
 
----
+___
 
 ### flexBasis
 
@@ -425,7 +425,7 @@ UIElement.flexBasis
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1436](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1436)
+[packages/websg-types/types/websg.d.ts:1436](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1436)
 
 • `set` **flexBasis**(`value`): `void`
 
@@ -433,8 +433,8 @@ Sets the flex basis property of the UI element.
 
 #### Parameters
 
-| Name    | Type     | Description                        |
-| :------ | :------- | :--------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `value` | `number` | The new flex basis property value. |
 
 #### Returns
@@ -447,9 +447,9 @@ UIElement.flexBasis
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1442](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1442)
+[packages/websg-types/types/websg.d.ts:1442](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1442)
 
----
+___
 
 ### flexDirection
 
@@ -469,7 +469,7 @@ UIElement.flexDirection
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1412](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1412)
+[packages/websg-types/types/websg.d.ts:1412](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1412)
 
 • `set` **flexDirection**(`value`): `void`
 
@@ -477,8 +477,8 @@ Sets the flex-direction property of the UI element.
 
 #### Parameters
 
-| Name    | Type                                               | Description                                      |
-| :------ | :------------------------------------------------- | :----------------------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `value` | [`FlexDirection`](../enums/WebSG.FlexDirection.md) | The new flex-direction value for the UI element. |
 
 #### Returns
@@ -491,9 +491,9 @@ UIElement.flexDirection
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1418](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1418)
+[packages/websg-types/types/websg.d.ts:1418](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1418)
 
----
+___
 
 ### flexGrow
 
@@ -513,7 +513,7 @@ UIElement.flexGrow
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1448](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1448)
+[packages/websg-types/types/websg.d.ts:1448](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1448)
 
 • `set` **flexGrow**(`value`): `void`
 
@@ -521,8 +521,8 @@ Sets the flex grow property of the UI element.
 
 #### Parameters
 
-| Name    | Type     | Description                       |
-| :------ | :------- | :-------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `value` | `number` | The new flex grow property value. |
 
 #### Returns
@@ -535,9 +535,9 @@ UIElement.flexGrow
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1454](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1454)
+[packages/websg-types/types/websg.d.ts:1454](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1454)
 
----
+___
 
 ### flexShrink
 
@@ -557,7 +557,7 @@ UIElement.flexShrink
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1460](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1460)
+[packages/websg-types/types/websg.d.ts:1460](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1460)
 
 • `set` **flexShrink**(`value`): `void`
 
@@ -565,8 +565,8 @@ Sets the flex shrink property of the UI element.
 
 #### Parameters
 
-| Name    | Type     | Description                         |
-| :------ | :------- | :---------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `value` | `number` | The new flex shrink property value. |
 
 #### Returns
@@ -579,9 +579,9 @@ UIElement.flexShrink
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1466](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1466)
+[packages/websg-types/types/websg.d.ts:1466](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1466)
 
----
+___
 
 ### flexWrap
 
@@ -601,7 +601,7 @@ UIElement.flexWrap
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1424](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1424)
+[packages/websg-types/types/websg.d.ts:1424](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1424)
 
 • `set` **flexWrap**(`value`): `void`
 
@@ -609,8 +609,8 @@ Sets the flex wrap property of the UI element.
 
 #### Parameters
 
-| Name    | Type                                     | Description                       |
-| :------ | :--------------------------------------- | :-------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `value` | [`FlexWrap`](../enums/WebSG.FlexWrap.md) | The new flex wrap property value. |
 
 #### Returns
@@ -623,9 +623,9 @@ UIElement.flexWrap
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1430](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1430)
+[packages/websg-types/types/websg.d.ts:1430](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1430)
 
----
+___
 
 ### fontFamily
 
@@ -645,7 +645,7 @@ UIButtonProps.fontFamily
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1690](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1690)
+[packages/websg-types/types/websg.d.ts:1690](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1690)
 
 • `set` **fontFamily**(`value`): `void`
 
@@ -653,8 +653,8 @@ Sets the font family used for the text.
 
 #### Parameters
 
-| Name    | Type     | Description          |
-| :------ | :------- | :------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `value` | `string` | The new font family. |
 
 #### Returns
@@ -667,9 +667,9 @@ UIButtonProps.fontFamily
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1696](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1696)
+[packages/websg-types/types/websg.d.ts:1696](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1696)
 
----
+___
 
 ### fontSize
 
@@ -689,7 +689,7 @@ UIButtonProps.fontSize
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1714](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1714)
+[packages/websg-types/types/websg.d.ts:1714](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1714)
 
 • `set` **fontSize**(`value`): `void`
 
@@ -697,8 +697,8 @@ Sets the font size of the text in pixels.
 
 #### Parameters
 
-| Name    | Type     | Description        |
-| :------ | :------- | :----------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `value` | `number` | The new font size. |
 
 #### Returns
@@ -711,9 +711,9 @@ UIButtonProps.fontSize
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1720](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1720)
+[packages/websg-types/types/websg.d.ts:1720](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1720)
 
----
+___
 
 ### fontStyle
 
@@ -733,7 +733,7 @@ UIButtonProps.fontStyle
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1726](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1726)
+[packages/websg-types/types/websg.d.ts:1726](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1726)
 
 • `set` **fontStyle**(`value`): `void`
 
@@ -741,8 +741,8 @@ Sets the font style used for the text.
 
 #### Parameters
 
-| Name    | Type     | Description         |
-| :------ | :------- | :------------------ |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `value` | `string` | The new font style. |
 
 #### Returns
@@ -755,9 +755,9 @@ UIButtonProps.fontStyle
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1732](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1732)
+[packages/websg-types/types/websg.d.ts:1732](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1732)
 
----
+___
 
 ### fontWeight
 
@@ -777,7 +777,7 @@ UIButtonProps.fontWeight
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1702](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1702)
+[packages/websg-types/types/websg.d.ts:1702](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1702)
 
 • `set` **fontWeight**(`value`): `void`
 
@@ -785,8 +785,8 @@ Sets the font weight used for the text.
 
 #### Parameters
 
-| Name    | Type     | Description          |
-| :------ | :------- | :------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `value` | `string` | The new font weight. |
 
 #### Returns
@@ -799,9 +799,9 @@ UIButtonProps.fontWeight
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1708](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1708)
+[packages/websg-types/types/websg.d.ts:1708](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1708)
 
----
+___
 
 ### height
 
@@ -821,7 +821,7 @@ UIElement.height
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1496](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1496)
+[packages/websg-types/types/websg.d.ts:1496](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1496)
 
 • `set` **height**(`value`): `void`
 
@@ -829,8 +829,8 @@ Sets the height of the UI element.
 
 #### Parameters
 
-| Name    | Type     | Description                       |
-| :------ | :------- | :-------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `value` | `number` | The new height of the UI element. |
 
 #### Returns
@@ -843,9 +843,9 @@ UIElement.height
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1502](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1502)
+[packages/websg-types/types/websg.d.ts:1502](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1502)
 
----
+___
 
 ### held
 
@@ -859,9 +859,9 @@ Returns true if the button is held, otherwise false.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1082](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1082)
+[packages/websg-types/types/websg.d.ts:1082](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1082)
 
----
+___
 
 ### justifyContent
 
@@ -881,7 +881,7 @@ UIElement.justifyContent
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1472](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1472)
+[packages/websg-types/types/websg.d.ts:1472](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1472)
 
 • `set` **justifyContent**(`value`): `void`
 
@@ -889,8 +889,8 @@ Sets the justify content property of the UI element.
 
 #### Parameters
 
-| Name    | Type                                           | Description                             |
-| :------ | :--------------------------------------------- | :-------------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `value` | [`FlexJustify`](../enums/WebSG.FlexJustify.md) | The new justify content property value. |
 
 #### Returns
@@ -903,9 +903,9 @@ UIElement.justifyContent
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1478](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1478)
+[packages/websg-types/types/websg.d.ts:1478](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1478)
 
----
+___
 
 ### label
 
@@ -923,9 +923,9 @@ UIButtonProps.label
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1062](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1062)
+[packages/websg-types/types/websg.d.ts:1062](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1062)
 
----
+___
 
 ### left
 
@@ -945,7 +945,7 @@ UIElement.left
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1364](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1364)
+[packages/websg-types/types/websg.d.ts:1364](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1364)
 
 • `set` **left**(`value`): `void`
 
@@ -953,8 +953,8 @@ Sets the left position of the UI element.
 
 #### Parameters
 
-| Name    | Type     | Description                                     |
-| :------ | :------- | :---------------------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `value` | `number` | The new left position value for the UI element. |
 
 #### Returns
@@ -967,9 +967,9 @@ UIElement.left
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1370](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1370)
+[packages/websg-types/types/websg.d.ts:1370](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1370)
 
----
+___
 
 ### maxHeight
 
@@ -989,7 +989,7 @@ UIElement.maxHeight
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1544](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1544)
+[packages/websg-types/types/websg.d.ts:1544](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1544)
 
 • `set` **maxHeight**(`value`): `void`
 
@@ -997,8 +997,8 @@ Sets the maximum height of the UI element.
 
 #### Parameters
 
-| Name    | Type     | Description                               |
-| :------ | :------- | :---------------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `value` | `number` | The new maximum height of the UI element. |
 
 #### Returns
@@ -1011,9 +1011,9 @@ UIElement.maxHeight
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1550](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1550)
+[packages/websg-types/types/websg.d.ts:1550](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1550)
 
----
+___
 
 ### maxWidth
 
@@ -1033,7 +1033,7 @@ UIElement.maxWidth
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1532](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1532)
+[packages/websg-types/types/websg.d.ts:1532](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1532)
 
 • `set` **maxWidth**(`value`): `void`
 
@@ -1041,8 +1041,8 @@ Sets the maximum width of the UI element.
 
 #### Parameters
 
-| Name    | Type     | Description                              |
-| :------ | :------- | :--------------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `value` | `number` | The new maximum width of the UI element. |
 
 #### Returns
@@ -1055,9 +1055,9 @@ UIElement.maxWidth
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1538](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1538)
+[packages/websg-types/types/websg.d.ts:1538](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1538)
 
----
+___
 
 ### minHeight
 
@@ -1077,7 +1077,7 @@ UIElement.minHeight
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1520](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1520)
+[packages/websg-types/types/websg.d.ts:1520](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1520)
 
 • `set` **minHeight**(`value`): `void`
 
@@ -1085,8 +1085,8 @@ Sets the minimum height of the UI element.
 
 #### Parameters
 
-| Name    | Type     | Description                               |
-| :------ | :------- | :---------------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `value` | `number` | The new minimum height of the UI element. |
 
 #### Returns
@@ -1099,9 +1099,9 @@ UIElement.minHeight
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1526](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1526)
+[packages/websg-types/types/websg.d.ts:1526](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1526)
 
----
+___
 
 ### minWidth
 
@@ -1121,7 +1121,7 @@ UIElement.minWidth
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1508](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1508)
+[packages/websg-types/types/websg.d.ts:1508](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1508)
 
 • `set` **minWidth**(`value`): `void`
 
@@ -1129,8 +1129,8 @@ Sets the minimum width of the UI element.
 
 #### Parameters
 
-| Name    | Type     | Description                              |
-| :------ | :------- | :--------------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `value` | `number` | The new minimum width of the UI element. |
 
 #### Returns
@@ -1143,9 +1143,9 @@ UIElement.minWidth
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1514](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1514)
+[packages/websg-types/types/websg.d.ts:1514](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1514)
 
----
+___
 
 ### position
 
@@ -1165,7 +1165,7 @@ UIElement.position
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1316](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1316)
+[packages/websg-types/types/websg.d.ts:1316](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1316)
 
 • `set` **position**(`value`): `void`
 
@@ -1173,8 +1173,8 @@ Sets the position of the UI element.
 
 #### Parameters
 
-| Name    | Type                                                           | Description                               |
-| :------ | :------------------------------------------------------------- | :---------------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `value` | [`ElementPositionType`](../enums/WebSG.ElementPositionType.md) | The new position type for the UI element. |
 
 #### Returns
@@ -1187,9 +1187,9 @@ UIElement.position
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1322](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1322)
+[packages/websg-types/types/websg.d.ts:1322](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1322)
 
----
+___
 
 ### pressed
 
@@ -1203,9 +1203,9 @@ Returns true if the button is pressed, otherwise false.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1075](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1075)
+[packages/websg-types/types/websg.d.ts:1075](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1075)
 
----
+___
 
 ### released
 
@@ -1219,9 +1219,9 @@ Returns true if the button is released, otherwise false.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1089](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1089)
+[packages/websg-types/types/websg.d.ts:1089](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1089)
 
----
+___
 
 ### right
 
@@ -1241,7 +1241,7 @@ UIElement.right
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1340](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1340)
+[packages/websg-types/types/websg.d.ts:1340](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1340)
 
 • `set` **right**(`value`): `void`
 
@@ -1249,8 +1249,8 @@ Sets the right position of the UI element.
 
 #### Parameters
 
-| Name    | Type     | Description                                      |
-| :------ | :------- | :----------------------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `value` | `number` | The new right position value for the UI element. |
 
 #### Returns
@@ -1263,9 +1263,9 @@ UIElement.right
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1346](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1346)
+[packages/websg-types/types/websg.d.ts:1346](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1346)
 
----
+___
 
 ### top
 
@@ -1285,7 +1285,7 @@ UIElement.top
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1328](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1328)
+[packages/websg-types/types/websg.d.ts:1328](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1328)
 
 • `set` **top**(`value`): `void`
 
@@ -1293,8 +1293,8 @@ Sets the top position of the UI element.
 
 #### Parameters
 
-| Name    | Type     | Description                                    |
-| :------ | :------- | :--------------------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `value` | `number` | The new top position value for the UI element. |
 
 #### Returns
@@ -1307,9 +1307,9 @@ UIElement.top
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1334](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1334)
+[packages/websg-types/types/websg.d.ts:1334](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1334)
 
----
+___
 
 ### value
 
@@ -1329,7 +1329,7 @@ UIButtonProps.value
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1678](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1678)
+[packages/websg-types/types/websg.d.ts:1678](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1678)
 
 • `set` **value**(`value`): `void`
 
@@ -1337,8 +1337,8 @@ Sets the text content of the UIText element.
 
 #### Parameters
 
-| Name    | Type     | Description           |
-| :------ | :------- | :-------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `value` | `string` | The new text content. |
 
 #### Returns
@@ -1351,9 +1351,9 @@ UIButtonProps.value
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1684](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1684)
+[packages/websg-types/types/websg.d.ts:1684](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1684)
 
----
+___
 
 ### width
 
@@ -1373,7 +1373,7 @@ UIElement.width
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1484](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1484)
+[packages/websg-types/types/websg.d.ts:1484](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1484)
 
 • `set` **width**(`value`): `void`
 
@@ -1381,8 +1381,8 @@ Sets the width of the UI element.
 
 #### Parameters
 
-| Name    | Type     | Description                      |
-| :------ | :------- | :------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `value` | `number` | The new width of the UI element. |
 
 #### Returns
@@ -1395,7 +1395,7 @@ UIElement.width
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1490](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1490)
+[packages/websg-types/types/websg.d.ts:1490](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1490)
 
 ## Methods
 
@@ -1407,8 +1407,8 @@ Adds a child UI element to the current element.
 
 #### Parameters
 
-| Name      | Type                              | Description                  |
-| :-------- | :-------------------------------- | :--------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `element` | [`UIElement`](WebSG.UIElement.md) | The child UI element to add. |
 
 #### Returns
@@ -1423,9 +1423,9 @@ The current UI element for chaining.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1556](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1556)
+[packages/websg-types/types/websg.d.ts:1556](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1556)
 
----
+___
 
 ### children
 
@@ -1445,9 +1445,9 @@ An iterator for the children of the current UI element.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1576](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1576)
+[packages/websg-types/types/websg.d.ts:1576](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1576)
 
----
+___
 
 ### getChild
 
@@ -1457,8 +1457,8 @@ Gets the child UI element at the specified index.
 
 #### Parameters
 
-| Name    | Type     | Description                        |
-| :------ | :------- | :--------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `index` | `number` | The index of the child UI element. |
 
 #### Returns
@@ -1473,9 +1473,9 @@ The child UI element or undefined if the index is out of bounds.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1570](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1570)
+[packages/websg-types/types/websg.d.ts:1570](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1570)
 
----
+___
 
 ### isPressed
 
@@ -1487,9 +1487,9 @@ The child UI element or undefined if the index is out of bounds.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:477](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L477)
+[src/engine/scripting/websg-api.d.ts:477](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L477)
 
----
+___
 
 ### removeChild
 
@@ -1499,8 +1499,8 @@ Removes a child UI element from the current element.
 
 #### Parameters
 
-| Name      | Type                              | Description                     |
-| :-------- | :-------------------------------- | :------------------------------ |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `element` | [`UIElement`](WebSG.UIElement.md) | The child UI element to remove. |
 
 #### Returns
@@ -1515,9 +1515,9 @@ The current UI element for chaining.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1563](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1563)
+[packages/websg-types/types/websg.d.ts:1563](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1563)
 
----
+___
 
 ### setBorderColor
 
@@ -1525,8 +1525,8 @@ The current UI element for chaining.
 
 #### Parameters
 
-| Name    | Type           |
-| :------ | :------------- |
+| Name | Type |
+| :------ | :------ |
 | `color` | `Float32Array` |
 
 #### Returns
@@ -1539,9 +1539,9 @@ The current UI element for chaining.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:424](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L424)
+[src/engine/scripting/websg-api.d.ts:424](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L424)
 
----
+___
 
 ### setColor
 
@@ -1549,8 +1549,8 @@ The current UI element for chaining.
 
 #### Parameters
 
-| Name    | Type           |
-| :------ | :------------- |
+| Name | Type |
+| :------ | :------ |
 | `color` | `Float32Array` |
 
 #### Returns
@@ -1563,9 +1563,9 @@ The current UI element for chaining.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:423](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L423)
+[src/engine/scripting/websg-api.d.ts:423](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L423)
 
----
+___
 
 ### setValue
 
@@ -1573,8 +1573,8 @@ The current UI element for chaining.
 
 #### Parameters
 
-| Name    | Type     |
-| :------ | :------- |
+| Name | Type |
+| :------ | :------ |
 | `value` | `string` |
 
 #### Returns
@@ -1587,4 +1587,4 @@ The current UI element for chaining.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:483](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L483)
+[src/engine/scripting/websg-api.d.ts:483](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L483)

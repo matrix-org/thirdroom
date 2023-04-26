@@ -1,4 +1,4 @@
-[Exports](../modules.md) / [WebSG](../modules/websg) / MeshPrimitiveProps
+[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / MeshPrimitiveProps
 
 # Interface: MeshPrimitiveProps
 
@@ -24,11 +24,11 @@ MeshPrimitiveProps is an interface for defining properties of a mesh primitive.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:270](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L270)
+[src/engine/scripting/websg-api.d.ts:270](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L270)
 
-[packages/websg-types/types/websg.d.ts:494](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L494)
+[packages/websg-types/types/websg.d.ts:494](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L494)
 
----
+___
 
 ### indices
 
@@ -36,11 +36,11 @@ MeshPrimitiveProps is an interface for defining properties of a mesh primitive.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:271](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L271)
+[src/engine/scripting/websg-api.d.ts:271](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L271)
 
-[packages/websg-types/types/websg.d.ts:492](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L492)
+[packages/websg-types/types/websg.d.ts:492](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L492)
 
----
+___
 
 ### material
 
@@ -48,11 +48,11 @@ MeshPrimitiveProps is an interface for defining properties of a mesh primitive.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:272](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L272)
+[src/engine/scripting/websg-api.d.ts:272](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L272)
 
-[packages/websg-types/types/websg.d.ts:493](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L493)
+[packages/websg-types/types/websg.d.ts:493](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L493)
 
----
+___
 
 ### mode
 
@@ -60,11 +60,11 @@ MeshPrimitiveProps is an interface for defining properties of a mesh primitive.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:273](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L273)
+[src/engine/scripting/websg-api.d.ts:273](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L273)
 
-[packages/websg-types/types/websg.d.ts:491](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L491)
+[packages/websg-types/types/websg.d.ts:491](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L491)
 
----
+___
 
 ### targets
 
@@ -72,4 +72,4 @@ MeshPrimitiveProps is an interface for defining properties of a mesh primitive.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:274](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L274)
+[src/engine/scripting/websg-api.d.ts:274](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L274)

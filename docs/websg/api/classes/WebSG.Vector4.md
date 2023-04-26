@@ -1,4 +1,4 @@
-[Exports](../modules.md) / [WebSG](../modules/websg) / Vector4
+[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / Vector4
 
 # Class: Vector4
 
@@ -46,9 +46,9 @@ A 4-dimensional vector class.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1804](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1804)
+[packages/websg-types/types/websg.d.ts:1804](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1804)
 
----
+___
 
 ### left
 
@@ -56,9 +56,9 @@ A 4-dimensional vector class.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1805](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1805)
+[packages/websg-types/types/websg.d.ts:1805](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1805)
 
----
+___
 
 ### length
 
@@ -72,9 +72,9 @@ length
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1820](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1820)
+[packages/websg-types/types/websg.d.ts:1820](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1820)
 
----
+___
 
 ### right
 
@@ -82,9 +82,9 @@ length
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1803](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1803)
+[packages/websg-types/types/websg.d.ts:1803](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1803)
 
----
+___
 
 ### top
 
@@ -92,9 +92,9 @@ length
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1802](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1802)
+[packages/websg-types/types/websg.d.ts:1802](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1802)
 
----
+___
 
 ### w
 
@@ -102,9 +102,9 @@ length
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1801](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1801)
+[packages/websg-types/types/websg.d.ts:1801](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1801)
 
----
+___
 
 ### x
 
@@ -112,9 +112,9 @@ length
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1798](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1798)
+[packages/websg-types/types/websg.d.ts:1798](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1798)
 
----
+___
 
 ### y
 
@@ -122,9 +122,9 @@ length
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1799](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1799)
+[packages/websg-types/types/websg.d.ts:1799](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1799)
 
----
+___
 
 ### z
 
@@ -132,7 +132,7 @@ length
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1800](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1800)
+[packages/websg-types/types/websg.d.ts:1800](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1800)
 
 ## Methods
 
@@ -148,8 +148,8 @@ set
 
 #### Parameters
 
-| Name    | Type                   | Description                                                    |
-| :------ | :--------------------- | :------------------------------------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `value` | `ArrayLike`<`number`\> | An array-like object containing the new values for the vector. |
 
 #### Returns
@@ -158,4 +158,4 @@ set
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1813](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1813)
+[packages/websg-types/types/websg.d.ts:1813](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1813)

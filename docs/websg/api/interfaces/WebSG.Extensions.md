@@ -1,4 +1,4 @@
-[Exports](../modules.md) / [WebSG](../modules/websg) / Extensions
+[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / Extensions
 
 # Interface: Extensions
 
@@ -19,9 +19,9 @@
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:149](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L149)
+[src/engine/scripting/websg-api.d.ts:149](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L149)
 
----
+___
 
 ### items
 
@@ -29,4 +29,4 @@
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:148](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L148)
+[src/engine/scripting/websg-api.d.ts:148](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L148)

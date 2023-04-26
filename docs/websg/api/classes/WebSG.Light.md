@@ -1,4 +1,4 @@
-[Exports](../modules.md) / [WebSG](../modules/websg) / Light
+[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / Light
 
 # Class: Light
 
@@ -30,13 +30,13 @@ Creates a new Light instance.
 
 #### Parameters
 
-| Name    | Type                                              | Description                              |
-| :------ | :------------------------------------------------ | :--------------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `props` | [`LightProps`](../interfaces/WebSG.LightProps.md) | The properties to create the light with. |
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:237](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L237)
+[packages/websg-types/types/websg.d.ts:237](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L237)
 
 ## Properties
 
@@ -46,7 +46,7 @@ Creates a new Light instance.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:225](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L225)
+[src/engine/scripting/websg-api.d.ts:225](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L225)
 
 ## Accessors
 
@@ -71,4 +71,4 @@ console.log(light.color); // RGB { r: 1, g: 0, b: 0 }
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:272](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L272)
+[packages/websg-types/types/websg.d.ts:272](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L272)

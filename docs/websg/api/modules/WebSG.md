@@ -1,6 +1,12 @@
-[Exports](../modules.md) / WebSG
+[websg-types](../README.md) / [Exports](../modules.md) / WebSG
 
 # Namespace: WebSG
+
+WebSG Documentation
+
+**`See`**
+
+[Documentation](https://github.com/matrix-org/thirdroom/tree/main/docs)
 
 ## Table of contents
 
@@ -95,17 +101,17 @@
 
 ### AlphaMode
 
-Ƭ **AlphaMode**: `"OPAQUE"` \| `"BLEND"` \| `"MASK"`
+Ƭ **AlphaMode**: ``"OPAQUE"`` \| ``"BLEND"`` \| ``"MASK"``
 
 AlphaMode is a union type representing the available alpha modes.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:279](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L279)
+[packages/websg-types/types/websg.d.ts:279](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L279)
 
-[packages/websg-types/types/websg.d.ts:285](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L285)
+[packages/websg-types/types/websg.d.ts:285](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L285)
 
----
+___
 
 ### InteractableProps
 
@@ -113,9 +119,9 @@ AlphaMode is a union type representing the available alpha modes.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:146](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L146)
+[packages/websg-types/types/websg.d.ts:146](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L146)
 
----
+___
 
 ### LightType
 
@@ -125,15 +131,15 @@ LightType is an object containing the string constants for the available types o
 
 #### Type declaration
 
-| Name          | Type            |
-| :------------ | :-------------- |
-| `Directional` | `"directional"` |
-| `Point`       | `"point"`       |
-| `Spot`        | `"spot"`        |
+| Name | Type |
+| :------ | :------ |
+| `Directional` | ``"directional"`` |
+| `Point` | ``"point"`` |
+| `Spot` | ``"spot"`` |
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:202](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L202)
+[packages/websg-types/types/websg.d.ts:202](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L202)
 
 ## Variables
 
@@ -149,19 +155,19 @@ AlphaMode
 
 #### Type declaration
 
-| Name     | Type       |
-| :------- | :--------- |
-| `BLEND`  | `"BLEND"`  |
-| `MASK`   | `"MASK"`   |
-| `OPAQUE` | `"OPAQUE"` |
+| Name | Type |
+| :------ | :------ |
+| `BLEND` | ``"BLEND"`` |
+| `MASK` | ``"MASK"`` |
+| `OPAQUE` | ``"OPAQUE"`` |
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:279](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L279)
+[packages/websg-types/types/websg.d.ts:279](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L279)
 
-[packages/websg-types/types/websg.d.ts:285](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L285)
+[packages/websg-types/types/websg.d.ts:285](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L285)
 
----
+___
 
 ### ColliderType
 
@@ -169,15 +175,15 @@ AlphaMode
 
 #### Type declaration
 
-| Name  | Type    |
-| :---- | :------ |
-| `Box` | `"box"` |
+| Name | Type |
+| :------ | :------ |
+| `Box` | ``"box"`` |
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:499](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L499)
+[src/engine/scripting/websg-api.d.ts:499](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L499)
 
----
+___
 
 ### PhysicsBodyType
 
@@ -185,10 +191,10 @@ AlphaMode
 
 #### Type declaration
 
-| Name        | Type          |
-| :---------- | :------------ |
-| `Kinematic` | `"kinematic"` |
+| Name | Type |
+| :------ | :------ |
+| `Kinematic` | ``"kinematic"`` |
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:503](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L503)
+[src/engine/scripting/websg-api.d.ts:503](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L503)

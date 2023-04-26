@@ -1,4 +1,4 @@
-[Exports](../modules.md) / [WebSG](../modules/websg) / OutboundMatrixEvent
+[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / OutboundMatrixEvent
 
 # Interface: OutboundMatrixEvent
 

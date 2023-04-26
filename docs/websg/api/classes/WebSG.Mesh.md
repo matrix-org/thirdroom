@@ -1,4 +1,4 @@
-[Exports](../modules.md) / [WebSG](../modules/websg) / Mesh
+[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / Mesh
 
 # Class: Mesh
 
@@ -32,4 +32,4 @@ An array of MeshPrimitive instances that define the geometry of the mesh.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:573](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L573)
+[packages/websg-types/types/websg.d.ts:573](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L573)

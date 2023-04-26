@@ -34,7 +34,7 @@ Enables or disables the use of Matrix materials.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2104](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L2104)
+[packages/websg-types/types/websg.d.ts:2104](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L2104)
 
 ___
 
@@ -52,7 +52,7 @@ Gets the size of the audio data buffer.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2110](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L2110)
+[packages/websg-types/types/websg.d.ts:2110](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L2110)
 
 ___
 
@@ -76,7 +76,7 @@ Gets the audio frequency data and fills the provided Float32Array.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2124](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L2124)
+[packages/websg-types/types/websg.d.ts:2124](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L2124)
 
 ___
 
@@ -100,7 +100,7 @@ Gets the audio time data and fills the provided Float32Array.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2117](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L2117)
+[packages/websg-types/types/websg.d.ts:2117](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L2117)
 
 ___
 
@@ -118,4 +118,4 @@ Determines if the app is running in an Augmented Reality (AR) environment.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2130](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L2130)
+[packages/websg-types/types/websg.d.ts:2130](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L2130)

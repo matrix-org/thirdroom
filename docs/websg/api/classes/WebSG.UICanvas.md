@@ -1,4 +1,4 @@
-[Exports](../modules.md) / [WebSG](../modules/websg) / UICanvas
+[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / UICanvas
 
 # Class: UICanvas
 
@@ -58,9 +58,9 @@ Gets the canvas size as a Vector2 in meters.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:418](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L418)
+[src/engine/scripting/websg-api.d.ts:418](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L418)
 
-[packages/websg-types/types/websg.d.ts:1175](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1175)
+[packages/websg-types/types/websg.d.ts:1175](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1175)
 
 ## Accessors
 
@@ -80,9 +80,9 @@ UICanvasProps.height
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1156](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1156)
+[packages/websg-types/types/websg.d.ts:1156](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1156)
 
----
+___
 
 ### root
 
@@ -100,9 +100,9 @@ UICanvasProps.root
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1130](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1130)
+[packages/websg-types/types/websg.d.ts:1130](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1130)
 
----
+___
 
 ### width
 
@@ -120,7 +120,7 @@ UICanvasProps.width
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1143](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1143)
+[packages/websg-types/types/websg.d.ts:1143](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1143)
 
 ## Methods
 
@@ -140,4 +140,4 @@ Redraws the canvas.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1168](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1168)
+[packages/websg-types/types/websg.d.ts:1168](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1168)

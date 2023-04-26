@@ -642,7 +642,7 @@ Logs the provided data to the browser's console.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2215](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L2215)
+[packages/websg-types/types/websg.d.ts:2215](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L2215)
 
 ▸ **log**(`message?`, `...optionalParams`): `void`
 

@@ -1,4 +1,4 @@
-[Exports](../modules.md) / [WebSG](../modules/websg) / Matrix
+[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / Matrix
 
 # Interface: Matrix
 
@@ -24,9 +24,9 @@
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:534](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L534)
+[src/engine/scripting/websg-api.d.ts:534](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L534)
 
----
+___
 
 ### receive
 
@@ -38,9 +38,9 @@
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:537](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L537)
+[src/engine/scripting/websg-api.d.ts:537](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L537)
 
----
+___
 
 ### send
 
@@ -48,8 +48,8 @@
 
 #### Parameters
 
-| Name    | Type                                                  |
-| :------ | :---------------------------------------------------- |
+| Name | Type |
+| :------ | :------ |
 | `event` | [`OutboundMatrixEvent`](WebSG.OutboundMatrixEvent.md) |
 
 #### Returns
@@ -58,4 +58,4 @@
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:536](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L536)
+[src/engine/scripting/websg-api.d.ts:536](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L536)

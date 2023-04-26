@@ -1,4 +1,4 @@
-[Exports](../modules.md) / [WebSG](../modules/websg) / ExtensionItem
+[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / ExtensionItem
 
 # Interface: ExtensionItem<T\>
 
@@ -7,8 +7,8 @@
 ## Type parameters
 
 | Name |
-| :--- |
-| `T`  |
+| :------ |
+| `T` |
 
 ## Table of contents
 
@@ -25,9 +25,9 @@
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:144](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L144)
+[src/engine/scripting/websg-api.d.ts:144](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L144)
 
----
+___
 
 ### name
 
@@ -35,4 +35,4 @@
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:143](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L143)
+[src/engine/scripting/websg-api.d.ts:143](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L143)

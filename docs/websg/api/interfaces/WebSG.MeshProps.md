@@ -1,4 +1,4 @@
-[Exports](../modules.md) / [WebSG](../modules/websg) / MeshProps
+[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / MeshProps
 
 # Interface: MeshProps
 
@@ -22,11 +22,11 @@ MeshProps is an interface for defining properties of a mesh.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:283](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L283)
+[src/engine/scripting/websg-api.d.ts:283](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L283)
 
-[packages/websg-types/types/websg.d.ts:552](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L552)
+[packages/websg-types/types/websg.d.ts:552](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L552)
 
----
+___
 
 ### primitives
 
@@ -34,11 +34,11 @@ MeshProps is an interface for defining properties of a mesh.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:285](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L285)
+[src/engine/scripting/websg-api.d.ts:285](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L285)
 
-[packages/websg-types/types/websg.d.ts:553](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L553)
+[packages/websg-types/types/websg.d.ts:553](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L553)
 
----
+___
 
 ### weights
 
@@ -46,4 +46,4 @@ MeshProps is an interface for defining properties of a mesh.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:284](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L284)
+[src/engine/scripting/websg-api.d.ts:284](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L284)

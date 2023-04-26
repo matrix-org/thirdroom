@@ -35,7 +35,7 @@ Broadcasts data to all connected clients.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2071](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L2071)
+[packages/websg-types/types/websg.d.ts:2071](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L2071)
 
 ___
 
@@ -51,7 +51,7 @@ Closes the current network connections.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2064](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L2064)
+[packages/websg-types/types/websg.d.ts:2064](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L2064)
 
 ___
 
@@ -67,7 +67,7 @@ Starts listening for incoming network connections.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2058](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L2058)
+[packages/websg-types/types/websg.d.ts:2058](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L2058)
 
 ___
 
@@ -86,7 +86,7 @@ If no data is available, returns undefined.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2078](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L2078)
+[packages/websg-types/types/websg.d.ts:2078](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L2078)
 
 ___
 
@@ -111,4 +111,4 @@ Returns the number of bytes received and written to the buffer.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2086](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L2086)
+[packages/websg-types/types/websg.d.ts:2086](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L2086)

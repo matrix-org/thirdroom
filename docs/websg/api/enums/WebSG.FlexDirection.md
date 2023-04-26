@@ -1,4 +1,4 @@
-[Exports](../modules.md) / [WebSG](../modules/websg) / FlexDirection
+[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / FlexDirection
 
 # Enumeration: FlexDirection
 
@@ -9,9 +9,9 @@
 ### Enumeration Members
 
 - [COLUMN](WebSG.FlexDirection.md#column)
-- [COLUMN_REVERSE](WebSG.FlexDirection.md#column_reverse)
+- [COLUMN\_REVERSE](WebSG.FlexDirection.md#column_reverse)
 - [ROW](WebSG.FlexDirection.md#row)
-- [ROW_REVERSE](WebSG.FlexDirection.md#row_reverse)
+- [ROW\_REVERSE](WebSG.FlexDirection.md#row_reverse)
 
 ## Enumeration Members
 
@@ -21,19 +21,19 @@
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:370](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L370)
+[src/engine/scripting/websg-api.d.ts:370](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L370)
 
----
+___
 
-### COLUMN_REVERSE
+### COLUMN\_REVERSE
 
-• **COLUMN_REVERSE** = `number`
+• **COLUMN\_REVERSE** = `number`
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:371](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L371)
+[src/engine/scripting/websg-api.d.ts:371](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L371)
 
----
+___
 
 ### ROW
 
@@ -41,14 +41,14 @@
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:372](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L372)
+[src/engine/scripting/websg-api.d.ts:372](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L372)
 
----
+___
 
-### ROW_REVERSE
+### ROW\_REVERSE
 
-• **ROW_REVERSE** = `number`
+• **ROW\_REVERSE** = `number`
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:373](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L373)
+[src/engine/scripting/websg-api.d.ts:373](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L373)

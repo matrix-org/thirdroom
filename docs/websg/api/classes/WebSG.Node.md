@@ -1,4 +1,4 @@
-[Exports](../modules.md) / [WebSG](../modules/websg) / Node
+[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / Node
 
 # Class: Node
 
@@ -59,8 +59,8 @@ Class representing a node in a scene graph.
 
 ##### Parameters
 
-| Name    | Type                    |
-| :------ | :---------------------- |
+| Name | Type |
+| :------ | :------ |
 | `child` | [`Node`](WebSG.Node.md) |
 
 ##### Returns
@@ -69,9 +69,9 @@ Class representing a node in a scene graph.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:189](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L189)
+[src/engine/scripting/websg-api.d.ts:189](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L189)
 
----
+___
 
 ### addInteractable
 
@@ -87,9 +87,9 @@ Class representing a node in a scene graph.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:197](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L197)
+[src/engine/scripting/websg-api.d.ts:197](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L197)
 
----
+___
 
 ### addPhysicsBody
 
@@ -101,8 +101,8 @@ Class representing a node in a scene graph.
 
 ##### Parameters
 
-| Name      | Type                 |
-| :-------- | :------------------- |
+| Name | Type |
+| :------ | :------ |
 | `options` | `PhysicsBodyOptions` |
 
 ##### Returns
@@ -111,9 +111,9 @@ Class representing a node in a scene graph.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:202](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L202)
+[src/engine/scripting/websg-api.d.ts:202](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L202)
 
----
+___
 
 ### children
 
@@ -129,9 +129,9 @@ Class representing a node in a scene graph.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:192](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L192)
+[src/engine/scripting/websg-api.d.ts:192](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L192)
 
----
+___
 
 ### collider
 
@@ -139,9 +139,9 @@ Class representing a node in a scene graph.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:220](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L220)
+[src/engine/scripting/websg-api.d.ts:220](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L220)
 
----
+___
 
 ### getChild
 
@@ -153,8 +153,8 @@ Class representing a node in a scene graph.
 
 ##### Parameters
 
-| Name    | Type     |
-| :------ | :------- |
+| Name | Type |
+| :------ | :------ |
 | `index` | `number` |
 
 ##### Returns
@@ -163,9 +163,9 @@ Class representing a node in a scene graph.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:191](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L191)
+[src/engine/scripting/websg-api.d.ts:191](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L191)
 
----
+___
 
 ### interactable
 
@@ -173,9 +173,9 @@ Class representing a node in a scene graph.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:196](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L196)
+[src/engine/scripting/websg-api.d.ts:196](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L196)
 
----
+___
 
 ### isStatic
 
@@ -183,9 +183,9 @@ Class representing a node in a scene graph.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:215](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L215)
+[src/engine/scripting/websg-api.d.ts:215](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L215)
 
----
+___
 
 ### light
 
@@ -193,9 +193,9 @@ Class representing a node in a scene graph.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:219](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L219)
+[src/engine/scripting/websg-api.d.ts:219](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L219)
 
----
+___
 
 ### matrix
 
@@ -205,17 +205,17 @@ The node's local transformation matrix as a Matrix4.
 
 #### Type declaration
 
-| Name       | Type                          |
-| :--------- | :---------------------------- |
+| Name | Type |
+| :------ | :------ |
 | `elements` | [`Matrix4`](WebSG.Matrix4.md) |
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:209](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L209)
+[src/engine/scripting/websg-api.d.ts:209](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L209)
 
-[packages/websg-types/types/websg.d.ts:678](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L678)
+[packages/websg-types/types/websg.d.ts:678](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L678)
 
----
+___
 
 ### mesh
 
@@ -223,9 +223,9 @@ The node's local transformation matrix as a Matrix4.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:218](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L218)
+[src/engine/scripting/websg-api.d.ts:218](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L218)
 
----
+___
 
 ### parent
 
@@ -233,9 +233,9 @@ The node's local transformation matrix as a Matrix4.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:193](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L193)
+[src/engine/scripting/websg-api.d.ts:193](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L193)
 
----
+___
 
 ### physicsBody
 
@@ -243,9 +243,9 @@ The node's local transformation matrix as a Matrix4.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:201](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L201)
+[src/engine/scripting/websg-api.d.ts:201](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L201)
 
----
+___
 
 ### removeChild
 
@@ -257,8 +257,8 @@ The node's local transformation matrix as a Matrix4.
 
 ##### Parameters
 
-| Name    | Type                    |
-| :------ | :---------------------- |
+| Name | Type |
+| :------ | :------ |
 | `child` | [`Node`](WebSG.Node.md) |
 
 ##### Returns
@@ -267,9 +267,9 @@ The node's local transformation matrix as a Matrix4.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:190](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L190)
+[src/engine/scripting/websg-api.d.ts:190](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L190)
 
----
+___
 
 ### removeInteractable
 
@@ -285,9 +285,9 @@ The node's local transformation matrix as a Matrix4.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:198](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L198)
+[src/engine/scripting/websg-api.d.ts:198](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L198)
 
----
+___
 
 ### removePhysicsBody
 
@@ -303,9 +303,9 @@ The node's local transformation matrix as a Matrix4.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:203](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L203)
+[src/engine/scripting/websg-api.d.ts:203](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L203)
 
----
+___
 
 ### rotation
 
@@ -315,11 +315,11 @@ The node's rotation as a Quaternion.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:207](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L207)
+[src/engine/scripting/websg-api.d.ts:207](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L207)
 
-[packages/websg-types/types/websg.d.ts:664](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L664)
+[packages/websg-types/types/websg.d.ts:664](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L664)
 
----
+___
 
 ### scale
 
@@ -329,11 +329,11 @@ The node's scale as a Vector3.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:208](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L208)
+[src/engine/scripting/websg-api.d.ts:208](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L208)
 
-[packages/websg-types/types/websg.d.ts:671](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L671)
+[packages/websg-types/types/websg.d.ts:671](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L671)
 
----
+___
 
 ### translation
 
@@ -343,11 +343,11 @@ The node's translation as a Vector3.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:206](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L206)
+[src/engine/scripting/websg-api.d.ts:206](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L206)
 
-[packages/websg-types/types/websg.d.ts:657](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L657)
+[packages/websg-types/types/websg.d.ts:657](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L657)
 
----
+___
 
 ### uiCanvas
 
@@ -355,9 +355,9 @@ The node's translation as a Vector3.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:221](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L221)
+[src/engine/scripting/websg-api.d.ts:221](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L221)
 
----
+___
 
 ### visible
 
@@ -365,9 +365,9 @@ The node's translation as a Vector3.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:216](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L216)
+[src/engine/scripting/websg-api.d.ts:216](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L216)
 
----
+___
 
 ### worldMatrix
 
@@ -377,15 +377,15 @@ The node's world transformation matrix as a ReadonlyMatrix4.
 
 #### Type declaration
 
-| Name       | Type                          |
-| :--------- | :---------------------------- |
+| Name | Type |
+| :------ | :------ |
 | `elements` | [`Matrix4`](WebSG.Matrix4.md) |
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:212](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L212)
+[src/engine/scripting/websg-api.d.ts:212](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L212)
 
-[packages/websg-types/types/websg.d.ts:685](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L685)
+[packages/websg-types/types/websg.d.ts:685](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L685)
 
 ## Methods
 
@@ -397,8 +397,8 @@ Enables orbit camera control mode for this node.
 
 #### Parameters
 
-| Name       | Type                                                  | Description             |
-| :--------- | :---------------------------------------------------- | :---------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `options?` | [`OrbitOptions`](../interfaces/WebSG.OrbitOptions.md) | Optional orbit options. |
 
 #### Returns
@@ -407,4 +407,4 @@ Enables orbit camera control mode for this node.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:808](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L808)
+[packages/websg-types/types/websg.d.ts:808](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L808)

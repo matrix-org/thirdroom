@@ -1,4 +1,4 @@
-[Exports](../modules.md) / [WebSG](../modules/websg) / PhysicsBodyProps
+[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / PhysicsBodyProps
 
 # Interface: PhysicsBodyProps
 
@@ -25,9 +25,9 @@ The angular velocity of the physics body as an array of three numbers [x, y, z].
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:845](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L845)
+[packages/websg-types/types/websg.d.ts:845](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L845)
 
----
+___
 
 ### inertiaTensor
 
@@ -37,9 +37,9 @@ The inertia tensor of the physics body as an array of three numbers [ix, iy, iz]
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:851](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L851)
+[packages/websg-types/types/websg.d.ts:851](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L851)
 
----
+___
 
 ### linearVelocity
 
@@ -49,9 +49,9 @@ The linear velocity of the physics body as an array of three numbers [x, y, z].
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:839](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L839)
+[packages/websg-types/types/websg.d.ts:839](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L839)
 
----
+___
 
 ### type
 
@@ -61,4 +61,4 @@ The type of the physics body.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:833](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L833)
+[packages/websg-types/types/websg.d.ts:833](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L833)

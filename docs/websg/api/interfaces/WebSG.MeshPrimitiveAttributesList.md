@@ -1,4 +1,4 @@
-[Exports](../modules.md) / [WebSG](../modules/websg) / MeshPrimitiveAttributesList
+[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / MeshPrimitiveAttributesList
 
 # Interface: MeshPrimitiveAttributesList
 
@@ -19,9 +19,9 @@
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:256](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L256)
+[src/engine/scripting/websg-api.d.ts:256](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L256)
 
----
+___
 
 ### items
 
@@ -29,4 +29,4 @@
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:255](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L255)
+[src/engine/scripting/websg-api.d.ts:255](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L255)

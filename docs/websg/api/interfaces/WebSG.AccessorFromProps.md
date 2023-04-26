@@ -1,4 +1,4 @@
-[Exports](../modules.md) / [WebSG](../modules/websg) / AccessorFromProps
+[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / AccessorFromProps
 
 # Interface: AccessorFromProps
 
@@ -26,9 +26,9 @@ The data type of individual components in the data.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:54](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L54)
+[packages/websg-types/types/websg.d.ts:54](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L54)
 
----
+___
 
 ### count
 
@@ -38,9 +38,9 @@ The number of elements in the accessor.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:55](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L55)
+[packages/websg-types/types/websg.d.ts:55](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L55)
 
----
+___
 
 ### dynamic
 
@@ -50,9 +50,9 @@ Whether the accessor's data is dynamic and can change over time (default is `fal
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:57](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L57)
+[packages/websg-types/types/websg.d.ts:57](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L57)
 
----
+___
 
 ### max
 
@@ -62,9 +62,9 @@ The maximum values of the accessor's components (optional).
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:59](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L59)
+[packages/websg-types/types/websg.d.ts:59](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L59)
 
----
+___
 
 ### min
 
@@ -74,9 +74,9 @@ The minimum values of the accessor's components (optional).
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:58](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L58)
+[packages/websg-types/types/websg.d.ts:58](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L58)
 
----
+___
 
 ### normalized
 
@@ -86,9 +86,9 @@ Whether the data should be normalized when accessed (default is `false`).
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:56](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L56)
+[packages/websg-types/types/websg.d.ts:56](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L56)
 
----
+___
 
 ### type
 
@@ -98,4 +98,4 @@ The shape of the data the accessor represents.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:53](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L53)
+[packages/websg-types/types/websg.d.ts:53](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L53)

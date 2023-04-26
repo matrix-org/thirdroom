@@ -1,4 +1,4 @@
-[Exports](../modules.md) / [WebSG](../modules/websg) / ColliderProps
+[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / ColliderProps
 
 # Interface: ColliderProps
 
@@ -25,9 +25,9 @@ Physics
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:122](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L122)
+[packages/websg-types/types/websg.d.ts:122](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L122)
 
----
+___
 
 ### isTrigger
 
@@ -35,9 +35,9 @@ Physics
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:119](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L119)
+[packages/websg-types/types/websg.d.ts:119](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L119)
 
----
+___
 
 ### mesh
 
@@ -45,9 +45,9 @@ Physics
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:123](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L123)
+[packages/websg-types/types/websg.d.ts:123](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L123)
 
----
+___
 
 ### radius
 
@@ -55,9 +55,9 @@ Physics
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:121](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L121)
+[packages/websg-types/types/websg.d.ts:121](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L121)
 
----
+___
 
 ### size
 
@@ -65,9 +65,9 @@ Physics
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:120](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L120)
+[packages/websg-types/types/websg.d.ts:120](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L120)
 
----
+___
 
 ### type
 
@@ -75,4 +75,4 @@ Physics
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:118](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L118)
+[packages/websg-types/types/websg.d.ts:118](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L118)

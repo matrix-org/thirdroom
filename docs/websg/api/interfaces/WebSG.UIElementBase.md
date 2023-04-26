@@ -1,4 +1,4 @@
-[Exports](../modules.md) / [WebSG](../modules/websg) / UIElementBase
+[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / UIElementBase
 
 # Interface: UIElementBase
 
@@ -30,8 +30,8 @@
 
 #### Parameters
 
-| Name    | Type                                      |
-| :------ | :---------------------------------------- |
+| Name | Type |
+| :------ | :------ |
 | `child` | [`UIElementBase`](WebSG.UIElementBase.md) |
 
 #### Returns
@@ -40,9 +40,9 @@
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:422](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L422)
+[src/engine/scripting/websg-api.d.ts:422](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L422)
 
----
+___
 
 ### setBorderColor
 
@@ -50,8 +50,8 @@
 
 #### Parameters
 
-| Name    | Type           |
-| :------ | :------------- |
+| Name | Type |
+| :------ | :------ |
 | `color` | `Float32Array` |
 
 #### Returns
@@ -60,9 +60,9 @@
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:424](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L424)
+[src/engine/scripting/websg-api.d.ts:424](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L424)
 
----
+___
 
 ### setColor
 
@@ -70,8 +70,8 @@
 
 #### Parameters
 
-| Name    | Type           |
-| :------ | :------------- |
+| Name | Type |
+| :------ | :------ |
 | `color` | `Float32Array` |
 
 #### Returns
@@ -80,4 +80,4 @@
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:423](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L423)
+[src/engine/scripting/websg-api.d.ts:423](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L423)

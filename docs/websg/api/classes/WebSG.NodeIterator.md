@@ -1,4 +1,4 @@
-[Exports](../modules.md) / [WebSG](../modules/websg) / NodeIterator
+[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / NodeIterator
 
 # Class: NodeIterator
 
@@ -33,9 +33,9 @@
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:578](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L578)
+[packages/websg-types/types/websg.d.ts:578](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L578)
 
----
+___
 
 ### next
 
@@ -45,11 +45,11 @@
 
 `Object`
 
-| Name    | Type                    |
-| :------ | :---------------------- |
-| `done`  | `boolean`               |
+| Name | Type |
+| :------ | :------ |
+| `done` | `boolean` |
 | `value` | [`Node`](WebSG.Node.md) |
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:577](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L577)
+[packages/websg-types/types/websg.d.ts:577](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L577)

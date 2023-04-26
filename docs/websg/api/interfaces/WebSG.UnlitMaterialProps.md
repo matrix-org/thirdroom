@@ -1,11 +1,11 @@
-[Exports](../modules.md) / [WebSG](../modules/websg) / UnlitMaterialProps
+[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / UnlitMaterialProps
 
 # Interface: UnlitMaterialProps
 
 [WebSG](../modules/WebSG.md).UnlitMaterialProps
 
 UnlitMaterialProps is an interface that defines the properties for creating an unlit Material instance.
-UnlitMaterialProps
+ UnlitMaterialProps
 
 ## Table of contents
 
@@ -28,9 +28,9 @@ The optional alpha cutoff value for the material. Default is 0.5.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:302](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L302)
+[packages/websg-types/types/websg.d.ts:302](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L302)
 
----
+___
 
 ### alphaMode
 
@@ -40,9 +40,9 @@ The optional alpha mode for the material. Default is 'OPAQUE'.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:303](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L303)
+[packages/websg-types/types/websg.d.ts:303](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L303)
 
----
+___
 
 ### baseColorFactor
 
@@ -52,9 +52,9 @@ The optional RGBA base color factor.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:299](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L299)
+[packages/websg-types/types/websg.d.ts:299](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L299)
 
----
+___
 
 ### baseColorTexture
 
@@ -64,9 +64,9 @@ The optional base color texture.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:300](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L300)
+[packages/websg-types/types/websg.d.ts:300](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L300)
 
----
+___
 
 ### doubleSided
 
@@ -76,9 +76,9 @@ Whether the material is visible from both sides. Default is false.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:301](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L301)
+[packages/websg-types/types/websg.d.ts:301](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L301)
 
----
+___
 
 ### name
 
@@ -88,4 +88,4 @@ The optional name of the material.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:298](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L298)
+[packages/websg-types/types/websg.d.ts:298](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L298)

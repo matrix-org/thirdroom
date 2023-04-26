@@ -1,4 +1,4 @@
-[Exports](../modules.md) / [WebSG](../modules/websg) / Quaternion
+[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / Quaternion
 
 # Class: Quaternion
 
@@ -44,9 +44,9 @@ The number of components in the quaternion.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:902](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L902)
+[packages/websg-types/types/websg.d.ts:902](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L902)
 
----
+___
 
 ### w
 
@@ -56,9 +56,9 @@ The w-component of the quaternion.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:888](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L888)
+[packages/websg-types/types/websg.d.ts:888](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L888)
 
----
+___
 
 ### x
 
@@ -68,9 +68,9 @@ The x-component of the quaternion.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:870](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L870)
+[packages/websg-types/types/websg.d.ts:870](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L870)
 
----
+___
 
 ### y
 
@@ -80,9 +80,9 @@ The y-component of the quaternion.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:876](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L876)
+[packages/websg-types/types/websg.d.ts:876](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L876)
 
----
+___
 
 ### z
 
@@ -92,7 +92,7 @@ The z-component of the quaternion.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:882](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L882)
+[packages/websg-types/types/websg.d.ts:882](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L882)
 
 ## Methods
 
@@ -104,8 +104,8 @@ Sets the quaternion components to the given values.
 
 #### Parameters
 
-| Name    | Type                   | Description                                                |
-| :------ | :--------------------- | :--------------------------------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `value` | `ArrayLike`<`number`\> | An array-like object containing the quaternion components. |
 
 #### Returns
@@ -114,4 +114,4 @@ Sets the quaternion components to the given values.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:895](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L895)
+[packages/websg-types/types/websg.d.ts:895](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L895)

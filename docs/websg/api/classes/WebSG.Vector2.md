@@ -1,4 +1,4 @@
-[Exports](../modules.md) / [WebSG](../modules/websg) / Vector2
+[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / Vector2
 
 # Class: Vector2
 
@@ -46,9 +46,9 @@ length
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1763](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1763)
+[packages/websg-types/types/websg.d.ts:1763](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1763)
 
----
+___
 
 ### x
 
@@ -56,9 +56,9 @@ length
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1747](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1747)
+[packages/websg-types/types/websg.d.ts:1747](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1747)
 
----
+___
 
 ### y
 
@@ -66,7 +66,7 @@ length
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1748](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1748)
+[packages/websg-types/types/websg.d.ts:1748](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1748)
 
 ## Methods
 
@@ -82,8 +82,8 @@ set
 
 #### Parameters
 
-| Name    | Type                   | Description                                                    |
-| :------ | :--------------------- | :------------------------------------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `value` | `ArrayLike`<`number`\> | An array-like object containing the new values for the vector. |
 
 #### Returns
@@ -92,4 +92,4 @@ set
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1756](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1756)
+[packages/websg-types/types/websg.d.ts:1756](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1756)

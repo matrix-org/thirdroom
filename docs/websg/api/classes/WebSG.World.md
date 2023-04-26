@@ -1,4 +1,4 @@
-[Exports](../modules.md) / [WebSG](../modules/websg) / World
+[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / World
 
 # Class: World
 
@@ -15,6 +15,9 @@ Class representing a 3D world.
 ### Properties
 
 - [environment](WebSG.World.md#environment)
+- [onenter](WebSG.World.md#onenter)
+- [onload](WebSG.World.md#onload)
+- [onupdate](WebSG.World.md#onupdate)
 
 ### Methods
 
@@ -57,7 +60,63 @@ Class representing a 3D world.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:37](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L37)
+[src/engine/scripting/websg-api.d.ts:37](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L37)
+
+___
+
+### onenter
+
+• **onenter**: ``null`` \| () => `any`
+
+Called when the user enters the world.
+
+**`Method`**
+
+onenter
+
+#### Defined in
+
+[packages/websg-types/types/websg.d.ts:2031](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L2031)
+
+___
+
+### onload
+
+• **onload**: ``null`` \| () => `any`
+
+Called when the world is loaded.
+
+**`Method`**
+
+onload
+
+#### Defined in
+
+[packages/websg-types/types/websg.d.ts:2025](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L2025)
+
+___
+
+### onupdate
+
+• **onupdate**: ``null`` \| (`dt`: `number`, `time`: `number`) => `any`
+
+Called when the world is updated.
+
+**`Method`**
+
+onupdate
+
+**`Param`**
+
+The time since the last update in seconds.
+
+**`Param`**
+
+The total time since the start of the world in seconds.
+
+#### Defined in
+
+[packages/websg-types/types/websg.d.ts:2039](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L2039)
 
 ## Methods
 
@@ -69,10 +128,10 @@ Creates a new accessor from the given buffer and properties.
 
 #### Parameters
 
-| Name     | Type            | Description                                             |
-| :------- | :-------------- | :------------------------------------------------------ |
-| `buffer` | `ArrayBuffer`   | The buffer to create the accessor from.                 |
-| `props`  | `AccessorProps` | An object containing properties to set on the accessor. |
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `buffer` | `ArrayBuffer` | The buffer to create the accessor from. |
+| `props` | `AccessorProps` | An object containing properties to set on the accessor. |
 
 #### Returns
 
@@ -82,7 +141,7 @@ The newly created accessor.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:126](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L126)
+[src/engine/scripting/websg-api.d.ts:126](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L126)
 
 ▸ **createAccessorFrom**(`buffer`, `props`): [`Accessor`](WebSG.Accessor.md)
 
@@ -90,10 +149,10 @@ Creates an Accessor from the given ArrayBuffer and properties.
 
 #### Parameters
 
-| Name     | Type                                                            | Description                                  |
-| :------- | :-------------------------------------------------------------- | :------------------------------------------- |
-| `buffer` | `ArrayBuffer`                                                   | The ArrayBuffer to create the Accessor from. |
-| `props`  | [`AccessorFromProps`](../interfaces/WebSG.AccessorFromProps.md) | The properties for the new Accessor.         |
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `buffer` | `ArrayBuffer` | The ArrayBuffer to create the Accessor from. |
+| `props` | [`AccessorFromProps`](../interfaces/WebSG.AccessorFromProps.md) | The properties for the new Accessor. |
 
 #### Returns
 
@@ -103,9 +162,9 @@ The created Accessor.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1845](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1845)
+[packages/websg-types/types/websg.d.ts:1845](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1845)
 
----
+___
 
 ### createBoxMesh
 
@@ -115,8 +174,8 @@ Creates a new box mesh with the given properties.
 
 #### Parameters
 
-| Name     | Type                                                  | Description                                                      |
-| :------- | :---------------------------------------------------- | :--------------------------------------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `props?` | [`BoxMeshProps`](../interfaces/WebSG.BoxMeshProps.md) | An optional object containing properties to set on the box mesh. |
 
 #### Returns
@@ -127,7 +186,7 @@ The newly created box mesh.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:77](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L77)
+[src/engine/scripting/websg-api.d.ts:77](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L77)
 
 ▸ **createBoxMesh**(`props`): [`Mesh`](WebSG.Mesh.md)
 
@@ -135,8 +194,8 @@ Creates a Box Mesh with the given properties.
 
 #### Parameters
 
-| Name    | Type                                                  | Description                          |
-| :------ | :---------------------------------------------------- | :----------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `props` | [`BoxMeshProps`](../interfaces/WebSG.BoxMeshProps.md) | The properties for the new Box Mesh. |
 
 #### Returns
@@ -147,9 +206,9 @@ The created Box Mesh.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1915](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1915)
+[packages/websg-types/types/websg.d.ts:1915](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1915)
 
----
+___
 
 ### createCollider
 
@@ -159,8 +218,8 @@ Creates a new collider with the given properties.
 
 #### Parameters
 
-| Name    | Type                                                    | Description                                             |
-| :------ | :------------------------------------------------------ | :------------------------------------------------------ |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `props` | [`ColliderProps`](../interfaces/WebSG.ColliderProps.md) | An object containing properties to set on the collider. |
 
 #### Returns
@@ -171,7 +230,7 @@ The newly created collider.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:85](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L85)
+[src/engine/scripting/websg-api.d.ts:85](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L85)
 
 ▸ **createCollider**(`props`): [`Collider`](WebSG.Collider.md)
 
@@ -179,8 +238,8 @@ Creates a Collider with the given properties.
 
 #### Parameters
 
-| Name    | Type                                                    | Description                          |
-| :------ | :------------------------------------------------------ | :----------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `props` | [`ColliderProps`](../interfaces/WebSG.ColliderProps.md) | The properties for the new Collider. |
 
 #### Returns
@@ -191,9 +250,9 @@ The created Collider.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1859](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1859)
+[packages/websg-types/types/websg.d.ts:1859](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1859)
 
----
+___
 
 ### createLight
 
@@ -203,8 +262,8 @@ Creates a Light with the given properties.
 
 #### Parameters
 
-| Name    | Type                                              | Description                       |
-| :------ | :------------------------------------------------ | :-------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `props` | [`LightProps`](../interfaces/WebSG.LightProps.md) | The properties for the new Light. |
 
 #### Returns
@@ -215,9 +274,9 @@ The created Light.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1873](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1873)
+[packages/websg-types/types/websg.d.ts:1873](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1873)
 
----
+___
 
 ### createMaterial
 
@@ -227,8 +286,8 @@ Creates a Material with the given properties.
 
 #### Parameters
 
-| Name    | Type                                                    | Description                          |
-| :------ | :------------------------------------------------------ | :----------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `props` | [`MaterialProps`](../interfaces/WebSG.MaterialProps.md) | The properties for the new Material. |
 
 #### Returns
@@ -239,9 +298,9 @@ The created Material.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1894](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1894)
+[packages/websg-types/types/websg.d.ts:1894](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1894)
 
----
+___
 
 ### createMesh
 
@@ -251,8 +310,8 @@ Creates a new mesh with the given primitive(s).
 
 #### Parameters
 
-| Name         | Type                                                                | Description                                               |
-| :----------- | :------------------------------------------------------------------ | :-------------------------------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `primitives` | [`MeshPrimitiveProps`](../interfaces/WebSG.MeshPrimitiveProps.md)[] | An array of mesh primitive properties to set on the mesh. |
 
 #### Returns
@@ -263,7 +322,7 @@ The newly created mesh.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:134](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L134)
+[src/engine/scripting/websg-api.d.ts:134](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L134)
 
 ▸ **createMesh**(`props`): [`Mesh`](WebSG.Mesh.md)
 
@@ -271,8 +330,8 @@ Creates a Mesh with the given properties.
 
 #### Parameters
 
-| Name    | Type                                            | Description                      |
-| :------ | :---------------------------------------------- | :------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `props` | [`MeshProps`](../interfaces/WebSG.MeshProps.md) | The properties for the new Mesh. |
 
 #### Returns
@@ -283,9 +342,9 @@ The created Mesh.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1908](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1908)
+[packages/websg-types/types/websg.d.ts:1908](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1908)
 
----
+___
 
 ### createNode
 
@@ -295,8 +354,8 @@ Creates a new node with the given properties.
 
 #### Parameters
 
-| Name     | Type                                            | Description                                                  |
-| :------- | :---------------------------------------------- | :----------------------------------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `props?` | [`NodeProps`](../interfaces/WebSG.NodeProps.md) | An optional object containing properties to set on the node. |
 
 #### Returns
@@ -307,7 +366,7 @@ The newly created node.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:69](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L69)
+[src/engine/scripting/websg-api.d.ts:69](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L69)
 
 ▸ **createNode**(`props?`): [`Node`](WebSG.Node.md)
 
@@ -319,8 +378,8 @@ createNode
 
 #### Parameters
 
-| Name     | Type                                            | Description                                  |
-| :------- | :---------------------------------------------- | :------------------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `props?` | [`NodeProps`](../interfaces/WebSG.NodeProps.md) | Optional properties to set for the new node. |
 
 #### Returns
@@ -331,9 +390,9 @@ createNode
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1931](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1931)
+[packages/websg-types/types/websg.d.ts:1931](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1931)
 
----
+___
 
 ### createScene
 
@@ -347,8 +406,8 @@ createScene
 
 #### Parameters
 
-| Name     | Type                                              | Description                                   |
-| :------- | :------------------------------------------------ | :-------------------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `props?` | [`SceneProps`](../interfaces/WebSG.SceneProps.md) | Optional properties to set for the new scene. |
 
 #### Returns
@@ -359,9 +418,9 @@ createScene
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1947](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1947)
+[packages/websg-types/types/websg.d.ts:1947](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1947)
 
----
+___
 
 ### createUIButton
 
@@ -371,8 +430,8 @@ Creates a new UI button element with the given properties.
 
 #### Parameters
 
-| Name    | Type                                                    | Description                                                      |
-| :------ | :------------------------------------------------------ | :--------------------------------------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `props` | [`UIButtonProps`](../interfaces/WebSG.UIButtonProps.md) | An object containing properties to set on the UI button element. |
 
 #### Returns
@@ -383,7 +442,7 @@ The newly created UI button element.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:117](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L117)
+[src/engine/scripting/websg-api.d.ts:117](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L117)
 
 ▸ **createUIButton**(`props?`): [`UIButton`](WebSG.UIButton.md)
 
@@ -399,8 +458,8 @@ createUIButton
 
 #### Parameters
 
-| Name     | Type                                                    | Description                                      |
-| :------- | :------------------------------------------------------ | :----------------------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `props?` | [`UIButtonProps`](../interfaces/WebSG.UIButtonProps.md) | Optional properties to set for the new UIButton. |
 
 #### Returns
@@ -411,9 +470,9 @@ createUIButton
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2004](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L2004)
+[packages/websg-types/types/websg.d.ts:2004](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L2004)
 
----
+___
 
 ### createUICanvas
 
@@ -423,8 +482,8 @@ Creates a new UI canvas with the given properties.
 
 #### Parameters
 
-| Name    | Type                                                    | Description                                              |
-| :------ | :------------------------------------------------------ | :------------------------------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `props` | [`UICanvasProps`](../interfaces/WebSG.UICanvasProps.md) | An object containing properties to set on the UI canvas. |
 
 #### Returns
@@ -435,7 +494,7 @@ The newly created UI canvas.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:93](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L93)
+[src/engine/scripting/websg-api.d.ts:93](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L93)
 
 ▸ **createUICanvas**(`props?`): [`UICanvas`](WebSG.UICanvas.md)
 
@@ -447,8 +506,8 @@ createUICanvas
 
 #### Parameters
 
-| Name     | Type                                                    | Description                                      |
-| :------- | :------------------------------------------------------ | :----------------------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `props?` | [`UICanvasProps`](../interfaces/WebSG.UICanvasProps.md) | Optional properties to set for the new UICanvas. |
 
 #### Returns
@@ -459,9 +518,9 @@ createUICanvas
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1971](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1971)
+[packages/websg-types/types/websg.d.ts:1971](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1971)
 
----
+___
 
 ### createUIElement
 
@@ -471,8 +530,8 @@ Creates a new UI element with the given properties.
 
 #### Parameters
 
-| Name    | Type                                                      | Description                                               |
-| :------ | :-------------------------------------------------------- | :-------------------------------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `props` | [`UIElementProps`](../interfaces/WebSG.UIElementProps.md) | An object containing properties to set on the UI element. |
 
 #### Returns
@@ -483,7 +542,7 @@ The newly created UI element.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:101](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L101)
+[src/engine/scripting/websg-api.d.ts:101](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L101)
 
 ▸ **createUIElement**(`props?`): [`UIElement`](WebSG.UIElement.md)
 
@@ -495,8 +554,8 @@ createUIElement
 
 #### Parameters
 
-| Name     | Type                                                      | Description                                       |
-| :------- | :-------------------------------------------------------- | :------------------------------------------------ |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `props?` | [`UIElementProps`](../interfaces/WebSG.UIElementProps.md) | Optional properties to set for the new UIElement. |
 
 #### Returns
@@ -507,9 +566,9 @@ createUIElement
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1987](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1987)
+[packages/websg-types/types/websg.d.ts:1987](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1987)
 
----
+___
 
 ### createUIText
 
@@ -519,8 +578,8 @@ Creates a new UI text element with the given properties.
 
 #### Parameters
 
-| Name    | Type                                                | Description                                                    |
-| :------ | :-------------------------------------------------- | :------------------------------------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `props` | [`UITextProps`](../interfaces/WebSG.UITextProps.md) | An object containing properties to set on the UI text element. |
 
 #### Returns
@@ -531,7 +590,7 @@ The newly created UI text element.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:109](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L109)
+[src/engine/scripting/websg-api.d.ts:109](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L109)
 
 ▸ **createUIText**(`props?`): [`UIText`](WebSG.UIText.md)
 
@@ -543,8 +602,8 @@ createUIText
 
 #### Parameters
 
-| Name     | Type                                                | Description                                    |
-| :------- | :-------------------------------------------------- | :--------------------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `props?` | [`UITextProps`](../interfaces/WebSG.UITextProps.md) | Optional properties to set for the new UIText. |
 
 #### Returns
@@ -555,9 +614,9 @@ createUIText
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1995](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1995)
+[packages/websg-types/types/websg.d.ts:1995](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1995)
 
----
+___
 
 ### createUnlitMaterial
 
@@ -567,8 +626,8 @@ Creates an unlit Material with the given properties.
 
 #### Parameters
 
-| Name    | Type                                                              | Description                                |
-| :------ | :---------------------------------------------------------------- | :----------------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `props` | [`UnlitMaterialProps`](../interfaces/WebSG.UnlitMaterialProps.md) | The properties for the new unlit Material. |
 
 #### Returns
@@ -579,9 +638,9 @@ The created unlit Material.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1887](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1887)
+[packages/websg-types/types/websg.d.ts:1887](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1887)
 
----
+___
 
 ### findAccessorByName
 
@@ -591,8 +650,8 @@ Finds an Accessor by its name.
 
 #### Parameters
 
-| Name   | Type     | Description                       |
-| :----- | :------- | :-------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `name` | `string` | The name of the Accessor to find. |
 
 #### Returns
@@ -603,9 +662,9 @@ The found Accessor or undefined if not found.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1852](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1852)
+[packages/websg-types/types/websg.d.ts:1852](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1852)
 
----
+___
 
 ### findColliderByName
 
@@ -615,8 +674,8 @@ Finds a Collider by its name.
 
 #### Parameters
 
-| Name   | Type     | Description                       |
-| :----- | :------- | :-------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `name` | `string` | The name of the Collider to find. |
 
 #### Returns
@@ -627,9 +686,9 @@ The found Collider or undefined if not found.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1866](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1866)
+[packages/websg-types/types/websg.d.ts:1866](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1866)
 
----
+___
 
 ### findLightByName
 
@@ -639,8 +698,8 @@ Finds a Light by its name.
 
 #### Parameters
 
-| Name   | Type     | Description                    |
-| :----- | :------- | :----------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `name` | `string` | The name of the Light to find. |
 
 #### Returns
@@ -651,9 +710,9 @@ The found Light or undefined if not found.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1880](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1880)
+[packages/websg-types/types/websg.d.ts:1880](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1880)
 
----
+___
 
 ### findMaterialByName
 
@@ -663,8 +722,8 @@ Searches for a material by name and returns it if found, or undefined if not fou
 
 #### Parameters
 
-| Name   | Type     | Description                             |
-| :----- | :------- | :-------------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `name` | `string` | The name of the material to search for. |
 
 #### Returns
@@ -675,7 +734,7 @@ The found material or undefined if not found.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:61](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L61)
+[src/engine/scripting/websg-api.d.ts:61](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L61)
 
 ▸ **findMaterialByName**(`name`): `undefined` \| [`Material`](WebSG.Material.md)
 
@@ -683,8 +742,8 @@ Finds a Material by its name.
 
 #### Parameters
 
-| Name   | Type     | Description                       |
-| :----- | :------- | :-------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `name` | `string` | The name of the Material to find. |
 
 #### Returns
@@ -695,9 +754,9 @@ The found Material or undefined if not found.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1901](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1901)
+[packages/websg-types/types/websg.d.ts:1901](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1901)
 
----
+___
 
 ### findMeshByName
 
@@ -707,8 +766,8 @@ Searches for a mesh by name and returns it if found, or undefined if not found.
 
 #### Parameters
 
-| Name   | Type     | Description                         |
-| :----- | :------- | :---------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `name` | `string` | The name of the mesh to search for. |
 
 #### Returns
@@ -719,7 +778,7 @@ The found mesh or undefined if not found.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:53](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L53)
+[src/engine/scripting/websg-api.d.ts:53](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L53)
 
 ▸ **findMeshByName**(`name`): `undefined` \| [`Mesh`](WebSG.Mesh.md)
 
@@ -731,8 +790,8 @@ findMeshByName
 
 #### Parameters
 
-| Name   | Type     | Description                   |
-| :----- | :------- | :---------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `name` | `string` | The name of the mesh to find. |
 
 #### Returns
@@ -743,9 +802,9 @@ findMeshByName
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1923](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1923)
+[packages/websg-types/types/websg.d.ts:1923](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1923)
 
----
+___
 
 ### findNodeByName
 
@@ -755,8 +814,8 @@ Searches for a node by name and returns it if found, or undefined if not found.
 
 #### Parameters
 
-| Name   | Type     | Description                         |
-| :----- | :------- | :---------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `name` | `string` | The name of the node to search for. |
 
 #### Returns
@@ -767,7 +826,7 @@ The found node or undefined if not found.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:45](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L45)
+[src/engine/scripting/websg-api.d.ts:45](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L45)
 
 ▸ **findNodeByName**(`name`): `undefined` \| [`Node`](WebSG.Node.md)
 
@@ -779,8 +838,8 @@ findNodeByName
 
 #### Parameters
 
-| Name   | Type     | Description                   |
-| :----- | :------- | :---------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `name` | `string` | The name of the node to find. |
 
 #### Returns
@@ -791,9 +850,9 @@ findNodeByName
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1939](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1939)
+[packages/websg-types/types/websg.d.ts:1939](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1939)
 
----
+___
 
 ### findSceneByName
 
@@ -807,8 +866,8 @@ findSceneByName
 
 #### Parameters
 
-| Name   | Type     | Description                    |
-| :----- | :------- | :----------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `name` | `string` | The name of the scene to find. |
 
 #### Returns
@@ -819,9 +878,9 @@ findSceneByName
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1955](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1955)
+[packages/websg-types/types/websg.d.ts:1955](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1955)
 
----
+___
 
 ### findTextureByName
 
@@ -835,8 +894,8 @@ findTextureByName
 
 #### Parameters
 
-| Name   | Type     | Description                      |
-| :----- | :------- | :------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `name` | `string` | The name of the texture to find. |
 
 #### Returns
@@ -847,9 +906,9 @@ findTextureByName
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1963](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1963)
+[packages/websg-types/types/websg.d.ts:1963](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1963)
 
----
+___
 
 ### findUICanvasByName
 
@@ -863,8 +922,8 @@ findUICanvasByName
 
 #### Parameters
 
-| Name   | Type     | Description                       |
-| :----- | :------- | :-------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `name` | `string` | The name of the UICanvas to find. |
 
 #### Returns
@@ -875,9 +934,9 @@ findUICanvasByName
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1979](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L1979)
+[packages/websg-types/types/websg.d.ts:1979](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1979)
 
----
+___
 
 ### findUIElementByName
 
@@ -891,8 +950,8 @@ findUIElementByName
 
 #### Parameters
 
-| Name   | Type     | Description                        |
-| :----- | :------- | :--------------------------------- |
+| Name | Type | Description |
+| :------ | :------ | :------ |
 | `name` | `string` | The name of the UIElement to find. |
 
 #### Returns
@@ -903,9 +962,9 @@ findUIElementByName
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2012](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L2012)
+[packages/websg-types/types/websg.d.ts:2012](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L2012)
 
----
+___
 
 ### stopOrbit
 
@@ -919,7 +978,7 @@ Stops orbiting
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:139](https://github.com/matrix-org/thirdroom/blob/1005fb3d/src/engine/scripting/websg-api.d.ts#L139)
+[src/engine/scripting/websg-api.d.ts:139](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L139)
 
 ▸ **stopOrbit**(): `undefined`
 
@@ -935,4 +994,4 @@ stopOrbit
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2019](https://github.com/matrix-org/thirdroom/blob/1005fb3d/packages/websg-types/types/websg.d.ts#L2019)
+[packages/websg-types/types/websg.d.ts:2019](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L2019)
