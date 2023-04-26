@@ -25,6 +25,7 @@ import websgTypes from "../../../../../packages/websg-types/types/websg.d.ts?raw
 import { DnDItemTypes, NodeDragItem } from "./HierarchyPanel";
 import { MainThreadResource, getLocalResource } from "../../../../engine/resource/resource.main";
 import { useMainThreadContext } from "../../../hooks/useMainThread";
+import { camelizeVariableName } from "../../../utils/common";
 
 const MONACO_THEME_KEY = "monaco_theme";
 
@@ -105,7 +106,7 @@ export function ScriptEditor({ room }: { room: Room }) {
         if (!line) return;
         const range = new monaco.Range(line.lineNumber, line.column, line.lineNumber, line.column);
         const id = { major: 1, minor: 1 };
-        const text = `const node${activeNodeId} = world.findNodeByName("${resource.name}");\n`;
+        const text = `const ${camelizeVariableName(resource.name)} = world.findNodeByName("${resource.name}");\n`;
         const edit = {
           identifier: id,
           range,
