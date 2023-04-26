@@ -37,11 +37,8 @@ One important concept to understand in WebSG is that objects cannot be created, 
 :::
 
 ```typescript
-let node;
-
 world.onload = () => {
-  // Perform actions when the world is loaded
-  node = world.findNodeByName("myNode");
+  const node = world.findNodeByName("myNode");
 };
 ```
 
@@ -49,7 +46,6 @@ The `world.onenter` event handler is called when the user enters the world.
 
 ```typescript
 world.onenter = () => {
-  // Perform actions when the user enters the world
   node.translation.y = 1;
 };
 ```
@@ -58,10 +54,6 @@ The `world.onupdate` event handler is called when the world is updated. It recei
 
 ```typescript
 world.onupdate = (dt: number, time: number) => {
-  // Perform actions on each world update
-  // dt: time since the last update in seconds
-  // time: total time since the start of the world in seconds
-
   node.translation.x += Math.sin(time) * 1 + 2;
 };
 ```
@@ -109,7 +101,7 @@ const node = world.createNode({
 
 ### Adding Interactable to a Node
 
-To make a node interactable, use the `addInteractable` method of the `Node` class.
+To make a node interactable, use the `addInteractable` method of the `Node` object.
 
 ```typescript
 const node = world.createNode({ name: "MyInteractableNode" });
@@ -130,7 +122,7 @@ if (node.interactable.released) {
 }
 ```
 
-To remove the interactable feature from a node, call the `removeInteractable` method of the `Node` class:
+To remove the interactable feature from a node, call the `removeInteractable` method of the `Node` object:
 
 ```typescript
 node.removeInteractable();
@@ -186,6 +178,7 @@ const canvas = world.createUICanvas({
   width: 800,
   height: 600,
   size: [8, 6],
+  root: world.createUIElement({ width: 800, height: 600 }),
 });
 
 const text = world.createUIText({
@@ -207,6 +200,7 @@ const canvas = world.createUICanvas({
   width: 800,
   height: 600,
   size: [8, 6],
+  root: world.createUIElement({ width: 800, height: 600 }),
 });
 
 const button = world.createUIButton({
@@ -241,7 +235,7 @@ WebSG provides functionality to create physics-based interactions in your 3D wor
 
 ### Creating a Physics Body
 
-To create a physics body, use the `addPhysicsBody` method of the `Node` class and provide a `PhysicsBodyProps` object.
+To create a physics body, use the `addPhysicsBody` method of the `Node` object and provide a `PhysicsBodyProps` object.
 
 ```typescript
 const boxMesh = world.createBoxMesh({ size: [1, 1, 1] });
@@ -254,9 +248,11 @@ boxNode.addPhysicsBody({
 });
 ```
 
+However, physics bodies won't be able to interact with anything without also attaching a collider to the node.
+
 ### Creating a Collider
 
-Create a collider using the `createCollider` method of the `World` class and provide a `ColliderProps` object. Assign the collider to the node by setting the node's `collider` property.
+Create a collider using the `createCollider` method of the `World` object and provide a `ColliderProps` object. Assign the collider to the node by setting the node's `collider` property.
 
 ```typescript
 const boxCollider = world.createCollider({
@@ -293,6 +289,6 @@ boxNode.translation.set([1, 1, 1]);
 You can remove a physics body or collider from a node by calling the `removePhysicsBody` method on a node with a physics body, or by setting the `collider` property of a node to `undefined`.
 
 ```typescript
-boxNode.removePhysicsBody(); // Remove the physics body
-boxNode.collider = undefined; // Remove the collider
+boxNode.removePhysicsBody();
+boxNode.collider = undefined;
 ```

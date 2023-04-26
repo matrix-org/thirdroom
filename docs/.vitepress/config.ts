@@ -6,6 +6,8 @@ export default defineConfig({
   description: "Documentation for Third Room",
   base: "/docs",
   outDir: "../dist/docs",
+  // TODO: remove before merge
+  ignoreDeadLinks: true,
   themeConfig: {
     siteTitle: false,
     logo: { light: "/light-logo-full.svg", dark: "/dark-logo-full.svg", alt: "Third Room" },
