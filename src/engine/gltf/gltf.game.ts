@@ -83,7 +83,7 @@ import { loadGLTFAnimationClip } from "./animation.three";
 import { AnimationComponent, BoneComponent } from "../animation/animation.game";
 import { RemoteResource } from "../resource/RemoteResourceClass";
 import { getRotationNoAlloc } from "../utils/getRotationNoAlloc";
-import { defineComponentStore } from "../resource/ComponentStore";
+import { GLTFPendingComponent, GLTFPendingProp } from "../resource/ComponentStore";
 
 /**
  * GLTFResource stores references to all of the resources loaded from a glTF file.
@@ -524,21 +524,18 @@ function resolveGLTFURI(resource: GLTFResource, uri: string) {
 
 type GLTFPostLoadCallback = () => Promise<void>;
 
-function loadGLTFComponentDefinitions(gltf: GLTFResource, componentDefs: GLTFComponentDefinitions) {
-  const resourceManager = gltf.manager;
-
-  for (const componentName in componentDefs) {
-    if (componentName === "extras" || componentName === "extensions") {
-      continue;
-    }
-
-    defineComponentStore(resourceManager, componentName, componentDefs[componentName]);
+function loadGLTFComponentDefinitions(resourceManager: RemoteResourceManager, extension: GLTFComponentDefinitions) {
+  for (const componentDef of extension.definitions) {
+    const componentId = resourceManager.nextComponentId++;
+    resourceManager.componentDefinitions.set(componentId, componentDef);
+    resourceManager.componentIdsByName.set(componentDef.name, componentId);
+    resourceManager.gltfPendingComponents.set(componentId, []);
   }
 }
 
 function loadGLTFResourceExtensions(gltf: GLTFResource) {
   if (gltf.root.extensions?.MX_components) {
-    loadGLTFComponentDefinitions(gltf, gltf.root.extensions.MX_components);
+    loadGLTFComponentDefinitions(gltf.manager, gltf.root.extensions.MX_components);
   }
 }
 
@@ -766,24 +763,62 @@ async function loadGLTFLightMap(resource: GLTFResource, extension: GLTFLightmap)
   });
 }
 
-function loadGLTFComponents(loaderCtx: GLTFLoaderContext, extension: GLTFNodeComponents, node: RemoteNode) {
+async function loadGLTFComponents(loaderCtx: GLTFLoaderContext, extension: GLTFNodeComponents, node: RemoteNode) {
+  const resourceManager = loaderCtx.resource.manager;
+
   for (const componentName in extension) {
-    if (componentName === "extras") {
+    if (componentName === "extras" || componentName === "extensions") {
       continue;
     }
 
-    if (componentName === "extensions") {
-      continue;
-    }
-
-    const resourceManager = loaderCtx.resource.manager;
-
-    const componentId = resourceManager.registeredComponentIdsByName.get(componentName);
+    const componentId = resourceManager.componentIdsByName.get(componentName);
 
     if (!componentId) {
       console.warn(`Unknown component ${componentName} defined on GLTF node ${node.name}`);
       continue;
     }
+
+    const componentDefinition = resourceManager.componentDefinitions.get(componentId);
+    const pendingComponents = resourceManager.gltfPendingComponents.get(componentId);
+
+    if (!componentDefinition || !pendingComponents) {
+      console.warn(`Unknown component ${componentName} defined on GLTF node ${node.name}`);
+      continue;
+    }
+
+    const pendingComponent: GLTFPendingComponent = {
+      eid: node.eid,
+      props: [],
+    };
+
+    const componentProps = extension[componentName];
+
+    for (const propDef of componentDefinition.props) {
+      let propValue = componentProps[propDef.name];
+
+      if (propValue === undefined) {
+        continue;
+      }
+
+      if (propDef.type === "ref") {
+        if (propDef.refType === "node") {
+          const refNode = await loadGLTFNode(loaderCtx, propValue as number);
+          propValue = refNode.eid;
+        } else {
+          console.warn(`Unknown ref type ${propDef.refType} for prop ${propDef.name}`);
+          continue;
+        }
+      }
+
+      const pendingProp: GLTFPendingProp = {
+        name: propDef.name,
+        value: propValue,
+      };
+
+      pendingComponent.props.push(pendingProp);
+    }
+
+    pendingComponents.push(pendingComponent);
   }
 }
 
@@ -1075,7 +1110,7 @@ const loadGLTFNode = createInstancedSubresourceLoader(
       node.reflectionProbe = reflectionProbe;
 
       if (extensions?.MX_components) {
-        loadGLTFComponents(loaderCtx, extensions.MX_components, node);
+        await loadGLTFComponents(loaderCtx, extensions.MX_components, node);
       }
 
       if (extensions?.MOZ_hubs_components) {

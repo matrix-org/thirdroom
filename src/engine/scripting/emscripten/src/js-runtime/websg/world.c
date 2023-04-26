@@ -18,7 +18,7 @@
 #include "./ui-element.h"
 #include "./ui-text.h"
 #include "./ui-button.h"
-#include "./component-definition.h"
+#include "./component-store.h"
 #include "./query.h"
 
 JSClassID js_websg_world_class_id;
@@ -63,6 +63,26 @@ static JSValue js_websg_world_stop_orbit(JSContext *ctx, JSValueConst this_val, 
   return JS_UNDEFINED;
 }
 
+static JSValue js_websg_world_get_component_store_size(JSContext *ctx, JSValueConst this_val) {
+  uint32_t component_store_size = websg_world_get_component_store_size();
+  return JS_NewUint32(ctx, component_store_size);
+}
+
+static JSValue js_websg_world_set_component_store_size(JSContext *ctx, JSValueConst this_val, JSValueConst arg) {
+  uint32_t component_store_size;
+
+  if (JS_ToUint32(ctx, &component_store_size, arg) == -1) {
+    return JS_EXCEPTION;
+  }
+
+  if (websg_world_set_component_store_size(component_store_size) == -1) {
+    JS_ThrowInternalError(ctx, "WebSG: Invalid component store size.");
+    return JS_EXCEPTION;
+  }
+
+  return JS_UNDEFINED;
+}
+
 static const JSCFunctionListEntry js_websg_world_proto_funcs[] = {
   JS_CGETSET_DEF("environment", js_websg_world_get_environment, js_websg_world_set_environment),
   JS_CFUNC_DEF("createAccessorFrom", 1, js_websg_world_create_accessor_from),
@@ -87,7 +107,12 @@ static const JSCFunctionListEntry js_websg_world_proto_funcs[] = {
   JS_CFUNC_DEF("createUIText", 1, js_websg_world_create_ui_text),
   JS_CFUNC_DEF("createUIButton", 1, js_websg_world_create_ui_button),
   JS_CFUNC_DEF("findUIElementByName", 1, js_websg_world_find_ui_element_by_name),
-  JS_CFUNC_DEF("findComponentDefinitionByName", 1, js_websg_world_find_component_definition_by_name),
+  JS_CFUNC_DEF("findComponentStoreByName", 1, js_websg_world_find_component_store_by_name),
+  JS_CGETSET_DEF(
+    "componentStoreSize",
+    js_websg_world_get_component_store_size,
+    js_websg_world_set_component_store_size
+  ),
   JS_CFUNC_DEF("stopOrbit", 0, js_websg_world_stop_orbit),
   JS_CFUNC_DEF("createQuery", 1, js_websg_world_create_query),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "World", JS_PROP_CONFIGURABLE),
@@ -148,7 +173,7 @@ JSValue js_websg_new_world(JSContext *ctx) {
   world_data->textures = JS_NewObject(ctx);
   world_data->ui_canvases = JS_NewObject(ctx);
   world_data->ui_elements = JS_NewObject(ctx);
-  world_data->component_definitions = JS_NewObject(ctx);
+  world_data->component_stores = JS_NewObject(ctx);
   JS_SetOpaque(world, world_data);
 
   return world;

@@ -1,171 +1,160 @@
 import { addComponent, hasComponent, removeComponent } from "bitecs";
 
-import { GameState, RemoteResourceManager } from "../GameTypes";
+import { RemoteResourceManager } from "../GameTypes";
+import { GLTFComponentPropertyStorageType } from "../gltf/GLTF";
+import { TypedArray32 } from "../utils/typedarray";
+import { ComponentPropStorageType } from "./schema";
 
-export interface ComponentPropertyDefinition {
+export interface GLTFPendingProp {
   name: string;
-  type: string;
-  defaultValue?: boolean | number | number[];
+  value: number | number[];
 }
 
-interface F32Store {
-  type: "f32";
-  value: Float32Array;
-  defaultValue: number;
+export interface GLTFPendingComponent {
+  eid: number;
+  props: GLTFPendingProp[];
 }
 
-interface RefStore {
-  type: "node";
-  value: Uint32Array;
-  defaultValue: number;
-}
+export type ComponentPropStore =
+  | Int32Array
+  | Uint32Array
+  | Float32Array
+  | Int32Array[]
+  | Uint32Array[]
+  | Float32Array[];
 
-interface I32Store {
-  type: "i32" | "bool";
-  value: Int32Array;
-  defaultValue: number;
-}
-
-interface VecStore {
-  type: "vec2" | "vec3" | "vec4" | "rgb" | "rgba" | "quat";
-  value: Float32Array[];
-  defaultValue: number[];
-}
-
-type PropStore = {
-  name: string;
-  size: number;
-} & (I32Store | RefStore | F32Store | VecStore);
+export const GLTFComponentPropertyStorageTypeToEnum: Record<
+  GLTFComponentPropertyStorageType,
+  ComponentPropStorageType
+> = {
+  i32: ComponentPropStorageType.i32,
+  u32: ComponentPropStorageType.u32,
+  f32: ComponentPropStorageType.f32,
+};
 
 export interface ComponentStore {
   name: string;
-  props: PropStore[];
-  add: (ctx: GameState, eid: number) => void;
-  remove: (ctx: GameState, eid: number) => void;
-  has: (ctx: GameState, eid: number) => boolean;
+  buffer: ArrayBuffer;
+  byteOffset: number;
+  props: ComponentPropStore[];
+  propsByName: Map<string, ComponentPropStore>;
+  add(eid: number): void;
+  remove(eid: number): void;
+  has(eid: number): boolean;
 }
 
-export function defineComponentStore(
+function getTypedArrayForStorageType(storageType: GLTFComponentPropertyStorageType) {
+  switch (storageType) {
+    case "i32":
+      return Int32Array;
+    case "u32":
+      return Uint32Array;
+    case "f32":
+      return Float32Array;
+    default:
+      throw new Error(`Unknown storage type ${storageType}`);
+  }
+}
+
+export function setComponentStore(
   resourceManager: RemoteResourceManager,
-  name: string,
-  props: ComponentPropertyDefinition[]
-): ComponentStore {
-  const maxEntities = resourceManager.maxEntities;
-  const propStores: PropStore[] = [];
+  componentId: number,
+  buffer: ArrayBuffer,
+  byteOffset: number
+) {
+  const componentDefinition = resourceManager.componentDefinitions.get(componentId);
 
-  for (const prop of props) {
-    if (prop.type === "node") {
-      propStores.push({
-        name: prop.name,
-        type: prop.type,
-        value: new Uint32Array(maxEntities),
-        size: 1,
-        defaultValue: 0,
-      });
-    } else if (prop.type === "i32") {
-      propStores.push({
-        name: prop.name,
-        type: prop.type,
-        value: new Int32Array(maxEntities),
-        size: 1,
-        defaultValue: prop.defaultValue as number,
-      });
-    } else if (prop.type === "f32") {
-      propStores.push({
-        name: prop.name,
-        type: prop.type,
-        value: new Float32Array(maxEntities),
-        size: 1,
-        defaultValue: prop.defaultValue as number,
-      });
-    } else if (prop.type === "vec2") {
-      const buffer = new ArrayBuffer(maxEntities * 2 * Float32Array.BYTES_PER_ELEMENT);
-      const value = Array.from(
-        { length: maxEntities },
-        (_, i) => new Float32Array(buffer, i * 2 * Float32Array.BYTES_PER_ELEMENT, 2)
-      );
-
-      propStores.push({
-        name: prop.name,
-        type: prop.type,
-        value,
-        size: 2,
-        defaultValue: prop.defaultValue as number[],
-      });
-    } else if (prop.type === "vec3" || prop.type === "rgb") {
-      const buffer = new ArrayBuffer(maxEntities * 3 * Float32Array.BYTES_PER_ELEMENT);
-      const value = Array.from(
-        { length: maxEntities },
-        (_, i) => new Float32Array(buffer, i * 3 * Float32Array.BYTES_PER_ELEMENT, 3)
-      );
-
-      propStores.push({
-        name: prop.name,
-        type: prop.type,
-        value,
-        size: 3,
-        defaultValue: prop.defaultValue as number[],
-      });
-    } else if (prop.type === "vec4" || prop.type === "rgba" || prop.type === "quat") {
-      const buffer = new ArrayBuffer(maxEntities * 4 * Float32Array.BYTES_PER_ELEMENT);
-      const value = Array.from(
-        { length: maxEntities },
-        (_, i) => new Float32Array(buffer, i * 4 * Float32Array.BYTES_PER_ELEMENT, 4)
-      );
-
-      propStores.push({
-        name: prop.name,
-        type: prop.type,
-        value,
-        size: 4,
-        defaultValue: prop.defaultValue as number[],
-      });
-    } else {
-      throw new Error(`Unknown component property type: ${prop.type}`);
-    }
+  if (!componentDefinition) {
+    throw new Error(`Component ${componentId} does not exist`);
   }
 
-  const componentId = resourceManager.nextComponentId++;
+  const world = resourceManager.ctx.world;
 
-  const componentStore = {
-    id: componentId,
-    name,
+  const componentStore: ComponentStore = {
+    name: componentDefinition.name,
+    buffer,
+    byteOffset,
     props: [],
-    add(ctx: GameState, eid: number) {
-      addComponent(ctx.world, this, eid);
+    propsByName: new Map(),
+    add(eid) {
+      addComponent(world, this, eid);
 
-      for (let i = 0; i < propStores.length; i++) {
-        const prop = propStores[i];
+      for (let i = 0; i < this.props.length; i++) {
+        const propDef = componentDefinition.props[i];
+        const propStore = this.props[i];
+        const defaultValue = propDef.defaultValue;
 
-        if (prop.type === "node") {
-          continue;
-        }
-
-        if (prop.defaultValue === undefined) {
-          continue;
-        }
-
-        const value = prop.value;
-
-        if (Array.isArray(value)) {
-          value[eid].set(prop.defaultValue as number[]);
-        } else if (prop.type === "bool") {
-          value[eid] = prop.defaultValue ? 1 : 0;
+        if (propDef.size > 0) {
+          if (defaultValue === undefined) {
+            (propStore[eid] as TypedArray32).fill(0);
+          } else {
+            (propStore[eid] as TypedArray32).set(defaultValue as number[]);
+          }
         } else {
-          value[eid] = prop.defaultValue as number;
+          if (defaultValue === undefined) {
+            propStore[eid] = 0;
+          } else {
+            propStore[eid] = defaultValue as number;
+          }
         }
       }
     },
-    remove(ctx: GameState, eid: number) {
-      removeComponent(ctx.world, this, eid);
+    remove(eid) {
+      removeComponent(world, this, eid);
     },
-    has(ctx: GameState, eid: number) {
-      return hasComponent(ctx.world, this, eid);
+    has(eid) {
+      return hasComponent(world, this, eid);
     },
   };
 
-  resourceManager.registeredComponents.set(componentId, componentStore);
-  resourceManager.registeredComponentIdsByName.set(componentStore.name, componentId);
+  let curByteOffset = byteOffset;
 
-  return componentStore;
+  for (const propDef of componentDefinition.props) {
+    let propStore: ComponentPropStore;
+
+    const typedArrayConstructor = getTypedArrayForStorageType(propDef.storageType);
+
+    if (propDef.size > 0) {
+      const arrPropStore = [];
+
+      for (let i = 0; i < resourceManager.componentStoreSize; i++) {
+        arrPropStore.push(new typedArrayConstructor(buffer, curByteOffset, propDef.size));
+        curByteOffset += arrPropStore[i].byteLength;
+      }
+
+      propStore = arrPropStore as ComponentPropStore;
+    } else {
+      propStore = new typedArrayConstructor(buffer, curByteOffset, resourceManager.componentStoreSize);
+    }
+
+    componentStore.props.push(propStore);
+    componentStore.propsByName.set(propDef.name, propStore);
+  }
+
+  const pendingComponents = resourceManager.gltfPendingComponents.get(componentId);
+
+  if (pendingComponents) {
+    for (const pendingComponent of pendingComponents) {
+      componentStore.add(pendingComponent.eid);
+
+      for (const pendingProp of pendingComponent.props) {
+        const propStore = componentStore.propsByName.get(pendingProp.name);
+
+        if (!propStore) {
+          console.warn(`Component ${componentDefinition.name} does not have a property ${pendingProp.name}. Ignoring.`);
+          continue;
+        }
+
+        if (Array.isArray(pendingProp.value)) {
+          (propStore[pendingComponent.eid] as TypedArray32).set(pendingProp.value);
+        } else {
+          propStore[pendingComponent.eid] = pendingProp.value;
+        }
+      }
+    }
+  }
+
+  resourceManager.gltfPendingComponents.delete(componentId);
+
+  resourceManager.componentStores.set(componentId, componentStore);
 }

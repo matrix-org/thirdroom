@@ -64,9 +64,9 @@ import_websg(world_set_environment) int32_t websg_world_set_environment(scene_id
  * Queries *
  ***********/
 typedef enum QueryModifier {
-  QueryModifierAll,
-  QueryModifierNone,
-  QueryModifierAny,
+  QueryModifier_All,
+  QueryModifier_None,
+  QueryModifier_Any,
 } QueryModifier;
 
 typedef struct QueryItem {
@@ -88,21 +88,30 @@ import_websg(query_get_results) int32_t websg_query_get_results(query_id_t query
  * Components *
  **************/
 
+typedef enum ComponentPropStorageType {
+  ComponentPropStorageType_i32,
+  ComponentPropStorageType_u32,
+  ComponentPropStorageType_f32,
+} ComponentPropStorageType;
+
 import_websg(world_find_component_definition_by_name) component_id_t websg_world_find_component_definition_by_name(const char *name, uint32_t length);
+import_websg(component_definition_get_name_length) uint32_t websg_component_definition_get_name_length(component_id_t component_id);
+import_websg(component_definition_get_name) int32_t websg_component_definition_get_name(component_id_t component_id,  const char *name, size_t length);
 import_websg(component_definition_get_prop_count) int32_t websg_component_definition_get_prop_count(component_id_t component_id);
-import_websg(component_definition_get_prop_type_length) uint32_t websg_component_definition_get_prop_type_length(component_id_t component_id, uint32_t prop_idx);
-import_websg(component_definition_get_prop_type) int32_t websg_component_definition_get_prop_type(component_id_t component_id, uint32_t prop_idx, const char *prop_type, size_t length);
 import_websg(component_definition_get_prop_name_length) uint32_t websg_component_definition_get_prop_name_length(component_id_t component_id, uint32_t prop_idx);
 import_websg(component_definition_get_prop_name) int32_t websg_component_definition_get_prop_name(component_id_t component_id, uint32_t prop_idx, const char *prop_name, size_t length);
+import_websg(component_definition_get_prop_type_length) uint32_t websg_component_definition_get_prop_type_length(component_id_t component_id, uint32_t prop_idx);
+import_websg(component_definition_get_prop_type) int32_t websg_component_definition_get_prop_type(component_id_t component_id, uint32_t prop_idx, const char *prop_type, size_t length);
+import_websg(component_definition_get_prop_storage_type) ComponentPropStorageType websg_component_definition_get_prop_storage_type(component_id_t component_id, uint32_t prop_idx);
+import_websg(component_definition_get_prop_size) int32_t websg_component_definition_get_prop_size(component_id_t component_id, uint32_t prop_idx);
+import_websg(world_get_component_store_size) uint32_t websg_world_get_component_store_size();
+import_websg(world_set_component_store_size) int32_t websg_world_set_component_store_size(uint32_t size);
+import_websg(world_set_component_store) int32_t websg_world_set_component_store(component_id_t component_id, void *ptr);
+import_websg(world_get_component_store) void *websg_world_get_component_store(component_id_t component_id);
 import_websg(node_add_component) int32_t websg_node_add_component(node_id_t node_id, component_id_t component_id);
 import_websg(node_remove_component) int32_t websg_node_remove_component(node_id_t node_id, component_id_t component_id);
 import_websg(node_has_component) int32_t websg_node_has_component(node_id_t node_id, component_id_t component_id);
-import_websg(node_get_component_prop_i32) int32_t websg_node_get_component_prop_i32(node_id_t node_id, component_id_t component_id, uint32_t prop_idx);
-import_websg(node_set_component_prop_i32) int32_t websg_node_set_component_prop_i32(node_id_t node_id, component_id_t component_id, uint32_t prop_idx, int32_t value);
-import_websg(node_get_component_prop_f32) float_t websg_node_get_component_prop_f32(node_id_t node_id, component_id_t component_id, uint32_t prop_idx);
-import_websg(node_set_component_prop_f32) float_t websg_node_set_component_prop_f32(node_id_t node_id, component_id_t component_id, uint32_t prop_idx, float_t value);
-import_websg(node_get_component_prop_i32_vec) int32_t websg_node_get_component_prop_i32_vec(node_id_t node_id, component_id_t component_id, uint32_t prop_idx, int32_t *value);
-import_websg(node_set_component_prop_i32_vec) int32_t websg_node_set_component_prop_i32_vec(node_id_t node_id, component_id_t component_id, uint32_t prop_idx, int32_t *value);
+import_websg(node_get_component_store_index) uint32_t websg_node_get_component_store_index(node_id_t node_id);
 
 /*********
  * Scene *

@@ -540,9 +540,13 @@ export interface GLTFNode extends GLTFChildOfRootProperty {
   };
 }
 
-export interface GLTFNodeComponents extends GLTFProperty {
-  [propName: string]: unknown;
+export interface GLTFComponentProps {
+  [propName: string]: GLTFComponentPropertyValue;
 }
+
+export type GLTFNodeComponents = {
+  [componentName: string]: GLTFComponentProps;
+} & GLTFProperty;
 
 interface GLTFLightRef extends GLTFProperty {
   light: GLTFId;
@@ -800,15 +804,29 @@ export interface GLTFRoot extends GLTFProperty {
   };
 }
 
-interface GLTFComponentPropertyDefinition {
+export type GLTFComponentPropertyType = "bool" | "i32" | "f32" | "vec2" | "vec3" | "vec4" | "ref" | string;
+
+export type GLTFComponentPropertyStorageType = "i32" | "u32" | "f32";
+
+export type GLTFComponentPropertyValue = number | number[];
+
+export interface GLTFComponentPropertyDefinition {
   name: string;
-  type: string;
-  defaultValue?: boolean | number | number[];
+  type: GLTFComponentPropertyType;
+  refType?: string;
+  storageType: GLTFComponentPropertyStorageType;
+  size: number;
+  defaultValue?: GLTFComponentPropertyValue;
 }
 
-export type GLTFComponentDefinitions = {
-  [componentName: string]: GLTFComponentPropertyDefinition[];
-} & GLTFProperty;
+export interface GLTFComponentDefinition extends GLTFProperty {
+  name: string;
+  props: GLTFComponentPropertyDefinition[];
+}
+
+export interface GLTFComponentDefinitions extends GLTFProperty {
+  definitions: GLTFComponentDefinition[];
+}
 
 interface GLTFKHRAudioExtension extends GLTFProperty {
   audio?: GLTFAudio[];

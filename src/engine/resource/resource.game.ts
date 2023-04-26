@@ -232,12 +232,17 @@ export function createRemoteResourceManager(ctx: GameState): RemoteResourceManag
     resourceIds: new Set(),
     gltfCache: new Map(),
     resourceMap: resourceModule.resourceMap,
-    registeredComponents: new Map(),
     nextQueryId: 1,
     registeredQueries: new Map(),
     nextComponentId: 1,
     maxEntities: maxEntities,
-    registeredComponentIdsByName: new Map(),
+    componentStoreSize: maxEntities,
+    componentStores: new Map(),
+    componentDefinitions: new Map(),
+    componentIdsByName: new Map(),
+    nextComponentStoreIndex: 0,
+    nodeIdToComponentStoreIndex: new Map(),
+    gltfPendingComponents: new Map(),
   };
 }
 

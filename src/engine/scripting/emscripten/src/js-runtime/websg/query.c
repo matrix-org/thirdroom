@@ -3,7 +3,7 @@
 #include "../../websg.h"
 #include "./websg-js.h"
 #include "./query.h"
-#include "./component-definition.h"
+#include "./component-store.h"
 #include "./node-iterator.h"
 
 JSClassID js_websg_query_class_id;
@@ -106,7 +106,7 @@ JSValue js_websg_world_create_collider(JSContext *ctx, JSValueConst this_val, in
   }
 
   // TODO: Support query modifiers and multiple query list items
-  // For now we just support a single array of component definitions
+  // For now we just support a single array of component stores
 
   component_id_t *component_ids = js_mallocz(ctx, sizeof(component_id_t) * query_list_length);
 
@@ -115,18 +115,18 @@ JSValue js_websg_world_create_collider(JSContext *ctx, JSValueConst this_val, in
   for (int i = 0; i < query_list_length; i++) {
     JSValue component_definition_val = JS_GetPropertyUint32(ctx, argv[0], i);
 
-    WebSGComponentDefinitionData *component_definition_data = JS_GetOpaque2(
+    WebSGComponentStoreData *component_store_data = JS_GetOpaque2(
       ctx,
       component_definition_val,
-      js_websg_component_definition_class_id
+      js_websg_component_store_class_id
     );
 
-    if (component_definition_data == NULL) {
+    if (component_store_data == NULL) {
       error = 1;
       break;
     }
 
-    component_ids[i] = component_definition_data->component_id;
+    component_ids[i] = component_store_data->component_id;
   }
 
   if (error) {
@@ -137,7 +137,7 @@ JSValue js_websg_world_create_collider(JSContext *ctx, JSValueConst this_val, in
   QueryItem *query_list_item = js_mallocz(ctx, sizeof(QueryItem));
   query_list_item->component_ids = component_ids;
   query_list_item->component_count = query_list_length;
-  query_list_item->modifier = QueryModifierAll;
+  query_list_item->modifier = QueryModifier_All;
 
   QueryList *query_list = js_mallocz(ctx, sizeof(QueryList));
   query_list->items = query_list_item;

@@ -1,8 +1,9 @@
 import { IWorld, Query } from "bitecs";
 
+import { GLTFComponentDefinition } from "./gltf/GLTF";
 import { GLTFResource } from "./gltf/gltf.game";
 import { BaseThreadContext } from "./module/module.common";
-import { ComponentStore } from "./resource/ComponentStore";
+import { ComponentStore, GLTFPendingComponent } from "./resource/ComponentStore";
 import { RemoteResource } from "./resource/RemoteResourceClass";
 import { RemoteWorld } from "./resource/RemoteResources";
 
@@ -11,11 +12,6 @@ export type World = IWorld;
 export interface ResourceManagerGLTFCacheEntry {
   refCount: number;
   promise: Promise<GLTFResource>;
-}
-
-export interface ComponentPropType {
-  name: string;
-  type: string;
 }
 
 export interface RemoteResourceManager {
@@ -27,8 +23,13 @@ export interface RemoteResourceManager {
   registeredQueries: Map<number, Query>;
   maxEntities: number;
   nextComponentId: number;
-  registeredComponents: Map<number, ComponentStore>;
-  registeredComponentIdsByName: Map<string, number>;
+  componentStoreSize: number;
+  componentIdsByName: Map<string, number>;
+  componentStores: Map<number, ComponentStore>;
+  componentDefinitions: Map<number, GLTFComponentDefinition>;
+  gltfPendingComponents: Map<number, GLTFPendingComponent[]>;
+  nextComponentStoreIndex: number;
+  nodeIdToComponentStoreIndex: Map<number, number>;
 }
 
 export interface GameState extends BaseThreadContext {

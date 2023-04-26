@@ -77,6 +77,12 @@ export enum QueryModifier {
   Any,
 }
 
+export enum ComponentPropStorageType {
+  i32,
+  u32,
+  f32,
+}
+
 export const NametagResource = defineResource("nametag", ResourceType.Nametag, {
   name: PropType.string(),
   screenX: PropType.f32(),
