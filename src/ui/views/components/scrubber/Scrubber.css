@@ -1,3 +1,7 @@
+.Scrubber {
+  display: inline-flex;
+}
+
 .Scrubber,
 .Scrubber * {
   cursor: ew-resize;
