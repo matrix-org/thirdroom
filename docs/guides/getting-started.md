@@ -22,15 +22,15 @@ To start using Third Room, you can use a guest account to try things out, or you
 
 When signing up, you'll be prompted to choose a homeserver. This is the server where your account data will be stored. You can either choose the default homeserver provided by Third Room or select a different one from the list of available servers. You also have the option to set up your own homeserver if you prefer to have more control over your data.
 
-### 3. Join or create worlds
+### 2. Join or create worlds
 
 Once you've signed in, you can start exploring Third Room by joining existing worlds or creating new ones. To join a world, click on any of the worlds listed in the panel on the left. To create a new world: click the plus sign on the top of the left navgation panel and click "Create World".
 
-### 4. Invite users and manage world settings
+### 3. Invite users and manage world settings
 
 After creating a world, you can invite other users to join by sending them an invitation or sharing the world's unique link. As the world creator, you have the ability to manage the world's settings, such as changing the world's name, description, or privacy settings. You can also assign roles and permissions to other users in the world, allowing them to help with moderation or other tasks.
 
-### 5. Customize your profile
+### 4. Customize your profile
 
 Personalize your Third Room experience by customizing your profile. Click on your profile picture in the bottom left corner and select "View Profile" to add a display name and profile picture.
 

@@ -1,8 +1,8 @@
 # Third Room for Developers
 
-This guide is designed to help you understand how to harness the power of WebSG to create custom behaviors and interactions for Third Room worlds. Third Room empowers developers to create unique and immersive virtual experiences that can be shared with users around the globe.
+Third Room is specifically engineered to enable developers to craft bespoke scripts for individual worlds and even extend the capabilities of the Third Room client itself. By placing the power of customization in developers' hands, Third Room fosters the creation of immersive virtual experiences that can captivate and enthrall.
 
-## WebSG
+## Web Scene Graph
 
 WebSG is designed to provide a safe and performant way to manipulate glTF scene graphs from a WebAssembly module. The API can be accessed from any wasm-compatible language, giving you the flexibility to choose the programming language that best suits your needs and expertise.
 
