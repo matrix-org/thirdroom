@@ -14,6 +14,7 @@ export enum ThirdRoomMessageType {
   GLTFViewerLoadError = "gltf-viewer-load-error",
   ReticleFocus = "reticle-focus",
   FindResourceRetainers = "find-resource-retainers",
+  UpdateWorldMembers = "update-world-members",
 }
 
 export interface EnterWorldMessage {
@@ -89,4 +90,13 @@ export interface GLTFViewerLoadErrorMessage {
 export interface FindResourceRetainersMessage {
   type: ThirdRoomMessageType.FindResourceRetainers;
   resourceId: number;
+}
+
+export interface WorldMember {
+  avatarUrl?: string;
+}
+
+export interface UpdateWorldMembersMessage {
+  type: ThirdRoomMessageType.UpdateWorldMembers;
+  worldMembers: Map<string, WorldMember>;
 }

@@ -71,7 +71,7 @@ export function roomIdToAlias(rooms: ObservableMap<string, Room>, roomId: string
   return rooms.get(roomId)?.canonicalAlias ?? undefined;
 }
 
-interface UserProfile {
+export interface UserProfile {
   avatar_url?: string;
   avatar_preview_url?: string;
 }

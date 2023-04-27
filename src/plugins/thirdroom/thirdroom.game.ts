@@ -24,6 +24,7 @@ import {
   EnteredWorldMessage,
   EnterWorldErrorMessage,
   FindResourceRetainersMessage,
+  UpdateWorldMembersMessage,
 } from "./thirdroom.common";
 import { createNodeFromGLTFURI, loadDefaultGLTFScene, loadGLTF } from "../../engine/gltf/gltf.game";
 import { createRemotePerspectiveCamera, getCamera } from "../../engine/camera/camera.game";
@@ -218,6 +219,7 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
     const disposables = [
       registerMessageHandler(ctx, ThirdRoomMessageType.LoadWorld, onLoadWorld),
       registerMessageHandler(ctx, ThirdRoomMessageType.EnterWorld, onEnterWorld),
+      registerMessageHandler(ctx, ThirdRoomMessageType.UpdateWorldMembers, onUpdateWorldMembers),
       registerMessageHandler(ctx, ThirdRoomMessageType.ExitWorld, onExitWorld),
       registerMessageHandler(ctx, NetworkMessageType.AddPeerId, onAddPeerId),
       registerMessageHandler(ctx, ThirdRoomMessageType.PrintThreadState, onPrintThreadState),
@@ -391,6 +393,10 @@ async function onEnterWorld(ctx: GameState, message: EnterWorldMessage) {
       error: error.message || "Unknown error",
     });
   }
+}
+
+function onUpdateWorldMembers(ctx: GameState, message: UpdateWorldMembersMessage) {
+  console.log("onUpdateWorldMembers", message);
 }
 
 function onExitWorld(ctx: GameState, message: ExitWorldMessage) {
