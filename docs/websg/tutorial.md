@@ -10,7 +10,7 @@ The `world` global is the central hub for managing all objects and interactions 
 
 Create new objects with the relatively named create function.
 
-```typescript
+```javascript
 const newNode = world.createNode({ name: "nodeName" });
 const newLight = world.createLight({ name: "lightName" });
 const newMesh = world.createMesh({ name: "meshName" });
@@ -20,7 +20,7 @@ const newMesh = world.createMesh({ name: "meshName" });
 
 Existing objects can be queried for in a loaded scene by calling their type's relatively named find function.
 
-```typescript
+```javascript
 const foundNode = world.findNodeByName("nodeName");
 const foundLight = world.findLightByName("lightName");
 const foundMesh = world.findMeshByName("meshName");
@@ -36,7 +36,7 @@ The `world.onload` event handler is called when the world is loaded.
 One important concept to understand in WebSG is that objects cannot be created, queried for, or otherwise interfaced with until the world is loaded.
 :::
 
-```typescript
+```javascript
 world.onload = () => {
   const node = world.findNodeByName("myNode");
 };
@@ -44,7 +44,7 @@ world.onload = () => {
 
 The `world.onenter` event handler is called when the user enters the world.
 
-```typescript
+```javascript
 world.onenter = () => {
   node.translation.y = 1;
 };
@@ -52,7 +52,7 @@ world.onenter = () => {
 
 The `world.onupdate` event handler is called when the world is updated. It receives two parameters: `dt`, the time since the last update in seconds, and `time`, the total time since the start of the world in seconds.
 
-```typescript
+```javascript
 world.onupdate = (dt: number, time: number) => {
   node.translation.x += Math.sin(time) * 1 + 2;
 };
@@ -66,7 +66,7 @@ Nodes are the base entity in WebSG which can be decorated with various types of 
 
 To create a node, use the `createNode` method of the `world` object and provide an optional name for the node.
 
-```typescript
+```javascript
 const node = world.createNode({ name: "MyNode" });
 ```
 
@@ -74,7 +74,7 @@ const node = world.createNode({ name: "MyNode" });
 
 Create a mesh using the `createBoxMesh` method and add it to the node by including it in the node properties.
 
-```typescript
+```javascript
 const mesh = world.createBoxMesh({ size: [1, 1, 1] });
 
 const node = world.createNode({
@@ -87,7 +87,7 @@ const node = world.createNode({
 
 Define light properties and create a light object using the `createLight` method. Add the light to the node by including it in the node properties.
 
-```typescript
+```javascript
 const light = world.createLight({
   type: WebSG.LightType.Point,
   intensity: 1.0,
@@ -103,14 +103,14 @@ const node = world.createNode({
 
 To make a node interactable, use the `addInteractable` method of the `Node` object.
 
-```typescript
+```javascript
 const node = world.createNode({ name: "MyInteractableNode" });
 const interactable = node.addInteractable();
 ```
 
 You can access the `Interactable` instance associated with a node using the `interactable` property:
 
-```typescript
+```javascript
 if (node.interactable.pressed) {
   console.log("Node pressed");
 }
@@ -124,7 +124,7 @@ if (node.interactable.released) {
 
 To remove the interactable feature from a node, call the `removeInteractable` method of the `Node` object:
 
-```typescript
+```javascript
 node.removeInteractable();
 ```
 
@@ -138,7 +138,7 @@ UI in WebSG is designed around the [flexbox layout system](https://css-tricks.co
 
 Create a flat-planed canvas in 3D space and add UI elements to it.
 
-```typescript
+```javascript
 const canvas = world.createUICanvas({
   // define dimensions
   width: 800, // width in pixels
@@ -173,7 +173,7 @@ canvas.root.addChild(elB);
 
 Text can be added to elements, too. Add text by appending it as a child of any element.
 
-```typescript
+```javascript
 const canvas = world.createUICanvas({
   width: 800,
   height: 600,
@@ -195,7 +195,7 @@ canvas.root.addChild(text);
 
 Buttons are interactable text elements.
 
-```typescript
+```javascript
 const canvas = world.createUICanvas({
   width: 800,
   height: 600,
@@ -217,7 +217,7 @@ canvas.root.addChild(button);
 
 Check if the button is pressed, held, or released by accessing the corresponding properties of the button object.
 
-```typescript
+```javascript
 if (button.pressed) {
   console.log("Button pressed");
 }
@@ -237,7 +237,7 @@ WebSG provides functionality to create physics-based interactions in your 3D wor
 
 To create a physics body, use the `addPhysicsBody` method of the `Node` object and provide a `PhysicsBodyProps` object.
 
-```typescript
+```javascript
 const boxMesh = world.createBoxMesh({ size: [1, 1, 1] });
 const boxNode = world.createNode({ mesh: boxMesh });
 boxNode.addPhysicsBody({
@@ -254,7 +254,7 @@ However, physics bodies won't be able to interact with anything without also att
 
 Create a collider using the `createCollider` method of the `World` object and provide a `ColliderProps` object. Assign the collider to the node by setting the node's `collider` property.
 
-```typescript
+```javascript
 const boxCollider = world.createCollider({
   type: WebSG.ColliderType.Box,
   isTrigger: false,
@@ -273,14 +273,14 @@ For dynamic rigid bodies, only the linear and angular velocities of the `physics
 Nodes with a `Rigid` physics body will have their `translation` property continuously updated by the physics engine, and therefor cannot be updated by any set operations.
 :::
 
-```typescript
+```javascript
 boxNode.physicsBody.linearVelocity.set([1, 0, 0]);
 boxNode.physicsBody.angularVelocity.set([0, 1, 0]);
 ```
 
 For `Kinematic` and `Static` bodies you can set the node's translation directly and the physics body will update accordingly.
 
-```typescript
+```javascript
 boxNode.translation.set([1, 1, 1]);
 ```
 
@@ -288,7 +288,15 @@ boxNode.translation.set([1, 1, 1]);
 
 You can remove a physics body or collider from a node by calling the `removePhysicsBody` method on a node with a physics body, or by setting the `collider` property of a node to `undefined`.
 
-```typescript
+```javascript
 boxNode.removePhysicsBody();
 boxNode.collider = undefined;
+```
+
+### Picking Things Up
+
+Players can pick nodes up and carry them around if they have a physics body and the node's interactable type is `WebSG.InteractableType.Grabbable`
+
+```javascript
+boxNode.addInteractable({ type: WebSG.InteractableType.Grabbable });
 ```
