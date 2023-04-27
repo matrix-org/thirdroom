@@ -125,3 +125,9 @@ export function convertRGBA(
 export function inputFocused(): boolean {
   return document.activeElement?.tagName.toLowerCase() === "input";
 }
+
+export function clamp(value: number, min?: number, max?: number): number {
+  if (typeof min === "number" && value < min) return min;
+  if (typeof max === "number" && value > max) return max;
+  return value;
+}
