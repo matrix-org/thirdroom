@@ -31,7 +31,7 @@ async function createHomeWorld(session: Session) {
         "m.room.encrypted": 100,
         "m.sticker": 0,
         "org.matrix.msc3401.call.member": 0,
-        "org.matrix.msc3815.member.world": 0,
+        "org.matrix.msc3815.world.member": 0,
       },
       users: {
         [session.userId]: 100,
