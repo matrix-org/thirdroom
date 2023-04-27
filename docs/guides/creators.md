@@ -16,17 +16,15 @@ There is also an in-world editor accessible via tilde (`) that is in its early s
 
 Using your chosen software, create your 3D models, scenes, or assets. This could include anything from characters and objects to entire environments. Be sure to consider the performance and optimization of your 3D content, as complex models may impact the user experience within Third Room.
 
-## Exporting and Uploading 3D Content
+### 3. Exporting as glTF
 
 Once you have created your 3D content, you'll need to export it in the glTF format and upload it to Third Room.
-
-### 1. Export your 3D content in the glTF format
 
 Each 3D modeling software has its own method for exporting models in the glTF format. Consult the documentation or help resources for your specific software to learn the export process. Ensure that your 3D content is correctly exported with all necessary textures, animations, and other associated files.
 
 For Unity3D users, follow the guidelines provided by Third Room for the asset import pipeline to ensure a seamless integration of your Unity3D assets into Third Room worlds.
 
-### 2. Upload your 3D content to Third Room
+## Uploading
 
 To use your 3D creations in Third Room, you'll need to upload them to the platform. Follow these steps to upload your glTF files:
 

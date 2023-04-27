@@ -6,7 +6,7 @@ Third Room is specifically engineered to enable developers to craft bespoke scri
 
 WebSG is designed to provide a safe and performant way to manipulate glTF scene graphs from a WebAssembly module. The API can be accessed from any wasm-compatible language, giving you the flexibility to choose the programming language that best suits your needs and expertise.
 
-Third Room has also created a custom JavaScript runtime and editor, allowing you to fluidly write and edit scripts in a familiar and friendly language.
+There is also a custom JavaScript runtime and in-world editor, allowing you to fluidly write and edit scripts in a familiar and friendly language without leaving the Third Room client.
 
 By utilizing the WebSG, you can create advanced and interactive experiences within Third Room that respond to user input, trigger events, and dynamically alter the virtual environment.
 
@@ -31,15 +31,13 @@ To self-host your own Third Room client:
 
 By self-hosting your own Third Room client, you can tailor the virtual experience to suit your specific requirements and maintain complete control over the content and features available to users.
 
-## Contributing to the Open Source Repository
+## Contributing
 
-Third Room is built on open-source principles, and we welcome contributions from the developer community to help improve the platform and extend its capabilities. If you're interested in contributing to Third Room's open-source repository, here's how you can get started:
+Third Room embraces open-source principles, and we actively encourage contributions from the developer community to help improve the platform and expand its capabilities. If you're interested in contributing to Third Room's open-source repository, follow these steps:
 
-1. Visit the Third Room GitHub repository and explore the available projects, such as the client, server, or API libraries.
-2. Review the documentation and contribution guidelines provided in each project's README file. These guidelines will help you understand the development process and expectations for contributors.
-3. Look for open issues or feature requests in the repository's issue tracker. These issues represent opportunities for you to contribute to the project, whether by fixing bugs, implementing new features, or improving documentation.
-4. Fork the repository and create a new branch for your changes. Make sure to follow the project's coding standards and guidelines during development.
-5. Test your changes thoroughly to ensure they don't introduce new bugs or break existing functionality.
-6. Submit a pull request to the main repository with your changes, including a detailed description of your contribution and any relevant issue numbers. The Third Room maintainers will review your submission and provide feedback or request changes as necessary.
+1. Look for open issues or feature requests in the repository's issue tracker. These issues represent opportunities for you to contribute to the project, whether by fixing bugs, implementing new features, or improving documentation.
+1. Fork the repository and create a new branch for your changes.
+1. Test your changes thoroughly to ensure they don't introduce new bugs or break existing functionality.
+1. Submit a pull request to the main repository with your changes, including a detailed description of your contribution and any relevant issue numbers. The Third Room maintainers will review your submission and provide feedback or request changes as necessary.
 
 By contributing to the open-source repository, you can help shape the future of Third Room and enhance the platform for users around the world. Your expertise and dedication are invaluable to the growth and success of the project, and we look forward to collaborating with you.
