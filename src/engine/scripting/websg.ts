@@ -1693,12 +1693,15 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
         readExtensionsAndExtras(wasmCtx);
         const type = readEnum(wasmCtx, InteractableType, "InteractableType");
 
-        if (type !== InteractableType.Interactable) {
+        const validTypes = [InteractableType.Interactable, InteractableType.Grabbable];
+
+        if (!validTypes.includes(type)) {
           console.error("WebSG: Invalid interactable type.");
           return -1;
         }
 
         node.interactable = new RemoteInteractable(wasmCtx.resourceManager, { type });
+        addInteractableComponent(ctx, physics, node, type);
 
         return 0;
       } catch (error) {
