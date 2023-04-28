@@ -413,6 +413,7 @@ import_websg(light_set_intensity) int32_t websg_light_set_intensity(light_id_t l
 
 typedef enum InteractableType {
   InteractableType_Interactable = 1,
+  InteractableType_Grabbable = 2,
 } InteractableType;
 
 typedef struct InteractableProps {

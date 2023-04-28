@@ -310,10 +310,6 @@ const _r = new Vector4();
 
 const zero = new Vector3();
 
-const remoteNodeQuery = defineQuery([RemoteNode]);
-
-const remoteUIButtonQuery = defineQuery([RemoteUIButton]);
-
 const interactableQuery = defineQuery([Interactable]);
 
 export function ResetInteractablesSystem(ctx: GameState) {
@@ -336,17 +332,6 @@ export function ResetInteractablesSystem(ctx: GameState) {
   }
 }
 
-function addInteractableForScripts(ctx: GameState, physics: PhysicsModuleState, ents: number[], i: number) {
-  const eid = ents[i];
-  const remoteNode = tryGetRemoteResource<RemoteNode | RemoteUIButton>(ctx, eid);
-  const interactable = remoteNode.interactable;
-  const hasInteractable = hasComponent(ctx.world, Interactable, eid);
-
-  if (interactable && !hasInteractable && interactable.type === InteractableType.Interactable) {
-    addInteractableComponent(ctx, physics, remoteNode, interactable.type);
-  }
-}
-
 export function InteractionSystem(ctx: GameState) {
   const network = getModule(ctx, NetworkModule);
   const physics = getModule(ctx, PhysicsModule);
@@ -354,17 +339,6 @@ export function InteractionSystem(ctx: GameState) {
   const interaction = getModule(ctx, InteractionModule);
   const camRigModule = getModule(ctx, CameraRigModule);
   const renderer = getModule(ctx, RendererModule);
-
-  // scripts add InteractableResource to a node, add the interactable component
-  // TODO: replace with addInteractable via WebSG API
-  const remoteNodeEntities = remoteNodeQuery(ctx.world);
-  for (let i = 0; i < remoteNodeEntities.length; i++) {
-    addInteractableForScripts(ctx, physics, remoteNodeEntities, i);
-  }
-  const remoteUIBtnEntities = remoteUIButtonQuery(ctx.world);
-  for (let i = 0; i < remoteUIBtnEntities.length; i++) {
-    addInteractableForScripts(ctx, physics, remoteUIBtnEntities, i);
-  }
 
   // TODO: refactor & make orbit handle multiple controllers
   if (camRigModule.orbiting) {
