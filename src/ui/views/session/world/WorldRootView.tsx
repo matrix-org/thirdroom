@@ -13,6 +13,7 @@ import { worldAtom } from "../../../state/world";
 import { WorldLoading } from "./WorldLoading";
 import { WorldThumbnail } from "./WorldThumbnail";
 import { WorldView } from "./WorldView";
+import { editorEnabledAtom } from "../../../state/editor";
 
 async function getWorldContent(world: Room) {
   const stateEvent = await world.getStateEvent("org.matrix.msc3815.world");
@@ -29,6 +30,7 @@ export default function WorldRootView() {
   const selectWorld = useSetAtom(overlayWorldAtom);
   const [roomId, reloadId] = useWorldPath();
   const navigatedWorld = useRoom(session, roomId);
+  const setEditorEnabled = useSetAtom(editorEnabledAtom);
 
   /**
    * Handle loading are reloading
@@ -78,6 +80,8 @@ export default function WorldRootView() {
         const content = event?.content;
         if (!content) return;
 
+        setEditorEnabled(false);
+
         try {
           await reloadWorld(navigatedWorld, content);
         } catch (err) {
@@ -93,7 +97,7 @@ export default function WorldRootView() {
     return () => {
       dispose?.();
     };
-  }, [navigatedWorld, entered, isMounted, reloadWorld]);
+  }, [navigatedWorld, entered, isMounted, reloadWorld, setEditorEnabled]);
 
   return (
     <>
