@@ -125,3 +125,11 @@ export function convertRGBA(
 export function inputFocused(): boolean {
   return document.activeElement?.tagName.toLowerCase() === "input";
 }
+
+export function camelizeVariableName(str: string): string {
+  return str
+    .replace(/(?:^\w|[A-Z]|\b\w)/g, (word, index) => {
+      return index === 0 ? word.toLowerCase() : word.toUpperCase();
+    })
+    .replace(/([^a-zA-Z0-9_$])+/g, "");
+}

@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAtom, useSetAtom } from "jotai";
 import { BlobHandle, Room } from "@thirdroom/hydrogen-view-sdk";
-import Editor, { Monaco, OnChange } from "@monaco-editor/react";
+import Editor, { Monaco, OnChange, useMonaco } from "@monaco-editor/react";
+import { editor as MonacoEditor } from "monaco-editor";
+import { useDrop } from "react-dnd";
 
 import { Button } from "../../../atoms/button/Button";
 import { Dots } from "../../../atoms/loading/Dots";
@@ -20,11 +22,16 @@ import ArrowBackIC from "../../../../../res/ic/arrow-back.svg";
 import { Tooltip } from "../../../atoms/tooltip/Tooltip";
 import { Icon } from "../../../atoms/icon/Icon";
 import websgTypes from "../../../../../packages/websg-types/types/websg.d.ts?raw";
+import { DnDItemTypes, NodeDragItem } from "./HierarchyPanel";
+import { MainThreadResource, getLocalResource } from "../../../../engine/resource/resource.main";
+import { useMainThreadContext } from "../../../hooks/useMainThread";
+import { camelizeVariableName } from "../../../utils/common";
 
 const MONACO_THEME_KEY = "monaco_theme";
 
 export function ScriptEditor({ room }: { room: Room }) {
   const { session, platform } = useHydrogen(true);
+  const mainThread = useMainThreadContext();
   // script sources
   const [activeScriptSource, setActiveScriptSource] = useAtom(scriptSourceAtom);
   const [persistedScriptSource, setPersistedScriptSource] = useState<string | undefined>(undefined);
@@ -40,6 +47,8 @@ export function ScriptEditor({ room }: { room: Room }) {
   const [saved, setSavedState] = useState(true);
   const [showResetModal, setShowResetModal] = useState(false);
 
+  const monaco = useMonaco();
+  const editorRef = useRef<MonacoEditor.IStandaloneCodeEditor | null>(null);
   /**
    *  Set saved to true if active script is equal to persisted script
    */
@@ -83,6 +92,36 @@ export function ScriptEditor({ room }: { room: Room }) {
     }
   }, [session, room, setActiveScriptSource, localScriptSource]);
 
+  const [{ canDrop }, dropTarget] = useDrop(
+    () => ({
+      accept: DnDItemTypes.Node,
+      drop(item: NodeDragItem) {
+        const { activeNodeId } = item;
+        if (!item) return;
+        const resource = getLocalResource(mainThread, activeNodeId) as unknown as MainThreadResource;
+
+        const editor = editorRef.current;
+        if (!monaco || !editor) return;
+        const line = editor.getPosition();
+        if (!line) return;
+        const range = new monaco.Range(line.lineNumber, line.column, line.lineNumber, line.column);
+        const id = { major: 1, minor: 1 };
+        const text = `const ${camelizeVariableName(resource.name)} = world.findNodeByName("${resource.name}");\n`;
+        const edit = {
+          identifier: id,
+          range,
+          text,
+          forceMoveMarkers: true,
+        };
+        editor.executeEdits("my-source", [edit]);
+      },
+      collect: (monitor) => ({
+        canDrop: monitor.canDrop(),
+      }),
+    }),
+    [monaco]
+  );
+
   async function saveAndRunScript() {
     if (!room) return;
 
@@ -106,11 +145,12 @@ export function ScriptEditor({ room }: { room: Room }) {
     });
   }
 
-  function handleEditorChange(value: string) {
+  const handleEditorChange: OnChange = (value) => {
+    if (!value) return;
     setActiveScriptSource(value);
     setLocalScriptSource(() => value);
     setSavedState(value === persistedScriptSource);
-  }
+  };
 
   function onShowResetModal() {
     setShowResetModal(true);
@@ -155,7 +195,7 @@ export function ScriptEditor({ room }: { room: Room }) {
           </div>
         }
       />
-      <div className="ScriptEditor flex flex-column">
+      <div ref={dropTarget} className="ScriptEditor flex flex-column">
         <EditorHeader className="ScriptEditor__header shrink-0 gap-sm">
           <div className="grow flex">
             <EditorHeaderTab active={false} onClick={() => setShowCodeEditor(false)}>
@@ -181,6 +221,7 @@ export function ScriptEditor({ room }: { room: Room }) {
             value={activeScriptSource}
             onChange={handleEditorChange as OnChange}
             beforeMount={configureMonaco}
+            onMount={(editor) => (editorRef.current = editor)}
             theme={editorTheme}
           />
           <div className="ScriptEditor__themeBtn">
@@ -188,6 +229,18 @@ export function ScriptEditor({ room }: { room: Room }) {
               <IconButton iconSrc={DarkLightIC} label="Toggle Editor Theme" onClick={handleToggleTheme} />
             </Tooltip>
           </div>
+          {canDrop && (
+            <div className="ScriptEditor__dropOverlay flex flex-column items-center justify-center">
+              <div className="ScriptEditor__dropContainer flex flex-column items-center gap-xs">
+                <Text variant="s1" color="world" weight="bold" className="text-center">
+                  Drop Node
+                </Text>
+                <Text color="world" weight="medium" className="text-center">
+                  Insert code at your cursor to access node in script
+                </Text>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </>
