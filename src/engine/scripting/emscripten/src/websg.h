@@ -83,6 +83,8 @@ typedef struct QueryList {
 import_websg(world_create_query) query_id_t websg_world_create_query(QueryList *query);
 import_websg(query_get_results_count) int32_t websg_query_get_results_count(query_id_t query_id);
 import_websg(query_get_results) int32_t websg_query_get_results(query_id_t query_id, node_id_t *results, uint32_t max_count);
+// Possible future API for a fast path to get component indices
+// import_websg(websg_query_get_component_indices) int32_t websg_query_get_component_indices(query_id_t query_id, uint32_t *indices, uint32_t max_count);
 
 /**************
  * Components *
@@ -102,6 +104,8 @@ import_websg(component_definition_get_prop_name_length) uint32_t websg_component
 import_websg(component_definition_get_prop_name) int32_t websg_component_definition_get_prop_name(component_id_t component_id, uint32_t prop_idx, const char *prop_name, size_t length);
 import_websg(component_definition_get_prop_type_length) uint32_t websg_component_definition_get_prop_type_length(component_id_t component_id, uint32_t prop_idx);
 import_websg(component_definition_get_prop_type) int32_t websg_component_definition_get_prop_type(component_id_t component_id, uint32_t prop_idx, const char *prop_type, size_t length);
+import_websg(component_definition_get_ref_type_length) uint32_t websg_component_definition_get_ref_type_length(component_id_t component_id, uint32_t prop_idx);
+import_websg(component_definition_get_ref_type) int32_t websg_component_definition_get_ref_type(component_id_t component_id, uint32_t prop_idx, const char *ref_type, size_t length);
 import_websg(component_definition_get_prop_storage_type) ComponentPropStorageType websg_component_definition_get_prop_storage_type(component_id_t component_id, uint32_t prop_idx);
 import_websg(component_definition_get_prop_size) int32_t websg_component_definition_get_prop_size(component_id_t component_id, uint32_t prop_idx);
 import_websg(world_get_component_store_size) uint32_t websg_world_get_component_store_size();

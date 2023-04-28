@@ -8,6 +8,7 @@ typedef struct WebSGComponentStoreData {
   WebSGWorldData *world_data;
   component_id_t component_id;
   JSValue component_instances;
+  JSClassID component_instance_class_id;
   void* store;
 } WebSGComponentStoreData;
 
@@ -28,11 +29,10 @@ JSValue js_websg_world_find_component_store_by_name(
   JSValueConst *argv
 );
 
-JSValue js_websg_get_component_instance_by_id(
+JSValue js_websg_component_store_get_instance(
   JSContext *ctx,
-  WebSGWorldData *world_data,
-  node_id_t node_id,
-  component_id_t component_id
+  WebSGComponentStoreData *component_store_data,
+  uint32_t component_store_index
 );
 
 #endif

@@ -821,7 +821,7 @@ export interface GLTFComponentPropertyDefinition {
 
 export interface GLTFComponentDefinition extends GLTFProperty {
   name: string;
-  props: GLTFComponentPropertyDefinition[];
+  props?: GLTFComponentPropertyDefinition[];
 }
 
 export interface GLTFComponentDefinitions extends GLTFProperty {

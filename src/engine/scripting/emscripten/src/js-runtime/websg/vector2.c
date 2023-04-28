@@ -11,6 +11,7 @@ static void js_websg_vector2_finalizer(JSRuntime *rt, JSValue val) {
   WebSGVector2Data *vec2_data = JS_GetOpaque(val, js_websg_vector2_class_id);
 
   if (vec2_data) {
+    js_free_rt(rt, vec2_data->elements);
     js_free_rt(rt, vec2_data);
   }
 }
@@ -106,6 +107,13 @@ void js_websg_define_vector2(JSContext *ctx, JSValue websg) {
   );
 }
 
+JSValue js_websg_create_vector2(JSContext *ctx, float* elements) {
+  JSValue vector2 = JS_NewObjectClass(ctx, js_websg_vector2_class_id);
+  WebSGVector2Data *vec2_data = js_mallocz(ctx, sizeof(WebSGVector2Data));
+  vec2_data->elements = elements;
+  return vector2;
+}
+
 JSValue js_websg_new_vector2_get_set(
   JSContext *ctx,
   uint32_t resource_id,
@@ -116,6 +124,7 @@ JSValue js_websg_new_vector2_get_set(
   JSValue vector2 = JS_NewObjectClass(ctx, js_websg_vector2_class_id);
 
   WebSGVector2Data *vec2_data = js_mallocz(ctx, sizeof(WebSGVector2Data));
+  vec2_data->elements = js_mallocz(ctx, sizeof(float_t) * 2);
   vec2_data->get = get;
   vec2_data->set = set;
   vec2_data->set_array = set_array;

@@ -242,7 +242,6 @@ export function createRemoteResourceManager(ctx: GameState): RemoteResourceManag
     componentIdsByName: new Map(),
     nextComponentStoreIndex: 0,
     nodeIdToComponentStoreIndex: new Map(),
-    gltfPendingComponents: new Map(),
   };
 }
 

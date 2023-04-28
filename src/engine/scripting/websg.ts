@@ -644,7 +644,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       if (componentId) {
         return componentId;
       } else {
-        console.error(`WebSG: component not registered`);
+        console.error(`WebSG: component ${name} not registered`);
         return 0;
       }
     },
@@ -672,7 +672,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       const component = wasmCtx.resourceManager.componentDefinitions.get(componentId);
 
       if (component) {
-        return component.props.length;
+        return component.props?.length || 0;
       } else {
         console.error(`WebSG: component not registered`);
         return -1;
@@ -682,7 +682,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       const component = wasmCtx.resourceManager.componentDefinitions.get(componentId);
 
       if (component) {
-        const prop = component.props[propIdx];
+        const prop = component.props ? component.props[propIdx] : undefined;
 
         if (!prop) {
           console.error(`WebSG: invalid prop index`);
@@ -704,7 +704,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       const component = wasmCtx.resourceManager.componentDefinitions.get(componentId);
 
       if (component) {
-        const prop = component.props[propIdx];
+        const prop = component.props ? component.props[propIdx] : undefined;
 
         if (!prop) {
           console.error(`WebSG: invalid prop index`);
@@ -721,7 +721,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       const component = wasmCtx.resourceManager.componentDefinitions.get(componentId);
 
       if (component) {
-        const prop = component.props[propIdx];
+        const prop = component.props ? component.props[propIdx] : undefined;
 
         if (!prop) {
           console.error(`WebSG: invalid prop index`);
@@ -743,7 +743,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       const component = wasmCtx.resourceManager.componentDefinitions.get(componentId);
 
       if (component) {
-        const prop = component.props[propIdx];
+        const prop = component.props ? component.props[propIdx] : undefined;
 
         if (!prop) {
           console.error(`WebSG: invalid prop index`);
@@ -756,11 +756,49 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
         return -1;
       }
     },
+    component_definition_get_ref_type_length(componentId: number, propIdx: number) {
+      const component = wasmCtx.resourceManager.componentDefinitions.get(componentId);
+
+      if (component) {
+        const prop = component.props ? component.props[propIdx] : undefined;
+
+        if (!prop) {
+          console.error(`WebSG: invalid prop index`);
+          return -1;
+        }
+
+        return prop.refType ? prop.refType.length : 0;
+      } else {
+        console.error(`WebSG: component not registered`);
+        return -1;
+      }
+    },
+    component_definition_get_ref_type(componentId: number, propIdx: number, refTypePtr: number, maxByteLength: number) {
+      const component = wasmCtx.resourceManager.componentDefinitions.get(componentId);
+
+      if (component) {
+        const prop = component.props ? component.props[propIdx] : undefined;
+
+        if (!prop) {
+          console.error(`WebSG: invalid prop index`);
+          return -1;
+        }
+
+        if (prop.refType) {
+          return writeString(wasmCtx, refTypePtr, prop.refType, maxByteLength);
+        } else {
+          return 0;
+        }
+      } else {
+        console.error(`WebSG: component not registered`);
+        return -1;
+      }
+    },
     component_definition_get_prop_storage_type(componentId: number, propIdx: number) {
       const component = wasmCtx.resourceManager.componentDefinitions.get(componentId);
 
       if (component) {
-        const prop = component.props[propIdx];
+        const prop = component.props ? component.props[propIdx] : undefined;
 
         if (!prop) {
           console.error(`WebSG: invalid prop index`);
@@ -784,7 +822,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       const component = wasmCtx.resourceManager.componentDefinitions.get(componentId);
 
       if (component) {
-        const prop = component.props[propIdx];
+        const prop = component.props ? component.props[propIdx] : undefined;
 
         if (!prop) {
           console.error(`WebSG: invalid prop index`);

@@ -5,16 +5,6 @@ import { GLTFComponentPropertyStorageType } from "../gltf/GLTF";
 import { TypedArray32 } from "../utils/typedarray";
 import { ComponentPropStorageType } from "./schema";
 
-export interface GLTFPendingProp {
-  name: string;
-  value: number | number[];
-}
-
-export interface GLTFPendingComponent {
-  eid: number;
-  props: GLTFPendingProp[];
-}
-
 export type ComponentPropStore =
   | Int32Array
   | Uint32Array
@@ -79,6 +69,10 @@ export function setComponentStore(
     add(eid) {
       addComponent(world, this, eid);
 
+      if (!componentDefinition.props) {
+        return;
+      }
+
       for (let i = 0; i < this.props.length; i++) {
         const propDef = componentDefinition.props[i];
         const propStore = this.props[i];
@@ -107,54 +101,31 @@ export function setComponentStore(
     },
   };
 
-  let curByteOffset = byteOffset;
+  if (componentDefinition.props) {
+    let curByteOffset = byteOffset;
 
-  for (const propDef of componentDefinition.props) {
-    let propStore: ComponentPropStore;
+    for (const propDef of componentDefinition.props) {
+      let propStore: ComponentPropStore;
 
-    const typedArrayConstructor = getTypedArrayForStorageType(propDef.storageType);
+      const typedArrayConstructor = getTypedArrayForStorageType(propDef.storageType);
 
-    if (propDef.size > 0) {
-      const arrPropStore = [];
+      if (propDef.size > 0) {
+        const arrPropStore = [];
 
-      for (let i = 0; i < resourceManager.componentStoreSize; i++) {
-        arrPropStore.push(new typedArrayConstructor(buffer, curByteOffset, propDef.size));
-        curByteOffset += arrPropStore[i].byteLength;
-      }
-
-      propStore = arrPropStore as ComponentPropStore;
-    } else {
-      propStore = new typedArrayConstructor(buffer, curByteOffset, resourceManager.componentStoreSize);
-    }
-
-    componentStore.props.push(propStore);
-    componentStore.propsByName.set(propDef.name, propStore);
-  }
-
-  const pendingComponents = resourceManager.gltfPendingComponents.get(componentId);
-
-  if (pendingComponents) {
-    for (const pendingComponent of pendingComponents) {
-      componentStore.add(pendingComponent.eid);
-
-      for (const pendingProp of pendingComponent.props) {
-        const propStore = componentStore.propsByName.get(pendingProp.name);
-
-        if (!propStore) {
-          console.warn(`Component ${componentDefinition.name} does not have a property ${pendingProp.name}. Ignoring.`);
-          continue;
+        for (let i = 0; i < resourceManager.componentStoreSize; i++) {
+          arrPropStore.push(new typedArrayConstructor(buffer, curByteOffset, propDef.size));
+          curByteOffset += arrPropStore[i].byteLength;
         }
 
-        if (Array.isArray(pendingProp.value)) {
-          (propStore[pendingComponent.eid] as TypedArray32).set(pendingProp.value);
-        } else {
-          propStore[pendingComponent.eid] = pendingProp.value;
-        }
+        propStore = arrPropStore as ComponentPropStore;
+      } else {
+        propStore = new typedArrayConstructor(buffer, curByteOffset, resourceManager.componentStoreSize);
       }
+
+      componentStore.props.push(propStore);
+      componentStore.propsByName.set(propDef.name, propStore);
     }
   }
-
-  resourceManager.gltfPendingComponents.delete(componentId);
 
   resourceManager.componentStores.set(componentId, componentStore);
 }

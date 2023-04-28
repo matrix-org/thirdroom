@@ -377,12 +377,16 @@ static JSValue js_websg_node_get_component(JSContext *ctx, JSValueConst this_val
     return JS_EXCEPTION;
   }
 
-  return js_websg_get_component_instance_by_id(
-    ctx,
-    node_data->world_data,
-    node_data->node_id,
-    component_store_data->component_id
-  );
+  int32_t has_component = websg_node_has_component(node_data->node_id, component_store_data->component_id);
+
+  if (has_component == 0) {
+    return JS_UNDEFINED;
+  } else if (has_component == -1) {
+    JS_ThrowInternalError(ctx, "WebSG: Couldn't get component.");
+    return JS_EXCEPTION;
+  }
+
+  return js_websg_component_store_get_instance(ctx, component_store_data, node_data->component_store_index);
 }
 
 // Implement the addChild and removeChild methods

@@ -83,7 +83,7 @@ import { loadGLTFAnimationClip } from "./animation.three";
 import { AnimationComponent, BoneComponent } from "../animation/animation.game";
 import { RemoteResource } from "../resource/RemoteResourceClass";
 import { getRotationNoAlloc } from "../utils/getRotationNoAlloc";
-import { GLTFPendingComponent, GLTFPendingProp } from "../resource/ComponentStore";
+import { TypedArray32 } from "../utils/typedarray";
 
 /**
  * GLTFResource stores references to all of the resources loaded from a glTF file.
@@ -529,7 +529,6 @@ function loadGLTFComponentDefinitions(resourceManager: RemoteResourceManager, ex
     const componentId = resourceManager.nextComponentId++;
     resourceManager.componentDefinitions.set(componentId, componentDef);
     resourceManager.componentIdsByName.set(componentDef.name, componentId);
-    resourceManager.gltfPendingComponents.set(componentId, []);
   }
 }
 
@@ -779,46 +778,55 @@ async function loadGLTFComponents(loaderCtx: GLTFLoaderContext, extension: GLTFN
     }
 
     const componentDefinition = resourceManager.componentDefinitions.get(componentId);
-    const pendingComponents = resourceManager.gltfPendingComponents.get(componentId);
 
-    if (!componentDefinition || !pendingComponents) {
+    if (!componentDefinition) {
       console.warn(`Unknown component ${componentName} defined on GLTF node ${node.name}`);
       continue;
     }
 
-    const pendingComponent: GLTFPendingComponent = {
-      eid: node.eid,
-      props: [],
-    };
-
     const componentProps = extension[componentName];
 
-    for (const propDef of componentDefinition.props) {
-      let propValue = componentProps[propDef.name];
+    const componentStore = resourceManager.componentStores.get(componentId);
 
-      if (propValue === undefined) {
-        continue;
-      }
-
-      if (propDef.type === "ref") {
-        if (propDef.refType === "node") {
-          const refNode = await loadGLTFNode(loaderCtx, propValue as number);
-          propValue = refNode.eid;
-        } else {
-          console.warn(`Unknown ref type ${propDef.refType} for prop ${propDef.name}`);
-          continue;
-        }
-      }
-
-      const pendingProp: GLTFPendingProp = {
-        name: propDef.name,
-        value: propValue,
-      };
-
-      pendingComponent.props.push(pendingProp);
+    if (!componentStore) {
+      console.warn(`Component store for ${componentName} not registered before gltf load. Ignoring.`);
+      continue;
     }
 
-    pendingComponents.push(pendingComponent);
+    componentStore.add(node.eid);
+
+    if (componentDefinition.props) {
+      for (const propDef of componentDefinition.props) {
+        let propValue = componentProps[propDef.name];
+
+        if (propValue === undefined) {
+          continue;
+        }
+
+        const propStore = componentStore.propsByName.get(propDef.name);
+
+        if (!propStore) {
+          console.warn(`Component ${componentDefinition.name} does not have a property ${propDef.name}. Ignoring.`);
+          continue;
+        }
+
+        if (propDef.type === "ref") {
+          if (propDef.refType === "node") {
+            const refNode = await loadGLTFNode(loaderCtx, propValue as number);
+            propValue = refNode.eid;
+          } else {
+            console.warn(`Unknown ref type ${propDef.refType} for prop ${propDef.name}`);
+            continue;
+          }
+        } else {
+          if (propDef.size === 1) {
+            propStore[node.eid] = propValue as number;
+          } else {
+            (propStore[node.eid] as TypedArray32).set(propValue as number[]);
+          }
+        }
+      }
+    }
   }
 }
 

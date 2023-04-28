@@ -86,7 +86,7 @@ void js_websg_define_query(JSContext *ctx, JSValue websg) {
  * World Methods
  **/
 
-JSValue js_websg_world_create_collider(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+JSValue js_websg_world_create_query(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
   WebSGWorldData *world_data = JS_GetOpaque(this_val, js_websg_world_class_id);
 
   JSValue query_list_length_val = JS_GetPropertyStr(ctx, argv[0], "length");

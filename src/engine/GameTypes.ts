@@ -3,7 +3,7 @@ import { IWorld, Query } from "bitecs";
 import { GLTFComponentDefinition } from "./gltf/GLTF";
 import { GLTFResource } from "./gltf/gltf.game";
 import { BaseThreadContext } from "./module/module.common";
-import { ComponentStore, GLTFPendingComponent } from "./resource/ComponentStore";
+import { ComponentStore } from "./resource/ComponentStore";
 import { RemoteResource } from "./resource/RemoteResourceClass";
 import { RemoteWorld } from "./resource/RemoteResources";
 
@@ -27,7 +27,6 @@ export interface RemoteResourceManager {
   componentIdsByName: Map<string, number>;
   componentStores: Map<number, ComponentStore>;
   componentDefinitions: Map<number, GLTFComponentDefinition>;
-  gltfPendingComponents: Map<number, GLTFPendingComponent[]>;
   nextComponentStoreIndex: number;
   nodeIdToComponentStoreIndex: Map<number, number>;
 }
