@@ -31,7 +31,7 @@ export void websg_load() {
 }
 
 export void websg_update(float_t dt, float_t time) {
-  directionalLight->color[0] = (sin(time) + 1.0) / 2.0;
+  websg_light_set_color_element(directionalLight, 0, (sin(time) + 1.0) / 2.0)
 }
 ```
 
