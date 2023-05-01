@@ -26,7 +26,7 @@ import { EditorHeader, EditorHeaderTab } from "../../components/editor-header/Ed
 import { SelectInput } from "../../components/property-panel/SelectInput";
 import { editorAtom, HierarchyTab, hierarchyTabAtom, resourceMenuAtom } from "../../../state/editor";
 
-enum DnDItemTypes {
+export enum DnDItemTypes {
   Node = "node",
 }
 
@@ -180,6 +180,12 @@ interface HierarchyPanelProps {
   treeViewRef?: RefObject<TreeViewRefApi>;
 }
 
+export type NodeDragItem = {
+  type: DnDItemTypes.Node;
+  activeNodeId: number;
+  selectedNodeIds: number[];
+};
+
 export function HierarchyPanelTree({ activeEntity, selectedEntities, scene, treeViewRef }: HierarchyPanelProps) {
   const mainThread = useMainThreadContext();
   const setEditor = useSetAtom(editorAtom);
@@ -218,9 +224,13 @@ export function HierarchyPanelTree({ activeEntity, selectedEntities, scene, tree
     [scene, selectedEntities]
   );
 
-  const getDragItem = useCallback(
-    (nodeId: number) => {
-      return { type: DnDItemTypes.Node, nodeIds: selectedEntities };
+  const getDragItem = useCallback<(nodeId: number) => NodeDragItem>(
+    (nodeId) => {
+      return {
+        type: DnDItemTypes.Node,
+        activeNodeId: nodeId,
+        selectedNodeIds: selectedEntities,
+      };
     },
     [selectedEntities]
   );

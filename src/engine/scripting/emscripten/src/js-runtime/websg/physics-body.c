@@ -11,16 +11,16 @@ JSClassID js_websg_physics_body_class_id;
  * Private Methods and Variables
  **/
 
-JSAtom physicsBodyTypeStatic;
-JSAtom physicsBodyTypeKinematic;
-JSAtom physicsBodyTypeRigid;
+JSAtom physics_body_type_static;
+JSAtom physics_body_type_kinematic;
+JSAtom physics_body_type_rigid;
 
 PhysicsBodyType get_physics_body_type_from_atom(JSAtom atom) {
-  if (atom == physicsBodyTypeStatic) {
+  if (atom == physics_body_type_static) {
     return PhysicsBodyType_Static;
-  } else if (atom == physicsBodyTypeKinematic) {
+  } else if (atom == physics_body_type_kinematic) {
     return PhysicsBodyType_Kinematic;
-  } else if (atom == physicsBodyTypeRigid) {
+  } else if (atom == physics_body_type_rigid) {
     return PhysicsBodyType_Rigid;
   } else {
     return -1;
@@ -80,14 +80,14 @@ void js_websg_define_physics_body(JSContext *ctx, JSValue websg) {
     constructor
   );
 
-  physicsBodyTypeKinematic = JS_NewAtom(ctx, "kinematic");
-  physicsBodyTypeRigid = JS_NewAtom(ctx, "rigid");
-  physicsBodyTypeStatic = JS_NewAtom(ctx, "static");
+  physics_body_type_kinematic = JS_NewAtom(ctx, "kinematic");
+  physics_body_type_rigid = JS_NewAtom(ctx, "rigid");
+  physics_body_type_static = JS_NewAtom(ctx, "static");
 
   JSValue physics_body_type = JS_NewObject(ctx);
-  JS_SetPropertyStr(ctx, physics_body_type, "Kinematic", JS_AtomToValue(ctx, physicsBodyTypeKinematic));
-  JS_SetPropertyStr(ctx, physics_body_type, "Rigid", JS_AtomToValue(ctx, physicsBodyTypeRigid));
-  JS_SetPropertyStr(ctx, physics_body_type, "Static", JS_AtomToValue(ctx, physicsBodyTypeStatic));
+  JS_SetPropertyStr(ctx, physics_body_type, "Kinematic", JS_AtomToValue(ctx, physics_body_type_kinematic));
+  JS_SetPropertyStr(ctx, physics_body_type, "Rigid", JS_AtomToValue(ctx, physics_body_type_rigid));
+  JS_SetPropertyStr(ctx, physics_body_type, "Static", JS_AtomToValue(ctx, physics_body_type_static));
   JS_SetPropertyStr(ctx, websg, "PhysicsBodyType", physics_body_type);
 }
 
