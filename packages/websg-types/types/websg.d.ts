@@ -143,7 +143,15 @@ declare namespace WebSG {
     constructor(props: ColliderProps);
   }
 
-  type InteractableProps = {};
+  type InteractableType = 1 | 2;
+  const InteractableType: {
+    Interactable: 1;
+    Grabbable: 2;
+  };
+
+  type InteractableProps = {
+    type: InteractableType;
+  };
 
   /**
    * The Interactable class represents an object that can be interacted

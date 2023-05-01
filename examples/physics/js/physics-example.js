@@ -5,7 +5,7 @@ world.onenter = () => {
 
   for (let i = 0; i < 3; i++) {
     const boxNode = world.createNode({
-      translation: [5, 1 + i, 0],
+      translation: [5, 2 + i, 0],
       mesh: world.createBoxMesh({
         size: [1, 1, 1],
         segments: [1, 1, 1],
@@ -16,6 +16,7 @@ world.onenter = () => {
       }),
     });
     boxNode.addPhysicsBody({ type: WebSG.PhysicsBodyType.Rigid });
+    boxNode.addInteractable({ type: WebSG.InteractableType.Grabbable });
 
     scene.addNode(boxNode);
   }
