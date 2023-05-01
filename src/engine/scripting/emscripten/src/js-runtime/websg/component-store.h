@@ -9,6 +9,7 @@ typedef struct WebSGComponentStoreData {
   component_id_t component_id;
   JSValue component_instances;
   JSClassID component_instance_class_id;
+  uint32_t *prop_byte_offsets;
   void* store;
 } WebSGComponentStoreData;
 

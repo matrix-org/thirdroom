@@ -85,13 +85,19 @@ JSValue js_websg_new_component_store_instance(
   uint32_t component_store_size = websg_world_get_component_store_size();
 
   size_t store_byte_length;
+  uint32_t *prop_byte_offsets;
 
   JSClassID component_instance_class_id = js_websg_define_component_instance(
     ctx,
     component_id,
     component_store_size,
-    &store_byte_length
+    &store_byte_length,
+    &prop_byte_offsets
   );
+
+  if (component_instance_class_id == 0) {
+    return JS_EXCEPTION;
+  }
 
   // This is the backing store for component data
   void *store = js_mallocz(ctx, store_byte_length);
@@ -103,6 +109,7 @@ JSValue js_websg_new_component_store_instance(
   component_store_data->component_id = component_id;
   component_store_data->component_instance_class_id = component_instance_class_id;
   component_store_data->component_instances = JS_NewObject(ctx);
+  component_store_data->prop_byte_offsets = prop_byte_offsets;
   component_store_data->store = store;
   JS_SetOpaque(component_store, component_store_data);
 
@@ -125,9 +132,7 @@ JSValue js_websg_component_store_get_instance(
   if (JS_IsUndefined(component_instance)) {
     component_instance = js_websg_create_component_instance(
       ctx,
-      component_store_data->world_data,
-      component_store_data->component_instance_class_id,
-      component_store_data->store,
+      component_store_data,
       component_store_index
     );
 

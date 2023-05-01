@@ -77,18 +77,19 @@ export function setComponentStore(
         const propDef = componentDefinition.props[i];
         const propStore = this.props[i];
         const defaultValue = propDef.defaultValue;
+        const nodeIndex = resourceManager.nodeIdToComponentStoreIndex.get(eid) || 0;
 
-        if (propDef.size > 0) {
+        if (propDef.size > 1) {
           if (defaultValue === undefined) {
-            (propStore[eid] as TypedArray32).fill(0);
+            (propStore[nodeIndex] as TypedArray32).fill(0);
           } else {
-            (propStore[eid] as TypedArray32).set(defaultValue as number[]);
+            (propStore[nodeIndex] as TypedArray32).set(defaultValue as number[]);
           }
         } else {
           if (defaultValue === undefined) {
-            propStore[eid] = 0;
+            propStore[nodeIndex] = 0;
           } else {
-            propStore[eid] = defaultValue as number;
+            propStore[nodeIndex] = defaultValue as number;
           }
         }
       }
@@ -109,7 +110,7 @@ export function setComponentStore(
 
       const typedArrayConstructor = getTypedArrayForStorageType(propDef.storageType);
 
-      if (propDef.size > 0) {
+      if (propDef.size > 1) {
         const arrPropStore = [];
 
         for (let i = 0; i < resourceManager.componentStoreSize; i++) {

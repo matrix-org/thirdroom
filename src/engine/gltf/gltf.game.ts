@@ -796,6 +796,8 @@ async function loadGLTFComponents(loaderCtx: GLTFLoaderContext, extension: GLTFN
     componentStore.add(node.eid);
 
     if (componentDefinition.props) {
+      const nodeIndex = resourceManager.nodeIdToComponentStoreIndex.get(node.eid) || 0;
+
       for (const propDef of componentDefinition.props) {
         let propValue = componentProps[propDef.name];
 
@@ -820,9 +822,9 @@ async function loadGLTFComponents(loaderCtx: GLTFLoaderContext, extension: GLTFN
           }
         } else {
           if (propDef.size === 1) {
-            propStore[node.eid] = propValue as number;
+            propStore[nodeIndex] = propValue as number;
           } else {
-            (propStore[node.eid] as TypedArray32).set(propValue as number[]);
+            (propStore[nodeIndex] as TypedArray32).set(propValue as number[]);
           }
         }
       }

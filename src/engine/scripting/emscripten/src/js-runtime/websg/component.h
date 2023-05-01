@@ -3,10 +3,10 @@
 #include "../../websg.h"
 #include "../quickjs/quickjs.h"
 #include "./world.h"
+#include "./component-store.h"
 
 typedef struct WebSGComponentData {
-  WebSGWorldData *world_data;
-  void* store;
+  WebSGComponentStoreData *component_store_data;
   uint32_t component_store_index;
   JSValue private_fields;
 } WebSGComponentData;
@@ -21,14 +21,13 @@ JSClassID js_websg_define_component_instance(
   JSContext *ctx,
   component_id_t component_id,
   uint32_t component_store_size,
-  size_t *component_store_byte_length
+  size_t *component_store_byte_length,
+  uint32_t **prop_byte_offsets
 );
 
 JSValue js_websg_create_component_instance(
   JSContext *ctx,
-  WebSGWorldData *world_data,
-  JSClassID component_instance_class_id,
-  void *store,
+  WebSGComponentStoreData *component_store_data,
   uint32_t component_store_index
 );
 

@@ -32,9 +32,7 @@ function setRotationAxis(quat, axis, angle) {
 
 function SpinnerSystem(time) {
   for (const node of spinnerQuery) {
-    console.log(node);
     const spinner = node.getComponent(Spinner);
-    console.log(spinner);
     setRotationAxis(node.rotation, spinner.axis, time * spinner.speed);
   }
 }

@@ -115,10 +115,11 @@ void js_websg_define_component(JSContext *ctx, JSValue websg) {
 //   );
 // }
 
-static JSValue js_websg_component_get_bool_prop(JSContext *ctx, JSValueConst this_val, int prop_store_offset) {
+static JSValue js_websg_component_get_bool_prop(JSContext *ctx, JSValueConst this_val, int prop_idx) {
   WebSGComponentData *component_data = JS_GetOpaque_UNSAFE(this_val);
+  WebSGComponentStoreData *store_data = component_data->component_store_data;
   size_t node_offset = sizeof(int32_t) * component_data->component_store_index;
-  int32_t *value_ptr = component_data->store + prop_store_offset + node_offset;
+  int32_t *value_ptr = store_data->store + store_data->prop_byte_offsets[prop_idx] + node_offset;
   return JS_NewBool(ctx, *value_ptr);
 }
 
@@ -126,23 +127,25 @@ static JSValue js_websg_component_set_bool_prop(
   JSContext *ctx,
   JSValueConst this_val,
   JSValueConst arg,
-  int prop_store_offset
+  int prop_idx
 ) {
   int32_t value = JS_ToBool(ctx, arg);
 
   WebSGComponentData *component_data = JS_GetOpaque_UNSAFE(this_val);
+  WebSGComponentStoreData *store_data = component_data->component_store_data;
   size_t node_offset = sizeof(int32_t) * component_data->component_store_index;
-  int32_t *value_ptr = component_data->store + prop_store_offset + node_offset;
+  int32_t *value_ptr = store_data->store + store_data->prop_byte_offsets[prop_idx] + node_offset;
 
   *value_ptr = value;
 
   return JS_UNDEFINED;
 }
 
-static JSValue js_websg_component_get_i32_prop(JSContext *ctx, JSValueConst this_val, int prop_store_offset) {
+static JSValue js_websg_component_get_i32_prop(JSContext *ctx, JSValueConst this_val, int prop_idx) {
   WebSGComponentData *component_data = JS_GetOpaque_UNSAFE(this_val);
+  WebSGComponentStoreData *store_data = component_data->component_store_data;
   size_t node_offset = sizeof(int32_t) * component_data->component_store_index;
-  int32_t *value_ptr = component_data->store + prop_store_offset + node_offset;
+  int32_t *value_ptr = store_data->store + store_data->prop_byte_offsets[prop_idx] + node_offset;
   return JS_NewInt32(ctx, *value_ptr);
 }
 
@@ -150,7 +153,7 @@ static JSValue js_websg_component_set_i32_prop(
   JSContext *ctx,
   JSValueConst this_val,
   JSValueConst arg,
-  int prop_store_offset
+  int prop_idx
 ) {
   int32_t value;
   
@@ -159,18 +162,20 @@ static JSValue js_websg_component_set_i32_prop(
   }
 
   WebSGComponentData *component_data = JS_GetOpaque_UNSAFE(this_val);
+  WebSGComponentStoreData *store_data = component_data->component_store_data;
   size_t node_offset = sizeof(int32_t) * component_data->component_store_index;
-  int32_t *value_ptr = component_data->store + prop_store_offset + node_offset;
+  int32_t *value_ptr = store_data->store + store_data->prop_byte_offsets[prop_idx] + node_offset;
 
   *value_ptr = value;
 
   return JS_UNDEFINED;
 }
 
-static JSValue js_websg_component_get_u32_prop(JSContext *ctx, JSValueConst this_val, int prop_store_offset) {
+static JSValue js_websg_component_get_u32_prop(JSContext *ctx, JSValueConst this_val, int prop_idx) {
   WebSGComponentData *component_data = JS_GetOpaque_UNSAFE(this_val);
+  WebSGComponentStoreData *store_data = component_data->component_store_data;
   size_t node_offset = sizeof(uint32_t) * component_data->component_store_index;
-  uint32_t *value_ptr = component_data->store + prop_store_offset + node_offset;
+  uint32_t *value_ptr = store_data->store + store_data->prop_byte_offsets[prop_idx] + node_offset;
   return JS_NewUint32(ctx, *value_ptr);
 }
 
@@ -178,7 +183,7 @@ static JSValue js_websg_component_set_u32_prop(
   JSContext *ctx,
   JSValueConst this_val,
   JSValueConst arg,
-  int prop_store_offset
+  int prop_idx
 ) {
   uint32_t value;
   
@@ -187,18 +192,20 @@ static JSValue js_websg_component_set_u32_prop(
   }
 
   WebSGComponentData *component_data = JS_GetOpaque_UNSAFE(this_val);
+  WebSGComponentStoreData *store_data = component_data->component_store_data;
   size_t node_offset = sizeof(uint32_t) * component_data->component_store_index;
-  uint32_t *value_ptr = component_data->store + prop_store_offset + node_offset;
+  uint32_t *value_ptr = store_data->store + store_data->prop_byte_offsets[prop_idx] + node_offset;
 
   *value_ptr = value;
 
   return JS_UNDEFINED;
 }
 
-static JSValue js_websg_component_get_f32_prop(JSContext *ctx, JSValueConst this_val, int prop_store_offset) {
+static JSValue js_websg_component_get_f32_prop(JSContext *ctx, JSValueConst this_val, int prop_idx) {
   WebSGComponentData *component_data = JS_GetOpaque_UNSAFE(this_val);
+  WebSGComponentStoreData *store_data = component_data->component_store_data;
   size_t node_offset = sizeof(float_t) * component_data->component_store_index;
-  float_t *value_ptr = component_data->store + prop_store_offset + node_offset;
+  float_t *value_ptr = store_data->store + store_data->prop_byte_offsets[prop_idx] + node_offset;
   return JS_NewFloat64(ctx, *value_ptr);
 }
 
@@ -206,7 +213,7 @@ static JSValue js_websg_component_set_f32_prop(
   JSContext *ctx,
   JSValueConst this_val,
   JSValueConst arg,
-  int prop_store_offset
+  int prop_idx
 ) {
   double value;
   
@@ -215,25 +222,27 @@ static JSValue js_websg_component_set_f32_prop(
   }
 
   WebSGComponentData *component_data = JS_GetOpaque_UNSAFE(this_val);
+  WebSGComponentStoreData *store_data = component_data->component_store_data;
   size_t node_offset = sizeof(float_t) * component_data->component_store_index;
-  float_t *value_ptr = component_data->store + prop_store_offset + node_offset;
+  float_t *value_ptr = store_data->store + store_data->prop_byte_offsets[prop_idx] + node_offset;
 
   *value_ptr = (float_t)value;
 
   return JS_UNDEFINED;
 }
 
-static JSValue js_websg_component_get_node_ref_prop(JSContext *ctx, JSValueConst this_val, int prop_store_offset) {
+static JSValue js_websg_component_get_node_ref_prop(JSContext *ctx, JSValueConst this_val, int prop_idx) {
   WebSGComponentData *component_data = JS_GetOpaque_UNSAFE(this_val);
+  WebSGComponentStoreData *store_data = component_data->component_store_data;
   size_t node_offset = sizeof(node_id_t) * component_data->component_store_index;
-  node_id_t *value_ptr = component_data->store + prop_store_offset + node_offset;
+  node_id_t *value_ptr = store_data->store + store_data->prop_byte_offsets[prop_idx] + node_offset;
   
   node_id_t node_id = *value_ptr;
 
   if (node_id == 0) {
     return JS_UNDEFINED;
   } else {
-    return js_websg_get_node_by_id(ctx, component_data->world_data, *value_ptr);
+    return js_websg_get_node_by_id(ctx, store_data->world_data, *value_ptr);
   }
 }
 
@@ -241,7 +250,7 @@ static JSValue js_websg_component_set_node_ref_prop(
   JSContext *ctx,
   JSValueConst this_val,
   JSValueConst arg,
-  int prop_store_offset
+  int prop_idx
 ) {
   node_id_t value;
 
@@ -253,84 +262,90 @@ static JSValue js_websg_component_set_node_ref_prop(
   }
 
   WebSGComponentData *component_data = JS_GetOpaque_UNSAFE(this_val);
+  WebSGComponentStoreData *store_data = component_data->component_store_data;
   size_t node_offset = sizeof(node_id_t) * component_data->component_store_index;
-  node_id_t *value_ptr = component_data->store + prop_store_offset + node_offset;
+  node_id_t *value_ptr = store_data->store + store_data->prop_byte_offsets[prop_idx] + node_offset;
 
   *value_ptr = value;
 
   return JS_UNDEFINED;
 }
 
-static JSValue js_websg_component_get_vec2_prop(JSContext *ctx, JSValueConst this_val, int prop_store_offset) {
+static JSValue js_websg_component_get_vec2_prop(JSContext *ctx, JSValueConst this_val, int prop_idx) {
   WebSGComponentData *component_data = JS_GetOpaque_UNSAFE(this_val);
+  WebSGComponentStoreData *store_data = component_data->component_store_data;
 
-  JSValue prop_val = JS_GetPropertyUint32(ctx, component_data->private_fields, prop_store_offset);
+  JSValue prop_val = JS_GetPropertyUint32(ctx, component_data->private_fields, prop_idx);
 
   if (JS_IsUndefined(prop_val)) {
     size_t node_offset = sizeof(float_t) * 2 * component_data->component_store_index;
-    float_t *value_ptr = component_data->store + prop_store_offset + node_offset;
+    float_t *value_ptr = store_data->store + store_data->prop_byte_offsets[prop_idx] + node_offset;
     prop_val = js_websg_create_vector2(ctx, value_ptr);
-    JS_SetPropertyUint32(ctx, component_data->private_fields, prop_store_offset, prop_val);
+    JS_SetPropertyUint32(ctx, component_data->private_fields, prop_idx, prop_val);
   }
 
   return JS_DupValue(ctx, prop_val);
 }
 
-static JSValue js_websg_component_get_vec3_prop(JSContext *ctx, JSValueConst this_val, int prop_store_offset) {
+static JSValue js_websg_component_get_vec3_prop(JSContext *ctx, JSValueConst this_val, int prop_idx) {
   WebSGComponentData *component_data = JS_GetOpaque_UNSAFE(this_val);
+  WebSGComponentStoreData *store_data = component_data->component_store_data;
 
-  JSValue prop_val = JS_GetPropertyUint32(ctx, component_data->private_fields, prop_store_offset);
+  JSValue prop_val = JS_GetPropertyUint32(ctx, component_data->private_fields, prop_idx);
 
   if (JS_IsUndefined(prop_val)) {
     size_t node_offset = sizeof(float_t) * 3 * component_data->component_store_index;
-    float_t *value_ptr = component_data->store + prop_store_offset + node_offset;
+    float_t *value_ptr = store_data->store + store_data->prop_byte_offsets[prop_idx] + node_offset;
     prop_val = js_websg_create_vector3(ctx, value_ptr);
-    JS_SetPropertyUint32(ctx, component_data->private_fields, prop_store_offset, prop_val);
+    JS_SetPropertyUint32(ctx, component_data->private_fields, prop_idx, prop_val);
   }
 
   return JS_DupValue(ctx, prop_val);
 }
 
-static JSValue js_websg_component_get_vec4_prop(JSContext *ctx, JSValueConst this_val, int prop_store_offset) {
+static JSValue js_websg_component_get_vec4_prop(JSContext *ctx, JSValueConst this_val, int prop_idx) {
   WebSGComponentData *component_data = JS_GetOpaque_UNSAFE(this_val);
+  WebSGComponentStoreData *store_data = component_data->component_store_data;
 
-  JSValue prop_val = JS_GetPropertyUint32(ctx, component_data->private_fields, prop_store_offset);
+  JSValue prop_val = JS_GetPropertyUint32(ctx, component_data->private_fields, prop_idx);
 
   if (JS_IsUndefined(prop_val)) {
     size_t node_offset = sizeof(float_t) * 4 * component_data->component_store_index;
-    float_t *value_ptr = component_data->store + prop_store_offset + node_offset;
+    float_t *value_ptr = store_data->store + store_data->prop_byte_offsets[prop_idx] + node_offset;
     prop_val = js_websg_create_vector4(ctx, value_ptr);
-    JS_SetPropertyUint32(ctx, component_data->private_fields, prop_store_offset, prop_val);
+    JS_SetPropertyUint32(ctx, component_data->private_fields, prop_idx, prop_val);
   }
 
   return JS_DupValue(ctx, prop_val);
 }
 
-static JSValue js_websg_component_get_rgb_prop(JSContext *ctx, JSValueConst this_val, int prop_store_offset) {
+static JSValue js_websg_component_get_rgb_prop(JSContext *ctx, JSValueConst this_val, int prop_idx) {
   WebSGComponentData *component_data = JS_GetOpaque_UNSAFE(this_val);
+  WebSGComponentStoreData *store_data = component_data->component_store_data;
 
-  JSValue prop_val = JS_GetPropertyUint32(ctx, component_data->private_fields, prop_store_offset);
+  JSValue prop_val = JS_GetPropertyUint32(ctx, component_data->private_fields, prop_idx);
 
   if (JS_IsUndefined(prop_val)) {
     size_t node_offset = sizeof(float_t) * 3 * component_data->component_store_index;
-    float_t *value_ptr = component_data->store + prop_store_offset + node_offset;
+    float_t *value_ptr = store_data->store + store_data->prop_byte_offsets[prop_idx] + node_offset;
     prop_val = js_websg_create_rgb(ctx, value_ptr);
-    JS_SetPropertyUint32(ctx, component_data->private_fields, prop_store_offset, prop_val);
+    JS_SetPropertyUint32(ctx, component_data->private_fields, prop_idx, prop_val);
   }
 
   return JS_DupValue(ctx, prop_val);
 }
 
-static JSValue js_websg_component_get_rgba_prop(JSContext *ctx, JSValueConst this_val, int prop_store_offset) {
+static JSValue js_websg_component_get_rgba_prop(JSContext *ctx, JSValueConst this_val, int prop_idx) {
   WebSGComponentData *component_data = JS_GetOpaque_UNSAFE(this_val);
+  WebSGComponentStoreData *store_data = component_data->component_store_data;
 
-  JSValue prop_val = JS_GetPropertyUint32(ctx, component_data->private_fields, prop_store_offset);
+  JSValue prop_val = JS_GetPropertyUint32(ctx, component_data->private_fields, prop_idx);
 
   if (JS_IsUndefined(prop_val)) {
     size_t node_offset = sizeof(float_t) * 4 * component_data->component_store_index;
-    float_t *value_ptr = component_data->store + prop_store_offset + node_offset;
+    float_t *value_ptr = store_data->store + store_data->prop_byte_offsets[prop_idx] + node_offset;
     prop_val = js_websg_create_rgba(ctx, value_ptr);
-    JS_SetPropertyUint32(ctx, component_data->private_fields, prop_store_offset, prop_val);
+    JS_SetPropertyUint32(ctx, component_data->private_fields, prop_idx, prop_val);
   }
 
   return JS_DupValue(ctx, prop_val);
@@ -340,7 +355,8 @@ JSClassID js_websg_define_component_instance(
   JSContext *ctx,
   component_id_t component_id,
   uint32_t component_store_size,
-  size_t *component_store_byte_length
+  size_t *component_store_byte_length,
+  uint32_t **prop_byte_offsets
 ) {
   uint32_t component_name_length = websg_component_definition_get_name_length(component_id);
 
@@ -367,7 +383,7 @@ JSClassID js_websg_define_component_instance(
   class_def->class_name = component_name;
   class_def->finalizer = js_websg_component_finalizer;
 
-  JSClassID component_instance_class_id;
+  JSClassID component_instance_class_id = 0;
   JS_NewClassID(&component_instance_class_id);
   JS_NewClass(JS_GetRuntime(ctx), component_instance_class_id, class_def);
   JSValue component_instance_proto = JS_NewObject(ctx);
@@ -376,6 +392,8 @@ JSClassID js_websg_define_component_instance(
   JSCFunctionListEntry *function_list = js_mallocz(ctx, sizeof(JSCFunctionListEntry) * prop_count);
 
   int32_t byte_offset = 0;
+
+  uint32_t *prop_byte_offsets_arr = js_mallocz(ctx, sizeof(uint32_t) * prop_count);
 
   for (int32_t i = 0; i < prop_count; i++) {
     uint32_t prop_name_length = websg_component_definition_get_prop_name_length(component_id, i);
@@ -408,7 +426,7 @@ JSClassID js_websg_define_component_instance(
 
     const char *ref_type;
 
-    if (strcmp(prop_type, "ref")) {
+    if (strcmp(prop_type, "ref") == 0) {
       uint32_t ref_type_length = websg_component_definition_get_ref_type_length(component_id, i);
 
       if (ref_type_length == 0) {
@@ -447,34 +465,34 @@ JSClassID js_websg_define_component_instance(
     JSCFunctionListEntry entry;
 
     if (prop_size == 1) {
-      if (strcmp(prop_type, "bool")) {
+      if (strcmp(prop_type, "bool") == 0) {
         entry = (JSCFunctionListEntry)JS_CGETSET_MAGIC_DEF(
           prop_name,
           js_websg_component_get_bool_prop,
           js_websg_component_set_bool_prop,
-          byte_offset
+          i
         );
-      } else if (strcmp(prop_type, "i32")) {
+      } else if (strcmp(prop_type, "i32") == 0) {
         entry = (JSCFunctionListEntry)JS_CGETSET_MAGIC_DEF(
           prop_name,
           js_websg_component_get_i32_prop,
           js_websg_component_set_i32_prop,
-          byte_offset
+          i
         );
-      } else if (strcmp(prop_type, "f32")) {
+      } else if (strcmp(prop_type, "f32") == 0) {
         entry = (JSCFunctionListEntry)JS_CGETSET_MAGIC_DEF(
           prop_name,
           js_websg_component_get_f32_prop,
           js_websg_component_set_f32_prop,
-          byte_offset
+          i
         );
-      } else if (strcmp(prop_type, "ref")) {
-        if (strcmp(ref_type, "node")) {
+      } else if (strcmp(prop_type, "ref") == 0) {
+        if (strcmp(ref_type, "node") == 0) {
           entry = (JSCFunctionListEntry)JS_CGETSET_MAGIC_DEF(
             prop_name,
             js_websg_component_get_node_ref_prop,
             js_websg_component_set_node_ref_prop,
-            byte_offset
+            i
           );
         } else {
           JS_ThrowInternalError(ctx, "Unknown ref type.");
@@ -485,61 +503,61 @@ JSClassID js_websg_define_component_instance(
           prop_name,
           js_websg_component_get_i32_prop,
           js_websg_component_set_i32_prop,
-          byte_offset
+          i
         );
       } else if (storage_type == ComponentPropStorageType_u32) {
         entry = (JSCFunctionListEntry)JS_CGETSET_MAGIC_DEF(
           prop_name,
           js_websg_component_get_u32_prop,
           js_websg_component_set_u32_prop,
-          byte_offset
+          i
         );
       } else if (storage_type == ComponentPropStorageType_f32) {
         entry = (JSCFunctionListEntry)JS_CGETSET_MAGIC_DEF(
           prop_name,
           js_websg_component_get_f32_prop,
           js_websg_component_set_f32_prop,
-          byte_offset
+          i
         );
       } else {
         JS_ThrowInternalError(ctx, "Invalid prop storage type");
         return 0;
       }
     } else {
-      if (strcmp(prop_type, "vec2")) {
+      if (strcmp(prop_type, "vec2") == 0) {
         entry = (JSCFunctionListEntry)JS_CGETSET_MAGIC_DEF(
           prop_name,
           js_websg_component_get_vec2_prop,
           NULL,
-          byte_offset
+          i
         );
-      } else if (strcmp(prop_type, "vec3")) {
+      } else if (strcmp(prop_type, "vec3") == 0) {
         entry = (JSCFunctionListEntry)JS_CGETSET_MAGIC_DEF(
           prop_name,
           js_websg_component_get_vec3_prop,
           NULL,
-          byte_offset
+          i
         );
-      } else if (strcmp(prop_type, "vec4")) {
+      } else if (strcmp(prop_type, "vec4") == 0) {
         entry = (JSCFunctionListEntry)JS_CGETSET_MAGIC_DEF(
           prop_name,
           js_websg_component_get_vec4_prop,
           NULL,
-          byte_offset
+          i
         );
-      } else if (strcmp(prop_type, "rgb")) {
+      } else if (strcmp(prop_type, "rgb") == 0) {
         entry = (JSCFunctionListEntry)JS_CGETSET_MAGIC_DEF(
           prop_name,
           js_websg_component_get_rgb_prop,
           NULL,
-          byte_offset
+          i
         );
-      } else if (strcmp(prop_type, "rgba")) {
+      } else if (strcmp(prop_type, "rgba") == 0) {
         entry = (JSCFunctionListEntry)JS_CGETSET_MAGIC_DEF(
           prop_name,
           js_websg_component_get_rgba_prop,
           NULL,
-          byte_offset
+          i
         );
       // TODO: Figure out how to handle typed arrays with size defined by prop size.
       // } else if (storage_type == ComponentPropStorageType_i32) {
@@ -578,28 +596,29 @@ JSClassID js_websg_define_component_instance(
       sizeof(JSCFunctionListEntry)
     );
 
+    prop_byte_offsets_arr[i] = byte_offset;
+
     byte_offset += store_byte_length;
   }
 
+  JS_SetPropertyFunctionList(ctx, component_instance_proto, function_list, prop_count);
   JS_SetPrototype(ctx, component_instance_proto, component_proto);
   JS_SetClassProto(ctx, component_instance_class_id, component_instance_proto);
 
   *component_store_byte_length = (size_t)byte_offset;
+  *prop_byte_offsets = prop_byte_offsets_arr;
 
   return component_instance_class_id;
 }
 
 JSValue js_websg_create_component_instance(
   JSContext *ctx,
-  WebSGWorldData *world_data,
-  JSClassID component_instance_class_id,
-  void *store,
+  WebSGComponentStoreData *component_store_data,
   uint32_t component_store_index
 ) {
-  JSValue component_instance = JS_NewObjectClass(ctx, component_instance_class_id);
+  JSValue component_instance = JS_NewObjectClass(ctx, component_store_data->component_instance_class_id);
   WebSGComponentData *component_data = js_mallocz(ctx, sizeof(WebSGComponentData));
-  component_data->world_data = world_data;
-  component_data->store = store;
+  component_data->component_store_data = component_store_data;
   component_data->component_store_index = component_store_index;
   component_data->private_fields = JS_NewObject(ctx);
   JS_SetOpaque(component_instance, component_data);

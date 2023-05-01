@@ -116,6 +116,7 @@ JSValue js_websg_create_vector3(JSContext *ctx, float* elements) {
   JSValue vector3 = JS_NewObjectClass(ctx, js_websg_vector3_class_id);
   WebSGVector3Data *vector3_data = js_mallocz(ctx, sizeof(WebSGVector3Data));
   vector3_data->elements = elements;
+  JS_SetOpaque(vector3, vector3_data);
   return vector3;
 }
 
