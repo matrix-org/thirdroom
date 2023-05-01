@@ -24,6 +24,16 @@ Internally we use Unity 2021.3.17f1 (LTS), Unity versions 2020.3+ should be supp
 
 You should use the Universal Render Pipeline (URP) to maximize compatibility with UnityGLTF.
 
+::: warning
+If you are a macOS user and see this error when trying to import packages via git URL:
+
+```
+  xcrun: error: invalid active developer path (/Library/Developer/CommandLineTools), missing xcrun at: /Library/Developer/CommandLineTools/usr/bin/xcrun
+```
+
+Run `xcode-select --install` in order for git import of packages to function properly.
+:::
+
 This package depends on a branch of UnityGLTF that needs to be installed before you install the exporter.
 
 1. Open `Window > Package Manager`
@@ -64,6 +74,17 @@ You can find your render pipeline assets in your project's `Settings` directory.
 Open up the asset and ensure that HDR is turned on. It should be already.
 
 ![HDR Render Pipeline Settings](./images/HDRRenderPipeline.png)
+
+### Lighting Settings
+
+You will need to setup Lighting Settings properly in order to export as glTF from Unity3D.
+
+1. Open `Window > Rendering > Lighting`
+1. Select `ThirdRoomDefaultLightingSettings` as the Lighting Settings Asset
+1. At the botton of the Lighting panel, make sure to click the `Generate Lighting` button before exporting as glTF
+
+![Lighting Settings Asset](./images/LightingSettingsAsset.png)
+![Generate Lighting](./images/GenerateLighting.png)
 
 ### Materials
 
