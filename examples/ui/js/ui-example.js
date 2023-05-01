@@ -58,6 +58,11 @@ world.onload = () => {
     height: 180,
   });
 
+  text = world.createUIText({
+    value: "hello, world!",
+    color: [1, 1, 1, 1],
+  });
+
   elC = world.createUIElement({
     width: 250,
     height: 250,
@@ -70,6 +75,7 @@ world.onload = () => {
   root.addChild(elA);
   root.addChild(elB);
   elB.addChild(elC);
+  elA.addChild(text);
 
   world.environment.addNode(node);
 };
@@ -77,7 +83,7 @@ world.onload = () => {
 let x = 0;
 world.onupdate = (dt) => {
   if (button.pressed) {
-    button.value = "button pressed " + x++ + " times";
+    button.value = "button pressed " + ++x + " times";
     canvas.redraw();
   }
 };
