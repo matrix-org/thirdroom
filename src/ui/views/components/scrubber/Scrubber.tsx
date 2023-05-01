@@ -33,12 +33,13 @@ export function Scrubber({ value, onChange, min, max, children }: ScrubberProps)
     });
     scrubberRef.current?.requestPointerLock();
 
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
   }
 
   function handleMouseMove(evt: MouseEvent) {
     evt.preventDefault();
+    evt.stopPropagation();
     const newValue = clamp(valueRef.current + evt.movementX, min, max);
     onChange(newValue);
     valueRef.current = newValue;
@@ -62,8 +63,8 @@ export function Scrubber({ value, onChange, min, max, children }: ScrubberProps)
     setScrubber(undefined);
     document.exitPointerLock();
 
-    window.removeEventListener("mousemove", handleMouseMove);
-    window.removeEventListener("mouseup", handleMouseUp);
+    document.removeEventListener("mousemove", handleMouseMove);
+    document.removeEventListener("mouseup", handleMouseUp);
   }
 
   return (
