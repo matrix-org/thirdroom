@@ -14,7 +14,7 @@ JSClassID js_websg_ui_button_class_id;
  **/
 
 static void js_websg_ui_button_finalizer(JSRuntime *rt, JSValue val) {
-  WebSGUIElementData *ui_element_data = JS_GetOpaque(val, js_websg_ui_button_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque_UNSAFE(val);
 
   if (ui_element_data) {
     js_free_rt(rt, ui_element_data);
@@ -27,7 +27,7 @@ static JSClassDef js_websg_ui_button_class = {
 };
 
 static JSValue js_websg_ui_button_get_label(JSContext *ctx, JSValueConst this_val) {
-  WebSGUIElementData *ui_button_data = JS_GetOpaque(this_val, js_websg_ui_button_class_id);
+  WebSGUIElementData *ui_button_data = JS_GetOpaque_UNSAFE(this_val);
 
   int32_t length = websg_ui_button_get_label_length(ui_button_data->ui_element_id);
 
@@ -44,7 +44,7 @@ static JSValue js_websg_ui_button_get_label(JSContext *ctx, JSValueConst this_va
 }
 
 static JSValue js_websg_ui_button_set_label(JSContext *ctx, JSValueConst this_val, JSValueConst arg) {
-  WebSGUIElementData *ui_button_data = JS_GetOpaque(this_val, js_websg_ui_button_class_id);
+  WebSGUIElementData *ui_button_data = JS_GetOpaque_UNSAFE(this_val);
 
   size_t length;
   const char* label = JS_ToCStringLen(ctx, &length, arg);
@@ -64,7 +64,7 @@ static JSValue js_websg_ui_button_set_label(JSContext *ctx, JSValueConst this_va
 }
 
 static JSValue js_websg_ui_button_get_pressed(JSContext *ctx, JSValueConst this_val) {
-  WebSGUIElementData *ui_button_data = JS_GetOpaque(this_val, js_websg_ui_button_class_id);
+  WebSGUIElementData *ui_button_data = JS_GetOpaque_UNSAFE(this_val);
 
   int32_t result = websg_ui_button_get_pressed(ui_button_data->ui_element_id);
 
@@ -77,7 +77,7 @@ static JSValue js_websg_ui_button_get_pressed(JSContext *ctx, JSValueConst this_
 }
 
 static JSValue js_websg_ui_button_get_held(JSContext *ctx, JSValueConst this_val) {
-  WebSGUIElementData *ui_button_data = JS_GetOpaque(this_val, js_websg_ui_button_class_id);
+  WebSGUIElementData *ui_button_data = JS_GetOpaque_UNSAFE(this_val);
 
   int32_t result = websg_ui_button_get_held(ui_button_data->ui_element_id);
 
@@ -90,7 +90,7 @@ static JSValue js_websg_ui_button_get_held(JSContext *ctx, JSValueConst this_val
 }
 
 static JSValue js_websg_ui_button_get_released(JSContext *ctx, JSValueConst this_val) {
-  WebSGUIElementData *ui_button_data = JS_GetOpaque(this_val, js_websg_ui_button_class_id);
+  WebSGUIElementData *ui_button_data = JS_GetOpaque_UNSAFE(this_val);
 
   int32_t result = websg_ui_button_get_released(ui_button_data->ui_element_id);
 

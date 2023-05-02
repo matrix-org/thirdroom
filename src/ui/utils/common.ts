@@ -137,3 +137,17 @@ export function saveData(blob: Blob, fileName: string) {
   window.URL.revokeObjectURL(url);
   document.body.removeChild(a);
 }
+
+export function clamp(value: number, min?: number, max?: number): number {
+  if (typeof min === "number" && value < min) return min;
+  if (typeof max === "number" && value > max) return max;
+  return value;
+}
+
+export function camelizeVariableName(str: string): string {
+  return str
+    .replace(/(?:^\w|[A-Z]|\b\w)/g, (word, index) => {
+      return index === 0 ? word.toLowerCase() : word.toUpperCase();
+    })
+    .replace(/([^a-zA-Z0-9_$])+/g, "");
+}

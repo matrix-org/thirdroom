@@ -216,7 +216,7 @@ JSAtom get_atom_from_flex_wrap(FlexWrap wrap) {
  **/
 
 static void js_websg_ui_element_finalizer(JSRuntime *rt, JSValue val) {
-  WebSGUIElementData *ui_element_data = JS_GetOpaque(val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque_UNSAFE(val);
 
   if (ui_element_data) {
     js_free_rt(rt, ui_element_data);
@@ -229,7 +229,7 @@ static JSClassDef js_websg_ui_element_class = {
 };
 
 static JSValue js_websg_ui_element_get_flex_direction(JSContext *ctx, JSValueConst this_val) {
-  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque_UNSAFE(this_val);
 
   FlexDirection result = websg_ui_element_get_flex_direction(ui_element_data->ui_element_id);
 
@@ -239,7 +239,7 @@ static JSValue js_websg_ui_element_get_flex_direction(JSContext *ctx, JSValueCon
 }
 
 static JSValue js_websg_ui_element_set_flex_direction(JSContext *ctx, JSValueConst this_val, JSValueConst arg) {
-  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque_UNSAFE(this_val);
 
   JSAtom atom = JS_ValueToAtom(ctx, arg);
 
@@ -261,7 +261,7 @@ static JSValue js_websg_ui_element_set_flex_direction(JSContext *ctx, JSValueCon
 }
 
 static JSValue js_websg_ui_element_get_position_type(JSContext *ctx, JSValueConst this_val) {
-  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque_UNSAFE(this_val);
 
   ElementPositionType result = websg_ui_element_get_position_type(ui_element_data->ui_element_id);
 
@@ -271,7 +271,7 @@ static JSValue js_websg_ui_element_get_position_type(JSContext *ctx, JSValueCons
 }
 
 static JSValue js_websg_ui_element_set_position_type(JSContext *ctx, JSValueConst this_val, JSValueConst arg) {
-  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque_UNSAFE(this_val);
 
   JSAtom atom = JS_ValueToAtom(ctx, arg);
 
@@ -293,13 +293,13 @@ static JSValue js_websg_ui_element_set_position_type(JSContext *ctx, JSValueCons
 }
 
 static JSValue js_websg_ui_element_get_position(JSContext *ctx, JSValueConst this_val, int index) {
-  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque_UNSAFE(this_val);
   float_t result = websg_ui_element_get_position_element(ui_element_data->ui_element_id, index);
   return JS_NewFloat64(ctx, result);
 }
 
 static JSValue js_websg_ui_element_set_position(JSContext *ctx, JSValueConst this_val, JSValueConst arg, int index) {
-  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque_UNSAFE(this_val);
 
   double_t value;
 
@@ -318,7 +318,7 @@ static JSValue js_websg_ui_element_set_position(JSContext *ctx, JSValueConst thi
 }
 
 static JSValue js_websg_ui_element_get_align_content(JSContext *ctx, JSValueConst this_val) {
-  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque_UNSAFE(this_val);
 
   FlexAlign result = websg_ui_element_get_align_content(ui_element_data->ui_element_id);
 
@@ -328,7 +328,7 @@ static JSValue js_websg_ui_element_get_align_content(JSContext *ctx, JSValueCons
 }
 
 static JSValue js_websg_ui_element_set_align_content(JSContext *ctx, JSValueConst this_val, JSValueConst arg) {
-  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque_UNSAFE(this_val);
 
   JSAtom atom = JS_ValueToAtom(ctx, arg);
 
@@ -350,7 +350,7 @@ static JSValue js_websg_ui_element_set_align_content(JSContext *ctx, JSValueCons
 }
 
 static JSValue js_websg_ui_element_get_align_items(JSContext *ctx, JSValueConst this_val) {
-  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque_UNSAFE(this_val);
 
   FlexAlign result = websg_ui_element_get_align_items(ui_element_data->ui_element_id);
 
@@ -360,7 +360,7 @@ static JSValue js_websg_ui_element_get_align_items(JSContext *ctx, JSValueConst 
 }
 
 static JSValue js_websg_ui_element_set_align_items(JSContext *ctx, JSValueConst this_val, JSValueConst arg) {
-  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque_UNSAFE(this_val);
 
   JSAtom atom = JS_ValueToAtom(ctx, arg);
 
@@ -382,7 +382,7 @@ static JSValue js_websg_ui_element_set_align_items(JSContext *ctx, JSValueConst 
 }
 
 static JSValue js_websg_ui_element_get_align_self(JSContext *ctx, JSValueConst this_val) {
-  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque_UNSAFE(this_val);
 
   FlexAlign result = websg_ui_element_get_align_self(ui_element_data->ui_element_id);
 
@@ -392,7 +392,7 @@ static JSValue js_websg_ui_element_get_align_self(JSContext *ctx, JSValueConst t
 }
 
 static JSValue js_websg_ui_element_set_align_self(JSContext *ctx, JSValueConst this_val, JSValueConst arg) {
-  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque_UNSAFE(this_val);
 
   JSAtom atom = JS_ValueToAtom(ctx, arg);
 
@@ -414,7 +414,7 @@ static JSValue js_websg_ui_element_set_align_self(JSContext *ctx, JSValueConst t
 }
 
 static JSValue js_websg_ui_element_get_flex_wrap(JSContext *ctx, JSValueConst this_val) {
-  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque_UNSAFE(this_val);
 
   FlexWrap result = websg_ui_element_get_flex_wrap(ui_element_data->ui_element_id);
 
@@ -424,7 +424,7 @@ static JSValue js_websg_ui_element_get_flex_wrap(JSContext *ctx, JSValueConst th
 }
 
 static JSValue js_websg_ui_element_set_flex_wrap(JSContext *ctx, JSValueConst this_val, JSValueConst arg) {
-  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque_UNSAFE(this_val);
 
   JSAtom atom = JS_ValueToAtom(ctx, arg);
 
@@ -446,7 +446,7 @@ static JSValue js_websg_ui_element_set_flex_wrap(JSContext *ctx, JSValueConst th
 }
 
 static JSValue js_websg_ui_element_get_flex_basis(JSContext *ctx, JSValueConst this_val) {
-  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque_UNSAFE(this_val);
 
   float_t result = websg_ui_element_get_flex_basis(ui_element_data->ui_element_id);
 
@@ -454,7 +454,7 @@ static JSValue js_websg_ui_element_get_flex_basis(JSContext *ctx, JSValueConst t
 }
 
 static JSValue js_websg_ui_element_set_flex_basis(JSContext *ctx, JSValueConst this_val, JSValueConst arg) {
-  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque_UNSAFE(this_val);
 
   double_t value;
 
@@ -473,7 +473,7 @@ static JSValue js_websg_ui_element_set_flex_basis(JSContext *ctx, JSValueConst t
 }
 
 static JSValue js_websg_ui_element_get_flex_grow(JSContext *ctx, JSValueConst this_val) {
-  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque_UNSAFE(this_val);
 
   float_t result = websg_ui_element_get_flex_grow(ui_element_data->ui_element_id);
 
@@ -481,7 +481,7 @@ static JSValue js_websg_ui_element_get_flex_grow(JSContext *ctx, JSValueConst th
 }
 
 static JSValue js_websg_ui_element_set_flex_grow(JSContext *ctx, JSValueConst this_val, JSValueConst arg) {
-  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque_UNSAFE(this_val);
 
   double_t value;
 
@@ -500,7 +500,7 @@ static JSValue js_websg_ui_element_set_flex_grow(JSContext *ctx, JSValueConst th
 }
 
 static JSValue js_websg_ui_element_get_flex_shrink(JSContext *ctx, JSValueConst this_val) {
-  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque_UNSAFE(this_val);
 
   float_t result = websg_ui_element_get_flex_shrink(ui_element_data->ui_element_id);
 
@@ -508,7 +508,7 @@ static JSValue js_websg_ui_element_get_flex_shrink(JSContext *ctx, JSValueConst 
 }
 
 static JSValue js_websg_ui_element_set_flex_shrink(JSContext *ctx, JSValueConst this_val, JSValueConst arg) {
-  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque_UNSAFE(this_val);
 
   double_t value;
 
@@ -527,7 +527,7 @@ static JSValue js_websg_ui_element_set_flex_shrink(JSContext *ctx, JSValueConst 
 }
 
 static JSValue js_websg_ui_element_get_justify_content(JSContext *ctx, JSValueConst this_val) {
-  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque_UNSAFE(this_val);
 
   FlexJustify result = websg_ui_element_get_justify_content(ui_element_data->ui_element_id);
 
@@ -537,7 +537,7 @@ static JSValue js_websg_ui_element_get_justify_content(JSContext *ctx, JSValueCo
 }
 
 static JSValue js_websg_ui_element_set_justify_content(JSContext *ctx, JSValueConst this_val, JSValueConst arg) {
-  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque_UNSAFE(this_val);
 
   JSAtom atom = JS_ValueToAtom(ctx, arg);
 
@@ -559,7 +559,7 @@ static JSValue js_websg_ui_element_set_justify_content(JSContext *ctx, JSValueCo
 }
 
 static JSValue js_websg_ui_element_get_width(JSContext *ctx, JSValueConst this_val) {
-  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque_UNSAFE(this_val);
 
   float_t result = websg_ui_element_get_width(ui_element_data->ui_element_id);
 
@@ -567,7 +567,7 @@ static JSValue js_websg_ui_element_get_width(JSContext *ctx, JSValueConst this_v
 }
 
 static JSValue js_websg_ui_element_set_width(JSContext *ctx, JSValueConst this_val, JSValueConst arg) {
-  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque_UNSAFE(this_val);
 
   double_t value;
 
@@ -586,7 +586,7 @@ static JSValue js_websg_ui_element_set_width(JSContext *ctx, JSValueConst this_v
 }
 
 static JSValue js_websg_ui_element_get_height(JSContext *ctx, JSValueConst this_val) {
-  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque_UNSAFE(this_val);
 
   float_t result = websg_ui_element_get_height(ui_element_data->ui_element_id);
 
@@ -594,7 +594,7 @@ static JSValue js_websg_ui_element_get_height(JSContext *ctx, JSValueConst this_
 }
 
 static JSValue js_websg_ui_element_set_height(JSContext *ctx, JSValueConst this_val, JSValueConst arg) {
-  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque_UNSAFE(this_val);
 
   double_t value;
 
@@ -613,7 +613,7 @@ static JSValue js_websg_ui_element_set_height(JSContext *ctx, JSValueConst this_
 }
 
 static JSValue js_websg_ui_element_get_min_width(JSContext *ctx, JSValueConst this_val) {
-  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque_UNSAFE(this_val);
 
   float_t result = websg_ui_element_get_min_width(ui_element_data->ui_element_id);
 
@@ -621,7 +621,7 @@ static JSValue js_websg_ui_element_get_min_width(JSContext *ctx, JSValueConst th
 }
 
 static JSValue js_websg_ui_element_set_min_width(JSContext *ctx, JSValueConst this_val, JSValueConst arg) {
-  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque_UNSAFE(this_val);
 
   double_t value;
 
@@ -640,7 +640,7 @@ static JSValue js_websg_ui_element_set_min_width(JSContext *ctx, JSValueConst th
 }
 
 static JSValue js_websg_ui_element_get_min_height(JSContext *ctx, JSValueConst this_val) {
-  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque_UNSAFE(this_val);
 
   float_t result = websg_ui_element_get_min_height(ui_element_data->ui_element_id);
 
@@ -648,7 +648,7 @@ static JSValue js_websg_ui_element_get_min_height(JSContext *ctx, JSValueConst t
 }
 
 static JSValue js_websg_ui_element_set_min_height(JSContext *ctx, JSValueConst this_val, JSValueConst arg) {
-  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque_UNSAFE(this_val);
 
   double_t value;
 
@@ -667,7 +667,7 @@ static JSValue js_websg_ui_element_set_min_height(JSContext *ctx, JSValueConst t
 }
 
 static JSValue js_websg_ui_element_get_max_width(JSContext *ctx, JSValueConst this_val) {
-  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque_UNSAFE(this_val);
 
   float_t result = websg_ui_element_get_max_width(ui_element_data->ui_element_id);
 
@@ -675,7 +675,7 @@ static JSValue js_websg_ui_element_get_max_width(JSContext *ctx, JSValueConst th
 }
 
 static JSValue js_websg_ui_element_set_max_width(JSContext *ctx, JSValueConst this_val, JSValueConst arg) {
-  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque_UNSAFE(this_val);
 
   double_t value;
 
@@ -694,7 +694,7 @@ static JSValue js_websg_ui_element_set_max_width(JSContext *ctx, JSValueConst th
 }
 
 static JSValue js_websg_ui_element_get_max_height(JSContext *ctx, JSValueConst this_val) {
-  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque_UNSAFE(this_val);
 
   float_t result = websg_ui_element_get_max_height(ui_element_data->ui_element_id);
 
@@ -702,7 +702,7 @@ static JSValue js_websg_ui_element_get_max_height(JSContext *ctx, JSValueConst t
 }
 
 static JSValue js_websg_ui_element_set_max_height(JSContext *ctx, JSValueConst this_val, JSValueConst arg) {
-  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque_UNSAFE(this_val);
 
   double_t value;
 
@@ -721,7 +721,7 @@ static JSValue js_websg_ui_element_set_max_height(JSContext *ctx, JSValueConst t
 }
 
 static JSValue js_websg_ui_element_add_child(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
-  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque_UNSAFE(this_val);
 
   ui_element_id_t ui_element_id = ui_element_data->ui_element_id;
 
@@ -749,7 +749,7 @@ static JSValue js_websg_ui_element_add_child(JSContext *ctx, JSValueConst this_v
 }
 
 static JSValue js_websg_ui_element_remove_child(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
-  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque_UNSAFE(this_val);
 
   ui_element_id_t ui_element_id = ui_element_data->ui_element_id;
 
@@ -777,7 +777,7 @@ static JSValue js_websg_ui_element_remove_child(JSContext *ctx, JSValueConst thi
 }
 
 static JSValue js_websg_ui_element_get_child(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
-  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque_UNSAFE(this_val);
 
   uint32_t index;
 
@@ -796,7 +796,7 @@ static JSValue js_websg_ui_element_get_child(JSContext *ctx, JSValueConst this_v
 
 
 JSValue js_websg_ui_element_children(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
-  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque_UNSAFE(this_val);
 
   int32_t count = websg_ui_element_get_child_count(ui_element_data->ui_element_id);
 
@@ -816,7 +816,7 @@ JSValue js_websg_ui_element_children(JSContext *ctx, JSValueConst this_val, int 
 }
 
 static JSValue js_websg_ui_element_parent(JSContext *ctx, JSValueConst this_val) {
-  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque_UNSAFE(this_val);
 
   ui_element_id_t ui_element_id = ui_element_data->ui_element_id;
 
@@ -830,7 +830,7 @@ static JSValue js_websg_ui_element_parent(JSContext *ctx, JSValueConst this_val)
 }
 
 static JSValue js_websg_ui_element_get_element_type(JSContext *ctx, JSValueConst this_val) {
-  WebSGUIElementData *ui_element_data = JS_GetOpaque(this_val, js_websg_ui_element_class_id);
+  WebSGUIElementData *ui_element_data = JS_GetOpaque_UNSAFE(this_val);
 
   ElementType result = websg_ui_element_get_element_type(ui_element_data->ui_element_id);
 
