@@ -6,6 +6,7 @@ import { Label } from "../../../atoms/text/Label";
 import { NumericInput } from "../../../atoms/input/NumericInput";
 import "./ColorInput.css";
 import { convertRGBA, engineToUserAlpha, userToEngineAlpha } from "../../../utils/common";
+import { Scrubber } from "../scrubber/Scrubber";
 
 type ColorPreviewProps = {
   label: string;
@@ -98,9 +99,11 @@ export function ColorInput<T extends ColorType>({
       </ColorPicker>
       <NumericInput
         before={
-          <Label color="surface-low" className="shrink-0">
-            R
-          </Label>
+          <Scrubber value={value[0]} onChange={(r) => setColor(0, r, value)} min={0} max={255}>
+            <Label color="surface-low" className="shrink-0">
+              R
+            </Label>
+          </Scrubber>
         }
         className="flex grow basis-0"
         type="u32"
@@ -115,9 +118,11 @@ export function ColorInput<T extends ColorType>({
 
       <NumericInput
         before={
-          <Label color="surface-low" className="shrink-0">
-            G
-          </Label>
+          <Scrubber value={value[1]} onChange={(g) => setColor(1, g, value)} min={0} max={255}>
+            <Label color="surface-low" className="shrink-0">
+              G
+            </Label>
+          </Scrubber>
         }
         className="flex grow basis-0"
         type="u32"
@@ -132,9 +137,11 @@ export function ColorInput<T extends ColorType>({
 
       <NumericInput
         before={
-          <Label color="surface-low" className="shrink-0">
-            B
-          </Label>
+          <Scrubber value={value[2]} onChange={(b) => setColor(2, b, value)} min={0} max={255}>
+            <Label color="surface-low" className="shrink-0">
+              B
+            </Label>
+          </Scrubber>
         }
         className="flex grow basis-0"
         type="u32"
@@ -150,9 +157,11 @@ export function ColorInput<T extends ColorType>({
         <>
           <NumericInput
             before={
-              <Label color="surface-low" className="shrink-0">
-                A
-              </Label>
+              <Scrubber value={value[3]} onChange={(a) => setColor(3, a, value)} min={0} max={100}>
+                <Label color="surface-low" className="shrink-0">
+                  A
+                </Label>
+              </Scrubber>
             }
             className="flex grow basis-0"
             type="u32"
