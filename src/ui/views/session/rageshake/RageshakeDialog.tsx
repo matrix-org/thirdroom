@@ -1,5 +1,6 @@
-import { IBlobHandle } from "@thirdroom/hydrogen-view-sdk";
+import { IBlobHandle, Platform } from "@thirdroom/hydrogen-view-sdk";
 import React, { FormEventHandler } from "react";
+import JSZip from "jszip";
 
 import { Text } from "../../../atoms/text/Text";
 import { Dialog } from "../../../atoms/dialog/Dialog";
@@ -16,6 +17,18 @@ import { Dots } from "../../../atoms/loading/Dots";
 import { useAsyncCallback } from "../../../hooks/useAsyncCallback";
 import { saveData } from "../../../utils/common";
 import { Textarea } from "../../../atoms/input/Textarea";
+
+const getLogsZip = async (platform: Platform): Promise<Blob> => {
+  const exportReporter = platform.logger.reporters.find((r) => typeof r.export === "function");
+  if (!exportReporter) {
+    throw new Error("No logger that can export configured");
+  }
+  const logExport = await exportReporter.export();
+  const logs = logExport.asBlob() as IBlobHandle;
+  const zip = new JSZip();
+  zip.file("logs.json", logs.nativeBlob);
+  return zip.generateAsync({ type: "blob", compression: "DEFLATE" });
+};
 
 interface RageshakeDialogProps {
   open: boolean;
@@ -34,12 +47,8 @@ export function RageshakeDialog({ open, requestClose }: RageshakeDialogProps) {
     if (!bugReportEndpointUrl) {
       throw new Error("No server configured to submit logs");
     }
-    const logReporters = platform.logger.reporters;
-    const exportReporter = logReporters.find((r) => !!r["export"]);
-    if (!exportReporter) {
-      throw new Error("No logger that can export configured");
-    }
-    const logExport = await exportReporter.export();
+
+    const logs = await getLogsZip(platform);
     await submitLogsToRageshakeServer(
       {
         app: "thirdroom",
@@ -47,7 +56,7 @@ export function RageshakeDialog({ open, requestClose }: RageshakeDialogProps) {
         version: platform.version,
         text: `Third Room user ${session.userId} on device ${session.deviceId}: ${text ?? "No description provided."}`,
       },
-      logExport.asBlob(),
+      logs,
       bugReportEndpointUrl,
       platform.request
     );
@@ -62,11 +71,9 @@ export function RageshakeDialog({ open, requestClose }: RageshakeDialogProps) {
   };
 
   const downloadLogs = async () => {
-    const persister = platform.logger.reporters.find((r) => typeof r.export === "function");
-    const logExport = await persister.export();
-    const logs = logExport.asBlob() as IBlobHandle;
-
-    saveData(logs.nativeBlob, `thirdroom-logs-${new Date()}.json`);
+    getLogsZip(platform).then((outputBlob) => {
+      saveData(outputBlob, `thirdroom-logs-${new Date()}.zip`);
+    });
   };
 
   return (
