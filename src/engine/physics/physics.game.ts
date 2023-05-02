@@ -9,7 +9,7 @@ import {
   Types,
   hasComponent,
 } from "bitecs";
-import RAPIER, { RigidBody as RapierRigidBody } from "@dimforge/rapier3d-compat";
+import RAPIER, { RigidBody as RapierRigidBody, RigidBodyDesc } from "@dimforge/rapier3d-compat";
 import { Quaternion, Vector3 } from "three";
 
 import { GameState, World } from "../GameTypes";
@@ -18,7 +18,7 @@ import { defineModule, getModule, registerMessageHandler, Thread } from "../modu
 import { addResourceRef, getRemoteResource, removeResourceRef } from "../resource/resource.game";
 import { RemoteMesh, RemoteMeshPrimitive, RemoteNode } from "../resource/RemoteResources";
 import { maxEntities } from "../config.common";
-import { ColliderType, MeshPrimitiveAttributeIndex } from "../resource/schema";
+import { ColliderType, MeshPrimitiveAttributeIndex, PhysicsBodyType } from "../resource/schema";
 import { getAccessorArrayView } from "../accessor/accessor.common";
 import { updateMatrixWorld } from "../component/transform";
 import { Player } from "../component/Player";
@@ -36,6 +36,7 @@ import {
 import { createDisposables } from "../utils/createDisposables";
 import { getRotationNoAlloc } from "../utils/getRotationNoAlloc";
 import { InputControllerComponent } from "../input/InputControllerComponent";
+import { staticRigidBodyCollisionGroups } from "./CollisionGroups";
 
 export interface PhysicsModuleState {
   debugRender: boolean;
@@ -343,6 +344,77 @@ export function createNodeColliderDesc(node: RemoteNode): RAPIER.ColliderDesc | 
   desc.setSensor(collider.isTrigger);
 
   return desc;
+}
+
+export function addNodePhysicsBody(ctx: GameState, node: RemoteNode) {
+  const physicsBody = node.physicsBody;
+
+  if (!physicsBody) {
+    throw new Error("Node does not have a physics body");
+  }
+
+  const { physicsWorld } = getModule(ctx, PhysicsModule);
+
+  let rigidBodyDesc: RigidBodyDesc;
+
+  if (physicsBody.type == PhysicsBodyType.Static) {
+    rigidBodyDesc = RAPIER.RigidBodyDesc.fixed();
+  } else if (physicsBody.type == PhysicsBodyType.Kinematic) {
+    rigidBodyDesc = RAPIER.RigidBodyDesc.kinematicPositionBased();
+  } else if (physicsBody.type == PhysicsBodyType.Rigid) {
+    rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic();
+
+    rigidBodyDesc.setLinvel(
+      physicsBody.linearVelocity[0],
+      physicsBody.linearVelocity[1],
+      physicsBody.linearVelocity[2]
+    );
+
+    rigidBodyDesc.setAngvel(
+      new RAPIER.Vector3(physicsBody.angularVelocity[0], physicsBody.angularVelocity[1], physicsBody.angularVelocity[2])
+    );
+  } else {
+    throw new Error(`Unsupported physics body type: "${physicsBody.type}"`);
+  }
+
+  const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
+
+  if (node.collider) {
+    const colliderDesc = createNodeColliderDesc(node);
+
+    if (colliderDesc) {
+      colliderDesc.setMass(physicsBody.mass || 1);
+      colliderDesc.setCollisionGroups(staticRigidBodyCollisionGroups);
+      physicsWorld.createCollider(colliderDesc, rigidBody);
+    }
+  }
+
+  let curChild = node.firstChild;
+
+  while (curChild) {
+    if (curChild.collider) {
+      const colliderDesc = createNodeColliderDesc(curChild);
+
+      if (colliderDesc) {
+        colliderDesc.setMass(physicsBody.mass || 1);
+        colliderDesc.setCollisionGroups(staticRigidBodyCollisionGroups);
+        colliderDesc.setTranslation(curChild.position[0], curChild.position[1], curChild.position[2]);
+        colliderDesc.setRotation(
+          new RAPIER.Quaternion(
+            curChild.quaternion[0],
+            curChild.quaternion[1],
+            curChild.quaternion[2],
+            curChild.quaternion[3]
+          )
+        );
+        physicsWorld.createCollider(colliderDesc, rigidBody);
+      }
+    }
+
+    curChild = curChild.nextSibling;
+  }
+
+  addRigidBody(ctx, node, rigidBody);
 }
 
 export function addRigidBody(
