@@ -1,5 +1,4 @@
 import { defineQuery, hasComponent, IComponent, QueryModifier as IQueryModifier, Not, IWorld } from "bitecs";
-import RAPIER from "@dimforge/rapier3d-compat";
 import { BoxGeometry } from "three";
 import { vec2, vec4 } from "gl-matrix";
 
@@ -29,6 +28,7 @@ import {
   RemoteMesh,
   RemoteMeshPrimitive,
   RemoteNode,
+  RemotePhysicsBody,
   RemoteScene,
   RemoteSkin,
   RemoteTexture,
@@ -68,13 +68,7 @@ import {
   skipUint32,
 } from "../allocator/CursorView";
 import { AccessorComponentTypeToTypedArray, AccessorTypeToElementSize } from "../accessor/accessor.common";
-import {
-  addRigidBody,
-  createNodeColliderDesc,
-  PhysicsModule,
-  removeRigidBody,
-  RigidBody,
-} from "../physics/physics.game";
+import { addNodePhysicsBody, PhysicsModule, removeRigidBody, RigidBody } from "../physics/physics.game";
 import { getModule } from "../module/module.common";
 import { createMesh } from "../mesh/mesh.game";
 import { addInteractableComponent } from "../../plugins/interaction/interaction.game";
@@ -2187,54 +2181,20 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
         moveCursorView(wasmCtx.cursorView, propsPtr);
         readExtensionsAndExtras(wasmCtx);
         const type = readEnum(wasmCtx, PhysicsBodyType, "PhysicsBodyType");
+        const mass = readFloat32(wasmCtx.cursorView);
+        const linearVelocity = readFloat32Array(wasmCtx.cursorView, 3);
+        const angularVelocity = readFloat32Array(wasmCtx.cursorView, 3);
+        const inertiaTensor = readFloat32Array(wasmCtx.cursorView, 9);
 
-        let rigidBodyDesc: RAPIER.RigidBodyDesc;
-        let meshResource: RemoteMesh | undefined;
-        let primitiveResource: RemoteMeshPrimitive | undefined;
+        node.physicsBody = new RemotePhysicsBody(wasmCtx.resourceManager, {
+          type,
+          mass,
+          linearVelocity,
+          angularVelocity,
+          inertiaTensor,
+        });
 
-        if (type === PhysicsBodyType.Rigid) {
-          rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic();
-        } else if (type === PhysicsBodyType.Kinematic) {
-          rigidBodyDesc = RAPIER.RigidBodyDesc.kinematicPositionBased();
-        } else {
-          rigidBodyDesc = RAPIER.RigidBodyDesc.fixed();
-        }
-
-        rigidBodyDesc.linvel.x = readFloat32(wasmCtx.cursorView);
-        rigidBodyDesc.linvel.y = readFloat32(wasmCtx.cursorView);
-        rigidBodyDesc.linvel.z = readFloat32(wasmCtx.cursorView);
-
-        rigidBodyDesc.angvel.x = readFloat32(wasmCtx.cursorView);
-        rigidBodyDesc.angvel.y = readFloat32(wasmCtx.cursorView);
-        rigidBodyDesc.angvel.z = readFloat32(wasmCtx.cursorView);
-
-        readFloat32Array(wasmCtx.cursorView, 9); // Inertia tensor (currently unused)
-
-        const { physicsWorld } = getModule(ctx, PhysicsModule);
-
-        const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
-
-        const nodeColliderDesc = createNodeColliderDesc(node);
-
-        if (nodeColliderDesc) {
-          physicsWorld.createCollider(nodeColliderDesc, rigidBody);
-        }
-
-        let curChild = node.firstChild;
-
-        while (curChild) {
-          if (!hasComponent(ctx.world, RigidBody, curChild.eid)) {
-            const childColliderDesc = createNodeColliderDesc(curChild);
-
-            if (childColliderDesc) {
-              physicsWorld.createCollider(childColliderDesc, rigidBody);
-            }
-          }
-
-          curChild = curChild.nextSibling;
-        }
-
-        addRigidBody(ctx, node, rigidBody, meshResource, primitiveResource);
+        addNodePhysicsBody(ctx, node);
 
         return 0;
       } catch (error) {
@@ -2249,6 +2209,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
         return -1;
       }
 
+      node.physicsBody = undefined;
       removeRigidBody(ctx.world, node.eid);
 
       return 0;

@@ -19,7 +19,7 @@ import { addResourceRef, getRemoteResource, removeResourceRef } from "../resourc
 import { RemoteMesh, RemoteMeshPrimitive, RemoteNode } from "../resource/RemoteResources";
 import { maxEntities } from "../config.common";
 import { ColliderType, MeshPrimitiveAttributeIndex, PhysicsBodyType } from "../resource/schema";
-import { getAccessorArrayView } from "../accessor/accessor.common";
+import { getAccessorArrayView, scaleVec3Array } from "../accessor/accessor.common";
 import { updateMatrixWorld } from "../component/transform";
 import { Player } from "../component/Player";
 import {
@@ -150,7 +150,12 @@ export function PhysicsSystem(ctx: GameState) {
         applyTransformToRigidBody(body, node);
       }
 
-      handleToEid.set(body.handle, eid);
+      const colliderCount = body.numColliders();
+
+      for (let i = 0; i < colliderCount; i++) {
+        const collider = body.collider(i);
+        handleToEid.set(collider.handle, eid);
+      }
     }
   }
 
@@ -160,7 +165,13 @@ export function PhysicsSystem(ctx: GameState) {
     const eid = exited[i];
     const body = RigidBody.store.get(eid);
     if (body) {
-      handleToEid.delete(body.handle);
+      const colliderCount = body.numColliders();
+
+      for (let i = 0; i < colliderCount; i++) {
+        const collider = body.collider(i);
+        handleToEid.delete(collider.handle);
+      }
+
       physicsWorld.removeRigidBody(body);
       RigidBody.store.delete(eid);
 
@@ -290,7 +301,7 @@ export function createNodeColliderDesc(node: RemoteNode): RAPIER.ColliderDesc | 
     desc = RAPIER.ColliderDesc.ball(collider.radius * tempScale[0]);
   } else if (type === ColliderType.Hull || type === ColliderType.Trimesh) {
     // TODO: Add mesh / primitive refCount
-    const mesh = node.mesh;
+    const mesh = collider.mesh;
 
     if (!mesh) {
       throw new Error("Collider mesh cannot be found");
@@ -310,7 +321,8 @@ export function createNodeColliderDesc(node: RemoteNode): RAPIER.ColliderDesc | 
       throw new Error("No position accessor found for collider.");
     }
 
-    const positions = getAccessorArrayView(positionAccessor) as Float32Array;
+    const positions = getAccessorArrayView(positionAccessor).slice() as Float32Array;
+    scaleVec3Array(positions, positions, tempScale);
 
     if (type === ColliderType.Hull) {
       const hullDesc = RAPIER.ColliderDesc.convexHull(positions);
@@ -345,6 +357,9 @@ export function createNodeColliderDesc(node: RemoteNode): RAPIER.ColliderDesc | 
 
   return desc;
 }
+
+const tempPosition = vec3.create();
+const tempRotation = quat.create();
 
 export function addNodePhysicsBody(ctx: GameState, node: RemoteNode) {
   const physicsBody = node.physicsBody;
@@ -383,6 +398,16 @@ export function addNodePhysicsBody(ctx: GameState, node: RemoteNode) {
     const colliderDesc = createNodeColliderDesc(node);
 
     if (colliderDesc) {
+      if (physicsBody.type == PhysicsBodyType.Static) {
+        const worldMatrix = node.worldMatrix;
+        mat4.getTranslation(tempPosition, worldMatrix);
+        getRotationNoAlloc(tempRotation, worldMatrix);
+        colliderDesc.setTranslation(tempPosition[0], tempPosition[1], tempPosition[2]);
+        colliderDesc.setRotation(
+          new RAPIER.Quaternion(tempRotation[0], tempRotation[1], tempRotation[2], tempRotation[3])
+        );
+      }
+
       colliderDesc.setMass(physicsBody.mass || 1);
       colliderDesc.setCollisionGroups(staticRigidBodyCollisionGroups);
       physicsWorld.createCollider(colliderDesc, rigidBody);
@@ -396,17 +421,28 @@ export function addNodePhysicsBody(ctx: GameState, node: RemoteNode) {
       const colliderDesc = createNodeColliderDesc(curChild);
 
       if (colliderDesc) {
+        if (physicsBody.type == PhysicsBodyType.Static) {
+          const worldMatrix = node.worldMatrix;
+          mat4.getTranslation(tempPosition, worldMatrix);
+          getRotationNoAlloc(tempRotation, worldMatrix);
+          colliderDesc.setTranslation(tempPosition[0], tempPosition[1], tempPosition[2]);
+          colliderDesc.setRotation(
+            new RAPIER.Quaternion(tempRotation[0], tempRotation[1], tempRotation[2], tempRotation[3])
+          );
+        } else {
+          colliderDesc.setTranslation(curChild.position[0], curChild.position[1], curChild.position[2]);
+          colliderDesc.setRotation(
+            new RAPIER.Quaternion(
+              curChild.quaternion[0],
+              curChild.quaternion[1],
+              curChild.quaternion[2],
+              curChild.quaternion[3]
+            )
+          );
+        }
+
         colliderDesc.setMass(physicsBody.mass || 1);
         colliderDesc.setCollisionGroups(staticRigidBodyCollisionGroups);
-        colliderDesc.setTranslation(curChild.position[0], curChild.position[1], curChild.position[2]);
-        colliderDesc.setRotation(
-          new RAPIER.Quaternion(
-            curChild.quaternion[0],
-            curChild.quaternion[1],
-            curChild.quaternion[2],
-            curChild.quaternion[3]
-          )
-        );
         physicsWorld.createCollider(colliderDesc, rigidBody);
       }
     }

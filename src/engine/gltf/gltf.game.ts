@@ -912,7 +912,7 @@ const gltfColliderTypeToColliderType: { [key: string]: ColliderType } = {
   sphere: ColliderType.Sphere,
   capsule: ColliderType.Capsule,
   cylinder: ColliderType.Cylinder,
-  trimesh: ColliderType.Trimesh,
+  mesh: ColliderType.Trimesh,
 };
 
 const loadGLTFCollider = createCachedSubresourceLoader(
