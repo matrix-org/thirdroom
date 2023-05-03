@@ -215,11 +215,7 @@ export function updateKinematicControls(
     _acceleration.clampLength(0, maxWalkSpeed);
   }
 
-  if (isGrounded) {
-    _acceleration.y = 0;
-  } else {
-    _acceleration.y = physicsWorld.gravity.y * 1.5;
-  }
+  _acceleration.y = physicsWorld.gravity.y * 1.5;
 
   // TODO: Check to see if velocity matches orientation before sliding
   if (crouch.pressed && speed > minSlideSpeed && isGrounded && !isSliding && ctx.dt > lastSlideTime + slideCooldown) {
@@ -262,6 +258,8 @@ export function updateKinematicControls(
 
   const collider = body.collider(0);
 
+  console.log(isGrounded, _linearVelocity);
+
   characterController.computeColliderMovement(collider, _linearVelocity);
 
   const corrected = characterController.computedMovement();
@@ -297,10 +295,13 @@ export function updateKinematicControls(
 }
 
 function createCharacterController(physics: PhysicsModuleState, eid: number) {
-  const characterController = physics.physicsWorld.createCharacterController(0.01);
-  characterController.enableAutostep(0.1, 0.1, true);
-  characterController.enableSnapToGround(0.1);
+  const characterController = physics.physicsWorld.createCharacterController(0.1);
+  characterController.enableAutostep(0.7, 0.3, true);
+  characterController.enableSnapToGround(0.3);
+  characterController.setCharacterMass(100);
   characterController.setApplyImpulsesToDynamicBodies(true);
+  characterController.setSlideEnabled(true);
+
   physics.eidTocharacterController.set(eid, characterController);
   return characterController;
 }
