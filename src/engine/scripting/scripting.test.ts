@@ -49,6 +49,7 @@ describe.skip("JS Scripting API", () => {
     const wasmCtx: WASMModuleContext = {
       memory,
       cursorView: createCursorView(memory.buffer, true),
+      I32Heap: new Int32Array(memory.buffer),
       U32Heap: new Uint32Array(memory.buffer),
       U8Heap: new Uint8Array(memory.buffer),
       F32Heap: new Float32Array(memory.buffer),

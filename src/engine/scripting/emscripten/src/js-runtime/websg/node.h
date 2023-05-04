@@ -9,6 +9,7 @@ extern JSClassID js_websg_node_class_id;
 typedef struct WebSGNodeData {
   WebSGWorldData *world_data;
   node_id_t node_id;
+  uint32_t component_store_index;
   JSValue interactable;
   JSValue physics_body;
 } WebSGNodeData;
