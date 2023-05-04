@@ -14,7 +14,8 @@
 /*************
  * WebSG IDs *
  *************/
-
+typedef uint32_t query_id_t;
+typedef uint32_t component_id_t;
 typedef uint32_t scene_id_t;
 typedef uint32_t camera_id_t;
 typedef uint32_t skin_id_t;
@@ -58,6 +59,63 @@ typedef struct Extensions {
 
 import_websg(world_get_environment) scene_id_t websg_world_get_environment();
 import_websg(world_set_environment) int32_t websg_world_set_environment(scene_id_t scene_id);
+
+/***********
+ * Queries *
+ ***********/
+typedef enum QueryModifier {
+  QueryModifier_All,
+  QueryModifier_None,
+  QueryModifier_Any,
+} QueryModifier;
+
+typedef struct QueryItem {
+  component_id_t *component_ids;
+  uint32_t component_count;
+  QueryModifier modifier;
+} QueryItem;
+
+typedef struct QueryList {
+  QueryItem *items;
+  uint32_t count;
+} QueryList;
+
+import_websg(world_create_query) query_id_t websg_world_create_query(QueryList *query);
+import_websg(query_get_results_count) int32_t websg_query_get_results_count(query_id_t query_id);
+import_websg(query_get_results) int32_t websg_query_get_results(query_id_t query_id, node_id_t *results, uint32_t max_count);
+// Possible future API for a fast path to get component indices
+// import_websg(websg_query_get_component_indices) int32_t websg_query_get_component_indices(query_id_t query_id, uint32_t *indices, uint32_t max_count);
+
+/**************
+ * Components *
+ **************/
+
+typedef enum ComponentPropStorageType {
+  ComponentPropStorageType_i32,
+  ComponentPropStorageType_u32,
+  ComponentPropStorageType_f32,
+} ComponentPropStorageType;
+
+import_websg(world_find_component_definition_by_name) component_id_t websg_world_find_component_definition_by_name(const char *name, uint32_t length);
+import_websg(component_definition_get_name_length) uint32_t websg_component_definition_get_name_length(component_id_t component_id);
+import_websg(component_definition_get_name) int32_t websg_component_definition_get_name(component_id_t component_id,  const char *name, size_t length);
+import_websg(component_definition_get_prop_count) int32_t websg_component_definition_get_prop_count(component_id_t component_id);
+import_websg(component_definition_get_prop_name_length) uint32_t websg_component_definition_get_prop_name_length(component_id_t component_id, uint32_t prop_idx);
+import_websg(component_definition_get_prop_name) int32_t websg_component_definition_get_prop_name(component_id_t component_id, uint32_t prop_idx, const char *prop_name, size_t length);
+import_websg(component_definition_get_prop_type_length) uint32_t websg_component_definition_get_prop_type_length(component_id_t component_id, uint32_t prop_idx);
+import_websg(component_definition_get_prop_type) int32_t websg_component_definition_get_prop_type(component_id_t component_id, uint32_t prop_idx, const char *prop_type, size_t length);
+import_websg(component_definition_get_ref_type_length) uint32_t websg_component_definition_get_ref_type_length(component_id_t component_id, uint32_t prop_idx);
+import_websg(component_definition_get_ref_type) int32_t websg_component_definition_get_ref_type(component_id_t component_id, uint32_t prop_idx, const char *ref_type, size_t length);
+import_websg(component_definition_get_prop_storage_type) ComponentPropStorageType websg_component_definition_get_prop_storage_type(component_id_t component_id, uint32_t prop_idx);
+import_websg(component_definition_get_prop_size) int32_t websg_component_definition_get_prop_size(component_id_t component_id, uint32_t prop_idx);
+import_websg(world_get_component_store_size) uint32_t websg_world_get_component_store_size();
+import_websg(world_set_component_store_size) int32_t websg_world_set_component_store_size(uint32_t size);
+import_websg(world_set_component_store) int32_t websg_world_set_component_store(component_id_t component_id, void *ptr);
+import_websg(world_get_component_store) void *websg_world_get_component_store(component_id_t component_id);
+import_websg(node_add_component) int32_t websg_node_add_component(node_id_t node_id, component_id_t component_id);
+import_websg(node_remove_component) int32_t websg_node_remove_component(node_id_t node_id, component_id_t component_id);
+import_websg(node_has_component) int32_t websg_node_has_component(node_id_t node_id, component_id_t component_id);
+import_websg(node_get_component_store_index) uint32_t websg_node_get_component_store_index(node_id_t node_id);
 
 /*********
  * Scene *

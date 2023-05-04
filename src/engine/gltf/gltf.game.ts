@@ -23,6 +23,8 @@ import {
   GLTFAnimationChannel,
   GLTFAnimationSampler,
   GLTFNode,
+  GLTFComponentDefinitions,
+  GLTFNodeComponents,
 } from "./GLTF";
 import { fetchWithProgress } from "../utils/fetchWithProgress.game";
 import {
@@ -81,6 +83,7 @@ import { loadGLTFAnimationClip } from "./animation.three";
 import { AnimationComponent, BoneComponent } from "../animation/animation.game";
 import { RemoteResource } from "../resource/RemoteResourceClass";
 import { getRotationNoAlloc } from "../utils/getRotationNoAlloc";
+import { TypedArray32 } from "../utils/typedarray";
 
 /**
  * GLTFResource stores references to all of the resources loaded from a glTF file.
@@ -258,13 +261,19 @@ async function loadGLTFResource(
     throw new Error(`Unsupported glb version: ${version}`);
   }
 
+  let gltf: GLTFResource;
+
   if (isGLB) {
-    return loadGLTFBinary(ctx, resourceManager, buffer, url, fileMap);
+    gltf = await loadGLTFBinary(ctx, resourceManager, buffer, url, fileMap);
   } else {
     const jsonStr = new TextDecoder().decode(buffer);
     const json = JSON.parse(jsonStr);
-    return loadGLTFJSON(ctx, resourceManager, json, url, undefined, fileMap);
+    gltf = await loadGLTFJSON(ctx, resourceManager, json, url, undefined, fileMap);
   }
+
+  loadGLTFResourceExtensions(gltf);
+
+  return gltf;
 }
 
 const ChunkType = {
@@ -515,6 +524,20 @@ function resolveGLTFURI(resource: GLTFResource, uri: string) {
 
 type GLTFPostLoadCallback = () => Promise<void>;
 
+function loadGLTFComponentDefinitions(resourceManager: RemoteResourceManager, extension: GLTFComponentDefinitions) {
+  for (const componentDef of extension.definitions) {
+    const componentId = resourceManager.nextComponentId++;
+    resourceManager.componentDefinitions.set(componentId, componentDef);
+    resourceManager.componentIdsByName.set(componentDef.name, componentId);
+  }
+}
+
+function loadGLTFResourceExtensions(gltf: GLTFResource) {
+  if (gltf.root.extensions?.MX_components) {
+    loadGLTFComponentDefinitions(gltf.manager, gltf.root.extensions.MX_components);
+  }
+}
+
 function loadGLTFCharacterController(
   { ctx }: GLTFLoaderContext,
   extension: GLTFCharacterController,
@@ -737,6 +760,76 @@ async function loadGLTFLightMap(resource: GLTFResource, extension: GLTFLightmap)
     offset: extension.offset,
     intensity: extension.intensity,
   });
+}
+
+async function loadGLTFComponents(loaderCtx: GLTFLoaderContext, extension: GLTFNodeComponents, node: RemoteNode) {
+  const resourceManager = loaderCtx.resource.manager;
+
+  for (const componentName in extension) {
+    if (componentName === "extras" || componentName === "extensions") {
+      continue;
+    }
+
+    const componentId = resourceManager.componentIdsByName.get(componentName);
+
+    if (!componentId) {
+      console.warn(`Unknown component ${componentName} defined on GLTF node ${node.name}`);
+      continue;
+    }
+
+    const componentDefinition = resourceManager.componentDefinitions.get(componentId);
+
+    if (!componentDefinition) {
+      console.warn(`Unknown component ${componentName} defined on GLTF node ${node.name}`);
+      continue;
+    }
+
+    const componentProps = extension[componentName];
+
+    const componentStore = resourceManager.componentStores.get(componentId);
+
+    if (!componentStore) {
+      console.warn(`Component store for ${componentName} not registered before gltf load. Ignoring.`);
+      continue;
+    }
+
+    componentStore.add(node.eid);
+
+    if (componentDefinition.props) {
+      const nodeIndex = resourceManager.nodeIdToComponentStoreIndex.get(node.eid) || 0;
+
+      for (const propDef of componentDefinition.props) {
+        let propValue = componentProps[propDef.name];
+
+        if (propValue === undefined) {
+          continue;
+        }
+
+        const propStore = componentStore.propsByName.get(propDef.name);
+
+        if (!propStore) {
+          console.warn(`Component ${componentDefinition.name} does not have a property ${propDef.name}. Ignoring.`);
+          continue;
+        }
+
+        if (propDef.type === "ref") {
+          if (propDef.refType === "node") {
+            const refNode = await loadGLTFNode(loaderCtx, propValue as number);
+            propValue = refNode.eid;
+          } else {
+            console.warn(`Unknown ref type ${propDef.refType} for prop ${propDef.name}`);
+            continue;
+          }
+        } else {
+          if (propDef.size === 1) {
+            propStore[nodeIndex] = propValue as number;
+          } else {
+            (propStore[nodeIndex] as TypedArray32).set(propValue as number[]);
+          }
+        }
+      }
+    }
+  }
 }
 
 function loadGLTFHubsComponents(loaderCtx: GLTFLoaderContext, extension: GLTFHubsComponents, node: RemoteNode): void {
@@ -1025,6 +1118,10 @@ const loadGLTFNode = createInstancedSubresourceLoader(
       node.light = light;
       node.audioEmitter = audioEmitter;
       node.reflectionProbe = reflectionProbe;
+
+      if (extensions?.MX_components) {
+        await loadGLTFComponents(loaderCtx, extensions.MX_components, node);
+      }
 
       if (extensions?.MOZ_hubs_components) {
         loadGLTFHubsComponents(loaderCtx, extensions.MOZ_hubs_components, node);
