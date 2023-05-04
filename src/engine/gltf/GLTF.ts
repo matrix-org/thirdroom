@@ -530,7 +530,7 @@ export interface GLTFNode extends GLTFChildOfRootProperty {
     MOZ_hubs_components?: GLTFHubsComponents;
     MX_tiles_renderer?: GLTFTilesRenderer;
     OMI_collider?: GLTFColliderRef;
-    OMI_physics_body?: GLTFPhysicsBodyRef;
+    OMI_physics_body?: GLTFPhysicsBody;
     MX_portal?: GLTFPortal;
     OMI_link?: GLTFLink;
     MX_spawn_point?: {};
@@ -619,7 +619,7 @@ export interface GLTFColliderRef extends GLTFProperty {
   collider: GLTFId;
 }
 
-export interface GLTFPhysicsBodyRef extends GLTFProperty {
+export interface GLTFPhysicsBody extends GLTFProperty {
   type: "static" | "kinematic" | "character" | "rigid" | "vehicle" | "trigger";
   mass?: number;
   linearVelocity?: number[];
@@ -913,7 +913,8 @@ export interface GLTFColliders extends GLTFProperty {
 
 export interface GLTFCollider extends GLTFChildOfRootProperty {
   type: "box" | "mesh" | "sphere" | "capsule" | "hull";
-  extents?: number[];
+  extents?: number[]; // DEPRECATED use size instead
+  size?: number[];
   radius?: number;
   height?: number;
   mesh?: number;

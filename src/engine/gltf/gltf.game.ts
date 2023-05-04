@@ -1,6 +1,6 @@
 import { addComponent, defineQuery, exitQuery } from "bitecs";
-import { glMatrix, mat4, quat, vec3 } from "gl-matrix";
-import RAPIER, { ColliderDesc } from "@dimforge/rapier3d-compat";
+import { glMatrix, mat4, quat } from "gl-matrix";
+import RAPIER from "@dimforge/rapier3d-compat";
 import { AnimationAction, AnimationClip, AnimationMixer, Bone, Group, Object3D, SkinnedMesh } from "three";
 
 import { SpawnPoint } from "../component/SpawnPoint";
@@ -22,9 +22,9 @@ import {
   GLTFCharacterController,
   GLTFAnimationChannel,
   GLTFAnimationSampler,
-  GLTFNode,
   GLTFComponentDefinitions,
   GLTFNodeComponents,
+  GLTFPhysicsBody,
 } from "./GLTF";
 import { fetchWithProgress } from "../utils/fetchWithProgress.game";
 import {
@@ -44,6 +44,8 @@ import {
   AnimationChannelTargetPath,
   AnimationSamplerInterpolation,
   TextureFormat,
+  ColliderType,
+  PhysicsBodyType,
 } from "../resource/schema";
 import { toSharedArrayBuffer } from "../utils/arraybuffer";
 import {
@@ -57,6 +59,7 @@ import {
   RemoteBuffer,
   RemoteBufferView,
   RemoteCamera,
+  RemoteCollider,
   RemoteImage,
   RemoteInstancedMesh,
   RemoteLight,
@@ -65,6 +68,7 @@ import {
   RemoteMesh,
   RemoteMeshPrimitive,
   RemoteNode,
+  RemotePhysicsBody,
   RemoteReflectionProbe,
   RemoteSampler,
   RemoteScene,
@@ -75,7 +79,7 @@ import {
 } from "../resource/RemoteResources";
 import { addPortalComponent } from "../../plugins/portals/portals.game";
 import { getModule } from "../module/module.common";
-import { addRigidBody, PhysicsModule } from "../physics/physics.game";
+import { addNodePhysicsBody, addRigidBody, PhysicsModule } from "../physics/physics.game";
 import { getAccessorArrayView, vec3ArrayTransformMat4 } from "../accessor/accessor.common";
 import { staticRigidBodyCollisionGroups } from "../physics/CollisionGroups";
 import { CharacterControllerType, SceneCharacterControllerComponent } from "../../plugins/CharacterController";
@@ -903,121 +907,90 @@ function addTrimeshFromMesh(loaderCtx: GLTFLoaderContext, node: RemoteNode, mesh
   }
 }
 
-const tempPosition = vec3.create();
-const tempRotation = quat.create();
-const tempScale = vec3.create();
+const gltfColliderTypeToColliderType: { [key: string]: ColliderType } = {
+  box: ColliderType.Box,
+  sphere: ColliderType.Sphere,
+  capsule: ColliderType.Capsule,
+  cylinder: ColliderType.Cylinder,
+  mesh: ColliderType.Trimesh,
+};
 
-async function loadGLTFColliderAndRigidBody(loaderCtx: GLTFLoaderContext, node: RemoteNode, nodeDef: GLTFNode) {
-  const { resource, ctx } = loaderCtx;
-  const colliderIndex = nodeDef.extensions?.OMI_collider?.collider;
+const loadGLTFCollider = createCachedSubresourceLoader(
+  "collider",
+  (root) => root.extensions?.OMI_collider?.colliders,
+  async (resource, props, index) => {
+    const { name, type: typeStr, extents, size, radius, height, mesh: meshIndex } = props;
 
-  if (colliderIndex === undefined) {
-    console.warn(`No collider on node "${node.name}"`);
-    return;
+    let mesh: RemoteMesh | undefined;
+
+    if (meshIndex !== undefined) {
+      mesh = await loadGLTFMesh(resource, meshIndex);
+    }
+
+    const type = gltfColliderTypeToColliderType[typeStr];
+
+    if (type === undefined) {
+      throw new Error(`Unknown collider type ${typeStr}`);
+    }
+
+    return new RemoteCollider(resource.manager, {
+      name,
+      type,
+      size: extents !== undefined ? [extents[0] * 2, extents[1] * 2, extents[2] * 2] : size,
+      radius,
+      height,
+      mesh,
+    });
+  }
+);
+
+function loadDefaultGLTFPhysicsBody(loaderCtx: GLTFLoaderContext, node: RemoteNode) {
+  let parentIsPhysicsBody = false;
+
+  if (node.parent) {
+    const parentIndex = loaderCtx.nodeIndexMap.get(node.parent);
+
+    if (parentIndex === undefined) {
+      throw new Error(`Parent node not found for node ${node.name}`);
+    }
+
+    const parentNodeDef = loaderCtx.resource.root.nodes ? loaderCtx.resource.root.nodes[parentIndex] : undefined;
+
+    if (parentNodeDef?.extensions?.OMI_physics_body) {
+      parentIsPhysicsBody = true;
+    }
   }
 
-  const colliders = resource.root.extensions?.OMI_collider?.colliders;
+  if (!parentIsPhysicsBody) {
+    node.physicsBody = new RemotePhysicsBody(loaderCtx.resource.manager, {
+      type: PhysicsBodyType.Static,
+      mass: 1,
+    });
+    addNodePhysicsBody(loaderCtx.ctx, node);
+  }
+}
 
-  if (!colliders) {
-    return;
+const gltfPhysicsBodyTypeToPhysicsBodyType: { [key: string]: PhysicsBodyType } = {
+  static: PhysicsBodyType.Static,
+  kinematic: PhysicsBodyType.Kinematic,
+  rigid: PhysicsBodyType.Rigid,
+};
+
+function loadGLTFPhysicsBody(loaderCtx: GLTFLoaderContext, node: RemoteNode, physicsBodyDef: GLTFPhysicsBody) {
+  const type = gltfPhysicsBodyTypeToPhysicsBodyType[physicsBodyDef.type];
+
+  if (type === undefined) {
+    throw new Error(`Unknown physics body type ${physicsBodyDef.type}`);
   }
 
-  const collider = colliders[colliderIndex];
-
-  if (!collider) {
-    console.warn(`Collider "${colliderIndex}" not found.`);
-  }
-
-  const physics = getModule(ctx, PhysicsModule);
-  const { physicsWorld } = physics;
-
-  const worldMatrix = node.worldMatrix;
-  mat4.getTranslation(tempPosition, worldMatrix);
-  getRotationNoAlloc(tempRotation, worldMatrix);
-  mat4.getScaling(tempScale, worldMatrix);
-
-  let colliderDesc: ColliderDesc;
-
-  if (collider.type === "box") {
-    if (!collider.extents) {
-      console.warn(`Ignoring box collider ${colliderIndex} without extents property`);
-      return;
-    }
-
-    vec3.mul(tempScale, tempScale, collider.extents as vec3);
-    colliderDesc = RAPIER.ColliderDesc.cuboid(tempScale[0], tempScale[1], tempScale[2]);
-  } else if (collider.type === "sphere") {
-    if (collider.radius === undefined) {
-      console.warn(`Ignoring sphere collider ${colliderIndex} without radius property`);
-      return;
-    }
-
-    colliderDesc = RAPIER.ColliderDesc.ball(collider.radius * tempScale[0]);
-  } else if (collider.type === "capsule") {
-    if (collider.radius === undefined) {
-      console.warn(`Ignoring capsule collider ${colliderIndex} without radius property`);
-      return;
-    }
-
-    if (collider.height === undefined) {
-      console.warn(`Ignoring capsule collider ${colliderIndex} without height property`);
-      return;
-    }
-
-    colliderDesc = RAPIER.ColliderDesc.capsule((collider.height / 2) * tempScale[0], collider.radius * tempScale[0]);
-  } else if (collider.type === "mesh") {
-    if (collider.mesh === undefined) {
-      console.warn(`Ignoring mesh collider ${colliderIndex} without mesh.`);
-      return;
-    }
-
-    const colliderMesh = await loadGLTFMesh(resource, collider.mesh);
-    addTrimeshFromMesh(loaderCtx, node, colliderMesh);
-
-    return;
-  } else {
-    console.warn(`Unsupported collider type ${collider.type}`);
-    return;
-  }
-
-  let rigidBodyDesc: RAPIER.RigidBodyDesc;
-
-  if (nodeDef.extensions?.OMI_physics_body) {
-    const { type, mass, linearVelocity, angularVelocity } = nodeDef.extensions.OMI_physics_body;
-
-    if (type === "static") {
-      rigidBodyDesc = RAPIER.RigidBodyDesc.fixed();
-    } else if (type === "kinematic") {
-      rigidBodyDesc = RAPIER.RigidBodyDesc.kinematicPositionBased();
-    } else if (type === "rigid") {
-      rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic();
-
-      if (linearVelocity) {
-        rigidBodyDesc.setLinvel(linearVelocity[0], linearVelocity[1], linearVelocity[2]);
-      }
-
-      if (angularVelocity) {
-        rigidBodyDesc.setAngvel(new RAPIER.Vector3(angularVelocity[0], angularVelocity[1], angularVelocity[2]));
-      }
-    } else {
-      console.warn(`Unsupported physics body type: "${type}"`);
-      return;
-    }
-
-    colliderDesc.setMass(mass || 1);
-  } else {
-    rigidBodyDesc = RAPIER.RigidBodyDesc.fixed();
-  }
-
-  rigidBodyDesc.setTranslation(tempPosition[0], tempPosition[1], tempPosition[2]);
-  rigidBodyDesc.setRotation(new RAPIER.Quaternion(tempRotation[0], tempRotation[1], tempRotation[2], tempRotation[3]));
-
-  const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
-
-  colliderDesc.setCollisionGroups(staticRigidBodyCollisionGroups);
-  physicsWorld.createCollider(colliderDesc, rigidBody);
-
-  addRigidBody(ctx, node, rigidBody);
+  node.physicsBody = new RemotePhysicsBody(loaderCtx.resource.manager, {
+    type,
+    mass: physicsBodyDef.mass,
+    linearVelocity: physicsBodyDef.linearVelocity,
+    angularVelocity: physicsBodyDef.angularVelocity,
+    inertiaTensor: physicsBodyDef.inertiaTensor,
+  });
+  addNodePhysicsBody(loaderCtx.ctx, node);
 }
 
 function loadGLTFTilesRenderer({ resource }: GLTFLoaderContext, node: RemoteNode, extension: GLTFTilesRenderer) {
@@ -1085,8 +1058,8 @@ const loadGLTFNode = createInstancedSubresourceLoader(
     }
 
     loaderCtx.postLoadCallbacks.push(async () => {
-      const { mesh, skin, instancedMesh, lightMap, camera, light, audioEmitter, reflectionProbe } = await promiseObject(
-        {
+      const { mesh, skin, instancedMesh, lightMap, camera, light, audioEmitter, reflectionProbe, collider } =
+        await promiseObject({
           mesh: meshIndex !== undefined ? loadGLTFMesh(resource, meshIndex) : undefined,
           skin: skinIndex !== undefined ? loadGLTFSkin(loaderCtx, skinIndex) : undefined,
           instancedMesh:
@@ -1107,8 +1080,8 @@ const loadGLTFNode = createInstancedSubresourceLoader(
           reflectionProbe: extensions?.MX_reflection_probes
             ? loadGLTFReflectionProbe(resource, extensions.MX_reflection_probes.reflectionProbe)
             : undefined,
-        }
-      );
+          collider: extensions?.OMI_collider ? loadGLTFCollider(resource, extensions.OMI_collider.collider) : undefined,
+        });
 
       node.mesh = mesh;
       node.skin = skin;
@@ -1118,6 +1091,7 @@ const loadGLTFNode = createInstancedSubresourceLoader(
       node.light = light;
       node.audioEmitter = audioEmitter;
       node.reflectionProbe = reflectionProbe;
+      node.collider = collider;
 
       if (extensions?.MX_components) {
         await loadGLTFComponents(loaderCtx, extensions.MX_components, node);
@@ -1137,8 +1111,10 @@ const loadGLTFNode = createInstancedSubresourceLoader(
         loadGLTFSpawnPoint(loaderCtx, node);
       }
 
-      if (extensions?.OMI_collider) {
-        await loadGLTFColliderAndRigidBody(loaderCtx, node, nodeDef);
+      if (extensions?.OMI_physics_body) {
+        loadGLTFPhysicsBody(loaderCtx, node, extensions.OMI_physics_body);
+      } else if (extensions?.OMI_collider) {
+        loadDefaultGLTFPhysicsBody(loaderCtx, node);
       }
 
       if (extensions?.MX_tiles_renderer) {

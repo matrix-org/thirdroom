@@ -129,6 +129,20 @@ JSValue js_websg_node_add_physics_body(JSContext *ctx, JSValueConst this_val, in
 
   props->type = physics_body_type;
 
+  JSValue mass_val = JS_GetPropertyStr(ctx, argv[0], "mass");
+
+  if (!JS_IsUndefined(mass_val)) {
+    double mass;
+
+    if (JS_ToFloat64(ctx, &props->mass, mass_val) == -1) {
+      return JS_EXCEPTION;
+    }
+
+    props->mass = (float) mass;
+  } else {
+    props->mass = 1;
+  }
+
   JSValue linear_velocity_val = JS_GetPropertyStr(ctx, argv[0], "linearVelocity");
 
   if (!JS_IsUndefined(linear_velocity_val)) {

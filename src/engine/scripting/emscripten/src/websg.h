@@ -535,6 +535,7 @@ typedef struct PhysicsBodyProps {
   Extensions extensions;
   void *extras;
   PhysicsBodyType type;
+  float_t mass;
   float_t linear_velocity[3];
   float_t angular_velocity[3];
   float_t inertia_tensor[9];
