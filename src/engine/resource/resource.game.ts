@@ -1,4 +1,4 @@
-import { addComponent, addEntity, defineComponent, removeEntity } from "bitecs";
+import { addComponent, addEntity, defineComponent, removeEntity, removeQuery } from "bitecs";
 import { availableRead } from "@thirdroom/ringbuffer";
 
 import {
@@ -72,6 +72,7 @@ import {
   ResourceRingBufferItem,
 } from "./ResourceRingBuffer";
 import { IRemoteResourceClass, RemoteResource } from "./RemoteResourceClass";
+import { maxEntities } from "../config.common";
 
 const ResourceComponent = defineComponent();
 
@@ -231,7 +232,25 @@ export function createRemoteResourceManager(ctx: GameState): RemoteResourceManag
     resourceIds: new Set(),
     gltfCache: new Map(),
     resourceMap: resourceModule.resourceMap,
+    nextQueryId: 1,
+    registeredQueries: new Map(),
+    nextComponentId: 1,
+    maxEntities: maxEntities,
+    componentStoreSize: maxEntities,
+    componentStores: new Map(),
+    componentDefinitions: new Map(),
+    componentIdsByName: new Map(),
+    nextComponentStoreIndex: 0,
+    nodeIdToComponentStoreIndex: new Map(),
   };
+}
+
+export function disposeRemoteResourceManager(resourceManager: RemoteResourceManager) {
+  const ctx = resourceManager.ctx;
+
+  for (const query of resourceManager.registeredQueries.values()) {
+    removeQuery(ctx.world, query);
+  }
 }
 
 function registerResource<Def extends ResourceDefinition>(

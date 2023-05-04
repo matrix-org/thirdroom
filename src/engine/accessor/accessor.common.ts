@@ -1,4 +1,4 @@
-import { mat4 } from "gl-matrix";
+import { mat4, vec3 } from "gl-matrix";
 
 import { AccessorComponentType, AccessorType } from "../resource/schema";
 
@@ -173,6 +173,25 @@ export function vec3ArrayTransformMat4(out: Float32Array, array: Float32Array, m
     out[i * 3] = (matrix[0] * x + matrix[4] * y + matrix[8] * z + matrix[12]) / w;
     out[i * 3 + 1] = (matrix[1] * x + matrix[5] * y + matrix[9] * z + matrix[13]) / w;
     out[i * 3 + 2] = (matrix[2] * x + matrix[6] * y + matrix[10] * z + matrix[14]) / w;
+  }
+
+  return out;
+}
+
+export function scaleVec3Array(out: Float32Array, array: Float32Array, scale: vec3) {
+  const count = array.length / 3;
+  const scaleX = scale[0];
+  const scaleY = scale[1];
+  const scaleZ = scale[2];
+
+  for (let i = 0; i < count; i++) {
+    const x = array[i * 3];
+    const y = array[i * 3 + 1];
+    const z = array[i * 3 + 2];
+
+    out[i * 3] = x * scaleX;
+    out[i * 3 + 1] = y * scaleY;
+    out[i * 3 + 2] = z * scaleZ;
   }
 
   return out;
