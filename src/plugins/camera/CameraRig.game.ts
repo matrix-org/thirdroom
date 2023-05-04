@@ -338,6 +338,7 @@ export function addCameraRigYawTarget(world: World, node: RemoteNode, target: Re
     type,
     target: target.eid,
     sensitivity: DEFAULT_SENSITIVITY,
+    snapTurnDisabled: false,
   };
   YawComponent.set(node.eid, yaw);
   return yaw;
