@@ -17,27 +17,21 @@ export default function ToolbarStories() {
             <Icon size="sm" src={MenuIC} />
           </ToolbarButton>
 
-          <ToolbarButtonGroup>
-            <ToolbarButton>
-              <Text variant="b3" weight="semi-bold">
-                Toolbar Button
-              </Text>
-            </ToolbarButton>
-          </ToolbarButtonGroup>
+          <ToolbarButton outlined>
+            <Text variant="b3" weight="semi-bold">
+              Toolbar Button
+            </Text>
+          </ToolbarButton>
 
-          <ToolbarButtonGroup>
-            <ToolbarButton before={<Icon size="sm" src={ExploreIC} />}>
-              <Text variant="b3" weight="semi-bold">
-                Toolbar Button
-              </Text>
-            </ToolbarButton>
-          </ToolbarButtonGroup>
+          <ToolbarButton before={<Icon size="sm" src={ExploreIC} />} outlined>
+            <Text variant="b3" weight="semi-bold">
+              Toolbar Button
+            </Text>
+          </ToolbarButton>
 
-          <ToolbarButtonGroup>
-            <ToolbarButton>
-              <Icon size="sm" src={ExploreIC} />
-            </ToolbarButton>
-          </ToolbarButtonGroup>
+          <ToolbarButton outlined>
+            <Icon size="sm" src={ExploreIC} />
+          </ToolbarButton>
 
           <ToolbarButtonGroup>
             <ToolbarButton active={true}>

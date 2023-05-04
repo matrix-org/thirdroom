@@ -6,6 +6,7 @@ import "./ToolbarButton.css";
 interface ToolbarButtonProps {
   className?: string;
   active?: boolean;
+  outlined?: boolean;
   before?: ReactNode;
   after?: ReactNode;
   children?: ReactNode;
@@ -14,13 +15,14 @@ interface ToolbarButtonProps {
 export const ToolbarButton = forwardRef<
   HTMLButtonElement,
   ToolbarButtonProps & ButtonHTMLAttributes<HTMLButtonElement>
->(({ className, active, before, after, children, ...props }) => (
+>(({ className, active, outlined, before, after, children, ...props }) => (
   <button
     className={classNames(
       "ToolbarButton",
       {
         "ToolbarButton--ui-before": before,
         "ToolbarButton--ui-after": after,
+        "ToolbarButton--outlined": outlined,
       },
       className
     )}
