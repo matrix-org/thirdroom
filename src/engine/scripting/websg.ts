@@ -2967,13 +2967,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
         return -1;
       }
 
-      const label = readString(wasmCtx, labelPtr, length);
-
-      if (!label) {
-        return -1;
-      }
-
-      el.button.label = label;
+      el.button.label = readString(wasmCtx, labelPtr, length);
 
       return 0;
     },
@@ -3069,20 +3063,16 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       const el = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
 
       if (!el) {
+        console.error(`WebSG ui_text_set_value: ui element not found ${uiElementId}`);
         return -1;
       }
 
       if (!el.text) {
+        console.error(`WebSG ui_text_set_value: ui element is not a text element ${uiElementId}`);
         return -1;
       }
 
-      const value = readString(wasmCtx, valuePtr, length);
-
-      if (!value) {
-        return -1;
-      }
-
-      el.text.value = value;
+      el.text.value = readString(wasmCtx, valuePtr, length);
 
       return 0;
     },
