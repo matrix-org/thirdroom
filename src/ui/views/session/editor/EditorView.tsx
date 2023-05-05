@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { TreeViewRefApi } from "@thirdroom/manifold-editor-components";
-import { useAtom, useAtomValue } from "jotai";
+import { useAtomValue } from "jotai";
 import { Room } from "@thirdroom/hydrogen-view-sdk";
 
 import "./EditorView.css";
@@ -9,9 +9,9 @@ import { HierarchyPanel } from "./HierarchyPanel";
 import { useMainThreadContext } from "../../../hooks/useMainThread";
 import { getLocalResource, MainThreadResource } from "../../../../engine/resource/resource.main";
 import { PropertiesPanel } from "./PropertiesPanel";
-import { editorAtom, showCodeEditorAtom } from "../../../state/editor";
+import { editorAtom, EditorMode, editorModeAtom } from "../../../state/editor";
 import { ScriptEditor } from "./ScriptEditor";
-import { Button } from "../../../atoms/button/Button";
+import { EditorToolbar } from "./EditorToolbar";
 
 export function EditorView({ room }: { room?: Room }) {
   const treeViewRef = useRef<TreeViewRefApi>(null);
@@ -19,7 +19,7 @@ export function EditorView({ room }: { room?: Room }) {
   const activeEntity = useAtomValue(editorAtom).activeEntity;
   const mainThread = useMainThreadContext();
   const resource = getLocalResource(mainThread, activeEntity) as unknown as MainThreadResource;
-  const [showCodeEditor, setShowCodeEditor] = useAtom(showCodeEditorAtom);
+  const editorMode = useAtomValue(editorModeAtom);
 
   useEffect(() => {
     document.exitPointerLock();
@@ -29,25 +29,24 @@ export function EditorView({ room }: { room?: Room }) {
   }, [mainThread]);
 
   return (
-    <div className="EditorView flex gap-md">
+    <div className="EditorView flex flex-column gap-xs">
       {!loading && scene && (
         <>
-          <div className="EditorView__leftPanel grow">
-            <HierarchyPanel scene={scene} resources={resources} treeViewRef={treeViewRef} />
+          <div className="EditorView__toolbar shrink-0">
+            <EditorToolbar />
           </div>
-          <div className="EditorView__centerPanel grow flex justify-center items-start">
-            {showCodeEditor ? (
-              room && <ScriptEditor room={room} />
-            ) : (
-              <div className="EditorView__toolbar">
-                <Button size="sm" onClick={() => setShowCodeEditor(true)}>
-                  Open Script Editor
-                </Button>
+          <div className="grow flex gap-xs">
+            <div className="EditorView__leftPanel grow">
+              <HierarchyPanel scene={scene} resources={resources} treeViewRef={treeViewRef} />
+            </div>
+            <div className="EditorView__centerPanel grow flex justify-center items-start">
+              {editorMode === EditorMode.ScriptEditor && room && <ScriptEditor room={room} />}
+            </div>
+            {editorMode === EditorMode.NodeEditor && (
+              <div className="EditorView__rightPanel grow">
+                {typeof resource === "object" && <PropertiesPanel resource={resource} />}
               </div>
             )}
-          </div>
-          <div className="EditorView__rightPanel grow">
-            {typeof resource === "object" && <PropertiesPanel resource={resource} />}
           </div>
         </>
       )}

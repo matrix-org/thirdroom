@@ -3,6 +3,11 @@ import { atom } from "jotai";
 import { NOOP } from "../../engine/config.common";
 import { MainNode, MainThreadResource } from "../../engine/resource/resource.main";
 
+export enum EditorMode {
+  NodeEditor = "node_editor",
+  ScriptEditor = "script_editor",
+}
+
 export enum HierarchyTab {
   Scenes = "Scenes",
   Resources = "Resources",
@@ -24,6 +29,10 @@ interface EditorState {
   activeEntity: number;
   selectedEntities: number[];
 }
+
+export const editorEnabledAtom = atom<boolean>(false);
+
+export const editorModeAtom = atom<EditorMode>(EditorMode.NodeEditor);
 
 export const hierarchyTabAtom = atom<HierarchyTab>(HierarchyTab.Scenes);
 
@@ -160,7 +169,3 @@ world.onload = () => {
 `;
 
 export const scriptSourceAtom = atom<string>(DEFAULT_SCRIPT_SOURCE);
-
-export const showCodeEditorAtom = atom<boolean>(false);
-
-export const editorEnabledAtom = atom<boolean>(false);
