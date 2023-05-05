@@ -1,6 +1,7 @@
 .MenuItem {
   display: flex;
   align-items: center;
+  gap: var(--sp-xs);
   padding: var(--sp-xs) var(--sp-md);
   cursor: pointer;
   transition: background-color 100ms ease-in-out;
@@ -9,6 +10,14 @@
     opacity: 0.4;
     cursor: not-allowed;
   }
+}
+
+.MenuItem--ui-before {
+  padding-left: var(--sp-sm);
+}
+
+.MenuItem--ui-after {
+  padding-right: var(--sp-sm);
 }
 
 .MenuItem--surface {

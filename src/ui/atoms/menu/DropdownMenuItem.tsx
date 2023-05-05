@@ -10,6 +10,8 @@ interface DropdownMenuItemProps {
   onSelect?: (evt: Event) => void;
   disabled?: boolean;
   children: ReactNode;
+  before?: ReactNode;
+  after?: ReactNode;
 }
 
 export function DropdownMenuItem({
@@ -18,13 +20,24 @@ export function DropdownMenuItem({
   onSelect,
   disabled,
   children,
+  before,
+  after,
 }: DropdownMenuItemProps) {
   return (
     <RadixDropdownMenu.Item
       onSelect={onSelect}
-      className={classNames("MenuItem", `MenuItem--${variant}`, className)}
+      className={classNames(
+        "MenuItem",
+        `MenuItem--${variant}`,
+        {
+          "MenuItem--ui-before": before,
+          "MenuItem--ui-after": after,
+        },
+        className
+      )}
       disabled={disabled}
     >
+      {before}
       {typeof children === "string" ? (
         <Text variant="b2" color={variant} weight="medium">
           {children}
@@ -32,6 +45,7 @@ export function DropdownMenuItem({
       ) : (
         children
       )}
+      {after}
     </RadixDropdownMenu.Item>
   );
 }
