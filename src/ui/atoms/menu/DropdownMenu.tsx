@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { CSSProperties, ReactNode } from "react";
 import classNames from "classnames";
 import * as RadixDropdownMenu from "@radix-ui/react-dropdown-menu";
 
@@ -6,6 +6,7 @@ import "./DropdownMenu.css";
 
 interface DropdownMenuProps {
   className?: string;
+  style?: CSSProperties;
   content: ReactNode;
   side?: "top" | "right" | "bottom" | "left";
   align?: "start" | "center" | "end";
@@ -18,6 +19,7 @@ interface DropdownMenuProps {
 
 export function DropdownMenu({
   className,
+  style,
   content,
   side,
   align,
@@ -33,6 +35,7 @@ export function DropdownMenu({
         <span>{children}</span>
       </RadixDropdownMenu.Trigger>
       <RadixDropdownMenu.Content
+        style={style}
         className={classNames("DropdownMenu", className)}
         sideOffset={8}
         side={side}
