@@ -258,7 +258,6 @@ export function updateKinematicControls(
 
   const collider = body.collider(0);
 
-
   characterController.computeColliderMovement(collider, _linearVelocity);
 
   const corrected = characterController.computedMovement();
@@ -294,9 +293,9 @@ export function updateKinematicControls(
 }
 
 function createCharacterController(physics: PhysicsModuleState, eid: number) {
-  const characterController = physics.physicsWorld.createCharacterController(0.1);
-  characterController.enableAutostep(0.7, 0.3, true);
-  characterController.enableSnapToGround(0.3);
+  const characterController = physics.physicsWorld.createCharacterController(0.01);
+  characterController.enableAutostep(0.1, 0.1, true);
+  characterController.enableSnapToGround(0.1);
   characterController.setCharacterMass(100);
   characterController.setApplyImpulsesToDynamicBodies(true);
   characterController.setSlideEnabled(true);
