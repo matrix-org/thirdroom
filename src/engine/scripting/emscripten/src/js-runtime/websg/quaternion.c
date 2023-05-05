@@ -11,6 +11,7 @@ static void js_websg_quaternion_finalizer(JSRuntime *rt, JSValue val) {
   WebSGQuaternionData *quat_data = JS_GetOpaque(val, js_websg_quaternion_class_id);
 
   if (quat_data) {
+    js_free_rt(rt, quat_data->elements);
     js_free_rt(rt, quat_data);
   }
 }
@@ -118,6 +119,13 @@ void js_websg_define_quaternion(JSContext *ctx, JSValue websg) {
   );
 }
 
+JSValue js_websg_create_quaternion(JSContext *ctx, float* elements) {
+  JSValue quaternion = JS_NewObjectClass(ctx, js_websg_quaternion_class_id);
+  WebSGQuaternionData *quat_data = js_mallocz(ctx, sizeof(WebSGQuaternionData));
+  quat_data->elements = elements;
+  return quaternion;
+}
+
 JSValue js_websg_new_quaternion_get_set(
   JSContext *ctx,
   uint32_t resource_id,
@@ -128,6 +136,7 @@ JSValue js_websg_new_quaternion_get_set(
   JSValue quaternion = JS_NewObjectClass(ctx, js_websg_quaternion_class_id);
 
   WebSGQuaternionData *quat_data = js_mallocz(ctx, sizeof(WebSGQuaternionData));
+  quat_data->elements = js_mallocz(ctx, sizeof(float_t) * 4);
   quat_data->get = get;
   quat_data->set = set;
   quat_data->set_array = set_array;

@@ -1,5 +1,3 @@
-let boxNode3;
-
 world.onenter = () => {
   const scene = world.environment;
 
@@ -33,9 +31,10 @@ world.onenter = () => {
     collider: world.createCollider({ type: "box", size: [1, 1, 1] }),
   });
   boxNode2.addPhysicsBody({ type: WebSG.PhysicsBodyType.Kinematic });
+  boxNode2.addInteractable();
   scene.addNode(boxNode2);
 
-  boxNode3 = world.createNode({
+  const boxNode3 = world.createNode({
     translation: [-2, 2, 0],
     mesh: world.createBoxMesh({
       size: [1, 1, 1],
@@ -49,11 +48,14 @@ world.onenter = () => {
     collider: world.createCollider({ type: "box", size: [1, 1, 1] }),
   });
   boxNode3.addPhysicsBody({ type: WebSG.PhysicsBodyType.Kinematic });
+  boxNode3.addInteractable({ type: WebSG.InteractableType.Interactable });
+
   scene.addNode(boxNode3);
-};
 
-const translation = new Float32Array([-2, 2, 0]);
-
-world.onupdate = (dt, elapsed) => {
-  if (boxNode3) boxNode3.translation[1] = Math.sin(elapsed) * 1 + 2;
+  world.onupdate = (dt, elapsed) => {
+    boxNode3.translation[1] = Math.sin(elapsed) * 1 + 2;
+    if (boxNode3.interactable.pressed) {
+      boxNode3.startOrbit();
+    }
+  };
 };

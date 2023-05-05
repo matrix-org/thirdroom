@@ -10,6 +10,7 @@ import { createThirdroomModule } from "./thirdroom";
 import { createWASIModule } from "./wasi";
 import { WASMModuleContext } from "./WASMModuleContext";
 import { createWebSGModule } from "./websg";
+import { disposeRemoteResourceManager } from "../resource/resource.game";
 
 export enum ScriptState {
   Uninitialized,
@@ -72,6 +73,7 @@ export async function loadScript(
     resourceManager,
     memory,
     U8Heap: new Uint8Array(memory.buffer),
+    I32Heap: new Int32Array(memory.buffer),
     U32Heap: new Uint32Array(memory.buffer),
     F32Heap: new Float32Array(memory.buffer),
     cursorView: createCursorView(memory.buffer, true),
@@ -223,6 +225,7 @@ export async function loadScript(
     dispose() {
       disposeMatrixWASMModule(ctx);
       disposeWebSGNetworkModule(ctx);
+      disposeRemoteResourceManager(resourceManager);
     },
   };
 

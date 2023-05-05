@@ -30,6 +30,9 @@
 #include "./ui-button.h"
 #include "./vector3.h"
 #include "./world.h"
+#include "./component-store.h"
+#include "./component.h"
+#include "./query.h"
 
 void js_define_websg_api(JSContext *ctx) {
   JSValue global = JS_GetGlobalObject(ctx);
@@ -59,6 +62,9 @@ void js_define_websg_api(JSContext *ctx) {
   js_websg_define_ui_button(ctx, websg);
   js_websg_define_vector3(ctx, websg);
   js_websg_define_world(ctx, websg);
+  js_websg_define_query(ctx, websg);
+  js_websg_define_component(ctx, websg);
+  js_websg_define_component_store(ctx, websg);
   JS_SetPropertyStr(ctx, global, "WebSG", websg);
 
   JSValue world = js_websg_new_world(ctx);

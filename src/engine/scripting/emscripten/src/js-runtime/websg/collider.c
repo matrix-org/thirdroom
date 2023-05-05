@@ -55,7 +55,7 @@ static JSClassDef js_websg_collider_class = {
 };
 
 static const JSCFunctionListEntry js_websg_collider_proto_funcs[] = {
-  JS_PROP_STRING_DEF("[Symbol.toStringTag]", "WebSGCollider", JS_PROP_CONFIGURABLE),
+  JS_PROP_STRING_DEF("[Symbol.toStringTag]", "Collider", JS_PROP_CONFIGURABLE),
 };
 
 static JSValue js_websg_collider_constructor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {

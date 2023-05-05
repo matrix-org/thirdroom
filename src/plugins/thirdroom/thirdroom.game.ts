@@ -477,13 +477,14 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
 
   const resourceManager = createRemoteResourceManager(ctx);
 
+  const environmentGLTFResource = await loadGLTF(ctx, url, { fileMap, resourceManager });
+
   let script: Script | undefined;
 
   if (scriptUrl) {
     script = await loadScript(ctx, resourceManager, scriptUrl);
   }
 
-  const environmentGLTFResource = await loadGLTF(ctx, url, { fileMap, resourceManager });
   const environmentScene = (await loadDefaultGLTFScene(ctx, environmentGLTFResource, {
     createDefaultMeshColliders: true,
     rootIsStatic: true,
