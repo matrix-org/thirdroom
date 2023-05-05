@@ -2,6 +2,7 @@ import classNames from "classnames";
 import { ButtonHTMLAttributes, ReactNode, forwardRef } from "react";
 
 import "./ToolbarButton.css";
+import { Text } from "../../../atoms/text/Text";
 
 interface ToolbarButtonProps {
   className?: string;
@@ -31,7 +32,13 @@ export const ToolbarButton = forwardRef<
     {...props}
   >
     {before}
-    {children}
+    {typeof children === "string" ? (
+      <Text variant="b3" weight="semi-bold">
+        {children}
+      </Text>
+    ) : (
+      children
+    )}
     {after}
   </button>
 ));

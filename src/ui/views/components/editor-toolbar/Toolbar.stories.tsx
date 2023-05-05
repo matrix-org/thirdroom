@@ -1,5 +1,4 @@
 import { Icon } from "../../../atoms/icon/Icon";
-import { Text } from "../../../atoms/text/Text";
 import { ToolbarButton, ToolbarButtonGroup, ToolbarButtonDivider } from "./ToolbarButton";
 import ExploreIC from "../../../../../res/ic/explore.svg";
 import ChevronBottomIC from "../../../../../res/ic/chevron-bottom.svg";
@@ -17,18 +16,21 @@ export default function ToolbarStories() {
             <Icon size="sm" src={MenuIC} />
           </ToolbarButton>
 
-          <ToolbarButton outlined>
-            <Text variant="b3" weight="semi-bold">
-              Toolbar Button
-            </Text>
-          </ToolbarButton>
+          <ToolbarButton outlined>Toolbar Button</ToolbarButton>
 
           <ToolbarButton before={<Icon size="sm" src={ExploreIC} />} outlined>
-            <Text variant="b3" weight="semi-bold">
-              Toolbar Button
-            </Text>
+            Toolbar Button
           </ToolbarButton>
 
+          <ToolbarButton
+            before={<Icon size="sm" src={ExploreIC} />}
+            after={<Icon size="sm" src={ExploreIC} />}
+            outlined
+          >
+            Toolbar Button
+          </ToolbarButton>
+        </ToolbarItemGroup>
+        <ToolbarItemGroup>
           <ToolbarButton outlined>
             <Icon size="sm" src={ExploreIC} />
           </ToolbarButton>
