@@ -12,6 +12,7 @@ export enum HierarchyTab {
   Scenes = "Scenes",
   Resources = "Resources",
 }
+
 export type ResourceOptions = { value: MainThreadResource; label: string }[];
 
 export type ResourceMenu = {
