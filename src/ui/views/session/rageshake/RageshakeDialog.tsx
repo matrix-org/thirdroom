@@ -110,7 +110,7 @@ export function RageshakeDialog({ open, requestClose }: RageshakeDialogProps) {
         </div>
         <SettingTile label={<Label>Description</Label>}>
           <div className="flex flex-column gap-xxs">
-            <Textarea style={{ height: "100px" }} name="descInput" />
+            <Textarea style={{ height: "100px" }} name="descInput" disabled={submitting} />
             {error && (
               <Text variant="b3" color="danger">
                 {error.message || "Failed to submit logs."}
