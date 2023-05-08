@@ -31,6 +31,7 @@
     "@gltf-transform/core": "^2.4.3",
     "@gltf-transform/extensions": "^2.4.3",
     "@gltf-transform/functions": "^2.4.3",
+    "@matrix-org/olm": "https://gitlab.matrix.org/api/v4/projects/27/packages/npm/@matrix-org/olm/-/@matrix-org/olm-3.2.14.tgz",
     "@monaco-editor/react": "^4.4.6",
     "@radix-ui/react-checkbox": "^1.0.1",
     "@radix-ui/react-dialog": "^0.1.7",

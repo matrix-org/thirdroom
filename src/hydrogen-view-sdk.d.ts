@@ -364,6 +364,13 @@ declare module "@thirdroom/hydrogen-view-sdk" {
 
     config: {
       defaultHomeServer: string;
+      staticClients: Record<
+        string,
+        {
+          client_id: string;
+          guestKeycloakIdpHint: string;
+        }
+      >;
       [key: string]: any;
     };
     encoding: any;
@@ -401,15 +408,14 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     expires_in?: number;
   };
   type IssuerUri = string;
-  interface ClientConfig {
+  export interface OidcClientConfig {
     client_id: string;
-    client_secret?: string;
-    uris: string[];
   }
+  export type StaticOidcClientsConfig = Record<IssuerUri, OidcClientConfig>;
   export class OidcApi {
     constructor(options: {
       issuer: string;
-      clientConfigs: Record<IssuerUri, ClientConfig>;
+      staticClients?: StaticOidcClientsConfig;
       request: RequestFunction;
       encoding: any;
       crypto: any;

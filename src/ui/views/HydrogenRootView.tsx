@@ -132,19 +132,10 @@ function initHydrogen() {
   };
 
   const oidcClientId = document.location.hostname === "thirdroom.io" ? "thirdroom" : "thirdroom_dev";
-  const oidcUris = ((): string[] => {
-    if (document.location.hostname === "thirdroom.io") {
-      return ["https://thirdroom.io"];
-    }
-
-    const { protocol, hostname, port } = document.location;
-    return [`${protocol}//${hostname}${port ? `:${port}` : ""}`];
-  })();
 
   const config = { ...configData };
-  config.oidc.clientConfigs["https://id.thirdroom.io/realms/thirdroom/"] = {
+  config.staticOidcClients["https://id.thirdroom.io/realms/thirdroom/"] = {
     client_id: oidcClientId,
-    uris: oidcUris,
     guestKeycloakIdpHint: "guest",
   };
 
@@ -274,7 +265,7 @@ async function getOidcLoginMethod(platform: Platform, urlCreator: URLRouter, sta
   return new OIDCLoginMethod({
     oidcApi: new OidcApi({
       issuer,
-      clientConfigs: platform.config.oidc.clientConfigs,
+      staticClients: platform.config.staticOidcClients,
       clientId,
       urlCreator,
       request: platform.request,
