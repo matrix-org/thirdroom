@@ -16,6 +16,8 @@ import {
   OIDCLoginMethod,
   ILoginMethod,
   ISessionInfo,
+  FeatureSet,
+  FeatureFlag,
 } from "@thirdroom/hydrogen-view-sdk";
 import downloadSandboxPath from "@thirdroom/hydrogen-view-sdk/download-sandbox.html?url";
 import workerPath from "@thirdroom/hydrogen-view-sdk/main.js?url";
@@ -144,11 +146,12 @@ function initHydrogen() {
   };
 
   const platform = new Platform({ container, assetPaths, config, options });
+  const features = new FeatureSet(FeatureFlag.Calls);
 
   const navigation = new Navigation(allowsChild);
   platform.setNavigation(navigation);
 
-  const client = new Client(platform, { deviceName: "Third Room" });
+  const client = new Client(platform, features, { deviceName: "Third Room" });
 
   hydrogenInstance = {
     client,
