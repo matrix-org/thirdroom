@@ -1,6 +1,5 @@
 import { IBlobHandle, Platform } from "@thirdroom/hydrogen-view-sdk";
 import React, { FormEventHandler } from "react";
-import JSZip from "jszip";
 
 import { Text } from "../../../atoms/text/Text";
 import { Dialog } from "../../../atoms/dialog/Dialog";
@@ -18,16 +17,14 @@ import { useAsyncCallback } from "../../../hooks/useAsyncCallback";
 import { saveData } from "../../../utils/common";
 import { Textarea } from "../../../atoms/input/Textarea";
 
-const getLogsZip = async (platform: Platform): Promise<Blob> => {
+const getLogs = async (platform: Platform): Promise<Blob> => {
   const exportReporter = platform.logger.reporters.find((r) => typeof r.export === "function");
   if (!exportReporter) {
     throw new Error("No logger that can export configured");
   }
   const logExport = await exportReporter.export();
   const logs = logExport.asBlob() as IBlobHandle;
-  const zip = new JSZip();
-  zip.file("logs.json", logs.nativeBlob);
-  return zip.generateAsync({ type: "blob", compression: "DEFLATE" });
+  return logs.nativeBlob;
 };
 
 interface RageshakeDialogProps {
@@ -48,7 +45,7 @@ export function RageshakeDialog({ open, requestClose }: RageshakeDialogProps) {
       throw new Error("No server configured to submit logs");
     }
 
-    const logs = await getLogsZip(platform);
+    const logs = await getLogs(platform);
     await submitLogsToRageshakeServer(
       {
         app: "thirdroom",
@@ -71,8 +68,8 @@ export function RageshakeDialog({ open, requestClose }: RageshakeDialogProps) {
   };
 
   const downloadLogs = async () => {
-    getLogsZip(platform).then((outputBlob) => {
-      saveData(outputBlob, `thirdroom-logs-${new Date()}.zip`);
+    getLogs(platform).then((outputBlob) => {
+      saveData(outputBlob, `thirdroom-logs-${new Date()}.json`);
     });
   };
 
