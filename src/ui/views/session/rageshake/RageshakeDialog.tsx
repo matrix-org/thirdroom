@@ -64,6 +64,7 @@ export function RageshakeDialog({ open, requestClose }: RageshakeDialogProps) {
 
     const { descInput } = evt.target as typeof evt.target & { descInput: HTMLInputElement };
     const desc = descInput.value.trim() || undefined;
+    descInput.value = "";
     submitLogs(desc);
   };
 
