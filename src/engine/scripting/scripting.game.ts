@@ -51,7 +51,10 @@ export function ScriptingSystem(ctx: GameState) {
     const eid = entities[i];
     const script = ScriptComponent.get(eid)!;
     // TODO: Use a networked global time variable instead of elapsed
-    script.update(ctx.dt, ctx.elapsed / 1000);
+
+    if (script.state === ScriptState.Entered) {
+      script.update(ctx.dt, ctx.elapsed / 1000);
+    }
   }
 
   const removedEntities = scriptExitQuery(ctx.world);
@@ -220,7 +223,7 @@ export async function loadScript(
         return;
       }
 
-      if (this.state === ScriptState.Loaded || this.state === ScriptState.Entered) {
+      if (this.state === ScriptState.Entered) {
         if (websgUpdate) {
           const result = websgUpdate(dt, time);
 
