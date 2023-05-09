@@ -61,12 +61,12 @@ export interface GameNetworkState {
   newPeers: string[];
   peerIdCount: number;
   peerIdToIndex: Map<string, number>;
+  indexToPeerId: Map<number, string>;
   peerIdToHistorian: Map<string, Historian>;
   peerIdToEntityId: Map<string, number>;
   peerIdToXRMode: Map<string, XRMode>;
   entityIdToPeerId: Map<number, string>;
   networkIdToEntityId: Map<number, number>;
-  indexToPeerId: Map<number, string>;
   localIdCount: number;
   removedLocalIds: number[];
   messageHandlers: { [key: number]: (input: NetPipeData) => void };

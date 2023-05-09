@@ -10,13 +10,15 @@
 #include "./utils/exception.h"
 
 #include "../websg.h"
+#include "../websg-networking.h"
 #include "../thirdroom.h"
 
 #include "./global/global-js.h"
 #include "./matrix/matrix-js.h"
 #include "./thirdroom/thirdroom-js.h"
 #include "./websg/websg-js.h"
-#include "./websg-network/websg-network-js.h"
+#include "./websg-networking/websg-networking-js.h"
+#include "./websg-networking/network.h"
 
 /**
  * Global State
@@ -41,7 +43,7 @@ export int32_t websg_initialize() {
   js_define_thirdroom_api(ctx);
   js_define_matrix_api(ctx);
   js_define_websg_api(ctx);
-  js_define_websg_network_api(ctx);
+  js_define_websg_networking_api(ctx);
 
   int32_t source_len = thirdroom_get_js_source_size();
   char *source = js_mallocz(ctx, source_len); // TODO: can we free this after JS_Eval?
@@ -136,6 +138,18 @@ export int32_t websg_update(float_t dt, float_t time) {
     JS_FreeValue(ctx, val);
     return 0;
   }
+}
+
+export int32_t websg_network_peer_entered(uint32_t peer_index) {
+  JSValue global = JS_GetGlobalObject(ctx);
+  JSValue network = JS_GetPropertyStr(ctx, global, "network");
+  return js_websg_network_peer_entered(ctx, network, peer_index);
+}
+
+export int32_t websg_network_peer_exited(uint32_t peer_index) {
+  JSValue global = JS_GetGlobalObject(ctx);
+  JSValue network = JS_GetPropertyStr(ctx, global, "network");
+  return js_websg_network_peer_exited(ctx, network, peer_index);
 }
 
 #ifdef THIRDROOM_TEST

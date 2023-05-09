@@ -64,6 +64,9 @@ static JSValue js_websg_matrix4_set(JSContext *ctx, JSValueConst this_val, JSVal
 static JSValue js_websg_matrix4_set_array(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
   WebSGMatrix4Data *matrix_data = JS_GetOpaque(this_val, js_websg_matrix4_class_id);
 
+  if (matrix_data->read_only == 1) {
+    return JS_ThrowTypeError(ctx, "Matrix4 is marked as read only.");
+  }
 
   if (js_get_float_array_like(ctx, argv[0], matrix_data->elements, 16) < 0) {
     return JS_EXCEPTION;
