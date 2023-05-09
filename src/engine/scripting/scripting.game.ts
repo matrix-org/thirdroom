@@ -242,7 +242,7 @@ export async function loadScript(
         return;
       }
 
-      if (this.state === ScriptState.Loaded || this.state === ScriptState.Entered) {
+      if (this.state === ScriptState.Entered) {
         if (websgPeerEntered) {
           const result = websgPeerEntered(peerId);
 
@@ -253,7 +253,7 @@ export async function loadScript(
           }
         }
       } else {
-        throw new Error("peerEntered() can only be called from the Loaded or Entered state");
+        throw new Error("peerEntered() can only be called from the Entered state");
       }
     },
     peerExited(peerId: number) {
@@ -261,7 +261,7 @@ export async function loadScript(
         return;
       }
 
-      if (this.state === ScriptState.Loaded || this.state === ScriptState.Entered) {
+      if (this.state === ScriptState.Entered) {
         if (websgPeerExited) {
           const result = websgPeerExited(peerId);
 
@@ -272,7 +272,7 @@ export async function loadScript(
           }
         }
       } else {
-        throw new Error("peerExited() can only be called from the Loaded or Exited state");
+        throw new Error("peerExited() can only be called from Entered state");
       }
     },
     dispose() {
