@@ -4,7 +4,7 @@ import { NOOP } from "../../engine/config.common";
 import { MainNode, MainThreadResource } from "../../engine/resource/resource.main";
 
 export enum EditorMode {
-  NodeEditor = "node_editor",
+  SceneEditor = "scene_editor",
   ScriptEditor = "script_editor",
 }
 
@@ -33,7 +33,7 @@ interface EditorState {
 
 export const editorEnabledAtom = atom<boolean>(false);
 
-export const editorModeAtom = atom<EditorMode>(EditorMode.NodeEditor);
+export const editorModeAtom = atom<EditorMode>(EditorMode.SceneEditor);
 
 export const hierarchyTabAtom = atom<HierarchyTab>(HierarchyTab.Scenes);
 

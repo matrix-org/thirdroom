@@ -22,8 +22,8 @@ interface IEditorMode {
 
 const useEditorModeMenu = (): IEditorMode[] => [
   {
-    mode: EditorMode.NodeEditor,
-    title: "Node Editor",
+    mode: EditorMode.SceneEditor,
+    title: "Scene Editor",
     icon: Box3dIC,
   },
   {

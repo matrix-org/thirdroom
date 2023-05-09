@@ -42,7 +42,7 @@ export function EditorView({ room }: { room?: Room }) {
             <div className="EditorView__centerPanel grow flex justify-center items-start">
               {editorMode === EditorMode.ScriptEditor && room && <ScriptEditor room={room} />}
             </div>
-            {editorMode === EditorMode.NodeEditor && (
+            {editorMode === EditorMode.SceneEditor && (
               <div className="EditorView__rightPanel grow">
                 {typeof resource === "object" && <PropertiesPanel resource={resource} />}
               </div>
