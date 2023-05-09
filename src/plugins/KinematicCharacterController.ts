@@ -258,8 +258,6 @@ export function updateKinematicControls(
 
   const collider = body.collider(0);
 
-  console.log(isGrounded, _linearVelocity);
-
   characterController.computeColliderMovement(collider, _linearVelocity);
 
   const corrected = characterController.computedMovement();

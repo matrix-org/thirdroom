@@ -253,6 +253,7 @@ declare namespace WebSG {
 
   interface PhysicsBodyProps {
     type: PhysicsBodyType;
+    mass?: number;
     linearVelocity?: ArrayLike<number>;
     angularVelocity?: ArrayLike<number>;
     inertiaTensor?: ArrayLike<number>;
@@ -530,15 +531,41 @@ declare namespace WebSG {
 
 declare const world: WebSG.World;
 
-interface WebSGNetworking {
-  listen(): undefined;
-  close(): undefined;
-  broadcast(data: ArrayBuffer): undefined;
-  receive(): ArrayBuffer | undefined;
-  receiveInto(buffer: ArrayBuffer): number;
+declare namespace WebSGNetworking {
+  class Peer {
+    get id(): string;
+    get isHost(): boolean;
+    get isLocal(): boolean;
+    send(message: string | ArrayBuffer, reliable: boolean): undefined;
+  }
+
+  class NetworkMessage {
+    peer: Peer;
+    data: ArrayBuffer | string;
+    bytesWritten: number;
+  }
+
+  class NetworkMessageIterator {
+    next(): { value: NetworkMessage; done: boolean };
+    [Symbol.iterator](): NetworkMessageIterator;
+  }
+
+  class NetworkListener {
+    receive(buffer?: ArrayBuffer): NetworkMessageIterator;
+    close(): undefined;
+  }
+
+  class Network {
+    get host(): Peer | undefined;
+    get local(): Peer;
+    listen(): NetworkListener;
+    broadcast(message: string | ArrayBuffer, reliable: boolean): undefined;
+    onpeerentered: ((peer: Peer) => any) | null;
+    onpeerexited: ((peer: Peer) => any) | null;
+  }
 }
 
-declare const network: WebSGNetworking;
+declare const network: WebSGNetworking.Network;
 
 interface ThirdRoom {
   enableMatrixMaterial(enabled: boolean): undefined;

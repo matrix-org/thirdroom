@@ -7,7 +7,7 @@ import {
   writeInt32,
 } from "../allocator/CursorView";
 import { GameState } from "../GameTypes";
-import { defineModule, getModule } from "../module/module.common";
+import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
 import { GameNetworkState, NetworkModule } from "./network.game";
 import { NetworkAction } from "./NetworkAction";
 import { broadcastReliable, sendReliable, sendUnreliable } from "./outbound.game";
@@ -23,6 +23,9 @@ import {
 } from "../scripting/WASMModuleContext";
 import { RemoteNode } from "../resource/RemoteResources";
 import { getRemoteResource } from "../resource/resource.game";
+import { createDisposables } from "../utils/createDisposables";
+import { NetworkMessageType, PeerEnteredMessage, PeerExitedMessage } from "./network.common";
+import { ScriptComponent, scriptQuery } from "../scripting/scripting.game";
 
 interface NetworkListener {
   id: number;
@@ -50,8 +53,31 @@ export const WebSGNetworkModule = defineModule<GameState, WebSGNetworkModuleStat
     registerInboundMessageHandler(network, NetworkAction.StringScriptMessage, (data) =>
       deserializeScriptMessage(data, false)
     );
+
+    return createDisposables([
+      registerMessageHandler(ctx, NetworkMessageType.PeerEntered, onPeerEntered),
+      registerMessageHandler(ctx, NetworkMessageType.PeerExited, onPeerExited),
+    ]);
   },
 });
+
+function onPeerEntered(ctx: GameState, msg: PeerEnteredMessage) {
+  const entities = scriptQuery(ctx.world);
+
+  for (const eid of entities) {
+    const script = ScriptComponent.get(eid);
+    script?.peerEntered(msg.peerIndex);
+  }
+}
+
+function onPeerExited(ctx: GameState, msg: PeerExitedMessage) {
+  const entities = scriptQuery(ctx.world);
+
+  for (const eid of entities) {
+    const script = ScriptComponent.get(eid);
+    script?.peerExited(msg.peerIndex);
+  }
+}
 
 export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleContext) {
   const network = getModule(ctx, NetworkModule);
@@ -77,30 +103,6 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
       }
 
       return peerIndex;
-    },
-    network_send: (peerIndex: number, packetPtr: number, byteLength: number, binary: number, reliable: number) => {
-      try {
-        const peerId = network.indexToPeerId.get(peerIndex);
-
-        if (!peerId) {
-          console.error(`WebSGNetworking: Peer ${peerIndex} does not exist.`);
-          return -1;
-        }
-
-        const scriptPacket = readUint8Array(wasmCtx, packetPtr, byteLength);
-
-        const msg = createScriptMessage(ctx, scriptPacket, !!binary);
-
-        if (reliable) {
-          sendReliable(ctx, network, peerId, msg);
-          return 0;
-        } else {
-          sendUnreliable(ctx, network, peerId, msg);
-        }
-      } catch (error) {
-        console.error("WebSGNetworking: Error broadcasting packet:", error);
-        return -1;
-      }
     },
     network_broadcast: (packetPtr: number, byteLength: number, binary: number, reliable: number) => {
       try {
@@ -310,6 +312,30 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
       }
 
       return network.peerId === peerId ? 1 : 0;
+    },
+    peer_send: (peerIndex: number, packetPtr: number, byteLength: number, binary: number, reliable: number) => {
+      try {
+        const peerId = network.indexToPeerId.get(peerIndex);
+
+        if (!peerId) {
+          console.error(`WebSGNetworking: Peer ${peerIndex} does not exist.`);
+          return -1;
+        }
+
+        const scriptPacket = readUint8Array(wasmCtx, packetPtr, byteLength);
+
+        const msg = createScriptMessage(ctx, scriptPacket, !!binary);
+
+        if (reliable) {
+          sendReliable(ctx, network, peerId, msg);
+          return 0;
+        } else {
+          sendUnreliable(ctx, network, peerId, msg);
+        }
+      } catch (error) {
+        console.error("WebSGNetworking: Error broadcasting packet:", error);
+        return -1;
+      }
     },
   };
 }

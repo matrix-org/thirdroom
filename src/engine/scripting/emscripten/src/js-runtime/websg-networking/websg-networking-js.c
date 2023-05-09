@@ -8,7 +8,7 @@
 #include "./network.h"
 #include "./peer.h"
 
-void js_define_websg_network_api(JSContext *ctx) {
+void js_define_websg_networking_api(JSContext *ctx) {
   JSValue global = JS_GetGlobalObject(ctx);
 
   JSValue websg_networking = JS_NewObject(ctx);

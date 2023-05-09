@@ -10,6 +10,8 @@ import {
   AddPeerIdMessage,
   InitializeNetworkStateMessage,
   NetworkMessageType,
+  PeerEnteredMessage,
+  PeerExitedMessage,
   RemovePeerIdMessage,
   SetHostMessage,
   SetPeerIdMessage,
@@ -175,6 +177,10 @@ const onAddPeerId = (ctx: GameState, message: AddPeerIdMessage) => {
   network.peerIdToHistorian.set(peerId, createHistorian());
 
   mapPeerIdAndIndex(network, peerId);
+
+  const peerIndex = network.peerIdToIndex.get(peerId) || 0;
+
+  ctx.sendMessage<PeerEnteredMessage>(Thread.Game, { type: NetworkMessageType.PeerEntered, peerIndex });
 };
 
 const onRemovePeerId = (ctx: GameState, message: RemovePeerIdMessage) => {
@@ -204,6 +210,8 @@ const onRemovePeerId = (ctx: GameState, message: RemovePeerIdMessage) => {
     }
 
     network.peers.splice(peerArrIndex, 1);
+
+    ctx.sendMessage<PeerExitedMessage>(Thread.Game, { type: NetworkMessageType.PeerExited, peerIndex });
   } else {
     console.warn(`cannot remove peerId ${peerId}, does not exist in peer list`);
   }

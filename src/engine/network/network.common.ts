@@ -12,6 +12,10 @@ export enum NetworkMessageType {
   AddPeerId = "add-peer-id",
   RemovePeerId = "remove-peer-id",
   SetHost = "set-host",
+
+  // Game -> Game
+  PeerEntered = "peer-entered",
+  PeerExited = "peer-exited",
 }
 
 // Main -> Game
@@ -40,6 +44,14 @@ export interface RemovePeerIdMessage extends Message<NetworkMessageType.RemovePe
 
 export interface SetHostMessage extends Message<NetworkMessageType.SetHost> {
   hostId: string;
+}
+
+export interface PeerEnteredMessage extends Message<NetworkMessageType.PeerEntered> {
+  peerIndex: number;
+}
+
+export interface PeerExitedMessage extends Message<NetworkMessageType.PeerExited> {
+  peerIndex: number;
 }
 
 export const isHost = (network: GameNetworkState | MainNetworkState): boolean =>
