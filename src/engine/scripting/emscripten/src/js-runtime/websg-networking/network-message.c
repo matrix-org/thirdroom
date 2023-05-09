@@ -59,7 +59,8 @@ JSValue js_websg_new_network_message_instance(
   JSContext *ctx,
   JSValue peer,
   JSValue data,
-  uint32_t bytes_written
+  uint32_t bytes_written,
+  int32_t is_binary
 ) {
   JSValue network_message = JS_NewObjectClass(ctx, js_websg_network_message_class_id);
 
@@ -70,6 +71,7 @@ JSValue js_websg_new_network_message_instance(
   JS_SetPropertyStr(ctx, network_message, "peer", peer);
   JS_SetPropertyStr(ctx, network_message, "data", data);
   JS_SetPropertyStr(ctx, network_message, "bytesWritten", JS_NewUint32(ctx, bytes_written));
+  JS_SetPropertyStr(ctx, network_message, "isBinary", JS_NewBool(ctx, is_binary));
 
   return network_message;
 }

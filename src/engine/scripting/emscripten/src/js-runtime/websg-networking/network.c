@@ -78,6 +78,11 @@ static JSValue js_websg_network_get_host(JSContext *ctx, JSValueConst this_val) 
 static JSValue js_websg_network_get_local(JSContext *ctx, JSValueConst this_val) {
   WebSGNetworkData *network_data = JS_GetOpaque2(ctx, this_val, js_websg_network_class_id);
   uint32_t peer_index = websg_network_get_local_peer_index();
+
+  if (peer_index == 0) {
+    return JS_UNDEFINED;
+  }
+
   return js_websg_get_peer(ctx, network_data, peer_index);
 }
 
@@ -138,13 +143,23 @@ JSValue js_websg_new_network(JSContext *ctx) {
   network_data->peers = JS_NewObject(ctx);
   JS_SetOpaque(network, network_data);
 
+  return network;
+}
+
+int32_t js_websg_network_local_peer_entered(JSContext *ctx, JSValue network) {
   uint32_t local_peer_index = websg_network_get_local_peer_index();
+
+  if (local_peer_index == -1) {
+    return -1;
+  }
+
+  WebSGNetworkData *network_data = JS_GetOpaque2(ctx, network, js_websg_network_class_id);
 
   JSValue local_peer = js_websg_create_peer(ctx, network_data, local_peer_index);
 
   JS_SetPropertyUint32(ctx, network_data->peers, local_peer_index, local_peer);
 
-  return network;
+  return 0;
 }
 
 int32_t js_websg_network_peer_entered(JSContext *ctx, JSValue network, uint32_t peer_index) {

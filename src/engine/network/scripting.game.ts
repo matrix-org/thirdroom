@@ -88,8 +88,7 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
       const peerIndex = network.peerIdToIndex.get(network.hostId);
 
       if (peerIndex === undefined) {
-        console.error("WebSGNetworking: Host peer does not exist.");
-        return -1;
+        return 0;
       }
 
       return peerIndex;
@@ -98,8 +97,7 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
       const peerIndex = network.peerIdToIndex.get(network.peerId);
 
       if (peerIndex === undefined) {
-        console.error("WebSGNetworking: Local peer does not exist.");
-        return -1;
+        return 0;
       }
 
       return peerIndex;
@@ -148,6 +146,7 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
       const listener = websgNetwork.listeners.find((l) => l.id === listenerId);
 
       if (!listener) {
+        moveCursorView(wasmCtx.cursorView, infoPtr);
         writeUint32(wasmCtx.cursorView, 0);
         writeUint32(wasmCtx.cursorView, 0);
         writeInt32(wasmCtx.cursorView, 0);
@@ -159,13 +158,14 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
       let peerIndex: number | undefined;
 
       while (listener.inbound.length > 0) {
-        message = listener.inbound[listener.inbound.length - 1];
+        message = listener.inbound[0];
         const peerId = message[0];
         peerIndex = network.peerIdToIndex.get(peerId);
 
         if (peerIndex === undefined) {
           // This message is from a peer that no longer exists.
-          listener.inbound.pop();
+          console.warn("Discarded message from peer that no longer exists");
+          listener.inbound.shift();
           message = undefined;
         } else {
           break;
@@ -191,7 +191,7 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
         let message: [string, ArrayBuffer, boolean] | undefined;
 
         while (listener.inbound.length > 0) {
-          message = listener.inbound.pop();
+          message = listener.inbound.shift();
 
           if (!message) {
             break;
@@ -201,9 +201,11 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
           const peerIndex = network.peerIdToIndex.get(peerId);
 
           if (peerIndex === undefined) {
+            console.warn("Discarded message from peer that no longer exists");
             // This message is from a peer that no longer exists.
-            listener.inbound.pop();
             message = undefined;
+          } else {
+            break;
           }
         }
 

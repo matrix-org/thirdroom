@@ -111,7 +111,11 @@ static JSValue js_websg_network_message_iterator_next(
 
   JSValue peer = js_websg_get_peer(ctx, it->listener_data->network_data, info->peer_index);
 
-  return js_websg_new_network_message_instance(ctx, peer, data, (uint32_t)read_bytes);
+  int is_binary = info->binary;
+
+  js_free(ctx, info);
+
+  return js_websg_new_network_message_instance(ctx, peer, data, (uint32_t)read_bytes, is_binary);
 }
 
 static JSValue js_websg_network_message_iterator(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {

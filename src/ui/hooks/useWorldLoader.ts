@@ -138,7 +138,13 @@ export function useWorldLoader(): WorldLoader {
         );
         registerMatrixNetworkInterface(matrixNetworkInterface);
 
-        await enterWorld(mainThread);
+        const localPeerId = client.session?.userId;
+
+        if (!localPeerId) {
+          throw new Error("Hydrogen session user id is undefined");
+        }
+
+        await enterWorld(mainThread, localPeerId);
 
         const audio = getModule(mainThread, AudioModule);
         audio.context.resume().catch(() => console.error("Couldn't resume audio context"));
@@ -168,13 +174,19 @@ export function useWorldLoader(): WorldLoader {
 
       await loadWorldCallback(world, content);
 
-      await enterWorld(mainThread);
+      const localPeerId = client.session?.userId;
+
+      if (!localPeerId) {
+        throw new Error("Hydrogen session user id is undefined");
+      }
+
+      await enterWorld(mainThread, localPeerId);
 
       setWorld({ type: "ENTER" });
 
       reconnectPeers(mainThread);
     },
-    [loadWorldCallback, setWorld, mainThread]
+    [loadWorldCallback, setWorld, mainThread, client]
   );
 
   return {

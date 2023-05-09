@@ -14,7 +14,6 @@ import {
   PeerExitedMessage,
   RemovePeerIdMessage,
   SetHostMessage,
-  SetPeerIdMessage,
 } from "./network.common";
 import { deserializeRemoveOwnership } from "./ownership.game";
 import { createHistorian, Historian } from "./Historian";
@@ -146,7 +145,6 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
 
     const disposables = [
       registerMessageHandler(ctx, NetworkMessageType.SetHost, onSetHost),
-      registerMessageHandler(ctx, NetworkMessageType.SetPeerId, onSetPeerId),
       registerMessageHandler(ctx, NetworkMessageType.AddPeerId, onAddPeerId),
       registerMessageHandler(ctx, NetworkMessageType.RemovePeerId, onRemovePeerId),
       registerMessageHandler(ctx, ThirdRoomMessageType.ExitWorld, onExitWorld),
@@ -247,11 +245,10 @@ export function NetworkExitWorldQueueSystem(ctx: GameState) {
 }
 
 // Set local peer id
-const onSetPeerId = (ctx: GameState, message: SetPeerIdMessage) => {
+export const setLocalPeerId = (ctx: GameState, localPeerId: string) => {
   const network = getModule(ctx, NetworkModule);
-  const { peerId } = message;
-  network.peerId = peerId;
-  mapPeerIdAndIndex(network, peerId);
+  network.peerId = localPeerId;
+  mapPeerIdAndIndex(network, localPeerId);
 };
 
 const onSetHost = async (ctx: GameState, message: SetHostMessage) => {

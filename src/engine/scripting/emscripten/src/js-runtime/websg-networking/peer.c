@@ -169,14 +169,7 @@ JSValue js_websg_create_peer(JSContext *ctx, WebSGNetworkData *network_data, uin
 }
 
 JSValue js_websg_get_peer(JSContext *ctx, WebSGNetworkData *network_data, uint32_t peer_index) {
-  JSValue peer = JS_GetPropertyUint32(ctx, network_data->peers, peer_index);
-
-  if (JS_IsUndefined(peer)) {
-    JS_ThrowInternalError(ctx, "WebSG: Error getting peer by index.");
-    return JS_EXCEPTION;
-  }
-
-  return JS_DupValue(ctx, peer);
+  return JS_GetPropertyUint32(ctx, network_data->peers, peer_index);
 }
 
 JSValue js_websg_remove_peer(JSContext *ctx, WebSGNetworkData *network_data, uint32_t peer_index) {
@@ -189,5 +182,5 @@ JSValue js_websg_remove_peer(JSContext *ctx, WebSGNetworkData *network_data, uin
 
   JS_SetPropertyUint32(ctx, network_data->peers, peer_index, JS_UNDEFINED);
 
-  return JS_DupValue(ctx, peer);
+  return peer;
 }

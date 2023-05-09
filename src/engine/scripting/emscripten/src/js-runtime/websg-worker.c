@@ -93,6 +93,10 @@ export int32_t websg_enter() {
     return 0;
   }
 
+  JSValue network = JS_GetPropertyStr(ctx, global, "network");
+
+  js_websg_network_local_peer_entered(ctx, network);
+
   JSValueConst args[] = {};
   JSValue val = JS_Call(ctx, world_on_enter_func, JS_UNDEFINED, 0, args);
   JS_FreeValue(ctx, world_on_enter_func);
@@ -140,13 +144,13 @@ export int32_t websg_update(float_t dt, float_t time) {
   }
 }
 
-export int32_t websg_network_peer_entered(uint32_t peer_index) {
+export int32_t websg_peer_entered(uint32_t peer_index) {
   JSValue global = JS_GetGlobalObject(ctx);
   JSValue network = JS_GetPropertyStr(ctx, global, "network");
   return js_websg_network_peer_entered(ctx, network, peer_index);
 }
 
-export int32_t websg_network_peer_exited(uint32_t peer_index) {
+export int32_t websg_peer_exited(uint32_t peer_index) {
   JSValue global = JS_GetGlobalObject(ctx);
   JSValue network = JS_GetPropertyStr(ctx, global, "network");
   return js_websg_network_peer_exited(ctx, network, peer_index);

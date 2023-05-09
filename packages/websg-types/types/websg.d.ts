@@ -543,6 +543,7 @@ declare namespace WebSGNetworking {
     peer: Peer;
     data: ArrayBuffer | string;
     bytesWritten: number;
+    isBinary: boolean;
   }
 
   class NetworkMessageIterator {
@@ -557,7 +558,7 @@ declare namespace WebSGNetworking {
 
   class Network {
     get host(): Peer | undefined;
-    get local(): Peer;
+    get local(): Peer | undefined;
     listen(): NetworkListener;
     broadcast(message: string | ArrayBuffer, reliable: boolean): undefined;
     onpeerentered: ((peer: Peer) => any) | null;

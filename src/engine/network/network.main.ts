@@ -291,16 +291,6 @@ export function disconnect(mainThread: IMainThreadContext) {
   }
 }
 
-export function setPeerId(mainThread: IMainThreadContext, peerId: string) {
-  const network = getModule(mainThread, NetworkModule);
-  network.peerId = peerId;
-
-  mainThread.sendMessage(Thread.Game, {
-    type: NetworkMessageType.SetPeerId,
-    peerId,
-  });
-}
-
 const ringOut = { packet: new ArrayBuffer(0), peerId: "", broadcast: false };
 export function MainThreadNetworkSystem(ctx: IMainThreadContext) {
   const network = getModule(ctx, NetworkModule);
@@ -319,7 +309,7 @@ export function MainThreadNetworkSystem(ctx: IMainThreadContext) {
     } else {
       const peer = network.reliableChannels.get(ringOut.peerId);
       if (!peer) {
-        console.error("peer's reliable channel not found", ringOut.peerId);
+        console.error("Failed to send message, peer's reliable channel not found", ringOut.peerId);
         continue;
       }
 

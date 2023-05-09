@@ -11,7 +11,8 @@ JSValue js_websg_new_network_message_instance(
   JSContext *ctx,
   JSValue peer,
   JSValue data,
-  uint32_t bytes_written
+  uint32_t bytes_written,
+  int32_t is_binary
 );
 
 #endif
