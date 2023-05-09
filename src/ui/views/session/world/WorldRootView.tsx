@@ -22,6 +22,7 @@ async function getWorldContent(world: Room) {
 
 export default function WorldRootView() {
   const { entered, loading } = useAtomValue(worldAtom);
+  const setWorld = useSetAtom(worldAtom);
   const { session } = useHydrogen(true);
   const isMounted = useIsMounted();
   const [error, setError] = useState<Error>();
@@ -41,8 +42,7 @@ export default function WorldRootView() {
       (async () => {
         try {
           const content = await getWorldContent(navigatedWorld);
-          if (!content) return;
-          await loadWorld(navigatedWorld, content);
+          await loadWorld(navigatedWorld, content ?? {});
           await enterWorld(navigatedWorld);
         } catch (err) {
           setError(err as Error);
@@ -50,7 +50,7 @@ export default function WorldRootView() {
         }
       })();
     }
-  }, [navigatedWorld, reloadId, selectWorld, enterWorld, loadWorld, exitWorld]);
+  }, [navigatedWorld, reloadId, selectWorld, enterWorld, loadWorld, exitWorld, setWorld]);
 
   /**
    * Selects the world we are entered into for display in the overlay
