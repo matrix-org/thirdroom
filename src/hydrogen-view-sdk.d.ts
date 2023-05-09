@@ -1141,6 +1141,11 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     get sender(): string;
   }
 
+  export class DateTile extends SimpleTile {
+    get relativeDate(): string;
+    get machineReadableDate(): string;
+  }
+
   export class GapTile extends SimpleTile {
     constructor(entry: any, options: SimpleTileOptions);
     fill(): boolean;
