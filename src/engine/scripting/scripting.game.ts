@@ -234,7 +234,7 @@ export async function loadScript(
           }
         }
       } else {
-        throw new Error("update() can only be called from the Loaded or Entered state");
+        throw new Error("update() can only be called from the Entered state");
       }
     },
     peerEntered(peerId: number) {
