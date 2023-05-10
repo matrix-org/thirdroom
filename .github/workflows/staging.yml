@@ -1,8 +1,8 @@
-name: Production CI
+name: Staging CI
 on:
   push:
     branches:
-      - prod
+      - main
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -23,7 +23,7 @@ jobs:
         env:
           NODE_OPTIONS: --max_old_space_size=4096
           VITE_SENTRY_DSN: "https://25c108e04120450fbf05a2f3ef4e2181@sentry.tools.element.io/50"
-          VITE_SENTRY_ENVIRONMENT: "production"
+          VITE_SENTRY_ENVIRONMENT: "staging"
           VITE_SENTRY_RELEASE: ${{ github.sha }}
         run: yarn build
 
@@ -41,10 +41,10 @@ jobs:
         uses: nwtgck/actions-netlify@v1.2
         with:
           publish-dir: dist
-          deploy-message: "Production Deploy from GitHub Actions"
+          deploy-message: "Staging Deploy from GitHub Actions"
           netlify-config-path: ./netlify.toml
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          production-deploy: true
+          alias: staging
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
