@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { useIsMounted } from "../../../hooks/useIsMounted";
 import { useRoom } from "../../../hooks/useRoom";
+import { useUpdateWorldMembers } from "../../../hooks/useUpdateWorldMembers";
 import { useWorldPath } from "../../../hooks/useWorld";
 import { useWorldLoader } from "../../../hooks/useWorldLoader";
 import { overlayVisibilityAtom } from "../../../state/overlayVisibility";
@@ -31,6 +32,8 @@ export default function WorldRootView() {
   const [roomId, reloadId] = useWorldPath();
   const navigatedWorld = useRoom(session, roomId);
   const setEditorEnabled = useSetAtom(editorEnabledAtom);
+
+  useUpdateWorldMembers(navigatedWorld);
 
   /**
    * Handle loading are reloading
