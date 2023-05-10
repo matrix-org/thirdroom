@@ -7,7 +7,6 @@ import { viteStaticCopy } from "vite-plugin-static-copy";
 import path from "path";
 
 import { mpaRouter } from "./src/vite/mpa-router";
-import testnetServerPlugin from "./src/vite/testnet";
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -21,7 +20,6 @@ export default defineConfig({
     mpaRouter(),
     react(),
     crossOriginIsolation(),
-    testnetServerPlugin(),
     serviceWorkerPlugin({
       filename: "sw.ts",
     }),

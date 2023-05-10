@@ -34,6 +34,10 @@ static JSValue js_websg_quaternion_get(JSContext *ctx, JSValueConst this_val, in
 static JSValue js_websg_quaternion_set(JSContext *ctx, JSValueConst this_val, JSValueConst arg, int index) {
   WebSGQuaternionData *quat_data = JS_GetOpaque(this_val, js_websg_quaternion_class_id);
 
+  if (quat_data->read_only == 1) {
+    return JS_ThrowTypeError(ctx, "Quaternion is marked as read only.");
+  }
+
   double_t value;
 
   if (JS_ToFloat64(ctx, &value, arg) == -1) {
@@ -56,6 +60,9 @@ static JSValue js_websg_quaternion_set(JSContext *ctx, JSValueConst this_val, JS
 static JSValue js_websg_quaternion_set_array(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
   WebSGQuaternionData *quat_data = JS_GetOpaque(this_val, js_websg_quaternion_class_id);
 
+  if (quat_data->read_only == 1) {
+    return JS_ThrowTypeError(ctx, "Quaternion is marked as read only.");
+  }
 
   if (js_get_float_array_like(ctx, argv[0], quat_data->elements, 4) < 0) {
     return JS_EXCEPTION;
@@ -131,7 +138,8 @@ JSValue js_websg_new_quaternion_get_set(
   uint32_t resource_id,
   float_t (*get)(uint32_t resource_id, uint32_t index),
   int32_t (*set)(uint32_t resource_id, uint32_t index, float_t value),
-  int32_t (*set_array)(uint32_t resource_id, float_t *array)
+  int32_t (*set_array)(uint32_t resource_id, float_t *array),
+  int read_only
 ) {
   JSValue quaternion = JS_NewObjectClass(ctx, js_websg_quaternion_class_id);
 
@@ -140,6 +148,7 @@ JSValue js_websg_new_quaternion_get_set(
   quat_data->get = get;
   quat_data->set = set;
   quat_data->set_array = set_array;
+  quat_data->read_only = read_only;
   quat_data->resource_id = resource_id;
 
   JS_SetOpaque(quaternion, quat_data);
@@ -156,6 +165,17 @@ int js_websg_define_quaternion_prop(
   int32_t (*set)(uint32_t resource_id, uint32_t index, float_t value),
   int32_t (*set_array)(uint32_t resource_id, float_t *array)
 ) {
-  JSValue prop = js_websg_new_quaternion_get_set(ctx, resource_id, get, set, set_array);
+  JSValue prop = js_websg_new_quaternion_get_set(ctx, resource_id, get, set, set_array, 0);
+  return JS_DefinePropertyValueStr(ctx, obj, name, prop, JS_PROP_ENUMERABLE);
+}
+
+int js_websg_define_quaternion_prop_read_only(
+  JSContext *ctx,
+  JSValue obj,
+  const char *name,
+  uint32_t resource_id,
+  float_t (*get)(uint32_t resource_id, uint32_t index)
+) {
+  JSValue prop = js_websg_new_quaternion_get_set(ctx, resource_id, get, NULL, NULL, 1);
   return JS_DefinePropertyValueStr(ctx, obj, name, prop, JS_PROP_ENUMERABLE);
 }

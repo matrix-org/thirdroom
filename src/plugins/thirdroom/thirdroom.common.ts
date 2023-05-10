@@ -19,6 +19,7 @@ export enum ThirdRoomMessageType {
 export interface EnterWorldMessage {
   type: ThirdRoomMessageType.EnterWorld;
   id: number;
+  localPeerId: string;
 }
 
 export interface EnteredWorldMessage {
