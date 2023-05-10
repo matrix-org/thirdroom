@@ -2,7 +2,7 @@ name: Staging CI
 on:
   push:
     branches:
-      - dev
+      - main
 jobs:
   deploy:
     runs-on: ubuntu-latest

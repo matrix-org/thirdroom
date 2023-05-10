@@ -2,7 +2,7 @@ name: Production CI
 on:
   push:
     branches:
-      - main
+      - prod
 jobs:
   deploy:
     runs-on: ubuntu-latest
