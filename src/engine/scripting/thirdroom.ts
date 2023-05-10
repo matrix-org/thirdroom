@@ -49,5 +49,9 @@ export function createThirdroomModule(ctx: GameState, wasmCtx: WASMModuleContext
       const sceneSupportsAR = ctx.worldResource.environment?.publicScene.supportsAR || false;
       return ourXRMode === XRMode.ImmersiveAR && sceneSupportsAR ? 1 : 0;
     },
+    action_bar_set_items(itemsPtr: number, itemCount: number) {},
+    action_bar_create_listener() {},
+    action_bar_listener_get_next_action_length(listenerId: number) {},
+    action_bar_listener_get_next_action(listenerId: number, idPtr: number) {},
   };
 }

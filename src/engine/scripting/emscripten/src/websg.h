@@ -24,6 +24,7 @@ typedef uint32_t mesh_id_t;
 typedef uint32_t accessor_id_t;
 typedef uint32_t material_id_t;
 typedef uint32_t texture_id_t;
+typedef uint32_t image_id_t;
 typedef uint32_t light_id_t;
 typedef uint32_t collider_id_t;
 typedef uint32_t ui_canvas_id_t;
@@ -427,6 +428,12 @@ import_websg(material_set_base_color_texture) int32_t websg_material_set_base_co
  **/
 
 import_websg(world_find_texture_by_name) texture_id_t websg_world_find_texture_by_name(const char *name, uint32_t length);
+
+/**
+ * Image
+ **/
+
+import_websg(world_find_image_by_name) image_id_t websg_world_find_image_by_name(const char *name, uint32_t length);
 
 /**
  * Light

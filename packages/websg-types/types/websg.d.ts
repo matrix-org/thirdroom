@@ -302,6 +302,8 @@ declare namespace WebSG {
 
   class Texture {}
 
+  class Image {}
+
   interface UIButtonProps extends UITextProps {
     label?: string;
   }
@@ -515,6 +517,7 @@ declare namespace WebSG {
     createScene(props?: SceneProps): Scene;
     findSceneByName(name: string): Scene | undefined;
     findTextureByName(name: string): Texture | undefined;
+    findImageByName(name: string): Image | undefined;
     createUICanvas(props?: UICanvasProps): UICanvas;
     findUICanvasByName(name: string): UICanvas | undefined;
     createUIElement(props?: UIElementProps): UIElement;
