@@ -25,7 +25,12 @@ typedef struct ThirdRoomActionBarItem {
   image_id_t thumbnail_id;
 } ThirdRoomActionBarItem;
 
-import_thirdroom(action_bar_set_items) int32_t thirdroom_action_bar_set_items(ThirdRoomActionBarItem *items, int32_t count);
+typedef struct ThirdRoomActionBarItemList {
+  ThirdRoomActionBarItem *items;
+  int32_t count;
+} ThirdRoomActionBarItemList;
+
+import_thirdroom(action_bar_set_items) int32_t thirdroom_action_bar_set_items(ThirdRoomActionBarItemList *items);
 
 import_thirdroom(action_bar_create_listener) action_bar_listener_id_t thirdroom_action_bar_create_listener();
 

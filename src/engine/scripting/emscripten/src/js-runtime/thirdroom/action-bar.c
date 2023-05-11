@@ -96,10 +96,11 @@ static JSValue js_thirdroom_action_bar_set_items(JSContext *ctx, JSValueConst th
     return JS_EXCEPTION;
   }
 
-  if (thirdroom_action_bar_set_items(items, count) == -1) {
-    JS_ThrowInternalError(ctx, "ThirdRoom: Error setting action bar items.");
-    return JS_EXCEPTION;
-  }
+  ThirdRoomActionBarItemList *item_list = js_mallocz(ctx, sizeof(ThirdRoomActionBarItemList));
+  item_list->count = count;
+  item_list->items = items;
+
+  int32_t result = thirdroom_action_bar_set_items(item_list);
 
   for (int i = 0; i < count; i++) {
     JS_FreeCString(ctx, items[i].id);
@@ -107,6 +108,12 @@ static JSValue js_thirdroom_action_bar_set_items(JSContext *ctx, JSValueConst th
   }
 
   js_free(ctx, items);
+  js_free(ctx, item_list);
+
+  if (result == -1) {
+    JS_ThrowInternalError(ctx, "ThirdRoom: Error setting action bar items.");
+    return JS_EXCEPTION;
+  }
 
   return JS_UNDEFINED;
 }

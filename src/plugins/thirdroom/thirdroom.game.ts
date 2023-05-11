@@ -96,7 +96,15 @@ import { createLineMesh } from "../../engine/mesh/mesh.game";
 import { RemoteResource } from "../../engine/resource/RemoteResourceClass";
 import { addCameraRig, CameraRigModule, CameraRigType } from "../camera/CameraRig.game";
 
-type ThirdRoomModuleState = {};
+export interface ActionBarListener {
+  id: number;
+  actions: string[];
+}
+
+export interface ThirdRoomModuleState {
+  actionBarListeners: ActionBarListener[];
+  nextActionBarListenerId: number;
+}
 
 const addAvatarController = (ctx: GameState, input: GameInputModule, eid: number) => {
   const defaultController = input.defaultController;
@@ -214,7 +222,10 @@ function getSpawnPoints(ctx: GameState): RemoteNode[] {
 export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
   name: "thirdroom",
   create() {
-    return {};
+    return {
+      actionBarListeners: [],
+      nextActionBarListenerId: 1,
+    };
   },
   async init(ctx) {
     const input = getModule(ctx, InputModule);
