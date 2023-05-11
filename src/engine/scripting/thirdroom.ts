@@ -65,6 +65,7 @@ export function createThirdroomModule(ctx: GameState, wasmCtx: WASMModuleContext
     },
     action_bar_set_items(itemsPtr: number) {
       try {
+        thirdroom.actionBarItems.length = 0;
         const actionBarItems: ActionBarItem[] = [];
         moveCursorView(wasmCtx.cursorView, itemsPtr);
         readList(wasmCtx, () => {
@@ -81,6 +82,8 @@ export function createThirdroomModule(ctx: GameState, wasmCtx: WASMModuleContext
             label,
             thumbnail: thumbnail.eid,
           });
+
+          thirdroom.actionBarItems.push(id);
         });
 
         ctx.sendMessage(Thread.Main, {

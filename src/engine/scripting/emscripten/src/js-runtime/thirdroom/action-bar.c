@@ -38,6 +38,7 @@ static JSValue js_thirdroom_action_bar_set_items(JSContext *ctx, JSValueConst th
     JSValue id_val = JS_GetPropertyStr(ctx, item, "id");
 
     if (JS_IsException(id_val)) {
+      JS_ThrowInternalError(ctx, "WebSG: ActionBar item must have an id.");
       error = 1;
       break;
     }
@@ -45,6 +46,7 @@ static JSValue js_thirdroom_action_bar_set_items(JSContext *ctx, JSValueConst th
     const char *id = JS_ToCString(ctx, id_val);
 
     if (id == NULL) {
+      JS_ThrowInternalError(ctx, "WebSG: ActionBar item id must be a string.");
       error = 1;
       break;
     }
@@ -54,6 +56,7 @@ static JSValue js_thirdroom_action_bar_set_items(JSContext *ctx, JSValueConst th
     JSValue label_val = JS_GetPropertyStr(ctx, item, "label");
 
     if (JS_IsException(label_val)) {
+      JS_ThrowInternalError(ctx, "WebSG: ActionBar item must have a label.");
       error = 1;
       break;
     }
@@ -61,6 +64,7 @@ static JSValue js_thirdroom_action_bar_set_items(JSContext *ctx, JSValueConst th
     const char *label = JS_ToCString(ctx, label_val);
 
     if (label == NULL) {
+      JS_ThrowInternalError(ctx, "WebSG: ActionBar item label must be a string.");
       error = 1;
       break;
     }
@@ -70,6 +74,7 @@ static JSValue js_thirdroom_action_bar_set_items(JSContext *ctx, JSValueConst th
     JSValue thumbnail_val = JS_GetPropertyStr(ctx, item, "thumbnail");
 
     if (JS_IsException(thumbnail_val)) {
+      JS_ThrowInternalError(ctx, "WebSG: ActionBar item must have a thumbnail.");
       error = 1;
       break;
     }
@@ -77,6 +82,7 @@ static JSValue js_thirdroom_action_bar_set_items(JSContext *ctx, JSValueConst th
     WebSGImageData *image_data = JS_GetOpaque2(ctx, thumbnail_val, js_websg_image_class_id);
 
     if (image_data == NULL) {
+      JS_ThrowInternalError(ctx, "WebSG: ActionBar item thumbnail must be an image.");
       error = 1;
       break;
     }

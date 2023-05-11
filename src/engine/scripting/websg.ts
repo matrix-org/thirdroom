@@ -29,6 +29,7 @@ import {
   RemoteBufferView,
   RemoteCamera,
   RemoteCollider,
+  RemoteImage,
   RemoteInteractable,
   RemoteLight,
   RemoteMaterial,
@@ -1788,6 +1789,10 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
     },
     world_find_texture_by_name(namePtr: number, byteLength: number) {
       const texture = getScriptResourceByNamePtr(ctx, wasmCtx, RemoteTexture, namePtr, byteLength);
+      return texture ? texture.eid : 0;
+    },
+    world_find_image_by_name(namePtr: number, byteLength: number) {
+      const texture = getScriptResourceByNamePtr(ctx, wasmCtx, RemoteImage, namePtr, byteLength);
       return texture ? texture.eid : 0;
     },
     world_create_light(propsPtr: number) {

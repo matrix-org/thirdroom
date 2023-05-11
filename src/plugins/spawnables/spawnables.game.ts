@@ -8,7 +8,7 @@ import { getCamera } from "../../engine/camera/camera.game";
 import { MAX_OBJECT_CAP } from "../../engine/config.common";
 import { GameState } from "../../engine/GameTypes";
 import { createNodeFromGLTFURI } from "../../engine/gltf/gltf.game";
-import { enableActionMap } from "../../engine/input/ActionMappingSystem";
+// import { enableActionMap } from "../../engine/input/ActionMappingSystem";
 import { ActionDefinition, ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
 import { InputModule } from "../../engine/input/input.game";
 import { InputController, inputControllerQuery, tryGetInputController } from "../../engine/input/InputController";
@@ -289,12 +289,13 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
       }
     });
 
-    const input = getModule(ctx, InputModule);
-    const controller = input.defaultController;
-    enableActionMap(controller, {
-      id: "spawnables",
-      actionDefs: module.actionsDefs,
-    });
+    // TODO: Remove this once spawnables use action bar
+    //const input = getModule(ctx, InputModule);
+    //const controller = input.defaultController;
+    // enableActionMap(controller, {
+    //   id: "spawnables",
+    //   actionDefs: module.actionsDefs,
+    // });
 
     return createDisposables([registerMessageHandler(ctx, SetObjectCapMessageType, onSetObjectCap)]);
   },

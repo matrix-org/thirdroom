@@ -54,6 +54,7 @@ import { MatrixModule } from "./matrix/matrix.game";
 import { WebSGNetworkModule } from "./network/scripting.game";
 import { WebSGUIModule } from "./ui/ui.game";
 import { CameraRigModule, CameraRigSystem, NetworkedCameraSystem } from "../plugins/camera/CameraRig.game";
+import { ActionBarSystem } from "../plugins/thirdroom/action-bar.game";
 
 export default defineConfig<GameState>({
   modules: [
@@ -95,6 +96,7 @@ export default defineConfig<GameState>({
     InteractionSystem,
     XRInteractionSystem,
     SpawnableSystem,
+    ActionBarSystem,
     ThirdroomSystem,
 
     // update client position

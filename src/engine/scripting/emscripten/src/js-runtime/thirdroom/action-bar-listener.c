@@ -73,5 +73,9 @@ JSValue js_thirdroom_new_action_bar_listener(JSContext *ctx) {
     return action_bar_listener;
   }
 
+  ActionBarListenerData *listener_data = js_mallocz(ctx, sizeof(ActionBarListenerData));
+  listener_data->listener_id = thirdroom_action_bar_create_listener();
+  JS_SetOpaque(action_bar_listener, listener_data);
+
   return action_bar_listener;
 }

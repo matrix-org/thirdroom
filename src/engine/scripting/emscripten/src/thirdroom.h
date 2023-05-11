@@ -38,6 +38,6 @@ import_thirdroom(action_bar_listener_dispose) int32_t thirdroom_action_bar_liste
 
 import_thirdroom(action_bar_listener_get_next_action_length) int32_t thirdroom_action_bar_listener_get_next_action_length(action_bar_listener_id_t listener_id);
 
-import_thirdroom(action_bar_listener_get_action_id) int32_t thirdroom_action_bar_listener_get_next_action(action_bar_listener_id_t listener_id, const char *id);
+import_thirdroom(action_bar_listener_get_next_action) int32_t thirdroom_action_bar_listener_get_next_action(action_bar_listener_id_t listener_id, const char *id);
 
 #endif

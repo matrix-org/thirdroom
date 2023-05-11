@@ -36,7 +36,7 @@ import {
 import { createDisposables } from "../utils/createDisposables";
 import { getRotationNoAlloc } from "../utils/getRotationNoAlloc";
 import { InputControllerComponent } from "../input/InputControllerComponent";
-import { staticRigidBodyCollisionGroups } from "./CollisionGroups";
+import { dynamicObjectCollisionGroups, staticRigidBodyCollisionGroups } from "./CollisionGroups";
 
 export interface PhysicsModuleState {
   debugRender: boolean;
@@ -416,10 +416,14 @@ export function addNodePhysicsBody(ctx: GameState, node: RemoteNode) {
         colliderDesc.setRotation(
           new RAPIER.Quaternion(tempRotation[0], tempRotation[1], tempRotation[2], tempRotation[3])
         );
+        colliderDesc.setCollisionGroups(staticRigidBodyCollisionGroups);
+      } else if (physicsBody.type === PhysicsBodyType.Rigid) {
+        colliderDesc.setCollisionGroups(dynamicObjectCollisionGroups);
+      } else if (physicsBody.type === PhysicsBodyType.Kinematic) {
+        colliderDesc.setCollisionGroups(staticRigidBodyCollisionGroups);
       }
 
       colliderDesc.setMass(physicsBody.mass || 1);
-      colliderDesc.setCollisionGroups(staticRigidBodyCollisionGroups);
       physicsWorld.createCollider(colliderDesc, rigidBody);
     }
   }
