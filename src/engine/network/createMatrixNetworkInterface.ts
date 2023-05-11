@@ -54,14 +54,8 @@ export async function createMatrixNetworkInterface(
 
   const userId = client.session.userId;
 
-  console.log(`====> Group Call Members: `, groupCall.members);
-  console.log("====| Waiting to get Initial Host");
   const initialHostId = await getInitialHost(userId);
-  console.log(`====> Initial Host: ${initialHostId}`);
-  console.log("====| Waiting to Join World");
   await joinWorld(userId, initialHostId === userId);
-  console.log("====> World Joined");
-  // window.groupCall = groupCall;
 
   function getInitialHost(userId: string): Promise<string> {
     // Of the all group call members find the one whose member event is oldest
@@ -114,9 +108,7 @@ export async function createMatrixNetworkInterface(
 
       // wait if any member to become reliable.
       // resolve otherwise
-      console.log("====> Waiting for Host to become reliable");
       timeout = window.setTimeout(() => {
-        console.log("====> TIMEOUT");
         unsubscribe();
         const host = getReliableHost(groupCall);
         resolve(host?.userId ?? userId);
@@ -128,18 +120,14 @@ export async function createMatrixNetworkInterface(
     if (isHost) setHost(ctx, userId);
     setPeerId(ctx, userId);
 
-    console.log("====| Observing Call Members");
     unsubscibeMembersObservable = groupCall.members.subscribe({
       onAdd(_key, member) {
-        console.log(`====> Call Member Added: ${member.userId}`);
         if (member.isConnected && member.dataChannel) {
-          console.log(`====> Adding Peer: ${member.userId}`);
           updateHost(userId);
           addPeer(ctx, member.userId, member.dataChannel, member.remoteMedia?.userMedia);
         }
       },
       onRemove(_key, member) {
-        console.log(`====> Removing Peer: ${member.userId}`);
         updateHost(userId);
         removePeer(ctx, member.userId);
       },
@@ -147,9 +135,7 @@ export async function createMatrixNetworkInterface(
         throw new Error("Unexpected reset of groupCall.members");
       },
       onUpdate(_key, member) {
-        console.log(`====> Call Member Updated: ${member.userId}`);
         if (member.isConnected && member.dataChannel && !hasPeer(ctx, member.userId)) {
-          console.log(`====> Adding Peer: ${member.userId}`);
           updateHost(userId);
           addPeer(ctx, member.userId, member.dataChannel, member.remoteMedia?.userMedia);
         }
@@ -170,11 +156,9 @@ export async function createMatrixNetworkInterface(
     const reliableHost = getReliableHost(groupCall);
 
     if (reliableHost) {
-      console.log("====> Updating Host: ", reliableHost.userId);
       // TODO: use powerlevels to determine host
       setHost(ctx, reliableHost.userId);
     } else {
-      console.log("====> Updating Host: ", userId);
       setHost(ctx, userId);
     }
   }
