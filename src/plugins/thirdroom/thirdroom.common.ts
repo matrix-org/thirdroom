@@ -95,7 +95,8 @@ export interface FindResourceRetainersMessage {
 export interface ActionBarItem {
   id: string;
   label: string;
-  thumbnail: number;
+  thumbnail: string;
+  spawnable?: boolean;
 }
 
 export interface SetActionBarItemsMessage {

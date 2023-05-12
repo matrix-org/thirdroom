@@ -29,6 +29,7 @@ import {
   EnteredWorldMessage,
   EnterWorldErrorMessage,
   FindResourceRetainersMessage,
+  ActionBarItem,
 } from "./thirdroom.common";
 import { createNodeFromGLTFURI, loadDefaultGLTFScene, loadGLTF } from "../../engine/gltf/gltf.game";
 import { createRemotePerspectiveCamera, getCamera } from "../../engine/camera/camera.game";
@@ -95,7 +96,7 @@ import { ActionType, BindingType, ButtonActionState } from "../../engine/input/A
 import { createLineMesh } from "../../engine/mesh/mesh.game";
 import { RemoteResource } from "../../engine/resource/RemoteResourceClass";
 import { addCameraRig, CameraRigModule, CameraRigType } from "../camera/CameraRig.game";
-import { actionBarMap } from "./action-bar.game";
+import { actionBarMap, setDefaultActionBarItems } from "./action-bar.game";
 
 export interface ActionBarListener {
   id: number;
@@ -103,7 +104,7 @@ export interface ActionBarListener {
 }
 
 export interface ThirdRoomModuleState {
-  actionBarItems: string[];
+  actionBarItems: ActionBarItem[];
   actionBarListeners: ActionBarListener[];
   nextActionBarListenerId: number;
 }
@@ -491,6 +492,8 @@ function disposeWorld(worldResource: RemoteWorld) {
 
 async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, fileMap?: Map<string, string>) {
   disposeWorld(ctx.worldResource);
+
+  setDefaultActionBarItems(ctx);
 
   const transientScene = new RemoteScene(ctx.resourceManager, {
     name: "Transient Scene",

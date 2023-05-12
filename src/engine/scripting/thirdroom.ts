@@ -1,4 +1,4 @@
-import { ActionBarItem, ThirdRoomMessageType } from "../../plugins/thirdroom/thirdroom.common";
+import { ThirdRoomMessageType } from "../../plugins/thirdroom/thirdroom.common";
 import { ThirdRoomModule } from "../../plugins/thirdroom/thirdroom.game";
 import { moveCursorView } from "../allocator/CursorView";
 import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
@@ -9,6 +9,7 @@ import { getModule, Thread } from "../module/module.common";
 import { EnableMatrixMaterialMessage, RendererMessageType, XRMode } from "../renderer/renderer.common";
 import { getXRMode } from "../renderer/renderer.game";
 import { RemoteImage } from "../resource/RemoteResources";
+import { getRemoteImageUrl } from "../utils/textures";
 import {
   readList,
   readResourceRef,
@@ -66,7 +67,7 @@ export function createThirdroomModule(ctx: GameState, wasmCtx: WASMModuleContext
     action_bar_set_items(itemsPtr: number) {
       try {
         thirdroom.actionBarItems.length = 0;
-        const actionBarItems: ActionBarItem[] = [];
+
         moveCursorView(wasmCtx.cursorView, itemsPtr);
         readList(wasmCtx, () => {
           const id = readStringFromCursorView(wasmCtx);
@@ -77,18 +78,16 @@ export function createThirdroomModule(ctx: GameState, wasmCtx: WASMModuleContext
             throw new Error("Thirdroom: No thumbnail set for action bar item");
           }
 
-          actionBarItems.push({
+          thirdroom.actionBarItems.push({
             id,
             label,
-            thumbnail: thumbnail.eid,
+            thumbnail: getRemoteImageUrl(thumbnail),
           });
-
-          thirdroom.actionBarItems.push(id);
         });
 
         ctx.sendMessage(Thread.Main, {
           type: ThirdRoomMessageType.SetActionBarItems,
-          actionBarItems,
+          actionBarItems: thirdroom.actionBarItems,
         });
 
         return 0;

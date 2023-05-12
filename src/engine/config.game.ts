@@ -19,7 +19,7 @@ import {
 } from "./editor/editor.game";
 import { GameState } from "./GameTypes";
 import { RendererModule } from "./renderer/renderer.game";
-import { SpawnablesModule, SpawnableSystem } from "../plugins/spawnables/spawnables.game";
+import { SpawnablesModule } from "../plugins/spawnables/spawnables.game";
 import {
   RecycleResourcesSystem,
   ResourceDisposalSystem,
@@ -95,7 +95,6 @@ export default defineConfig<GameState>({
     SetWebXRReferenceSpaceSystem,
     InteractionSystem,
     XRInteractionSystem,
-    SpawnableSystem,
     ActionBarSystem,
     ThirdroomSystem,
 
