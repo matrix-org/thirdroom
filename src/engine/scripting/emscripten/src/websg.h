@@ -551,6 +551,7 @@ typedef struct PhysicsBodyProps {
 import_websg(node_add_physics_body) int32_t websg_node_add_physics_body(node_id_t node_id, PhysicsBodyProps *props);
 import_websg(node_remove_physics_body) int32_t websg_node_remove_physics_body(node_id_t node_id);
 import_websg(node_has_physics_body) int32_t websg_node_has_physics_body(node_id_t node_id);
+import_websg(physics_body_apply_impulse) int32_t websg_physics_body_apply_impulse(node_id_t node_id, float_t *impulse);
 
 /**
  * UI Canvas

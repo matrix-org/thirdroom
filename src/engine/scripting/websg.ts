@@ -1,6 +1,7 @@
 import { defineQuery, hasComponent, IComponent, QueryModifier as IQueryModifier, Not, IWorld } from "bitecs";
 import { BoxGeometry } from "three";
 import { vec2, vec4 } from "gl-matrix";
+import RAPIER from "@dimforge/rapier3d-compat";
 
 import { GameState } from "../GameTypes";
 import {
@@ -382,6 +383,8 @@ interface MeshPrimitiveProps {
   material?: RemoteMaterial;
   mode: MeshPrimitiveMode;
 }
+
+const tempVec3 = new RAPIER.Vector3(0, 0, 0);
 
 // TODO: ResourceManager should have a resourceMap that corresponds to just its owned resources
 // TODO: ResourceManager should have a resourceByType that corresponds to just its owned resources
@@ -2069,6 +2072,28 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
     node_has_physics_body(nodeId: number) {
       const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
       return node && hasComponent(ctx.world, RigidBody, node.eid) ? 1 : 0;
+    },
+    physics_body_apply_impulse(nodeId: number, impulsePtr: number) {
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+      if (!node) {
+        return -1;
+      }
+
+      moveCursorView(wasmCtx.cursorView, impulsePtr);
+      tempVec3.x = readFloat32(wasmCtx.cursorView);
+      tempVec3.y = readFloat32(wasmCtx.cursorView);
+      tempVec3.z = readFloat32(wasmCtx.cursorView);
+
+      const body = RigidBody.store.get(node.eid);
+
+      if (!body) {
+        return -1;
+      }
+
+      body.applyImpulse(tempVec3, true);
+
+      return 0;
     },
     // UI Canvas
     world_create_ui_canvas(propsPtr: number) {

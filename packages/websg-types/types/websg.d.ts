@@ -259,7 +259,9 @@ declare namespace WebSG {
     inertiaTensor?: ArrayLike<number>;
   }
 
-  class PhysicsBody {}
+  class PhysicsBody {
+    applyImpulse(impulse: ArrayLike<number>): undefined;
+  }
 
   class Quaternion {
     [n: number]: number;
