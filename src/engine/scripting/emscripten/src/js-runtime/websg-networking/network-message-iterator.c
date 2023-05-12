@@ -9,7 +9,7 @@
 JSClassID js_websg_network_message_iterator_class_id;
 
 static void js_websg_network_message_iterator_finalizer(JSRuntime *rt, JSValue val) {
-  JSWebSGNetworkMessageIteratorData *it = JS_GetOpaque(val, js_websg_network_message_iterator_class_id);
+  WebSGNetworkMessageIteratorData *it = JS_GetOpaque(val, js_websg_network_message_iterator_class_id);
 
   if (it) {
     js_free_rt(rt, it);
@@ -33,7 +33,7 @@ static JSValue js_websg_network_message_iterator_next(
   BOOL *pdone,
   int magic
 ) {
-  JSWebSGNetworkMessageIteratorData *it = JS_GetOpaque2(ctx, this_val, js_websg_network_message_iterator_class_id);
+  WebSGNetworkMessageIteratorData *it = JS_GetOpaque2(ctx, this_val, js_websg_network_message_iterator_class_id);
 
   if (!it) {
     *pdone = FALSE;
@@ -148,7 +148,7 @@ JSValue js_websg_create_network_message_iterator(
     return JS_EXCEPTION;
   }
 
-  JSWebSGNetworkMessageIteratorData *it = js_mallocz(ctx, sizeof(JSWebSGNetworkMessageIteratorData));
+  WebSGNetworkMessageIteratorData *it = js_mallocz(ctx, sizeof(WebSGNetworkMessageIteratorData));
 
   if (!it) {
     JS_FreeValue(ctx, iter_obj);

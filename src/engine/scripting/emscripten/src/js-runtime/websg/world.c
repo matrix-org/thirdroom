@@ -22,6 +22,7 @@
 #include "./ui-button.h"
 #include "./component-store.h"
 #include "./query.h"
+#include "./collision-listener.h"
 
 JSClassID js_websg_world_class_id;
 
@@ -117,6 +118,7 @@ static const JSCFunctionListEntry js_websg_world_proto_funcs[] = {
     js_websg_world_get_component_store_size,
     js_websg_world_set_component_store_size
   ),
+  JS_CFUNC_DEF("createCollisionListener", 0, js_websg_world_create_collision_listener),
   JS_CFUNC_DEF("stopOrbit", 0, js_websg_world_stop_orbit),
   JS_CFUNC_DEF("createQuery", 1, js_websg_world_create_query),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "World", JS_PROP_CONFIGURABLE),

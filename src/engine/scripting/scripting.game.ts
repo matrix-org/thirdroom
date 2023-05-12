@@ -3,14 +3,13 @@ import { addComponent, defineQuery, exitQuery } from "bitecs";
 import scriptingRuntimeWASMUrl from "./emscripten/build/scripting-runtime.wasm?url";
 import { createCursorView } from "../allocator/CursorView";
 import { GameState, RemoteResourceManager } from "../GameTypes";
-import { createMatrixWASMModule, disposeMatrixWASMModule } from "../matrix/matrix.game";
-import { createWebSGNetworkModule, disposeWebSGNetworkModule } from "../network/scripting.game";
+import { createMatrixWASMModule } from "../matrix/matrix.game";
+import { createWebSGNetworkModule } from "../network/scripting.game";
 import { RemoteScene } from "../resource/RemoteResources";
 import { createThirdroomModule } from "./thirdroom";
 import { createWASIModule } from "./wasi";
 import { WASMModuleContext } from "./WASMModuleContext";
 import { createWebSGModule } from "./websg";
-import { disposeRemoteResourceManager } from "../resource/resource.game";
 
 export enum ScriptState {
   Uninitialized,
@@ -111,15 +110,20 @@ export async function loadScript(
     throw new Error(`Content type header not set for script "${scriptUrl}"`);
   }
 
+  const [thirdroomModule, disposeThirdroomModule] = createThirdroomModule(ctx, wasmCtx);
+  const [websgModule, disposeWebSGModule] = createWebSGModule(ctx, wasmCtx);
+  const [matrixModule, disposeMatrixModule] = createMatrixWASMModule(ctx, wasmCtx);
+  const [networkModule, disposeNetworkModule] = createWebSGNetworkModule(ctx, wasmCtx);
+
   const imports: WebAssembly.Imports = {
     env: {
       memory,
     },
     wasi_snapshot_preview1: createWASIModule(wasmCtx),
-    matrix: createMatrixWASMModule(ctx, wasmCtx),
-    websg: createWebSGModule(ctx, wasmCtx),
-    websg_networking: createWebSGNetworkModule(ctx, wasmCtx),
-    thirdroom: createThirdroomModule(ctx, wasmCtx),
+    matrix: matrixModule,
+    websg: websgModule,
+    websg_networking: networkModule,
+    thirdroom: thirdroomModule,
   };
 
   const { instance } = await WebAssembly.instantiate(wasmBuffer, imports);
@@ -276,9 +280,10 @@ export async function loadScript(
       }
     },
     dispose() {
-      disposeMatrixWASMModule(ctx);
-      disposeWebSGNetworkModule(ctx);
-      disposeRemoteResourceManager(resourceManager);
+      disposeThirdroomModule();
+      disposeWebSGModule();
+      disposeMatrixModule();
+      disposeNetworkModule();
     },
   };
 

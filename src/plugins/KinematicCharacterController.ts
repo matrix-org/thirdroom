@@ -286,7 +286,7 @@ export function updateKinematicControls(
       }
 
       for (const collisionHandler of collisionHandlers) {
-        collisionHandler(rig.eid, collisionColliderEid, collider.handle, collisionColliderHandle);
+        collisionHandler(rig.eid, collisionColliderEid, collider.handle, collisionColliderHandle, true);
       }
     }
   }

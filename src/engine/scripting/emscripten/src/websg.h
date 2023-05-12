@@ -29,6 +29,7 @@ typedef uint32_t light_id_t;
 typedef uint32_t collider_id_t;
 typedef uint32_t ui_canvas_id_t;
 typedef uint32_t ui_element_id_t;
+typedef uint32_t collision_listener_id_t;
 
 /*******************************
  * Common WebSG Property Types *
@@ -552,6 +553,27 @@ import_websg(node_add_physics_body) int32_t websg_node_add_physics_body(node_id_
 import_websg(node_remove_physics_body) int32_t websg_node_remove_physics_body(node_id_t node_id);
 import_websg(node_has_physics_body) int32_t websg_node_has_physics_body(node_id_t node_id);
 import_websg(physics_body_apply_impulse) int32_t websg_physics_body_apply_impulse(node_id_t node_id, float_t *impulse);
+
+/**
+ * CollisionListener
+ **/
+
+import_websg(world_create_collision_listener) collision_listener_id_t websg_world_create_collision_listener();
+import_websg(collision_listener_dispose) int32_t websg_collision_listener_dispose(collision_listener_id_t listener_id);
+
+import_websg(collisions_listener_get_collision_count) int32_t websg_collisions_listener_get_collision_count(collision_listener_id_t listener_id);
+
+typedef struct CollisionItem {
+  node_id_t node_a;
+  node_id_t node_b;
+  int32_t started;
+} CollisionItem;
+
+import_websg(collisions_listener_get_collisions) int32_t websg_collisions_listener_get_collisions(
+  collision_listener_id_t listener_id,
+  CollisionItem *collisions,
+  uint32_t max_count
+);
 
 /**
  * UI Canvas

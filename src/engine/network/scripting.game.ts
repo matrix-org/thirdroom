@@ -27,23 +27,10 @@ import { createDisposables } from "../utils/createDisposables";
 import { NetworkMessageType, PeerEnteredMessage, PeerExitedMessage } from "./network.common";
 import { ScriptComponent, scriptQuery } from "../scripting/scripting.game";
 
-interface NetworkListener {
-  id: number;
-  inbound: [string, ArrayBuffer, boolean][];
-}
-
-interface WebSGNetworkModuleState {
-  listeners: NetworkListener[];
-  nextNetworkListenerId: number;
-}
-
-export const WebSGNetworkModule = defineModule<GameState, WebSGNetworkModuleState>({
+export const WebSGNetworkModule = defineModule<GameState, {}>({
   name: "WebSGNetwork",
   create: () => {
-    return {
-      nextNetworkListenerId: 1,
-      listeners: [],
-    };
+    return {};
   },
   init(ctx: GameState) {
     const network = getModule(ctx, NetworkModule);
@@ -81,9 +68,8 @@ function onPeerExited(ctx: GameState, msg: PeerExitedMessage) {
 
 export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleContext) {
   const network = getModule(ctx, NetworkModule);
-  const websgNetwork = getModule(ctx, WebSGNetworkModule);
 
-  return {
+  const networkWASMModule = {
     network_get_host_peer_index() {
       const peerIndex = network.peerIdToIndex.get(network.hostId);
 
@@ -121,9 +107,9 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
       }
     },
     network_listen() {
-      const id = websgNetwork.nextNetworkListenerId++;
+      const id = wasmCtx.resourceManager.nextNetworkListenerId++;
 
-      websgNetwork.listeners.push({
+      wasmCtx.resourceManager.networkListeners.push({
         id,
         inbound: [],
       });
@@ -131,19 +117,20 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
       return id;
     },
     network_listener_close(listenerId: number) {
-      const index = websgNetwork.listeners.findIndex((l) => l.id === listenerId);
+      const networkListeners = wasmCtx.resourceManager.networkListeners;
+      const index = networkListeners.findIndex((l) => l.id === listenerId);
 
       if (index === -1) {
         console.error(`WebSGNetworking: Listener ${listenerId} does not exist.`);
         return -1;
       }
 
-      websgNetwork.listeners.splice(index, 1);
+      networkListeners.splice(index, 1);
 
       return 0;
     },
     network_listener_get_message_info(listenerId: number, infoPtr: number) {
-      const listener = websgNetwork.listeners.find((l) => l.id === listenerId);
+      const listener = wasmCtx.resourceManager.networkListeners.find((l) => l.id === listenerId);
 
       if (!listener) {
         moveCursorView(wasmCtx.cursorView, infoPtr);
@@ -181,7 +168,7 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
     },
     network_listener_receive: (listenerId: number, packetPtr: number, maxBufLength: number) => {
       try {
-        const listener = websgNetwork.listeners.find((l) => l.id === listenerId);
+        const listener = wasmCtx.resourceManager.networkListeners.find((l) => l.id === listenerId);
 
         if (!listener) {
           console.error(`WebSGNetworking: Listener ${listenerId} does not exist or has been closed.`);
@@ -340,12 +327,13 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
       }
     },
   };
-}
 
-export function disposeWebSGNetworkModule(ctx: GameState) {
-  const websgNetwork = getModule(ctx, WebSGNetworkModule);
-  websgNetwork.listeners.length = 0;
-  websgNetwork.nextNetworkListenerId = 1;
+  const disposeNetworkModule = () => {
+    wasmCtx.resourceManager.networkListeners.length = 0;
+    wasmCtx.resourceManager.nextNetworkListenerId = 1;
+  };
+
+  return [networkWASMModule, disposeNetworkModule] as const;
 }
 
 const messageView = createCursorView(new ArrayBuffer(10000));
@@ -366,20 +354,31 @@ function serializeScriptMessage(data: NetPipeData, packet: ArrayBuffer) {
 
 function deserializeScriptMessage(data: NetPipeData, binary: boolean) {
   const [ctx, v, peerId] = data;
-  const webSgNet = getModule(ctx, WebSGNetworkModule);
-
-  if (webSgNet.listeners.length === 0) {
-    return;
-  }
 
   const len = readUint32(v);
   const packet = readArrayBuffer(v, len);
 
   const message: [string, ArrayBuffer, boolean] = [peerId, packet, binary];
 
-  for (let i = 0; i < webSgNet.listeners.length; i++) {
-    const listener = webSgNet.listeners[i];
-    listener.inbound.push(message);
+  const scripts = scriptQuery(ctx.world);
+
+  for (let i = 0; i < scripts.length; i++) {
+    const script = ScriptComponent.get(scripts[i]);
+
+    if (!script) {
+      continue;
+    }
+
+    const resourceManager = script.wasmCtx.resourceManager;
+
+    if (resourceManager.networkListeners.length === 0) {
+      return;
+    }
+
+    for (let i = 0; i < resourceManager.networkListeners.length; i++) {
+      const listener = resourceManager.networkListeners[i];
+      listener.inbound.push(message);
+    }
   }
 }
 
