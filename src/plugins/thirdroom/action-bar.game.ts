@@ -125,12 +125,12 @@ export function ActionBarSystem(ctx: GameState) {
 
       if (xr && xr.rightRayEid) {
         const rightRayNode = tryGetRemoteResource<RemoteNode>(ctx, xr.rightRayEid);
-        spawnPrefab(ctx, rightRayNode, actionBarItem.id, true);
+        return spawnPrefab(ctx, rightRayNode, actionBarItem.id, true);
       } else {
         const camera = getCamera(ctx, node).parent;
 
         if (camera) {
-          spawnPrefab(ctx, camera, actionBarItem.id, true);
+          return spawnPrefab(ctx, camera, actionBarItem.id, true);
         }
       }
     });
@@ -140,7 +140,7 @@ export function ActionBarSystem(ctx: GameState) {
 function processPressedActionBarActions(
   actionBarItems: ActionBarItem[],
   controller: InputController,
-  callback: (item: ActionBarItem) => void
+  callback: (item: ActionBarItem) => boolean | void
 ) {
   for (let i = 0; i < actionBarMap.actionDefs.length; i++) {
     const actionDef = actionBarMap.actionDefs[i];
@@ -154,7 +154,11 @@ function processPressedActionBarActions(
         continue;
       }
 
-      callback(actionBarItem);
+      // Early out if the callback returns false
+      // spawnPrefab returns false if the prefab cannot be spawned due to object cap.
+      if (callback(actionBarItem) === false) {
+        return;
+      }
     }
   }
 }
