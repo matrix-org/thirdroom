@@ -81,7 +81,7 @@ JSValue js_websg_create_collision_iterator(JSContext *ctx, WebSGCollisionListene
     return JS_EXCEPTION;
   }
 
-  CollisionItem *collisions = js_mallocz(ctx, it->count * sizeof(CollisionItem));
+  CollisionItem *collisions = it->count == 0 ? NULL : js_mallocz(ctx, it->count * sizeof(CollisionItem));
 
   if (websg_collisions_listener_get_collisions(listener_data->listener_id, collisions, it->count) == -1) {
     js_free(ctx, it);
