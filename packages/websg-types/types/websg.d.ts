@@ -536,6 +536,8 @@ declare namespace WebSGNetworking {
     get id(): string;
     get isHost(): boolean;
     get isLocal(): boolean;
+    get translation(): WebSG.Vector3;
+    get rotation(): WebSG.Quaternion;
     send(message: string | ArrayBuffer, reliable: boolean): undefined;
   }
 
