@@ -5,11 +5,19 @@ import "./Toolbar.css";
 
 interface ToolbarProps {
   className?: string;
-  children?: ReactNode;
+  left?: ReactNode;
+  center?: ReactNode;
+  right?: ReactNode;
 }
 
-export function Toolbar({ children }: ToolbarProps) {
-  return <div className={classNames("Toolbar", classNames)}>{children}</div>;
+export function Toolbar({ className, center, left, right }: ToolbarProps) {
+  return (
+    <div className={classNames("Toolbar", className)}>
+      <div className="grow basis-0">{left}</div>
+      <div className="shrink-0 basis-0">{center}</div>
+      <div className="grow basis-0">{right}</div>
+    </div>
+  );
 }
 
 interface ToolbarItemGroupProps {

@@ -10,42 +10,46 @@ export const title = "Toolbar";
 export default function ToolbarStories() {
   return (
     <div style={{ padding: "var(--sp-md)", backgroundColor: "var(--bg-surface)" }}>
-      <Toolbar>
-        <ToolbarItemGroup>
-          <ToolbarButton>
-            <Icon size="sm" src={MenuIC} />
-          </ToolbarButton>
-
-          <ToolbarButton outlined>Toolbar Button</ToolbarButton>
-
-          <ToolbarButton before={<Icon size="sm" src={ExploreIC} />} outlined>
-            Toolbar Button
-          </ToolbarButton>
-
-          <ToolbarButton
-            before={<Icon size="sm" src={ExploreIC} />}
-            after={<Icon size="sm" src={ExploreIC} />}
-            outlined
-          >
-            Toolbar Button
-          </ToolbarButton>
-        </ToolbarItemGroup>
-        <ToolbarItemGroup>
-          <ToolbarButton outlined>
-            <Icon size="sm" src={ExploreIC} />
-          </ToolbarButton>
-
-          <ToolbarButtonGroup>
-            <ToolbarButton active={true}>
-              <Icon color="primary" size="sm" src={ExploreIC} />
-            </ToolbarButton>
-            <ToolbarButtonDivider />
+      <Toolbar
+        left={
+          <ToolbarItemGroup>
             <ToolbarButton>
-              <Icon size="sm" src={ChevronBottomIC} />
+              <Icon size="sm" src={MenuIC} />
             </ToolbarButton>
-          </ToolbarButtonGroup>
-        </ToolbarItemGroup>
-      </Toolbar>
+
+            <ToolbarButton outlined>Toolbar Button</ToolbarButton>
+
+            <ToolbarButton before={<Icon size="sm" src={ExploreIC} />} outlined>
+              Toolbar Button
+            </ToolbarButton>
+
+            <ToolbarButton
+              before={<Icon size="sm" src={ExploreIC} />}
+              after={<Icon size="sm" src={ExploreIC} />}
+              outlined
+            >
+              Toolbar Button
+            </ToolbarButton>
+          </ToolbarItemGroup>
+        }
+        right={
+          <ToolbarItemGroup>
+            <ToolbarButton outlined>
+              <Icon size="sm" src={ExploreIC} />
+            </ToolbarButton>
+
+            <ToolbarButtonGroup>
+              <ToolbarButton active={true}>
+                <Icon color="primary" size="sm" src={ExploreIC} />
+              </ToolbarButton>
+              <ToolbarButtonDivider />
+              <ToolbarButton>
+                <Icon size="sm" src={ChevronBottomIC} />
+              </ToolbarButton>
+            </ToolbarButtonGroup>
+          </ToolbarItemGroup>
+        }
+      />
     </div>
   );
 }

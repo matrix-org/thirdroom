@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useKBar } from "kbar";
 import { useAtom } from "jotai";
 
@@ -20,70 +21,92 @@ interface IEditorMode {
   icon: string;
 }
 
-const useEditorModeMenu = (): IEditorMode[] => [
-  {
-    mode: EditorMode.SceneEditor,
-    title: "Scene Editor",
-    icon: Box3dIC,
-  },
-  {
-    mode: EditorMode.ScriptEditor,
-    title: "Script Editor",
-    icon: CurlyBracketIC,
-  },
-];
+const useEditorModeMenu = (): IEditorMode[] =>
+  useMemo(
+    () => [
+      {
+        mode: EditorMode.SceneEditor,
+        title: "Scene Editor",
+        icon: Box3dIC,
+      },
+      {
+        mode: EditorMode.ScriptEditor,
+        title: "Script Editor",
+        icon: CurlyBracketIC,
+      },
+    ],
+    []
+  );
 
-export function EditorToolbar() {
-  const kBar = useKBar();
+export function EditorModeSwitcher() {
   const [editorMode, setEditorMode] = useAtom(editorModeAtom);
-
   const editorModeMenu = useEditorModeMenu();
   const activeMenuItem = editorModeMenu.find((i) => i.mode === editorMode);
 
   return (
-    <Toolbar>
-      <ToolbarItemGroup>
-        {activeMenuItem && (
-          <DropdownMenu
-            align="start"
-            style={{ padding: "var(--sp-xxs) 0" }}
-            content={
-              <>
-                <Label style={{ padding: "var(--sp-xxs) var(--sp-sm)" }}>Editor Modes</Label>
-                {editorModeMenu.map((menuItem) => (
-                  <DropdownMenuItem
-                    className="gap-xs"
-                    variant={menuItem.mode === editorMode ? "primary" : "surface"}
-                    onSelect={() => setEditorMode(menuItem.mode)}
-                    before={<Icon color={menuItem.mode === editorMode ? "primary" : "surface"} src={menuItem.icon} />}
-                  >
-                    {menuItem.title}
-                  </DropdownMenuItem>
-                ))}
-              </>
-            }
-          >
-            <ToolbarButton
-              before={<Icon size="sm" src={activeMenuItem.icon} />}
-              after={<Icon size="sm" src={ChevronBottomIC} />}
-              outlined
-            >
-              {activeMenuItem.title}
-            </ToolbarButton>
-          </DropdownMenu>
-        )}
-      </ToolbarItemGroup>
-      <ToolbarItemGroup className="grow justify-end">
-        <ToolbarButton
-          before={<Icon size="sm" color="surface-low" src={SearchIC} />}
-          outlined
-          onClick={() => kBar.query.toggle()}
+    <>
+      {activeMenuItem && (
+        <DropdownMenu
+          align="start"
+          style={{ padding: "var(--sp-xxs) 0" }}
+          content={
+            <>
+              <Label style={{ padding: "var(--sp-xxs) var(--sp-sm)" }}>Editor Modes</Label>
+              {editorModeMenu.map((menuItem) => (
+                <DropdownMenuItem
+                  className="gap-xs"
+                  variant={menuItem.mode === editorMode ? "primary" : "surface"}
+                  onSelect={() => setEditorMode(menuItem.mode)}
+                  before={<Icon color={menuItem.mode === editorMode ? "primary" : "surface"} src={menuItem.icon} />}
+                >
+                  {menuItem.title}
+                </DropdownMenuItem>
+              ))}
+            </>
+          }
         >
-          <Text variant="b3" weight="semi-bold" color="surface-low">
-            ⌘ + K
-          </Text>
-        </ToolbarButton>
-      </ToolbarItemGroup>
-    </Toolbar>
+          <ToolbarButton
+            before={<Icon size="sm" src={activeMenuItem.icon} />}
+            after={<Icon size="sm" src={ChevronBottomIC} />}
+            outlined
+          >
+            {activeMenuItem.title}
+          </ToolbarButton>
+        </DropdownMenu>
+      )}
+    </>
+  );
+}
+
+export function EditorCmdK() {
+  const kBar = useKBar();
+
+  return (
+    <ToolbarButton
+      before={<Icon size="sm" color="surface-low" src={SearchIC} />}
+      outlined
+      onClick={() => kBar.query.toggle()}
+    >
+      <Text variant="b3" weight="semi-bold" color="surface-low">
+        ⌘ + K
+      </Text>
+    </ToolbarButton>
+  );
+}
+
+export function EditorToolbar() {
+  return (
+    <Toolbar
+      left={
+        <ToolbarItemGroup>
+          <EditorModeSwitcher />
+        </ToolbarItemGroup>
+      }
+      right={
+        <ToolbarItemGroup className="grow justify-end">
+          <EditorCmdK />
+        </ToolbarItemGroup>
+      }
+    />
   );
 }
