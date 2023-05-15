@@ -15,7 +15,6 @@ import { Owned, Networked } from "../../../src/engine/network/NetworkComponents"
 import {
   createCursorView,
   readFloat32,
-  readInt32,
   readString,
   readUint16,
   readUint32,

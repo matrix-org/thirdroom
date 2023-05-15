@@ -28,6 +28,8 @@ export interface Script {
   entered: () => void;
   update: (dt: number, time: number) => void;
   dispose: () => void;
+  peerEntered: (peerIndex: number) => void;
+  peerExited: (peerIndex: number) => void;
 }
 
 export const ScriptComponent = new Map<number, Script>();
@@ -49,7 +51,10 @@ export function ScriptingSystem(ctx: GameState) {
     const eid = entities[i];
     const script = ScriptComponent.get(eid)!;
     // TODO: Use a networked global time variable instead of elapsed
-    script.update(ctx.dt, ctx.elapsed / 1000);
+
+    if (script.state === ScriptState.Entered) {
+      script.update(ctx.dt, ctx.elapsed / 1000);
+    }
   }
 
   const removedEntities = scriptExitQuery(ctx.world);
@@ -113,7 +118,7 @@ export async function loadScript(
     wasi_snapshot_preview1: createWASIModule(wasmCtx),
     matrix: createMatrixWASMModule(ctx, wasmCtx),
     websg: createWebSGModule(ctx, wasmCtx),
-    websg_network: createWebSGNetworkModule(ctx, wasmCtx),
+    websg_networking: createWebSGNetworkModule(ctx, wasmCtx),
     thirdroom: createThirdroomModule(ctx, wasmCtx),
   };
 
@@ -133,6 +138,16 @@ export async function loadScript(
 
   const websgUpdate =
     exports.websg_update && typeof exports.websg_update === "function" ? exports.websg_update : undefined;
+
+  const websgPeerEntered =
+    exports.websg_peer_entered && typeof exports.websg_peer_entered === "function"
+      ? exports.websg_peer_entered
+      : undefined;
+
+  const websgPeerExited =
+    exports.websg_peer_exited && typeof exports.websg_peer_exited === "function"
+      ? exports.websg_peer_exited
+      : undefined;
 
   const script: Script = {
     state: ScriptState.Uninitialized,
@@ -208,7 +223,7 @@ export async function loadScript(
         return;
       }
 
-      if (this.state === ScriptState.Loaded || this.state === ScriptState.Entered) {
+      if (this.state === ScriptState.Entered) {
         if (websgUpdate) {
           const result = websgUpdate(dt, time);
 
@@ -219,7 +234,45 @@ export async function loadScript(
           }
         }
       } else {
-        throw new Error("update() can only be called from the Loaded or Entered state");
+        throw new Error("update() can only be called from the Entered state");
+      }
+    },
+    peerEntered(peerId: number) {
+      if (this.state === ScriptState.Error) {
+        return;
+      }
+
+      if (this.state === ScriptState.Loaded || this.state === ScriptState.Entered) {
+        if (websgPeerEntered) {
+          const result = websgPeerEntered(peerId);
+
+          if (result < 0) {
+            console.error(`Script peerEntered callback failed with code: ${result}`);
+            this.state = ScriptState.Error;
+            return;
+          }
+        }
+      } else {
+        throw new Error("peerEntered() can only be called from the Loaded or Entered state");
+      }
+    },
+    peerExited(peerId: number) {
+      if (this.state === ScriptState.Error) {
+        return;
+      }
+
+      if (this.state === ScriptState.Loaded || this.state === ScriptState.Entered) {
+        if (websgPeerExited) {
+          const result = websgPeerExited(peerId);
+
+          if (result < 0) {
+            console.error(`Script peerExited callback failed with code: ${result}`);
+            this.state = ScriptState.Error;
+            return;
+          }
+        }
+      } else {
+        throw new Error("peerExited() can only be called from Loaded or Entered state");
       }
     },
     dispose() {

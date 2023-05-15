@@ -6,7 +6,12 @@ import { SpawnPoint } from "../../engine/component/SpawnPoint";
 import { addChild } from "../../engine/component/transform";
 import { GameState } from "../../engine/GameTypes";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
-import { associatePeerWithEntity, GameNetworkState, NetworkModule } from "../../engine/network/network.game";
+import {
+  associatePeerWithEntity,
+  GameNetworkState,
+  NetworkModule,
+  setLocalPeerId,
+} from "../../engine/network/network.game";
 import { Networked, Owned } from "../../engine/network/NetworkComponents";
 import {
   EnterWorldMessage,
@@ -369,6 +374,8 @@ async function onEnterWorld(ctx: GameState, message: EnterWorldMessage) {
     const network = getModule(ctx, NetworkModule);
     const physics = getModule(ctx, PhysicsModule);
     const input = getModule(ctx, InputModule);
+
+    setLocalPeerId(ctx, message.localPeerId);
 
     loadPlayerRig(ctx, physics, input, network);
 

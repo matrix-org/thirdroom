@@ -1,5 +1,6 @@
 import { IMainThreadContext } from "../../engine/MainThread";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
+import { NetworkModule } from "../../engine/network/network.main";
 import { PhysicsMessageType, TogglePhysicsDebugMessage } from "../../engine/physics/physics.common";
 import { createDisposables } from "../../engine/utils/createDisposables";
 import { createDeferred } from "../../engine/utils/Deferred";
@@ -109,8 +110,9 @@ export async function loadWorld(ctx: IMainThreadContext, url: string, scriptUrl:
   return loadingEnvironment.promise;
 }
 
-export async function enterWorld(ctx: IMainThreadContext) {
+export function enterWorld(ctx: IMainThreadContext, localPeerId: string) {
   const thirdroom = getModule(ctx, ThirdroomModule);
+  const network = getModule(ctx, NetworkModule);
   const enteringWorld = createDeferred(false);
 
   const id = thirdroom.messageId++;
@@ -138,9 +140,12 @@ export async function enterWorld(ctx: IMainThreadContext) {
     registerMessageHandler(ctx, ThirdRoomMessageType.EnterWorldError, onEnterWorldError),
   ]);
 
+  network.peerId = localPeerId;
+
   ctx.sendMessage<EnterWorldMessage>(Thread.Game, {
     type: ThirdRoomMessageType.EnterWorld,
     id,
+    localPeerId,
   });
 
   return enteringWorld.promise;

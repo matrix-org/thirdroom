@@ -134,7 +134,7 @@ JSValue js_websg_node_add_physics_body(JSContext *ctx, JSValueConst this_val, in
   if (!JS_IsUndefined(mass_val)) {
     double mass;
 
-    if (JS_ToFloat64(ctx, &props->mass, mass_val) == -1) {
+    if (JS_ToFloat64(ctx, &mass, mass_val) == -1) {
       return JS_EXCEPTION;
     }
 
