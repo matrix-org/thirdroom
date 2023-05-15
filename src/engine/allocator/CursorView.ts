@@ -355,9 +355,9 @@ export const readUint32Array = (v: CursorView, length: number) => {
 };
 
 export const readUint32List = (v: CursorView) => {
-  const rewind = rewindCursorView(v);
   const itemsPtr = readUint32(v);
   const count = readUint32(v);
+  const rewind = rewindCursorView(v);
   moveCursorView(v, itemsPtr);
   const arr = readUint32Array(v, count);
   rewind();

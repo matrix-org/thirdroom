@@ -59,9 +59,11 @@ export function VectorInput({ value, type, onChange, disabled }: VectorInputProp
         <>
           <NumericInput
             before={
-              <Label color="surface-low" className="shrink-0">
-                Z
-              </Label>
+              <Scrubber value={z} onChange={(value) => handleChange(x, y, value, w)}>
+                <Label color="surface-low" className="shrink-0">
+                  Z
+                </Label>
+              </Scrubber>
             }
             className="flex grow basis-0"
             type="f32"

@@ -69,6 +69,7 @@ export const CameraRigModule = defineModule<GameState, { orbiting: boolean }>({
 
 export const CameraRigAction = {
   LookMovement: "CameraRig/LookMovement",
+  SnapTurn: "CameraRig/SnapTurn",
   ScreenPosition: "CameraRig/ScreenPosition",
   LeftMouse: "CameraRig/LeftMouse",
   Zoom: "CameraRig/Zoom",
@@ -114,6 +115,18 @@ export const CameraRigActionMap: ActionMap = {
       ],
     },
     {
+      id: "snap-turn",
+      path: CameraRigAction.SnapTurn,
+      type: ActionType.Vector2,
+      bindings: [
+        {
+          type: BindingType.Axes,
+          x: "XRInputSource/primary/xr-standard-thumbstick/x-axis",
+        },
+      ],
+      networked: true,
+    },
+    {
       id: "exit-orbit",
       path: CameraRigAction.ExitOrbit,
       type: ActionType.Button,
@@ -124,7 +137,6 @@ export const CameraRigActionMap: ActionMap = {
         },
       ],
     },
-
     {
       id: "move",
       path: CameraRigAction.Translate,
@@ -158,6 +170,7 @@ export interface YawComponent {
   type: CameraRigType;
   target: number;
   sensitivity: number;
+  snapTurnDisabled: boolean;
 }
 export interface ZoomComponent {
   type: CameraRigType;
@@ -325,6 +338,7 @@ export function addCameraRigYawTarget(world: World, node: RemoteNode, target: Re
     type,
     target: target.eid,
     sensitivity: DEFAULT_SENSITIVITY,
+    snapTurnDisabled: false,
   };
   YawComponent.set(node.eid, yaw);
   return yaw;
@@ -361,11 +375,24 @@ function setYaw(node: RemoteNode, value: number) {
 function applyYaw(ctx: GameState, controller: InputController, rigYaw: YawComponent) {
   const node = tryGetRemoteResource<RemoteNode>(ctx, rigYaw.target);
 
-  const look = controller.actionStates.get(CameraRigAction.LookMovement) as vec2;
+  const [look] = controller.actionStates.get(CameraRigAction.LookMovement) as vec2;
+  const [snap] = controller.actionStates.get(CameraRigAction.SnapTurn) as vec2;
 
-  if (Math.abs(look[0]) >= 1) {
+  if (Math.abs(snap) >= 0.5) {
+    if (rigYaw.snapTurnDisabled === false) {
+      const quaternion = node.quaternion;
+      const snapDirection = snap > 0 ? -1 : 1;
+      const snapAngle = (Math.PI / 6) * snapDirection;
+      quat.rotateY(quaternion, quaternion, snapAngle);
+      rigYaw.snapTurnDisabled = true;
+    }
+  } else {
+    rigYaw.snapTurnDisabled = false;
+  }
+
+  if (Math.abs(look) >= 1) {
     const sensitivity = rigYaw.sensitivity || 1;
-    const newYaw = (look[0] / (1000 / (sensitivity || 1))) * ctx.dt;
+    const newYaw = (look / (1000 / (sensitivity || 1))) * ctx.dt;
     setYaw(node, newYaw);
   }
 }
