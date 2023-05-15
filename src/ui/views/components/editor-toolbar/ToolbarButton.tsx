@@ -33,7 +33,7 @@ export const ToolbarButton = forwardRef<
   >
     {before}
     {typeof children === "string" ? (
-      <Text variant="b3" weight="semi-bold">
+      <Text className="truncate" variant="b3" weight="semi-bold">
         {children}
       </Text>
     ) : (
