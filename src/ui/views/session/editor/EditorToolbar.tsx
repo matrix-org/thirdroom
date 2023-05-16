@@ -103,7 +103,7 @@ export function EditorToolbar() {
         </ToolbarItemGroup>
       }
       right={
-        <ToolbarItemGroup className="grow justify-end">
+        <ToolbarItemGroup>
           <EditorCmdK />
         </ToolbarItemGroup>
       }

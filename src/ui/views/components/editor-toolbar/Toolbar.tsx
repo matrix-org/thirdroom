@@ -13,9 +13,9 @@ interface ToolbarProps {
 export function Toolbar({ className, center, left, right }: ToolbarProps) {
   return (
     <div className={classNames("Toolbar", className)}>
-      <div className="grow basis-0">{left}</div>
-      <div className="shrink-0 basis-0">{center}</div>
-      <div className="grow basis-0">{right}</div>
+      <div className="grow basis-0 flex items-center">{left}</div>
+      <div className="shrink-0 basis-0 flex items-center justify-center">{center}</div>
+      <div className="grow basis-0 flex items-center justify-end">{right}</div>
     </div>
   );
 }

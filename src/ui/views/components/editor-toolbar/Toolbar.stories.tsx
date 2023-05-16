@@ -22,17 +22,9 @@ export default function ToolbarStories() {
             <ToolbarButton before={<Icon size="sm" src={ExploreIC} />} outlined>
               Toolbar Button
             </ToolbarButton>
-
-            <ToolbarButton
-              before={<Icon size="sm" src={ExploreIC} />}
-              after={<Icon size="sm" src={ExploreIC} />}
-              outlined
-            >
-              Toolbar Button
-            </ToolbarButton>
           </ToolbarItemGroup>
         }
-        right={
+        center={
           <ToolbarItemGroup>
             <ToolbarButton outlined>
               <Icon size="sm" src={ExploreIC} />
@@ -47,6 +39,17 @@ export default function ToolbarStories() {
                 <Icon size="sm" src={ChevronBottomIC} />
               </ToolbarButton>
             </ToolbarButtonGroup>
+          </ToolbarItemGroup>
+        }
+        right={
+          <ToolbarItemGroup>
+            <ToolbarButton
+              before={<Icon size="sm" src={ExploreIC} />}
+              after={<Icon size="sm" src={ExploreIC} />}
+              outlined
+            >
+              Toolbar Button
+            </ToolbarButton>
           </ToolbarItemGroup>
         }
       />
