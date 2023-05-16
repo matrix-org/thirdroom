@@ -4,6 +4,7 @@ import { ChatGap } from "./ChatGap";
 import { ChatMessage } from "./ChatMessage";
 import { ChatAnnouncement } from "./ChatAnnouncement";
 import { ChatImage } from "./ChatImage";
+import { ChatDate } from "./ChatDate";
 
 export function viewClassForTile(vm: SimpleTile): TileViewConstructor<any> {
   switch (vm.shape) {
@@ -16,6 +17,8 @@ export function viewClassForTile(vm: SimpleTile): TileViewConstructor<any> {
       return ChatMessage;
     case "image":
       return ChatImage;
+    case "date-header":
+      return ChatDate;
     default:
       throw new Error(
         `Tiles of shape "${vm.shape}" are not supported, check the tileClassForEntry function in the view model`

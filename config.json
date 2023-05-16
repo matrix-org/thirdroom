@@ -4,13 +4,10 @@
   "onboardingVersion": 1,
   "bugReportEndpointUrl": "https://element.io/bugreports/submit",
   "repositoryRoomIdOrAlias": "#repository-room:thirdroom.io",
-  "oidc": {
-    "clientConfigs": {
-      "https://id.thirdroom.io/realms/thirdroom/": {
-        "client_id": "thirdroom",
-        "uris": ["http://localhost:3000", "https://thirdroom.io"],
-        "guestKeycloakIdpHint": "guest"
-      }
+  "staticOidcClients": {
+    "https://id.thirdroom.io/realms/thirdroom/": {
+      "client_id": "thirdroom",
+      "guestKeycloakIdpHint": "guest"
     }
   }
 }

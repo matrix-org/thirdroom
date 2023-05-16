@@ -919,7 +919,7 @@ const loadGLTFCollider = createCachedSubresourceLoader(
   "collider",
   (root) => root.extensions?.OMI_collider?.colliders,
   async (resource, props, index) => {
-    const { name, type: typeStr, extents, size, radius, height, mesh: meshIndex } = props;
+    const { name, type: typeStr, extents, size, radius, height, isTrigger, mesh: meshIndex } = props;
 
     let mesh: RemoteMesh | undefined;
 
@@ -940,6 +940,7 @@ const loadGLTFCollider = createCachedSubresourceLoader(
       radius,
       height,
       mesh,
+      isTrigger,
     });
   }
 );

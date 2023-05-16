@@ -34,6 +34,10 @@ static JSValue js_websg_vector3_get(JSContext *ctx, JSValueConst this_val, int i
 static JSValue js_websg_vector3_set(JSContext *ctx, JSValueConst this_val, JSValueConst arg, int index) {
   WebSGVector3Data *vec3_data = JS_GetOpaque(this_val, js_websg_vector3_class_id);
 
+  if (vec3_data->read_only == 1) {
+    return JS_ThrowTypeError(ctx, "Vector3 is marked as read only.");
+  }
+
   double_t value;
 
   if (JS_ToFloat64(ctx, &value, arg) == -1) {
@@ -56,6 +60,9 @@ static JSValue js_websg_vector3_set(JSContext *ctx, JSValueConst this_val, JSVal
 static JSValue js_websg_vector3_set_array(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
   WebSGVector3Data *vec3_data = JS_GetOpaque(this_val, js_websg_vector3_class_id);
 
+  if (vec3_data->read_only == 1) {
+    return JS_ThrowTypeError(ctx, "Vector3 is marked as read only.");
+  }
 
   if (js_get_float_array_like(ctx, argv[0], vec3_data->elements, 3) < 0) {
     return JS_EXCEPTION;
@@ -125,7 +132,8 @@ JSValue js_websg_new_vector3_get_set(
   uint32_t resource_id,
   float_t (*get)(uint32_t resource_id, uint32_t index),
   int32_t (*set)(uint32_t resource_id, uint32_t index, float_t value),
-  int32_t (*set_array)(uint32_t resource_id, float_t *array)
+  int32_t (*set_array)(uint32_t resource_id, float_t *array),
+  int read_only
 ) {
   JSValue vector3 = JS_NewObjectClass(ctx, js_websg_vector3_class_id);
 
@@ -134,6 +142,7 @@ JSValue js_websg_new_vector3_get_set(
   vec3_data->get = get;
   vec3_data->set = set;
   vec3_data->set_array = set_array;
+  vec3_data->read_only = read_only;
   vec3_data->resource_id = resource_id;
 
   JS_SetOpaque(vector3, vec3_data);
@@ -150,6 +159,17 @@ int js_websg_define_vector3_prop(
   int32_t (*set)(uint32_t resource_id, uint32_t index, float_t value),
   int32_t (*set_array)(uint32_t resource_id, float_t *array)
 ) {
-  JSValue prop = js_websg_new_vector3_get_set(ctx, resource_id, get, set, set_array);
+  JSValue prop = js_websg_new_vector3_get_set(ctx, resource_id, get, set, set_array, 0);
+  return JS_DefinePropertyValueStr(ctx, obj, name, prop, JS_PROP_ENUMERABLE);
+}
+
+int js_websg_define_vector3_prop_read_only(
+  JSContext *ctx,
+  JSValue obj,
+  const char *name,
+  uint32_t resource_id,
+  float_t (*get)(uint32_t resource_id, uint32_t index)
+) {
+  JSValue prop = js_websg_new_vector3_get_set(ctx, resource_id, get, NULL, NULL, 1);
   return JS_DefinePropertyValueStr(ctx, obj, name, prop, JS_PROP_ENUMERABLE);
 }

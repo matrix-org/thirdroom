@@ -1,13 +1,12 @@
 import { GameState } from "../GameTypes";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
+import { ScriptComponent, scriptQuery } from "../scripting/scripting.game";
 import { readString, WASMModuleContext, writeEncodedString } from "../scripting/WASMModuleContext";
 import { createDisposables } from "../utils/createDisposables";
 import { MatrixMessageType, WidgetMessage } from "./matrix.common";
 
 interface MatrixModuleState {
   textEncoder: TextEncoder;
-  listening: boolean;
-  inboundWidgetMessages: Uint8Array[];
 }
 
 export const MatrixModule = defineModule<GameState, MatrixModuleState>({
@@ -15,8 +14,6 @@ export const MatrixModule = defineModule<GameState, MatrixModuleState>({
   create: () => {
     return {
       textEncoder: new TextEncoder(),
-      listening: false,
-      inboundWidgetMessages: [],
     };
   },
   init(ctx: GameState) {
@@ -25,36 +22,48 @@ export const MatrixModule = defineModule<GameState, MatrixModuleState>({
 });
 
 function onWidgetMessage(ctx: GameState, message: WidgetMessage) {
-  const { inboundWidgetMessages, listening, textEncoder } = getModule(ctx, MatrixModule);
+  const { textEncoder } = getModule(ctx, MatrixModule);
 
-  if (listening) {
-    const json = JSON.stringify(message.message);
-    const encodedMessage = textEncoder.encode(json);
-    inboundWidgetMessages.push(encodedMessage);
+  const scripts = scriptQuery(ctx.world);
+
+  for (let i = 0; i < scripts.length; i++) {
+    const script = ScriptComponent.get(scripts[i]);
+
+    if (!script) {
+      return;
+    }
+
+    const resourceManager = script.wasmCtx.resourceManager;
+
+    if (resourceManager.matrixListening) {
+      const json = JSON.stringify(message.message);
+      const encodedMessage = textEncoder.encode(json);
+      resourceManager.inboundMatrixWidgetMessages.push(encodedMessage);
+    }
   }
 }
 
 export function createMatrixWASMModule(ctx: GameState, wasmCtx: WASMModuleContext) {
-  const matrixModule = getModule(ctx, MatrixModule);
-
-  return {
+  const matrixWASMModule = {
     listen() {
-      if (matrixModule.listening) {
+      const resourceManager = wasmCtx.resourceManager;
+      if (resourceManager.matrixListening) {
         console.error("Matrix: Cannot listen for events, already in a listening state.");
         return -1;
       }
 
-      matrixModule.listening = true;
+      resourceManager.matrixListening = true;
       return 0;
     },
     close() {
-      if (!matrixModule.listening) {
+      const resourceManager = wasmCtx.resourceManager;
+      if (!resourceManager.matrixListening) {
         console.error("Matrix: Cannot close event listener, already in a closed state.");
         return -1;
       }
 
-      matrixModule.inboundWidgetMessages.length = 0;
-      matrixModule.listening = false;
+      resourceManager.inboundMatrixWidgetMessages.length = 0;
+      resourceManager.matrixListening = false;
       return 0;
     },
     send(eventPtr: number, byteLength: number) {
@@ -75,17 +84,19 @@ export function createMatrixWASMModule(ctx: GameState, wasmCtx: WASMModuleContex
       }
     },
     get_event_size() {
-      const messages = matrixModule.inboundWidgetMessages;
+      const resourceManager = wasmCtx.resourceManager;
+      const messages = resourceManager.inboundMatrixWidgetMessages;
       return messages.length === 0 ? 0 : messages[messages.length - 1].byteLength + 1;
     },
     receive(eventBufPtr: number, maxBufLength: number) {
+      const resourceManager = wasmCtx.resourceManager;
       try {
-        if (!matrixModule.listening) {
+        if (!resourceManager.matrixListening) {
           console.error("Matrix: Cannot receive events in a closed state.");
           return -1;
         }
 
-        const message = matrixModule.inboundWidgetMessages.pop();
+        const message = resourceManager.inboundMatrixWidgetMessages.pop();
 
         if (!message) {
           return 0;
@@ -103,10 +114,12 @@ export function createMatrixWASMModule(ctx: GameState, wasmCtx: WASMModuleContex
       }
     },
   };
-}
 
-export function disposeMatrixWASMModule(ctx: GameState) {
-  const matrixModule = getModule(ctx, MatrixModule);
-  matrixModule.listening = false;
-  matrixModule.inboundWidgetMessages.length = 0;
+  const disposeMatrixWASMModule = () => {
+    const resourceManager = wasmCtx.resourceManager;
+    resourceManager.matrixListening = false;
+    resourceManager.inboundMatrixWidgetMessages.length = 0;
+  };
+
+  return [matrixWASMModule, disposeMatrixWASMModule] as const;
 }

@@ -131,7 +131,7 @@ async function startOIDCLogin(
 
 function getMatchingClientConfig(platform: Platform, issuer: string) {
   const normalisedIssuer = `${issuer}${issuer.endsWith("/") ? "" : "/"}`;
-  return platform.config.oidc.clientConfigs[normalisedIssuer];
+  return platform.config.staticOidcClients[normalisedIssuer];
 }
 
 export default function LoginView() {
@@ -209,7 +209,7 @@ export default function LoginView() {
       const { issuer } = result.oidc;
       const oidcApi = new OidcApi({
         issuer,
-        clientConfigs: platform.config.oidc.clientConfigs,
+        staticClients: platform.config.staticOidcClients,
         request: platform.request,
         encoding: platform.encoding,
         crypto: platform.crypto,

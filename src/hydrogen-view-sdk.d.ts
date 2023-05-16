@@ -364,6 +364,13 @@ declare module "@thirdroom/hydrogen-view-sdk" {
 
     config: {
       defaultHomeServer: string;
+      staticClients: Record<
+        string,
+        {
+          client_id: string;
+          guestKeycloakIdpHint: string;
+        }
+      >;
       [key: string]: any;
     };
     encoding: any;
@@ -404,15 +411,14 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     expires_in?: number;
   };
   type IssuerUri = string;
-  interface ClientConfig {
+  export interface OidcClientConfig {
     client_id: string;
-    client_secret?: string;
-    uris: string[];
   }
+  export type StaticOidcClientsConfig = Record<IssuerUri, OidcClientConfig>;
   export class OidcApi {
     constructor(options: {
       issuer: string;
-      clientConfigs: Record<IssuerUri, ClientConfig>;
+      staticClients?: StaticOidcClientsConfig;
       request: RequestFunction;
       encoding: any;
       crypto: any;
@@ -956,6 +962,22 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     token?: (loginToken: string) => ILoginMethod;
   }
 
+  export enum FeatureFlag {
+    Calls = 1 << 0,
+    CrossSigning = 1 << 1,
+  }
+
+  export class FeatureSet {
+    constructor(public readonly flags: number = 0);
+    withFeature(flag: FeatureFlag): FeatureSet;
+    withoutFeature(flag: FeatureFlag): FeatureSet;
+    isFeatureEnabled(flag: FeatureFlag): boolean;
+    get calls(): boolean;
+    get crossSigning(): boolean;
+    static async load(settingsStorage: SettingsStorage): Promise<FeatureSet>;
+    async store(settingsStorage: SettingsStorage): Promise<void>;
+  }
+
   export interface ClientOptions {
     deviceName?: string;
   }
@@ -969,7 +991,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
 
     loadStatus: ObservableValue<LoadStatus>;
 
-    constructor(platform: Platform, options?: ClientOptions);
+    constructor(platform: Platform, features = new FeatureSet(0), options?: ClientOptions);
     get loginFailure(): LoginFailure;
 
     startWithExistingSession(sessionId: string): Promise<void>;
@@ -1121,6 +1143,11 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     dispose(): void;
     get displayName(): string;
     get sender(): string;
+  }
+
+  export class DateTile extends SimpleTile {
+    get relativeDate(): string;
+    get machineReadableDate(): string;
   }
 
   export class GapTile extends SimpleTile {

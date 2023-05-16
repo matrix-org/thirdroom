@@ -14,6 +14,27 @@ export interface ResourceManagerGLTFCacheEntry {
   promise: Promise<GLTFResource>;
 }
 
+export interface Collision {
+  nodeA: number;
+  nodeB: number;
+  started: boolean;
+}
+
+export interface CollisionListener {
+  id: number;
+  collisions: Collision[];
+}
+
+export interface ActionBarListener {
+  id: number;
+  actions: string[];
+}
+
+export interface NetworkListener {
+  id: number;
+  inbound: [string, ArrayBuffer, boolean][];
+}
+
 export interface RemoteResourceManager {
   ctx: GameState;
   resourceIds: Set<number>;
@@ -29,6 +50,14 @@ export interface RemoteResourceManager {
   componentDefinitions: Map<number, GLTFComponentDefinition>;
   nextComponentStoreIndex: number;
   nodeIdToComponentStoreIndex: Map<number, number>;
+  collisionListeners: CollisionListener[];
+  nextCollisionListenerId: number;
+  actionBarListeners: ActionBarListener[];
+  nextActionBarListenerId: number;
+  matrixListening: boolean;
+  inboundMatrixWidgetMessages: Uint8Array[];
+  networkListeners: NetworkListener[];
+  nextNetworkListenerId: number;
 }
 
 export interface GameState extends BaseThreadContext {

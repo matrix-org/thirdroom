@@ -253,12 +253,31 @@ declare namespace WebSG {
 
   interface PhysicsBodyProps {
     type: PhysicsBodyType;
+    mass?: number;
     linearVelocity?: ArrayLike<number>;
     angularVelocity?: ArrayLike<number>;
     inertiaTensor?: ArrayLike<number>;
   }
 
-  class PhysicsBody {}
+  class PhysicsBody {
+    applyImpulse(impulse: ArrayLike<number>): undefined;
+  }
+
+  class Collision {
+    nodeA: Node;
+    nodeB: Node;
+    started: boolean;
+  }
+
+  class CollisionIterator {
+    next(): { value: Collision; done: boolean };
+    [Symbol.iterator](): CollisionIterator;
+  }
+
+  class CollisionListener {
+    collisions(): CollisionIterator;
+    dispose(): void;
+  }
 
   class Quaternion {
     [n: number]: number;
@@ -301,6 +320,8 @@ declare namespace WebSG {
   }
 
   class Texture {}
+
+  class Image {}
 
   interface UIButtonProps extends UITextProps {
     label?: string;
@@ -515,12 +536,14 @@ declare namespace WebSG {
     createScene(props?: SceneProps): Scene;
     findSceneByName(name: string): Scene | undefined;
     findTextureByName(name: string): Texture | undefined;
+    findImageByName(name: string): Image | undefined;
     createUICanvas(props?: UICanvasProps): UICanvas;
     findUICanvasByName(name: string): UICanvas | undefined;
     createUIElement(props?: UIElementProps): UIElement;
     createUIText(props?: UITextProps): UIText;
     createUIButton(props?: UIButtonProps): UIButton;
     findUIElementByName(name: string): UIElement | undefined;
+    createCollisionListener(): CollisionListener;
     stopOrbit(): undefined;
     onload: (() => any) | null;
     onenter: (() => any) | null;
@@ -530,22 +553,75 @@ declare namespace WebSG {
 
 declare const world: WebSG.World;
 
-interface WebSGNetworking {
-  listen(): undefined;
-  close(): undefined;
-  broadcast(data: ArrayBuffer): undefined;
-  receive(): ArrayBuffer | undefined;
-  receiveInto(buffer: ArrayBuffer): number;
+declare namespace WebSGNetworking {
+  class Peer {
+    get id(): string;
+    get isHost(): boolean;
+    get isLocal(): boolean;
+    get translation(): WebSG.Vector3;
+    get rotation(): WebSG.Quaternion;
+    send(message: string | ArrayBuffer, reliable: boolean): undefined;
+  }
+
+  class NetworkMessage {
+    peer: Peer;
+    data: ArrayBuffer | string;
+    bytesWritten: number;
+    isBinary: boolean;
+  }
+
+  class NetworkMessageIterator {
+    next(): { value: NetworkMessage; done: boolean };
+    [Symbol.iterator](): NetworkMessageIterator;
+  }
+
+  class NetworkListener {
+    receive(buffer?: ArrayBuffer): NetworkMessageIterator;
+    close(): undefined;
+  }
+
+  class Network {
+    get host(): Peer | undefined;
+    get local(): Peer | undefined;
+    listen(): NetworkListener;
+    broadcast(message: string | ArrayBuffer, reliable: boolean): undefined;
+    onpeerentered: ((peer: Peer) => any) | null;
+    onpeerexited: ((peer: Peer) => any) | null;
+  }
 }
 
-declare const network: WebSGNetworking;
+declare const network: WebSGNetworking.Network;
 
-interface ThirdRoom {
+declare namespace ThirdRoom {
+  class ActionBarListener {
+    actions(): ActionBarIterator;
+    dispose(): undefined;
+  }
+
+  class ActionBarIterator {
+    next(): { value: string; done: boolean };
+    [Symbol.iterator](): ActionBarIterator;
+  }
+
+  interface ActionBarItem {
+    id: string;
+    label: string;
+    thumbnail: WebSG.Image;
+  }
+
+  class ActionBar {
+    setItems(items: ActionBarItem[]): undefined;
+    createListener(): ActionBarListener;
+  }
+}
+
+declare class ThirdRoom {
   enableMatrixMaterial(enabled: boolean): undefined;
   getAudioDataSize(): number;
   getAudioTimeData(data: Float32Array): number;
   getAudioFrequencyData(data: Float32Array): number;
   inAR(): boolean;
+  get actionBar(): ThirdRoom.ActionBar;
 }
 
 declare const thirdroom: ThirdRoom;

@@ -134,65 +134,6 @@ export function reconnectPeers(ctx: IMainThreadContext) {
   }
 }
 
-export function connectToTestNet(mainThread: IMainThreadContext) {
-  const network = getModule(mainThread, NetworkModule);
-
-  network.ws = new WebSocket("ws://localhost:9090");
-  const { ws } = network;
-
-  ws.binaryType = "arraybuffer";
-
-  ws.addEventListener("open", () => {
-    console.info("connected to websocket server");
-  });
-
-  ws.addEventListener("close", () => {});
-
-  const setHostFn = (data: { data: any }) => {
-    if (data.data === "setHost") {
-      console.info("ws - setHost");
-      mainThread.sendMessage(Thread.Game, {
-        type: NetworkMessageType.SetHost,
-        value: true,
-      });
-      ws?.removeEventListener("message", setHostFn);
-    }
-  };
-  ws.addEventListener("message", setHostFn);
-
-  const setPeerIdFn = (data: { data: any }) => {
-    try {
-      const d: any = JSON.parse(data.data);
-      if (d.setPeerId) {
-        console.info("ws - setPeerId", d.setPeerId);
-        mainThread.sendMessage(Thread.Game, {
-          type: NetworkMessageType.SetPeerId,
-          peerId: d.setPeerId,
-        });
-
-        ws?.addEventListener("message", onIncomingMessage(mainThread, network, d.setPeerId));
-
-        ws?.removeEventListener("message", setPeerIdFn);
-      }
-    } catch {}
-  };
-  ws.addEventListener("message", setPeerIdFn);
-
-  const addPeerId = (data: { data: any }) => {
-    try {
-      const d: any = JSON.parse(data.data);
-      if (d.addPeerId) {
-        console.info("ws - addPeerId", d.addPeerId);
-        mainThread.sendMessage(Thread.Game, {
-          type: NetworkMessageType.AddPeerId,
-          peerId: d.addPeerId,
-        });
-      }
-    } catch {}
-  };
-  ws.addEventListener("message", addPeerId);
-}
-
 export function setHost(mainThread: IMainThreadContext, hostId: string) {
   const network = getModule(mainThread, NetworkModule);
   const hostChanged = network.hostId !== hostId;
@@ -291,16 +232,6 @@ export function disconnect(mainThread: IMainThreadContext) {
   }
 }
 
-export function setPeerId(mainThread: IMainThreadContext, peerId: string) {
-  const network = getModule(mainThread, NetworkModule);
-  network.peerId = peerId;
-
-  mainThread.sendMessage(Thread.Game, {
-    type: NetworkMessageType.SetPeerId,
-    peerId,
-  });
-}
-
 const ringOut = { packet: new ArrayBuffer(0), peerId: "", broadcast: false };
 export function MainThreadNetworkSystem(ctx: IMainThreadContext) {
   const network = getModule(ctx, NetworkModule);
@@ -319,7 +250,7 @@ export function MainThreadNetworkSystem(ctx: IMainThreadContext) {
     } else {
       const peer = network.reliableChannels.get(ringOut.peerId);
       if (!peer) {
-        console.error("peer's reliable channel not found", ringOut.peerId);
+        console.error("Failed to send message, peer's reliable channel not found", ringOut.peerId);
         continue;
       }
 
