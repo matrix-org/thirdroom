@@ -391,6 +391,9 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     createBlob(buffer: ArrayBuffer, mimetype?: string): IBlobHandle;
     saveFileAs(blobHandle: IBlobHandle, filename: string): void;
 
+    get description(): string;
+    get version(): string;
+
     dispose(): void;
   }
 
@@ -578,6 +581,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
   }
   export class Session {
     userId: string;
+    deviceId: string;
     sessionInfo: IFilteredSessionInfo;
     hsApi: HomeServerApi;
     mediaRepository: MediaRepository;
@@ -1484,6 +1488,8 @@ declare module "@thirdroom/hydrogen-view-sdk" {
     ): T;
     export(): Promise<ILogExport | undefined>;
     get level(): typeof LogLevel;
+
+    get reporters(): ReadonlyArray<ILogReporter>;
   }
 
   type BlobHandle = any;
@@ -1506,6 +1512,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
   export type FilterCreator = (filter: LogFilter, item: ILogItem) => LogFilter;
   export type LogCallback<T> = (item: ILogItem) => T;
 
+  export type RequestBody = BlobHandle | string | Map<string, string | { blob: BlobHandle; name: string }>;
   export type EncodedBody = {
     mimeType: string;
     body: BlobHandle | string;
@@ -1522,7 +1529,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
   export interface IRequestOptions {
     uploadProgress?: (loadedBytes: number) => void;
     timeout?: number;
-    body?: EncodedBody;
+    body?: RequestBody;
     headers?: Map<string, string | number>;
     cache?: boolean;
     method?: string;
@@ -2776,4 +2783,17 @@ declare module "@thirdroom/hydrogen-view-sdk" {
   }
 
   export function makeTxnId(): string;
+
+  export function submitLogsToRageshakeServer(
+    data: {
+      text?: string;
+      userAgent: string;
+      app: string;
+      version: string;
+      label?: string;
+    },
+    logsBlob: IBlobHandle,
+    submitUrl: string,
+    request: RequestFunction
+  ): Promise<void>;
 }
