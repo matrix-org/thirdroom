@@ -918,4 +918,5 @@ export interface GLTFCollider extends GLTFChildOfRootProperty {
   radius?: number;
   height?: number;
   mesh?: number;
+  isTrigger?: boolean;
 }

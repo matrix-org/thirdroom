@@ -43,14 +43,6 @@ async function onInit({
   // noop entity
   addEntity(world);
 
-  function gameWorkerSendMessage<M extends Message<any>>(thread: Thread, message: M, transferList: Transferable[]) {
-    if (thread === Thread.Main) {
-      workerScope.postMessage({ dest: thread, message }, transferList);
-    } else if (thread === Thread.Render) {
-      renderPort.postMessage({ dest: thread, message }, transferList);
-    }
-  }
-
   const ctx: GameState = {
     thread: Thread.Game,
     renderToGameTripleBufferFlags,
@@ -90,6 +82,22 @@ async function onInit({
       }
     }
   };
+
+  function gameWorkerSendMessage<M extends Message<any>>(thread: Thread, message: M, transferList: Transferable[]) {
+    if (thread === Thread.Main) {
+      workerScope.postMessage({ dest: thread, message }, transferList);
+    } else if (thread === Thread.Render) {
+      renderPort.postMessage({ dest: thread, message }, transferList);
+    } else if (thread === Thread.Game) {
+      const handlers = ctx.messageHandlers.get(message.type);
+
+      if (handlers) {
+        for (let i = 0; i < handlers.length; i++) {
+          handlers[i](ctx, message);
+        }
+      }
+    }
+  }
 
   workerScope.addEventListener("message", onMessage);
 

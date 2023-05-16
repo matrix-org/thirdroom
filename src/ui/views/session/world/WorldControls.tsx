@@ -30,19 +30,15 @@ import { manageMuteRequest, MicExceptionDialog, useMuteButton } from "../../comp
 import { inputFocused } from "../../../utils/common";
 import { useDisableInput } from "../../../hooks/useDisableInput";
 import { useWorldNavigator } from "../../../hooks/useWorldNavigator";
+import { useActionBar } from "../../../hooks/useActionBar";
 
 export function HotbarControls() {
+  const actionBarItems = useActionBar();
+
   return (
     <Hotbar>
-      {[
-        { imageSrc: "/image/small-crate-icon.png" },
-        { imageSrc: "/image/medium-crate-icon.png" },
-        { imageSrc: "/image/large-crate-icon.png" },
-        { imageSrc: "/image/mirror-ball-icon.png" },
-        { imageSrc: "/image/black-mirror-ball-icon.png" },
-        { imageSrc: "/image/emissive-ball-icon.png" },
-      ].map((slot, index) => (
-        <HotbarSlot key={index} imageSrc={slot.imageSrc} shortcutKey={index + 1} label="Spawn Object" />
+      {actionBarItems.map((item, index) => (
+        <HotbarSlot key={item.id} imageSrc={item.thumbnail} shortcutKey={index + 1} label={item.label} />
       ))}
     </Hotbar>
   );

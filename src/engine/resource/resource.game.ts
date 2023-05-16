@@ -1,4 +1,4 @@
-import { addComponent, addEntity, defineComponent, removeEntity, removeQuery } from "bitecs";
+import { addComponent, addEntity, defineComponent, removeEntity } from "bitecs";
 import { availableRead } from "@thirdroom/ringbuffer";
 
 import {
@@ -242,15 +242,15 @@ export function createRemoteResourceManager(ctx: GameState): RemoteResourceManag
     componentIdsByName: new Map(),
     nextComponentStoreIndex: 0,
     nodeIdToComponentStoreIndex: new Map(),
+    collisionListeners: [],
+    nextCollisionListenerId: 1,
+    actionBarListeners: [],
+    nextActionBarListenerId: 1,
+    matrixListening: false,
+    inboundMatrixWidgetMessages: [],
+    nextNetworkListenerId: 1,
+    networkListeners: [],
   };
-}
-
-export function disposeRemoteResourceManager(resourceManager: RemoteResourceManager) {
-  const ctx = resourceManager.ctx;
-
-  for (const query of resourceManager.registeredQueries.values()) {
-    removeQuery(ctx.world, query);
-  }
 }
 
 function registerResource<Def extends ResourceDefinition>(
