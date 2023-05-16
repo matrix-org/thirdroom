@@ -42,7 +42,7 @@
   outline: 1px solid var(--bg-surface-border);
   overflow: hidden;
 
-  & > .ToolbarButton {
+  & .ToolbarButton {
     border-radius: 0;
   }
 }
