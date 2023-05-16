@@ -11,6 +11,8 @@
 #include "./collider.h"
 #include "./light.h"
 #include "./material.h"
+#include "./texture.h"
+#include "./image.h"
 #include "./mesh.h"
 #include "./node.h"
 #include "./scene.h"
@@ -94,6 +96,8 @@ static const JSCFunctionListEntry js_websg_world_proto_funcs[] = {
   JS_CFUNC_DEF("createMaterial", 1, js_websg_world_create_material),
   JS_CFUNC_DEF("createUnlitMaterial", 1, js_websg_world_create_unlit_material),
   JS_CFUNC_DEF("findMaterialByName", 1, js_websg_world_find_material_by_name),
+  JS_CFUNC_DEF("findTextureByName", 1, js_websg_world_find_texture_by_name),
+  JS_CFUNC_DEF("findImageByName", 1, js_websg_world_find_image_by_name),
   JS_CFUNC_DEF("createMesh", 1, js_websg_world_create_mesh),
   JS_CFUNC_DEF("createBoxMesh", 1, js_websg_world_create_box_mesh),
   JS_CFUNC_DEF("findMeshByName", 1, js_websg_world_find_mesh_by_name),
@@ -171,6 +175,7 @@ JSValue js_websg_new_world(JSContext *ctx) {
   world_data->nodes = JS_NewObject(ctx);
   world_data->scenes = JS_NewObject(ctx);
   world_data->textures = JS_NewObject(ctx);
+  world_data->images = JS_NewObject(ctx);
   world_data->ui_canvases = JS_NewObject(ctx);
   world_data->ui_elements = JS_NewObject(ctx);
   world_data->component_stores = JS_NewObject(ctx);

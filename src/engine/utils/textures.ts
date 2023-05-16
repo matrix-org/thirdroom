@@ -38,6 +38,7 @@ import { LoadStatus } from "../resource/resource.common";
 import { getLocalResources, RenderImage, RenderTexture } from "../resource/resource.render";
 import { SamplerMagFilter, SamplerMapping, SamplerMinFilter, SamplerWrap, TextureFormat } from "../resource/schema";
 import { toArrayBuffer } from "./arraybuffer";
+import { RemoteImage } from "../resource/RemoteResources";
 
 /**
  * These loader functions allow us to avoid converting from
@@ -418,4 +419,19 @@ export function updateTextureResources(ctx: RenderThreadState) {
         });
     }
   }
+}
+
+export function getRemoteImageUrl(image: RemoteImage) {
+  if (image.uri) {
+    return image.uri;
+  }
+
+  if (image.bufferView) {
+    const bufferView = image.bufferView;
+    const buffer = toArrayBuffer(bufferView.buffer.data, bufferView.byteOffset, bufferView.byteLength);
+    const blob = new Blob([buffer], { type: image.mimeType });
+    return URL.createObjectURL(blob);
+  }
+
+  return "";
 }

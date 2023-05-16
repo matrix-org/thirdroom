@@ -4,23 +4,16 @@ import { mat4, vec3, quat } from "gl-matrix";
 import { Vector3 } from "three";
 
 import { playOneShotAudio } from "../../engine/audio/audio.game";
-import { getCamera } from "../../engine/camera/camera.game";
 import { MAX_OBJECT_CAP } from "../../engine/config.common";
 import { GameState } from "../../engine/GameTypes";
 import { createNodeFromGLTFURI } from "../../engine/gltf/gltf.game";
-import { enableActionMap } from "../../engine/input/ActionMappingSystem";
-import { ActionDefinition, ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
-import { InputModule } from "../../engine/input/input.game";
-import { InputController, inputControllerQuery, tryGetInputController } from "../../engine/input/InputController";
 import { createSphereMesh } from "../../engine/mesh/mesh.game";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
-import { isHost } from "../../engine/network/network.common";
-import { NetworkModule, ownedNetworkedQuery } from "../../engine/network/network.game";
+import { ownedNetworkedQuery } from "../../engine/network/network.game";
 import { Networked, Owned } from "../../engine/network/NetworkComponents";
 import { dynamicObjectCollisionGroups } from "../../engine/physics/CollisionGroups";
 import { addRigidBody, PhysicsModule, PhysicsModuleState, RigidBody } from "../../engine/physics/physics.game";
 import { createPrefabEntity, PrefabType, registerPrefab } from "../../engine/prefab/prefab.game";
-import { tryGetRemoteResource } from "../../engine/resource/resource.game";
 import {
   addObjectToWorld,
   RemoteAudioData,
@@ -34,109 +27,20 @@ import { createDisposables } from "../../engine/utils/createDisposables";
 import randomRange from "../../engine/utils/randomRange";
 import { addInteractableComponent } from "../interaction/interaction.game";
 import { ObjectCapReachedMessageType, SetObjectCapMessage, SetObjectCapMessageType } from "./spawnables.common";
-import { XRAvatarRig } from "../../engine/input/WebXRAvatarRigSystem";
 import { getRotationNoAlloc } from "../../engine/utils/getRotationNoAlloc";
 
 const { abs, floor, random } = Math;
 
 type SpawnablesModuleState = {
   hitAudioEmitters: Map<number, RemoteAudioEmitter>;
-  actionsDefs: ActionDefinition[];
   maxObjCap: number;
 };
 
 export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
   name: "spawnables",
   create() {
-    // id determines which prefab is spawned in the system
-    const actions: ActionDefinition[] = [
-      {
-        id: "small-crate",
-        path: "xr-right",
-        type: ActionType.Button,
-        bindings: [
-          {
-            type: BindingType.Button,
-            path: `XRInputSource/primary/a-button`,
-          },
-        ],
-      },
-      {
-        id: "small-crate",
-        path: "1",
-        type: ActionType.Button,
-        bindings: [
-          {
-            type: BindingType.Button,
-            path: `Keyboard/Digit1`,
-          },
-        ],
-        networked: true,
-      },
-      {
-        id: "medium-crate",
-        path: "2",
-        type: ActionType.Button,
-        bindings: [
-          {
-            type: BindingType.Button,
-            path: `Keyboard/Digit2`,
-          },
-        ],
-        networked: true,
-      },
-      {
-        id: "large-crate",
-        path: "3",
-        type: ActionType.Button,
-        bindings: [
-          {
-            type: BindingType.Button,
-            path: `Keyboard/Digit3`,
-          },
-        ],
-        networked: true,
-      },
-      {
-        id: "mirror-ball",
-        path: "4",
-        type: ActionType.Button,
-        bindings: [
-          {
-            type: BindingType.Button,
-            path: `Keyboard/Digit4`,
-          },
-        ],
-        networked: true,
-      },
-      {
-        id: "black-mirror-ball",
-        path: "5",
-        type: ActionType.Button,
-        bindings: [
-          {
-            type: BindingType.Button,
-            path: `Keyboard/Digit5`,
-          },
-        ],
-        networked: true,
-      },
-      {
-        id: "emissive-ball",
-        path: "6",
-        type: ActionType.Button,
-        bindings: [
-          {
-            type: BindingType.Button,
-            path: `Keyboard/Digit6`,
-          },
-        ],
-        networked: true,
-      },
-    ];
     return {
       hitAudioEmitters: new Map(),
-      actionsDefs: actions,
       maxObjCap: MAX_OBJECT_CAP,
     };
   },
@@ -289,13 +193,6 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
       }
     });
 
-    const input = getModule(ctx, InputModule);
-    const controller = input.defaultController;
-    enableActionMap(controller, {
-      id: "spawnables",
-      actionDefs: module.actionsDefs,
-    });
-
     return createDisposables([registerMessageHandler(ctx, SetObjectCapMessageType, onSetObjectCap)]);
   },
 });
@@ -406,118 +303,11 @@ const _direction = vec3.create();
 const _impulse = new Vector3();
 const _spawnWorldQuat = quat.create();
 
-export const SpawnableSystem = (ctx: GameState) => {
-  const network = getModule(ctx, NetworkModule);
-  if (network.authoritative && !isHost(network)) {
-    return;
-  }
+// Returns false if the object exceeded the object cap
+export function spawnPrefab(ctx: GameState, spawnFrom: RemoteNode, prefabId: string, isXR: boolean): boolean {
+  const { maxObjCap } = getModule(ctx, SpawnablesModule);
 
-  const input = getModule(ctx, InputModule);
-  const spawnablesModule = getModule(ctx, SpawnablesModule);
-
-  const rigs = inputControllerQuery(ctx.world);
-
-  for (let i = 0; i < rigs.length; i++) {
-    const eid = rigs[i];
-    const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
-    const controller = tryGetInputController(input, eid);
-    const xr = XRAvatarRig.get(eid);
-
-    if (xr && xr.rightRayEid && xr.leftRayEid) {
-      // const leftRayNode = tryGetRemoteResource<RemoteNode>(ctx, xr.leftRayEid);
-      const rightRayNode = tryGetRemoteResource<RemoteNode>(ctx, xr.rightRayEid);
-      // const leftCtrl = controller.actionStates.get("xr-left") as ButtonActionState;
-      const rightCtrl = controller.actionStates.get("xr-right") as ButtonActionState;
-      // if (leftCtrl.pressed) updateSpawnablesXR(ctx, spawnablesModule, leftRayNode, "left");
-      if (rightCtrl.pressed) updateSpawnablesXR(ctx, spawnablesModule, rightRayNode, "right");
-    } else {
-      const camera = getCamera(ctx, node).parent!;
-      updateSpawnables(ctx, spawnablesModule, controller, camera);
-    }
-  }
-};
-
-const pressedActions: ActionDefinition[] = [];
-
-export const updateSpawnables = (
-  ctx: GameState,
-  { actionsDefs: actions, maxObjCap }: SpawnablesModuleState,
-  controller: InputController,
-  spawnFrom: RemoteNode
-) => {
-  pressedActions.length = 0;
-
-  for (let i = 0; i < actions.length; i++) {
-    const action = actions[i];
-
-    if ((controller.actionStates.get(action.path) as ButtonActionState)?.pressed) {
-      pressedActions.push(action);
-    }
-  }
-
-  if (pressedActions.length) {
-    // bounce out of the system if we hit the max object cap
-    const ownedEnts = ownedNetworkedQuery(ctx.world);
-    if (ownedEnts.length > maxObjCap) {
-      ctx.sendMessage(Thread.Main, {
-        type: ObjectCapReachedMessageType,
-      });
-      // TODO: send this message to the other clients
-      // TODO: add two configs: max objects per client and max objects per room
-      return;
-    }
-  }
-
-  for (let i = 0; i < pressedActions.length; i++) {
-    const action = pressedActions[i];
-
-    const prefab = createPrefabEntity(ctx, action.id);
-    const eid = prefab.eid;
-
-    addComponent(ctx.world, Owned, eid);
-    addComponent(ctx.world, Networked, eid, true);
-
-    mat4.getTranslation(prefab.position, spawnFrom.worldMatrix);
-
-    getRotationNoAlloc(_spawnWorldQuat, spawnFrom.worldMatrix);
-    const direction = vec3.set(_direction, 0, 0, -1);
-    vec3.transformQuat(direction, direction, _spawnWorldQuat);
-
-    // place object at direction
-    vec3.add(prefab.position, prefab.position, direction);
-
-    vec3.scale(direction, direction, THROW_FORCE);
-
-    _impulse.fromArray(direction);
-
-    const body = RigidBody.store.get(eid);
-
-    if (!body) {
-      console.warn("could not find RigidBody for spawned entity " + eid);
-      continue;
-    }
-
-    prefab.quaternion.set(_spawnWorldQuat);
-
-    body.applyImpulse(_impulse, true);
-
-    const privateScene = ctx.worldResource.environment?.privateScene;
-
-    if (!privateScene) {
-      throw new Error("private scene not found on environment");
-    }
-
-    addObjectToWorld(ctx, prefab);
-  }
-};
-
-export const updateSpawnablesXR = (
-  ctx: GameState,
-  { maxObjCap, actionsDefs }: SpawnablesModuleState,
-  spawnFrom: RemoteNode,
-  hand: XRHandedness
-) => {
-  // bounce out of the system if we hit the max object cap
+  // bounce out of the function if we hit the max object cap
   const ownedEnts = ownedNetworkedQuery(ctx.world);
   if (ownedEnts.length > maxObjCap) {
     ctx.sendMessage(Thread.Main, {
@@ -525,12 +315,10 @@ export const updateSpawnablesXR = (
     });
     // TODO: send this message to the other clients
     // TODO: add two configs: max objects per client and max objects per room
-    return;
+    return false;
   }
 
-  // pick random item for now
-  const a = actionsDefs.sort(() => (Math.random() > 0.5 ? 1 : -1))[0];
-  const prefab = createPrefabEntity(ctx, a.id);
+  const prefab = createPrefabEntity(ctx, prefabId);
   const eid = prefab.eid;
 
   addComponent(ctx.world, Owned, eid);
@@ -545,7 +333,9 @@ export const updateSpawnablesXR = (
   // place object at direction
   vec3.add(prefab.position, prefab.position, direction);
 
-  vec3.scale(direction, direction, THROW_FORCE / 33);
+  const throwForce = isXR ? THROW_FORCE / 33 : THROW_FORCE;
+
+  vec3.scale(direction, direction, throwForce);
 
   _impulse.fromArray(direction);
 
@@ -553,7 +343,7 @@ export const updateSpawnablesXR = (
 
   if (!body) {
     console.warn("could not find RigidBody for spawned entity " + eid);
-    return;
+    return true;
   }
 
   prefab.quaternion.set(_spawnWorldQuat);
@@ -567,4 +357,6 @@ export const updateSpawnablesXR = (
   }
 
   addObjectToWorld(ctx, prefab);
-};
+
+  return true;
+}

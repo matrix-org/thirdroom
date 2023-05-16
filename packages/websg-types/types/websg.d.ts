@@ -303,6 +303,8 @@ declare namespace WebSG {
 
   class Texture {}
 
+  class Image {}
+
   interface UIButtonProps extends UITextProps {
     label?: string;
   }
@@ -516,6 +518,7 @@ declare namespace WebSG {
     createScene(props?: SceneProps): Scene;
     findSceneByName(name: string): Scene | undefined;
     findTextureByName(name: string): Texture | undefined;
+    findImageByName(name: string): Image | undefined;
     createUICanvas(props?: UICanvasProps): UICanvas;
     findUICanvasByName(name: string): UICanvas | undefined;
     createUIElement(props?: UIElementProps): UIElement;
@@ -570,12 +573,36 @@ declare namespace WebSGNetworking {
 
 declare const network: WebSGNetworking.Network;
 
-interface ThirdRoom {
+declare namespace ThirdRoom {
+  class ActionBarListener {
+    actions(): ActionBarIterator;
+    dispose(): undefined;
+  }
+
+  class ActionBarIterator {
+    next(): { value: string; done: boolean };
+    [Symbol.iterator](): ActionBarIterator;
+  }
+
+  interface ActionBarItem {
+    id: string;
+    label: string;
+    thumbnail: WebSG.Image;
+  }
+
+  class ActionBar {
+    setItems(items: ActionBarItem[]): undefined;
+    createListener(): ActionBarListener;
+  }
+}
+
+declare class ThirdRoom {
   enableMatrixMaterial(enabled: boolean): undefined;
   getAudioDataSize(): number;
   getAudioTimeData(data: Float32Array): number;
   getAudioFrequencyData(data: Float32Array): number;
   inAR(): boolean;
+  get actionBar(): ThirdRoom.ActionBar;
 }
 
 declare const thirdroom: ThirdRoom;

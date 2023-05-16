@@ -3,13 +3,20 @@ import { BoxGeometry } from "three";
 import { vec2, vec4 } from "gl-matrix";
 
 import { GameState } from "../GameTypes";
-import { IRemoteResourceClass, RemoteResourceConstructor } from "../resource/RemoteResourceClass";
-import { getRemoteResources } from "../resource/resource.game";
 import {
+  getScriptResource,
+  getScriptResourceByNamePtr,
+  getScriptResourceRef,
+  readEnum,
   readFloat32ArrayInto,
+  readFloatList,
+  readList,
+  readRefMap,
+  readResourceRef,
   readSharedArrayBuffer,
   readString,
   readStringFromCursorView,
+  readStringLen,
   readUint8Array,
   WASMModuleContext,
   writeFloat32Array,
@@ -22,6 +29,7 @@ import {
   RemoteBufferView,
   RemoteCamera,
   RemoteCollider,
+  RemoteImage,
   RemoteInteractable,
   RemoteLight,
   RemoteMaterial,
@@ -75,85 +83,6 @@ import { addInteractableComponent } from "../../plugins/interaction/interaction.
 import { addUIElementChild, initNodeUICanvas, removeUIElementChild } from "../ui/ui.game";
 import { startOrbit, stopOrbit } from "../../plugins/camera/CameraRig.game";
 import { GLTFComponentPropertyStorageTypeToEnum, setComponentStore } from "../resource/ComponentStore";
-
-export function getScriptResource<T extends RemoteResourceConstructor>(
-  wasmCtx: WASMModuleContext,
-  resourceConstructor: T,
-  resourceId: number
-): InstanceType<T> | undefined {
-  const { resourceIds, resourceMap } = wasmCtx.resourceManager;
-  const { name, resourceType } = resourceConstructor.resourceDef;
-
-  if (!resourceIds.has(resourceId)) {
-    console.error(`WebSG: missing or unpermitted use of ${name}: ${resourceId}`);
-    return undefined;
-  }
-
-  const resource = resourceMap.get(resourceId) as InstanceType<T> | undefined;
-
-  if (!resource) {
-    console.error(`WebSG: missing ${name}: ${resourceId}`);
-    return undefined;
-  }
-
-  if (resource.resourceType !== resourceType) {
-    console.error(`WebSG: id does not point to a ${name}: ${resourceId}`);
-    return undefined;
-  }
-
-  return resource;
-}
-
-function getScriptResourceByName<T extends RemoteResourceConstructor>(
-  ctx: GameState,
-  wasmCtx: WASMModuleContext,
-  resourceConstructor: T,
-  name: string
-): InstanceType<T> | undefined {
-  const resources = getRemoteResources(ctx, resourceConstructor as IRemoteResourceClass<T["resourceDef"]>);
-
-  const resourceIds = wasmCtx.resourceManager.resourceIds;
-
-  for (let i = 0; i < resources.length; i++) {
-    const resource = resources[i];
-
-    if (resource.name === name && resourceIds.has(resource.eid)) {
-      return resource as InstanceType<T>;
-    }
-  }
-
-  return undefined;
-}
-
-function getScriptResourceByNamePtr<T extends RemoteResourceConstructor>(
-  ctx: GameState,
-  wasmCtx: WASMModuleContext,
-  resourceConstructor: T,
-  namePtr: number,
-  byteLength: number
-): InstanceType<T> | undefined {
-  const name = readString(wasmCtx, namePtr, byteLength);
-  return getScriptResourceByName(ctx, wasmCtx, resourceConstructor, name);
-}
-
-function getScriptResourceRef<T extends RemoteResourceConstructor>(
-  wasmCtx: WASMModuleContext,
-  resourceConstructor: T,
-  refResource: InstanceType<T> | undefined
-): number {
-  if (!refResource) {
-    return 0;
-  }
-
-  const resourceId = refResource.eid;
-
-  if (!wasmCtx.resourceManager.resourceIds.has(resourceId)) {
-    console.error(`WebSG: missing or unpermitted use of ${resourceConstructor.name}: ${resourceId}`);
-    return 0;
-  }
-
-  return resourceId;
-}
 
 function getScriptChildCount(wasmCtx: WASMModuleContext, node: RemoteNode | RemoteScene): number {
   const resourceIds = wasmCtx.resourceManager.resourceIds;
@@ -316,92 +245,6 @@ function readExtensionsAndExtras<T extends { [key: string]: unknown }>(
   }
 
   return extensions as Partial<T>;
-}
-
-function readFloatList(wasmCtx: WASMModuleContext): Float32Array | undefined {
-  const itemsPtr = readUint32(wasmCtx.cursorView);
-  const count = readUint32(wasmCtx.cursorView);
-
-  if (count === 0) {
-    return undefined;
-  }
-
-  const rewind = rewindCursorView(wasmCtx.cursorView);
-  moveCursorView(wasmCtx.cursorView, itemsPtr);
-  const arr = readFloat32Array(wasmCtx.cursorView, count);
-  rewind();
-  return arr;
-}
-
-function readStringLen(wasmCtx: WASMModuleContext): string {
-  const strPtr = readUint32(wasmCtx.cursorView);
-  const byteLength = readUint32(wasmCtx.cursorView);
-  const rewind = rewindCursorView(wasmCtx.cursorView);
-  const value = readString(wasmCtx, strPtr, byteLength);
-  rewind();
-  return value;
-}
-
-function readList<T>(wasmCtx: WASMModuleContext, readItem: (wasmCtx: WASMModuleContext, index: number) => T): T[] {
-  const items: T[] = [];
-
-  const itemsPtr = readUint32(wasmCtx.cursorView);
-  const count = readUint32(wasmCtx.cursorView);
-  const rewind = rewindCursorView(wasmCtx.cursorView);
-  moveCursorView(wasmCtx.cursorView, itemsPtr);
-
-  for (let i = 0; i < count; i++) {
-    items.push(readItem(wasmCtx, i));
-  }
-
-  rewind();
-
-  return items;
-}
-
-function readEnum<T extends {}>(wasmCtx: WASMModuleContext, enumType: T, enumName: string): number {
-  const enumValue = readUint32(wasmCtx.cursorView);
-
-  if (enumValue in enumType) {
-    return enumValue;
-  }
-
-  throw new Error(`WebSG: ${enumValue} is not a valid ${enumName} `);
-}
-
-function readResourceRef<T extends RemoteResourceConstructor>(
-  wasmCtx: WASMModuleContext,
-  resourceConstructor: T
-): InstanceType<T> | undefined {
-  const resourceId = readUint32(wasmCtx.cursorView);
-  return resourceId ? getScriptResource(wasmCtx, resourceConstructor, resourceId) : undefined;
-}
-
-function readRefMap<T extends RemoteResourceConstructor>(
-  wasmCtx: WASMModuleContext,
-  resourceConstructor: T
-): { [key: string]: InstanceType<T> } {
-  const map: { [key: number]: InstanceType<T> } = {};
-
-  const itemsPtr = readUint32(wasmCtx.cursorView);
-  const count = readUint32(wasmCtx.cursorView);
-  const rewind = rewindCursorView(wasmCtx.cursorView);
-  moveCursorView(wasmCtx.cursorView, itemsPtr);
-
-  for (let i = 0; i < count; i++) {
-    const key = readEnum(wasmCtx, MeshPrimitiveAttributeIndex, "MeshPrimitiveAttributeIndex");
-    const value = readResourceRef(wasmCtx, resourceConstructor);
-
-    if (!value) {
-      throw new Error(`Failed to read resource ref for key ${key}`);
-    }
-
-    map[key] = value;
-  }
-
-  rewind();
-
-  return map;
 }
 
 // MaterialTextureInfoProps
@@ -1497,11 +1340,16 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
         const primitiveProps: MeshPrimitiveProps[] = readList(wasmCtx, () => {
           readExtensionsAndExtras(wasmCtx);
-          const attributes = readRefMap(wasmCtx, RemoteAccessor);
+          const attributes = readRefMap(
+            wasmCtx,
+            MeshPrimitiveAttributeIndex,
+            "MeshPrimitiveAttributeIndex",
+            RemoteAccessor
+          );
           const indices = readResourceRef(wasmCtx, RemoteAccessor);
           const material = readResourceRef(wasmCtx, RemoteMaterial);
           const mode = readUint32(wasmCtx.cursorView);
-          readRefMap(wasmCtx, RemoteAccessor); // targets (currently unused)
+          readRefMap(wasmCtx, MeshPrimitiveAttributeIndex, "MeshPrimitiveAttributeIndex", RemoteAccessor); // targets (currently unused)
 
           if (MeshPrimitiveMode[mode] === undefined) {
             throw new Error(`WebSG: invalid mesh primitive mode: ${mode}`);
@@ -1941,6 +1789,10 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
     },
     world_find_texture_by_name(namePtr: number, byteLength: number) {
       const texture = getScriptResourceByNamePtr(ctx, wasmCtx, RemoteTexture, namePtr, byteLength);
+      return texture ? texture.eid : 0;
+    },
+    world_find_image_by_name(namePtr: number, byteLength: number) {
+      const texture = getScriptResourceByNamePtr(ctx, wasmCtx, RemoteImage, namePtr, byteLength);
       return texture ? texture.eid : 0;
     },
     world_create_light(propsPtr: number) {

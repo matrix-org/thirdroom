@@ -29,6 +29,7 @@ import {
   EnteredWorldMessage,
   EnterWorldErrorMessage,
   FindResourceRetainersMessage,
+  ActionBarItem,
 } from "./thirdroom.common";
 import { createNodeFromGLTFURI, loadDefaultGLTFScene, loadGLTF } from "../../engine/gltf/gltf.game";
 import { createRemotePerspectiveCamera, getCamera } from "../../engine/camera/camera.game";
@@ -91,12 +92,22 @@ import { waitUntil } from "../../engine/utils/waitUntil";
 import { findResourceRetainerRoots, findResourceRetainers } from "../../engine/resource/findResourceRetainers";
 import { teleportEntity } from "../../engine/utils/teleportEntity";
 import { getAvatar } from "../avatars/getAvatar";
-import { ActionMap, ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
+import { ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
 import { createLineMesh } from "../../engine/mesh/mesh.game";
 import { RemoteResource } from "../../engine/resource/RemoteResourceClass";
 import { addCameraRig, CameraRigModule, CameraRigType } from "../camera/CameraRig.game";
+import { actionBarMap, setDefaultActionBarItems } from "./action-bar.game";
 
-type ThirdRoomModuleState = {};
+export interface ActionBarListener {
+  id: number;
+  actions: string[];
+}
+
+export interface ThirdRoomModuleState {
+  actionBarItems: ActionBarItem[];
+  actionBarListeners: ActionBarListener[];
+  nextActionBarListenerId: number;
+}
 
 const addAvatarController = (ctx: GameState, input: GameInputModule, eid: number) => {
   const defaultController = input.defaultController;
@@ -214,7 +225,11 @@ function getSpawnPoints(ctx: GameState): RemoteNode[] {
 export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
   name: "thirdroom",
   create() {
-    return {};
+    return {
+      actionBarItems: [],
+      actionBarListeners: [],
+      nextActionBarListenerId: 1,
+    };
   },
   async init(ctx) {
     const input = getModule(ctx, InputModule);
@@ -298,7 +313,36 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
       }
     });
 
-    enableActionMap(input.defaultController, actionMap);
+    enableActionMap(input.defaultController, {
+      id: "thirdroom-action-map",
+      actionDefs: [
+        {
+          id: "toggleFlyMode",
+          path: "toggleFlyMode",
+          type: ActionType.Button,
+          bindings: [
+            {
+              type: BindingType.Button,
+              path: "Keyboard/KeyB",
+            },
+          ],
+          networked: true,
+        },
+        {
+          id: "toggleThirdPerson",
+          path: "toggleThirdPerson",
+          type: ActionType.Button,
+          bindings: [
+            {
+              type: BindingType.Button,
+              path: "Keyboard/KeyV",
+            },
+          ],
+        },
+      ],
+    });
+
+    enableActionMap(input.defaultController, actionBarMap);
 
     return () => {
       for (const dispose of disposables) {
@@ -307,35 +351,6 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
     };
   },
 });
-
-const actionMap: ActionMap = {
-  id: "thirdroom-action-map",
-  actionDefs: [
-    {
-      id: "toggleFlyMode",
-      path: "toggleFlyMode",
-      type: ActionType.Button,
-      bindings: [
-        {
-          type: BindingType.Button,
-          path: "Keyboard/KeyB",
-        },
-      ],
-      networked: true,
-    },
-    {
-      id: "toggleThirdPerson",
-      path: "toggleThirdPerson",
-      type: ActionType.Button,
-      bindings: [
-        {
-          type: BindingType.Button,
-          path: "Keyboard/KeyV",
-        },
-      ],
-    },
-  ],
-};
 
 async function onLoadWorld(ctx: GameState, message: LoadWorldMessage) {
   try {
@@ -477,6 +492,8 @@ function disposeWorld(worldResource: RemoteWorld) {
 
 async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, fileMap?: Map<string, string>) {
   disposeWorld(ctx.worldResource);
+
+  setDefaultActionBarItems(ctx);
 
   const transientScene = new RemoteScene(ctx.resourceManager, {
     name: "Transient Scene",

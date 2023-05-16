@@ -16,11 +16,14 @@ import {
   EnterWorldErrorMessage,
   EnterWorldMessage,
   FindResourceRetainersMessage,
+  SetActionBarItemsMessage,
+  ActionBarItem,
 } from "./thirdroom.common";
 
 interface ThirdRoomModuleState {
   messageId: number;
   environmentUrl?: string;
+  actionBarItems: ActionBarItem[];
 }
 
 export const ThirdroomModule = defineModule<IMainThreadContext, ThirdRoomModuleState>({
@@ -28,6 +31,7 @@ export const ThirdroomModule = defineModule<IMainThreadContext, ThirdRoomModuleS
   create() {
     return {
       messageId: 0,
+      actionBarItems: [],
     };
   },
   init(ctx) {
@@ -61,6 +65,10 @@ export const ThirdroomModule = defineModule<IMainThreadContext, ThirdRoomModuleS
         type: PhysicsMessageType.TogglePhysicsDebug,
       });
     });
+
+    return createDisposables([
+      registerMessageHandler(ctx, ThirdRoomMessageType.SetActionBarItems, onSetActionBarItems),
+    ]);
   },
 });
 
@@ -161,4 +169,9 @@ export function togglePhysicsDebug(ctx: IMainThreadContext) {
   ctx.sendMessage<TogglePhysicsDebugMessage>(Thread.Game, {
     type: PhysicsMessageType.TogglePhysicsDebug,
   });
+}
+
+function onSetActionBarItems(ctx: IMainThreadContext, message: SetActionBarItemsMessage) {
+  const thirdroom = getModule(ctx, ThirdroomModule);
+  thirdroom.actionBarItems = message.actionBarItems;
 }

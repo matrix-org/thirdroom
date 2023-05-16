@@ -1,3 +1,6 @@
+import { ThirdRoomMessageType } from "../../plugins/thirdroom/thirdroom.common";
+import { ThirdRoomModule } from "../../plugins/thirdroom/thirdroom.game";
+import { moveCursorView } from "../allocator/CursorView";
 import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 import { FREQ_BIN_COUNT } from "../audio/audio.common";
 import { AudioModule } from "../audio/audio.game";
@@ -5,9 +8,21 @@ import { GameState } from "../GameTypes";
 import { getModule, Thread } from "../module/module.common";
 import { EnableMatrixMaterialMessage, RendererMessageType, XRMode } from "../renderer/renderer.common";
 import { getXRMode } from "../renderer/renderer.game";
-import { WASMModuleContext, writeEncodedString, writeUint8Array } from "./WASMModuleContext";
+import { RemoteImage } from "../resource/RemoteResources";
+import { getRemoteImageUrl } from "../utils/textures";
+import {
+  readList,
+  readResourceRef,
+  readStringFromCursorView,
+  WASMModuleContext,
+  writeEncodedString,
+  writeString,
+  writeUint8Array,
+} from "./WASMModuleContext";
 
 export function createThirdroomModule(ctx: GameState, wasmCtx: WASMModuleContext) {
+  const thirdroom = getModule(ctx, ThirdRoomModule);
+
   return {
     get_js_source_size() {
       return wasmCtx.encodedJSSource ? wasmCtx.encodedJSSource.byteLength + 1 : 0;
@@ -49,5 +64,97 @@ export function createThirdroomModule(ctx: GameState, wasmCtx: WASMModuleContext
       const sceneSupportsAR = ctx.worldResource.environment?.publicScene.supportsAR || false;
       return ourXRMode === XRMode.ImmersiveAR && sceneSupportsAR ? 1 : 0;
     },
+    action_bar_set_items(itemsPtr: number) {
+      try {
+        thirdroom.actionBarItems.length = 0;
+
+        moveCursorView(wasmCtx.cursorView, itemsPtr);
+        readList(wasmCtx, () => {
+          const id = readStringFromCursorView(wasmCtx);
+          const label = readStringFromCursorView(wasmCtx);
+          const thumbnail = readResourceRef(wasmCtx, RemoteImage);
+
+          if (!thumbnail) {
+            throw new Error("Thirdroom: No thumbnail set for action bar item");
+          }
+
+          thirdroom.actionBarItems.push({
+            id,
+            label,
+            thumbnail: getRemoteImageUrl(thumbnail),
+          });
+        });
+
+        ctx.sendMessage(Thread.Main, {
+          type: ThirdRoomMessageType.SetActionBarItems,
+          actionBarItems: thirdroom.actionBarItems,
+        });
+
+        return 0;
+      } catch (error) {
+        console.error("Thirdroom: Error setting action bar items:", error);
+        return -1;
+      }
+    },
+    action_bar_create_listener() {
+      const id = thirdroom.nextActionBarListenerId++;
+
+      thirdroom.actionBarListeners.push({
+        id,
+        actions: [],
+      });
+
+      return id;
+    },
+    action_bar_listener_dispose(listenerId: number) {
+      const index = thirdroom.actionBarListeners.findIndex((l) => l.id === listenerId);
+
+      if (index === -1) {
+        console.error("Thirdroom: No action bar listener with id", listenerId);
+        return -1;
+      }
+
+      thirdroom.actionBarListeners.splice(index, 1);
+
+      return 0;
+    },
+    action_bar_listener_get_next_action_length(listenerId: number) {
+      const listener = thirdroom.actionBarListeners.find((l) => l.id === listenerId);
+
+      if (!listener) {
+        console.error("Thirdroom: No action bar listener with id", listenerId);
+        return -1;
+      }
+
+      if (listener.actions.length === 0) {
+        return 0;
+      }
+
+      const action = listener.actions[0];
+
+      return action.length;
+    },
+    action_bar_listener_get_next_action(listenerId: number, idPtr: number) {
+      const listener = thirdroom.actionBarListeners.find((l) => l.id === listenerId);
+
+      if (!listener) {
+        console.error("Thirdroom: No action bar listener with id", listenerId);
+        return -1;
+      }
+
+      const action = listener.actions.shift();
+
+      if (action) {
+        writeString(wasmCtx, idPtr, action);
+      }
+
+      return listener.actions.length;
+    },
   };
+}
+
+export function disposeThirdroomWebSGModule(ctx: GameState) {
+  const thirdroom = getModule(ctx, ThirdRoomModule);
+  thirdroom.actionBarListeners.length = 0;
+  thirdroom.nextActionBarListenerId = 1;
 }
