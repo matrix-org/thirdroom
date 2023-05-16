@@ -6,7 +6,12 @@ import { SpawnPoint } from "../../engine/component/SpawnPoint";
 import { addChild } from "../../engine/component/transform";
 import { GameState } from "../../engine/GameTypes";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
-import { associatePeerWithEntity, GameNetworkState, NetworkModule } from "../../engine/network/network.game";
+import {
+  associatePeerWithEntity,
+  GameNetworkState,
+  NetworkModule,
+  setLocalPeerId,
+} from "../../engine/network/network.game";
 import { Networked, Owned } from "../../engine/network/NetworkComponents";
 import {
   EnterWorldMessage,
@@ -24,12 +29,18 @@ import {
   EnteredWorldMessage,
   EnterWorldErrorMessage,
   FindResourceRetainersMessage,
+  ActionBarItem,
 } from "./thirdroom.common";
 import { createNodeFromGLTFURI, loadDefaultGLTFScene, loadGLTF } from "../../engine/gltf/gltf.game";
 import { createRemotePerspectiveCamera, getCamera } from "../../engine/camera/camera.game";
 import { createPrefabEntity, PrefabType, registerPrefab } from "../../engine/prefab/prefab.game";
 import { addFlyControls, FlyControls } from "../FlyCharacterController";
-import { addRigidBody, PhysicsModule, PhysicsModuleState } from "../../engine/physics/physics.game";
+import {
+  addRigidBody,
+  PhysicsModule,
+  PhysicsModuleState,
+  registerCollisionHandler,
+} from "../../engine/physics/physics.game";
 import { waitForCurrentSceneToRender } from "../../engine/renderer/renderer.game";
 import { boundsCheckCollisionGroups } from "../../engine/physics/CollisionGroups";
 import { OurPlayer, ourPlayerQuery, Player } from "../../engine/component/Player";
@@ -86,12 +97,16 @@ import { waitUntil } from "../../engine/utils/waitUntil";
 import { findResourceRetainerRoots, findResourceRetainers } from "../../engine/resource/findResourceRetainers";
 import { teleportEntity } from "../../engine/utils/teleportEntity";
 import { getAvatar } from "../avatars/getAvatar";
-import { ActionMap, ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
+import { ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
 import { createLineMesh } from "../../engine/mesh/mesh.game";
 import { RemoteResource } from "../../engine/resource/RemoteResourceClass";
 import { addCameraRig, CameraRigModule, CameraRigType } from "../camera/CameraRig.game";
+import { actionBarMap, setDefaultActionBarItems } from "./action-bar.game";
+import { createDisposables } from "../../engine/utils/createDisposables";
 
-type ThirdRoomModuleState = {};
+export interface ThirdRoomModuleState {
+  actionBarItems: ActionBarItem[];
+}
 
 const addAvatarController = (ctx: GameState, input: GameInputModule, eid: number) => {
   const defaultController = input.defaultController;
@@ -209,13 +224,15 @@ function getSpawnPoints(ctx: GameState): RemoteNode[] {
 export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
   name: "thirdroom",
   create() {
-    return {};
+    return {
+      actionBarItems: [],
+    };
   },
   async init(ctx) {
     const input = getModule(ctx, InputModule);
     const physics = getModule(ctx, PhysicsModule);
 
-    const disposables = [
+    const dispose = createDisposables([
       registerMessageHandler(ctx, ThirdRoomMessageType.LoadWorld, onLoadWorld),
       registerMessageHandler(ctx, ThirdRoomMessageType.EnterWorld, onEnterWorld),
       registerMessageHandler(ctx, ThirdRoomMessageType.ExitWorld, onExitWorld),
@@ -224,7 +241,7 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
       registerMessageHandler(ctx, ThirdRoomMessageType.PrintResources, onPrintResources),
       registerMessageHandler(ctx, ThirdRoomMessageType.GLTFViewerLoadGLTF, onGLTFViewerLoadGLTF),
       registerMessageHandler(ctx, ThirdRoomMessageType.FindResourceRetainers, onFindResourceRetainers),
-    ];
+    ]);
 
     loadGLTF(ctx, "/gltf/full-animation-rig.glb").catch((error) => {
       console.error("Error loading avatar:", error);
@@ -261,7 +278,7 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
     });
 
     // create out of bounds floor check
-    const { collisionHandlers, physicsWorld } = getModule(ctx, PhysicsModule);
+    const { physicsWorld } = getModule(ctx, PhysicsModule);
     const rigidBody = physicsWorld.createRigidBody(RAPIER.RigidBodyDesc.fixed());
     const size = 10000;
     const colliderDesc = RAPIER.ColliderDesc.cuboid(size, 50, size)
@@ -275,11 +292,11 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
     addRigidBody(ctx, oobCollider, rigidBody);
     addChild(ctx.worldResource.persistentScene, oobCollider);
 
-    collisionHandlers.push((eid1: number, eid2: number, handle1: number, handle2: number) => {
+    const disposeCollisionHandler = registerCollisionHandler(ctx, (eid1, eid2, handle1, handle2, started) => {
       const objectEid = handle1 !== rigidBody.handle ? eid1 : handle2 !== rigidBody.handle ? eid2 : undefined;
       const floorHandle = handle1 === rigidBody.handle ? handle1 : handle2 === rigidBody.handle ? handle2 : undefined;
 
-      if (floorHandle === undefined || objectEid === undefined) {
+      if (floorHandle === undefined || objectEid === undefined || !started) {
         return;
       }
 
@@ -293,44 +310,43 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
       }
     });
 
-    enableActionMap(input.defaultController, actionMap);
+    enableActionMap(input.defaultController, {
+      id: "thirdroom-action-map",
+      actionDefs: [
+        {
+          id: "toggleFlyMode",
+          path: "toggleFlyMode",
+          type: ActionType.Button,
+          bindings: [
+            {
+              type: BindingType.Button,
+              path: "Keyboard/KeyB",
+            },
+          ],
+          networked: true,
+        },
+        {
+          id: "toggleThirdPerson",
+          path: "toggleThirdPerson",
+          type: ActionType.Button,
+          bindings: [
+            {
+              type: BindingType.Button,
+              path: "Keyboard/KeyV",
+            },
+          ],
+        },
+      ],
+    });
+
+    enableActionMap(input.defaultController, actionBarMap);
 
     return () => {
-      for (const dispose of disposables) {
-        dispose();
-      }
+      dispose();
+      disposeCollisionHandler();
     };
   },
 });
-
-const actionMap: ActionMap = {
-  id: "thirdroom-action-map",
-  actionDefs: [
-    {
-      id: "toggleFlyMode",
-      path: "toggleFlyMode",
-      type: ActionType.Button,
-      bindings: [
-        {
-          type: BindingType.Button,
-          path: "Keyboard/KeyB",
-        },
-      ],
-      networked: true,
-    },
-    {
-      id: "toggleThirdPerson",
-      path: "toggleThirdPerson",
-      type: ActionType.Button,
-      bindings: [
-        {
-          type: BindingType.Button,
-          path: "Keyboard/KeyV",
-        },
-      ],
-    },
-  ],
-};
 
 async function onLoadWorld(ctx: GameState, message: LoadWorldMessage) {
   try {
@@ -369,6 +385,8 @@ async function onEnterWorld(ctx: GameState, message: EnterWorldMessage) {
     const network = getModule(ctx, NetworkModule);
     const physics = getModule(ctx, PhysicsModule);
     const input = getModule(ctx, InputModule);
+
+    setLocalPeerId(ctx, message.localPeerId);
 
     loadPlayerRig(ctx, physics, input, network);
 
@@ -470,6 +488,8 @@ function disposeWorld(worldResource: RemoteWorld) {
 
 async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, fileMap?: Map<string, string>) {
   disposeWorld(ctx.worldResource);
+
+  setDefaultActionBarItems(ctx);
 
   const transientScene = new RemoteScene(ctx.resourceManager, {
     name: "Transient Scene",

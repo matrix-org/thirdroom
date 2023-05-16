@@ -66,10 +66,10 @@ describe.skip("JS Scripting API", () => {
         memory,
       },
       wasi_snapshot_preview1: createWASIModule(wasmCtx),
-      matrix: mockObject(createMatrixWASMModule(ctx, wasmCtx)),
-      websg: mockObject(createWebSGModule(ctx, wasmCtx)),
-      websg_network: mockObject(createWebSGNetworkModule(ctx, wasmCtx)),
-      thirdroom: mockObject(createThirdroomModule(ctx, wasmCtx), ["get_js_source", "get_js_source_size"]),
+      matrix: mockObject(createMatrixWASMModule(ctx, wasmCtx)[0]),
+      websg: mockObject(createWebSGModule(ctx, wasmCtx)[0]),
+      websg_network: mockObject(createWebSGNetworkModule(ctx, wasmCtx)[0]),
+      thirdroom: mockObject(createThirdroomModule(ctx, wasmCtx)[0], ["get_js_source", "get_js_source_size"]),
     };
     const { instance } = await WebAssembly.instantiate(wasmBuffer, imports);
 

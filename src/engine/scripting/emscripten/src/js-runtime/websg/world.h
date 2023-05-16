@@ -11,6 +11,7 @@ typedef struct WebSGWorldData {
   JSValue nodes;
   JSValue scenes;
   JSValue textures;
+  JSValue images;
   JSValue ui_canvases;
   JSValue ui_elements;
   JSValue component_stores;

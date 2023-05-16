@@ -1,8 +1,18 @@
 #include <math.h>
 #include <stdint.h>
 #include "../quickjs/quickjs.h"
+#include "../quickjs/cutils.h"
 #include "../../thirdroom.h"
 #include "./thirdroom-js.h"
+#include "./action-bar.h"
+#include "./action-bar-listener.h"
+#include "./action-bar-iterator.h"
+
+JSClassID js_thirdroom_class_id;
+
+static JSClassDef js_thirdroom_class = {
+  "ThirdRoom"
+};
 
 static JSValue js_thirdroom_enable_matrix_material(
   JSContext *ctx,
@@ -60,45 +70,51 @@ static JSValue js_thirdroom_in_ar(JSContext *ctx, JSValueConst this_val, int arg
   return JS_NewBool(ctx, thirdroom_in_ar());
 }
 
+static const JSCFunctionListEntry js_thirdroom_funcs[] = {
+  JS_CFUNC_DEF("enableMatrixMaterial", 1, js_thirdroom_enable_matrix_material),
+  JS_CFUNC_DEF("getAudioDataSize", 0, js_thirdroom_get_audio_data_size),
+  JS_CFUNC_DEF("getAudioTimeData", 1, js_thirdroom_get_audio_time_data),
+  JS_CFUNC_DEF("getAudioFrequencyData", 1, js_thirdroom_get_audio_frequency_data),
+  JS_CFUNC_DEF("inAR", 0, js_thirdroom_in_ar),
+  JS_PROP_STRING_DEF("[Symbol.toStringTag]", "ThirdRoom", JS_PROP_CONFIGURABLE),
+};
+
+static JSValue js_thirdroom_constructor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  return JS_ThrowTypeError(ctx, "Illegal Constructor.");
+}
+
 void js_define_thirdroom_api(JSContext *ctx) {
   JSValue global = JS_GetGlobalObject(ctx);
 
-  JSValue thirdroom = JS_NewObject(ctx);
-  
+  JS_NewClassID(&js_thirdroom_class_id);
+  JS_NewClass(JS_GetRuntime(ctx), js_thirdroom_class_id, &js_thirdroom_class);
+  JSValue thirdroom_class = JS_NewObject(ctx);
+  JS_SetPropertyFunctionList(ctx, thirdroom_class, js_thirdroom_funcs, countof(js_thirdroom_funcs));
+  JS_SetClassProto(ctx, js_thirdroom_class_id, thirdroom_class);
+
+  JSValue constructor = JS_NewCFunction2(
+    ctx,
+    js_thirdroom_constructor,
+    "ThirdRoom",
+    0,
+    JS_CFUNC_constructor,
+    0
+  );
+  JS_SetConstructor(ctx, constructor, thirdroom_class);
   JS_SetPropertyStr(
     ctx,
-    thirdroom,
-    "enableMatrixMaterial",
-    JS_NewCFunction(ctx, js_thirdroom_enable_matrix_material, "enableMatrixMaterial", 1)
+    global,
+    "ThirdRoom",
+    constructor
   );
 
-  JS_SetPropertyStr(
-    ctx,
-    thirdroom,
-    "getAudioDataSize",
-    JS_NewCFunction(ctx, js_thirdroom_get_audio_data_size, "getAudioDataSize", 0)
-  );
-  
-  JS_SetPropertyStr(
-    ctx,
-    thirdroom,
-    "getAudioTimeData",
-    JS_NewCFunction(ctx, js_thirdroom_get_audio_time_data, "getAudioTimeData", 1)
-  );
+  JSValue thirdroom = JS_NewObjectClass(ctx, js_thirdroom_class_id);
 
-  JS_SetPropertyStr(
-    ctx,
-    thirdroom,
-    "getAudioFrequencyData",
-    JS_NewCFunction(ctx, js_thirdroom_get_audio_frequency_data, "getAudioFrequencyData", 1)
-  );
+  js_thirdroom_define_action_bar(ctx, thirdroom_class);
+  js_thirdroom_define_action_bar_listener(ctx, thirdroom_class);
+  js_thirdroom_define_action_bar_iterator(ctx);
 
-  JS_SetPropertyStr(
-    ctx,
-    thirdroom,
-    "inAR",
-    JS_NewCFunction(ctx, js_thirdroom_in_ar, "inAR", 0)
-  );
+  JS_SetPropertyStr(ctx, thirdroom, "actionBar", js_thirdroom_new_action_bar(ctx));
 
   JS_SetPropertyStr(ctx, global, "thirdroom", thirdroom);
 }

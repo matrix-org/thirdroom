@@ -14,11 +14,13 @@ export enum ThirdRoomMessageType {
   GLTFViewerLoadError = "gltf-viewer-load-error",
   ReticleFocus = "reticle-focus",
   FindResourceRetainers = "find-resource-retainers",
+  SetActionBarItems = "set-action-bar-items",
 }
 
 export interface EnterWorldMessage {
   type: ThirdRoomMessageType.EnterWorld;
   id: number;
+  localPeerId: string;
 }
 
 export interface EnteredWorldMessage {
@@ -88,4 +90,16 @@ export interface GLTFViewerLoadErrorMessage {
 export interface FindResourceRetainersMessage {
   type: ThirdRoomMessageType.FindResourceRetainers;
   resourceId: number;
+}
+
+export interface ActionBarItem {
+  id: string;
+  label: string;
+  thumbnail: string;
+  spawnable?: boolean;
+}
+
+export interface SetActionBarItemsMessage {
+  type: ThirdRoomMessageType.SetActionBarItems;
+  actionBarItems: ActionBarItem[];
 }

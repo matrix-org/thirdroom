@@ -9,7 +9,6 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:testnet": "VITE_USE_TESTNET=true yarn dev",
     "build": "tsc && vite build",
     "build:scripting-runtime": "./src/engine/scripting/emscripten/build.sh",
     "build:examples": "./examples/build.sh",
@@ -126,7 +125,6 @@
     "vite-node": "^0.29.2",
     "vite-plugin-cross-origin-isolation": "^0.1.6",
     "vite-plugin-static-copy": "^0.13.0",
-    "vitest": "^0.29.2",
-    "ws": "^8.5.0"
+    "vitest": "^0.29.2"
   }
 }

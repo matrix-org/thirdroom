@@ -3,7 +3,7 @@ import { Client, GroupCall, Member, PowerLevels, SubscriptionHandle } from "@thi
 import { exitWorld } from "../../plugins/thirdroom/thirdroom.main";
 import { setLocalMediaStream } from "../audio/audio.main";
 import { IMainThreadContext } from "../MainThread";
-import { addPeer, disconnect, hasPeer, removePeer, setHost, setPeerId } from "./network.main";
+import { addPeer, disconnect, hasPeer, removePeer, setHost } from "./network.main";
 
 export interface MatrixNetworkInterface {
   dispose: () => void;
@@ -118,7 +118,6 @@ export async function createMatrixNetworkInterface(
 
   async function joinWorld(userId: string, isHost: boolean) {
     if (isHost) setHost(ctx, userId);
-    setPeerId(ctx, userId);
 
     unsubscibeMembersObservable = groupCall.members.subscribe({
       onAdd(_key, member) {
