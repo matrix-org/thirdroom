@@ -19,10 +19,21 @@ function memberComparator(a: Member, b: Member): number {
 
 function isOlderThanLocalHost(groupCall: GroupCall, member: Member): boolean {
   if (groupCall.eventTimestamp === member.eventTimestamp) {
-    return groupCall.deviceIndex! < member.deviceIndex;
+    return groupCall.deviceIndex! <= member.deviceIndex;
   }
 
   return groupCall.eventTimestamp! < member.eventTimestamp;
+}
+
+function getReliableHost(groupCall: GroupCall): Member | undefined {
+  const sortedMembers = Array.from(new Map(groupCall.members).values())
+    .sort(memberComparator)
+    .filter((member) => member.isConnected && member.dataChannel);
+
+  if (sortedMembers.length === 0) return undefined;
+  if (isOlderThanLocalHost(groupCall, sortedMembers[0])) return undefined;
+
+  return sortedMembers[0];
 }
 
 export async function createMatrixNetworkInterface(
@@ -52,91 +63,56 @@ export async function createMatrixNetworkInterface(
     // Wait for that member to be connected and return their user id
     // If the member hasn't connected in 10 seconds, return the longest connected user id
 
-    let hostId: string | undefined;
-
     return new Promise((resolve) => {
       let timeout: number | undefined = undefined;
 
+      const reliableHost = getReliableHost(groupCall);
+      if (reliableHost) {
+        resolve(reliableHost.userId);
+        return;
+      }
+      if (groupCall.members.size === 0) {
+        resolve(userId);
+        return;
+      }
+
       const unsubscribe = groupCall.members.subscribe({
-        onAdd(_key, member) {
-          // The host connected, resolve with their id
-          // NOTE: Do we also need to check for older events here? Maybe there's an older member and we
-          // haven't received their event yet?
-          if (hostId && member.userId === hostId && member.isConnected && member.dataChannel) {
+        onAdd() {
+          const host = getReliableHost(groupCall);
+          if (host) {
             clearTimeout(timeout);
             unsubscribe();
-            resolve(hostId);
+            resolve(host.userId);
           }
         },
-        onRemove(_key, member) {
-          if (hostId && member.userId === hostId) {
-            // The current host disconnected, pick the next best host
-            const sortedMembers = Array.from(new Map(groupCall.members).values()).sort(memberComparator);
-
-            // If there are no other members, you're the host
-            if (sortedMembers.length === 0 || !isOlderThanLocalHost(groupCall, sortedMembers[0])) {
-              clearTimeout(timeout);
-              unsubscribe();
-              resolve(userId);
-            } else {
-              const nextHost = sortedMembers[0];
-
-              // If the next best host is connected then resolve with their id
-              if (nextHost.isConnected && member.dataChannel) {
-                clearTimeout(timeout);
-                unsubscribe();
-                resolve(nextHost.userId);
-              } else {
-                hostId = nextHost.userId;
-              }
-            }
+        onRemove() {
+          const host = getReliableHost(groupCall);
+          if (host) {
+            clearTimeout(timeout);
+            unsubscribe();
+            resolve(host.userId);
           }
         },
         onReset() {
           throw new Error("Unexpected reset of groupCall.members");
         },
-        onUpdate(_key, member) {
-          // The host connected, resolve with their id
-          if (hostId && member.userId === hostId && member.isConnected && member.dataChannel) {
+        onUpdate() {
+          const host = getReliableHost(groupCall);
+          if (host) {
             clearTimeout(timeout);
             unsubscribe();
-            resolve(hostId);
+            resolve(host.userId);
           }
         },
       });
 
+      // wait if any member to become reliable.
+      // resolve otherwise
       timeout = window.setTimeout(() => {
-        // The host hasn't connected yet after 10 seconds. Use the oldest connected host instead.
         unsubscribe();
-
-        const sortedConnectedMembers = Array.from(new Map(groupCall.members).values())
-          .sort(memberComparator)
-          .filter((member) => member.isConnected && member.dataChannel);
-
-        if (sortedConnectedMembers.length > 0 && isOlderThanLocalHost(groupCall, sortedConnectedMembers[0])) {
-          resolve(sortedConnectedMembers[0].userId);
-        } else {
-          resolve(userId);
-        }
+        const host = getReliableHost(groupCall);
+        resolve(host?.userId ?? userId);
       }, 10000);
-
-      const initialSortedMembers = Array.from(new Map(groupCall.members).values()).sort(memberComparator);
-
-      if (initialSortedMembers.length === 0 || !isOlderThanLocalHost(groupCall, initialSortedMembers[0])) {
-        clearTimeout(timeout);
-        unsubscribe();
-        resolve(userId);
-      } else {
-        const hostMember = initialSortedMembers[0];
-
-        if (hostMember.isConnected && hostMember.dataChannel) {
-          clearTimeout(timeout);
-          unsubscribe();
-          resolve(hostMember.userId);
-        } else {
-          hostId = hostMember.userId;
-        }
-      }
     });
   }
 
@@ -176,22 +152,13 @@ export async function createMatrixNetworkInterface(
     // Of the connected members find the one whose member event is oldest
     // If the member has multiple devices get the device with the lowest device index
 
-    const sortedConnectedMembers = Array.from(new Map(groupCall.members).values())
-      .sort(memberComparator)
-      .filter((member) => member.isConnected && member.dataChannel);
+    const reliableHost = getReliableHost(groupCall);
 
-    if (sortedConnectedMembers.length === 0 || isOlderThanLocalHost(groupCall, sortedConnectedMembers[0])) {
-      setHost(ctx, userId);
-    } else {
+    if (reliableHost) {
       // TODO: use powerlevels to determine host
-      // find youngest member for now
-      const hostMember = sortedConnectedMembers.sort((a, b) => {
-        if (a.eventTimestamp === b.eventTimestamp) {
-          return a.deviceIndex! > b.deviceIndex ? 1 : -1;
-        }
-        return a.eventTimestamp! > b.eventTimestamp ? 1 : -1;
-      })[0];
-      setHost(ctx, hostMember.userId);
+      setHost(ctx, reliableHost.userId);
+    } else {
+      setHost(ctx, userId);
     }
   }
 
