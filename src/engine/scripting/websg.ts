@@ -1,8 +1,17 @@
-import { defineQuery, hasComponent, IComponent, QueryModifier as IQueryModifier, Not, IWorld } from "bitecs";
+import {
+  defineQuery,
+  hasComponent,
+  IComponent,
+  QueryModifier as IQueryModifier,
+  Not,
+  IWorld,
+  removeQuery,
+} from "bitecs";
 import { BoxGeometry } from "three";
 import { vec2, vec4 } from "gl-matrix";
+import RAPIER from "@dimforge/rapier3d-compat";
 
-import { GameState } from "../GameTypes";
+import { Collision, GameState } from "../GameTypes";
 import {
   getScriptResource,
   getScriptResourceByNamePtr,
@@ -74,9 +83,17 @@ import {
   readUint32List,
   rewindCursorView,
   skipUint32,
+  writeInt32,
+  writeUint32,
 } from "../allocator/CursorView";
 import { AccessorComponentTypeToTypedArray, AccessorTypeToElementSize } from "../accessor/accessor.common";
-import { addNodePhysicsBody, PhysicsModule, removeRigidBody, RigidBody } from "../physics/physics.game";
+import {
+  addNodePhysicsBody,
+  PhysicsModule,
+  registerCollisionHandler,
+  removeRigidBody,
+  RigidBody,
+} from "../physics/physics.game";
 import { getModule } from "../module/module.common";
 import { createMesh } from "../mesh/mesh.game";
 import { addInteractableComponent } from "../../plugins/interaction/interaction.game";
@@ -383,6 +400,8 @@ interface MeshPrimitiveProps {
   mode: MeshPrimitiveMode;
 }
 
+const tempVec3 = new RAPIER.Vector3(0, 0, 0);
+
 // TODO: ResourceManager should have a resourceMap that corresponds to just its owned resources
 // TODO: ResourceManager should have a resourceByType that corresponds to just its owned resources
 // TODO: Force disposal of all entities belonging to the wasmCtx when environment unloads
@@ -392,7 +411,29 @@ interface MeshPrimitiveProps {
 export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
   const physics = getModule(ctx, PhysicsModule);
 
-  return {
+  const disposeCollisionHandler = registerCollisionHandler(
+    ctx,
+    (nodeA: number, nodeB: number, _handleA: number, _handleB: number, started: boolean) => {
+      const resourceManager = wasmCtx.resourceManager;
+      const resourceIds = resourceManager.resourceIds;
+      const collisionListeners = resourceManager.collisionListeners;
+
+      if (resourceIds.has(nodeA) && resourceIds.has(nodeB)) {
+        const collision: Collision = {
+          nodeA,
+          nodeB,
+          started,
+        };
+
+        for (let i = 0; i < collisionListeners.length; i++) {
+          const listener = collisionListeners[i];
+          listener.collisions.push(collision);
+        }
+      }
+    }
+  );
+
+  const websgWASMModule = {
     world_get_environment() {
       return ctx.worldResource.environment?.publicScene.eid || 0;
     },
@@ -2070,6 +2111,87 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
       return node && hasComponent(ctx.world, RigidBody, node.eid) ? 1 : 0;
     },
+    physics_body_apply_impulse(nodeId: number, impulsePtr: number) {
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+      if (!node) {
+        return -1;
+      }
+
+      moveCursorView(wasmCtx.cursorView, impulsePtr);
+      tempVec3.x = readFloat32(wasmCtx.cursorView);
+      tempVec3.y = readFloat32(wasmCtx.cursorView);
+      tempVec3.z = readFloat32(wasmCtx.cursorView);
+
+      const body = RigidBody.store.get(node.eid);
+
+      if (!body) {
+        return -1;
+      }
+
+      body.applyImpulse(tempVec3, true);
+
+      return 0;
+    },
+    world_create_collision_listener() {
+      const resourceManager = wasmCtx.resourceManager;
+      const id = resourceManager.nextCollisionListenerId++;
+      resourceManager.collisionListeners.push({
+        id,
+        collisions: [],
+      });
+      return id;
+    },
+    collision_listener_dispose(listenerId: number) {
+      const resourceManager = wasmCtx.resourceManager;
+      const index = resourceManager.collisionListeners.findIndex((l) => l.id === listenerId);
+      if (index === -1) {
+        console.error(`WebSG: collision listener ${listenerId} not found.`);
+        return -1;
+      }
+      resourceManager.collisionListeners.splice(index, 1);
+      return 0;
+    },
+    collisions_listener_get_collision_count(listenerId: number) {
+      const resourceManager = wasmCtx.resourceManager;
+      const listener = resourceManager.collisionListeners.find((l) => l.id === listenerId);
+      if (!listener) {
+        console.error(`WebSG: collision listener ${listenerId} not found.`);
+        return -1;
+      }
+      return listener.collisions.length;
+    },
+    collisions_listener_get_collisions(listenerId: number, collisionsPtr: number, maxCollisions: number) {
+      const resourceManager = wasmCtx.resourceManager;
+      const listener = resourceManager.collisionListeners.find((l) => l.id === listenerId);
+
+      if (!listener) {
+        console.error(`WebSG: collision listener ${listenerId} not found.`);
+        return -1;
+      }
+
+      const collisions = listener.collisions;
+
+      if (collisions.length > maxCollisions) {
+        console.error(`WebSG: collision listener ${listenerId} has more collisions than maxCollisions.`);
+        return -1;
+      }
+
+      moveCursorView(wasmCtx.cursorView, collisionsPtr);
+
+      for (let i = 0; i < collisions.length; i++) {
+        const collision = collisions[i];
+        writeUint32(wasmCtx.cursorView, collision.nodeA);
+        writeUint32(wasmCtx.cursorView, collision.nodeB);
+        writeInt32(wasmCtx.cursorView, collision.started ? 1 : 0);
+      }
+
+      const count = collisions.length;
+
+      collisions.length = 0;
+
+      return count;
+    },
     // UI Canvas
     world_create_ui_canvas(propsPtr: number) {
       try {
@@ -3486,4 +3608,14 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       return 0;
     },
   };
+
+  const disposeWebSGWASMModule = () => {
+    for (const query of wasmCtx.resourceManager.registeredQueries.values()) {
+      removeQuery(ctx.world, query);
+    }
+
+    disposeCollisionHandler();
+  };
+
+  return [websgWASMModule, disposeWebSGWASMModule] as const;
 }

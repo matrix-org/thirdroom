@@ -259,7 +259,25 @@ declare namespace WebSG {
     inertiaTensor?: ArrayLike<number>;
   }
 
-  class PhysicsBody {}
+  class PhysicsBody {
+    applyImpulse(impulse: ArrayLike<number>): undefined;
+  }
+
+  class Collision {
+    nodeA: Node;
+    nodeB: Node;
+    started: boolean;
+  }
+
+  class CollisionIterator {
+    next(): { value: Collision; done: boolean };
+    [Symbol.iterator](): CollisionIterator;
+  }
+
+  class CollisionListener {
+    collisions(): CollisionIterator;
+    dispose(): void;
+  }
 
   class Quaternion {
     [n: number]: number;
@@ -525,6 +543,7 @@ declare namespace WebSG {
     createUIText(props?: UITextProps): UIText;
     createUIButton(props?: UIButtonProps): UIButton;
     findUIElementByName(name: string): UIElement | undefined;
+    createCollisionListener(): CollisionListener;
     stopOrbit(): undefined;
     onload: (() => any) | null;
     onenter: (() => any) | null;

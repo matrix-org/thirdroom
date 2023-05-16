@@ -12,7 +12,13 @@ import { defineModule, getModule, registerMessageHandler, Thread } from "../../e
 import { ownedNetworkedQuery } from "../../engine/network/network.game";
 import { Networked, Owned } from "../../engine/network/NetworkComponents";
 import { dynamicObjectCollisionGroups } from "../../engine/physics/CollisionGroups";
-import { addRigidBody, PhysicsModule, PhysicsModuleState, RigidBody } from "../../engine/physics/physics.game";
+import {
+  addRigidBody,
+  PhysicsModule,
+  PhysicsModuleState,
+  registerCollisionHandler,
+  RigidBody,
+} from "../../engine/physics/physics.game";
 import { createPrefabEntity, PrefabType, registerPrefab } from "../../engine/prefab/prefab.game";
 import {
   addObjectToWorld,
@@ -160,11 +166,15 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
     });
 
     // collision handlers
-    const { collisionHandlers, physicsWorld } = getModule(ctx, PhysicsModule);
+    const { physicsWorld } = getModule(ctx, PhysicsModule);
 
-    collisionHandlers.push((eid1?: number, eid2?: number, handle1?: number, handle2?: number) => {
-      const body1 = physicsWorld.getRigidBody(handle1!);
-      const body2 = physicsWorld.getRigidBody(handle2!);
+    const disposeCollisionHandler = registerCollisionHandler(ctx, (eid1, eid2, handle1, handle2, started) => {
+      if (!started) {
+        return;
+      }
+
+      const body1 = physicsWorld.getRigidBody(handle1);
+      const body2 = physicsWorld.getRigidBody(handle2);
 
       let gain = 1;
 
@@ -180,20 +190,23 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
 
       const playbackRate = randomRange(0.3, 0.75);
 
-      const emitter1 = module.hitAudioEmitters.get(eid1!);
+      const emitter1 = module.hitAudioEmitters.get(eid1);
       if (emitter1) {
         const source = emitter1.sources[floor(random() * emitter1.sources.length)] as RemoteAudioSource;
         playOneShotAudio(ctx, source, gain, playbackRate);
       }
 
-      const emitter2 = module.hitAudioEmitters.get(eid2!);
+      const emitter2 = module.hitAudioEmitters.get(eid2);
       if (emitter2) {
         const source = emitter2.sources[floor(random() * emitter2.sources.length)] as RemoteAudioSource;
         playOneShotAudio(ctx, source, gain, playbackRate);
       }
     });
 
-    return createDisposables([registerMessageHandler(ctx, SetObjectCapMessageType, onSetObjectCap)]);
+    return createDisposables([
+      registerMessageHandler(ctx, SetObjectCapMessageType, onSetObjectCap),
+      disposeCollisionHandler,
+    ]);
   },
 });
 

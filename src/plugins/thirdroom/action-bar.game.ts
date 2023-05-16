@@ -9,6 +9,7 @@ import { isHost } from "../../engine/network/network.common";
 import { NetworkModule } from "../../engine/network/network.game";
 import { RemoteNode } from "../../engine/resource/RemoteResources";
 import { tryGetRemoteResource } from "../../engine/resource/resource.game";
+import { ScriptComponent, scriptQuery } from "../../engine/scripting/scripting.game";
 import { spawnPrefab } from "../spawnables/spawnables.game";
 import { ActionBarItem, SetActionBarItemsMessage, ThirdRoomMessageType } from "./thirdroom.common";
 import { ThirdRoomModule } from "./thirdroom.game";
@@ -96,12 +97,23 @@ export function setDefaultActionBarItems(ctx: GameState) {
 export function ActionBarSystem(ctx: GameState) {
   const input = getModule(ctx, InputModule);
   const network = getModule(ctx, NetworkModule);
-  const { actionBarItems, actionBarListeners } = getModule(ctx, ThirdRoomModule);
+  const { actionBarItems } = getModule(ctx, ThirdRoomModule);
+
+  const scripts = scriptQuery(ctx.world);
 
   processPressedActionBarActions(actionBarItems, input.activeController, (actionBarItem) => {
-    for (let l = 0; l < actionBarListeners.length; l++) {
-      const listener = actionBarListeners[l];
-      listener.actions.push(actionBarItem.id);
+    for (let i = 0; i < scripts.length; i++) {
+      const script = ScriptComponent.get(scripts[i]);
+
+      if (!script) {
+        continue;
+      }
+      const actionBarListeners = script.wasmCtx.resourceManager.actionBarListeners;
+
+      for (let l = 0; l < actionBarListeners.length; l++) {
+        const listener = actionBarListeners[l];
+        listener.actions.push(actionBarItem.id);
+      }
     }
   });
 

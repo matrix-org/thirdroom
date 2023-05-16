@@ -38,6 +38,8 @@ import { getRotationNoAlloc } from "../utils/getRotationNoAlloc";
 import { InputControllerComponent } from "../input/InputControllerComponent";
 import { dynamicObjectCollisionGroups, staticRigidBodyCollisionGroups } from "./CollisionGroups";
 
+export type CollisionHandler = (eid1: number, eid2: number, handle1: number, handle2: number, started: boolean) => void;
+
 export interface PhysicsModuleState {
   debugRender: boolean;
   debugRenderTripleBuffer?: PhysicsDebugRenderTripleBuffer;
@@ -45,7 +47,7 @@ export interface PhysicsModuleState {
   eventQueue: RAPIER.EventQueue;
   handleToEid: Map<number, number>;
   characterCollision: RAPIER.CharacterCollision;
-  collisionHandlers: ((eid1: number, eid2: number, handle1: number, handle2: number) => void)[];
+  collisionHandlers: CollisionHandler[];
   eidTocharacterController: Map<number, RAPIER.KinematicCharacterController>;
 }
 
@@ -188,7 +190,7 @@ export function PhysicsSystem(ctx: GameState) {
   physicsWorld.timestep = dt;
   physicsWorld.step(eventQueue);
 
-  eventQueue.drainCollisionEvents((handle1: number, handle2: number) => {
+  eventQueue.drainCollisionEvents((handle1: number, handle2: number, started: boolean) => {
     const eid1 = handleToEid.get(handle1);
     const eid2 = handleToEid.get(handle2);
 
@@ -197,7 +199,7 @@ export function PhysicsSystem(ctx: GameState) {
     }
 
     for (const collisionHandler of collisionHandlers) {
-      collisionHandler(eid1, eid2, handle1, handle2);
+      collisionHandler(eid1, eid2, handle1, handle2, started);
     }
   });
 
@@ -491,4 +493,18 @@ export function addRigidBody(
 export function removeRigidBody(world: World, eid: number) {
   removeComponent(world, RigidBody, eid);
   RigidBody.store.delete(eid);
+}
+
+export function registerCollisionHandler(ctx: GameState, handler: CollisionHandler) {
+  const { collisionHandlers } = getModule(ctx, PhysicsModule);
+
+  collisionHandlers.push(handler);
+
+  return () => {
+    const index = collisionHandlers.indexOf(handler);
+
+    if (index !== -1) {
+      collisionHandlers.splice(index, 1);
+    }
+  };
 }

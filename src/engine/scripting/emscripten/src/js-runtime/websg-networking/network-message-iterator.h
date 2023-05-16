@@ -4,12 +4,12 @@
 #include "../../websg.h"
 #include "./network-listener.h"
 
-typedef struct JSWebSGNetworkMessageIteratorData {
+typedef struct WebSGNetworkMessageIteratorData {
     WebSGNetworkListenerData *listener_data;
     JSValue array_buffer;
     uint8_t* buffer_data;
     uint32_t buffer_size;
-} JSWebSGNetworkMessageIteratorData;
+} WebSGNetworkMessageIteratorData;
 
 extern JSClassID js_websg_network_message_iterator_class_id;
 

@@ -33,6 +33,9 @@
 #include "./component-store.h"
 #include "./component.h"
 #include "./query.h"
+#include "./collision-iterator.h"
+#include "./collision-listener.h"
+#include "./collision.h"
 
 void js_define_websg_api(JSContext *ctx) {
   JSValue global = JS_GetGlobalObject(ctx);
@@ -65,6 +68,9 @@ void js_define_websg_api(JSContext *ctx) {
   js_websg_define_query(ctx, websg);
   js_websg_define_component(ctx, websg);
   js_websg_define_component_store(ctx, websg);
+  js_websg_define_collision_listener(ctx, websg);
+  js_websg_define_collision_iterator(ctx);
+  js_websg_define_collision(ctx, websg);
   JS_SetPropertyStr(ctx, global, "WebSG", websg);
 
   JSValue world = js_websg_new_world(ctx);
