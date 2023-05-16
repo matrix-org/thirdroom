@@ -16,14 +16,14 @@ import { useAsyncCallback } from "../../../hooks/useAsyncCallback";
 import { saveData } from "../../../utils/common";
 import { Textarea } from "../../../atoms/input/Textarea";
 
-const getLogs = async (platform: Platform): Promise<Blob> => {
+const getLogs = async (platform: Platform): Promise<IBlobHandle> => {
   const exportReporter = platform.logger.reporters.find((r) => typeof r.export === "function");
   if (!exportReporter) {
     throw new Error("No logger that can export configured");
   }
   const logExport = await exportReporter.export();
   const logs = logExport.asBlob() as IBlobHandle;
-  return logs.nativeBlob;
+  return logs;
 };
 
 interface RageshakeDialogProps {
@@ -69,7 +69,7 @@ export function RageshakeDialog({ open, requestClose }: RageshakeDialogProps) {
 
   const downloadLogs = async () => {
     getLogs(platform).then((outputBlob) => {
-      saveData(outputBlob, `thirdroom-logs-${new Date()}.json`);
+      saveData(outputBlob.nativeBlob, `thirdroom-logs-${new Date()}.json`);
     });
   };
 

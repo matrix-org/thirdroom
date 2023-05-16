@@ -2792,7 +2792,7 @@ declare module "@thirdroom/hydrogen-view-sdk" {
       version: string;
       label?: string;
     },
-    logsBlob: BlobHandle,
+    logsBlob: IBlobHandle,
     submitUrl: string,
     request: RequestFunction
   ): Promise<void>;
