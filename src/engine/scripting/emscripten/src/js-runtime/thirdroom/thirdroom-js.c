@@ -110,8 +110,8 @@ void js_define_thirdroom_api(JSContext *ctx) {
 
   JSValue thirdroom = JS_NewObjectClass(ctx, js_thirdroom_class_id);
 
-  js_thirdroom_define_action_bar(ctx, thirdroom);
-  js_thirdroom_define_action_bar_listener(ctx, thirdroom);
+  js_thirdroom_define_action_bar(ctx, thirdroom_class);
+  js_thirdroom_define_action_bar_listener(ctx, thirdroom_class);
   js_thirdroom_define_action_bar_iterator(ctx);
 
   JS_SetPropertyStr(ctx, thirdroom, "actionBar", js_thirdroom_new_action_bar(ctx));
