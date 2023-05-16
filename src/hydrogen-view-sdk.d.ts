@@ -2756,4 +2756,17 @@ declare module "@thirdroom/hydrogen-view-sdk" {
   }
 
   export function makeTxnId(): string;
+
+  export function submitLogsToRageshakeServer(
+    data: {
+      text?: string;
+      userAgent: string;
+      app: string;
+      version: string;
+      label?: string;
+    },
+    logsBlob: BlobHandle,
+    submitUrl: string,
+    request: RequestFunction
+  ): Promise<void>;
 }

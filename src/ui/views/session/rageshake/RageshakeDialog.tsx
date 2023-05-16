@@ -1,4 +1,4 @@
-import { IBlobHandle, Platform } from "@thirdroom/hydrogen-view-sdk";
+import { IBlobHandle, Platform, submitLogsToRageshakeServer } from "@thirdroom/hydrogen-view-sdk";
 import React, { FormEventHandler } from "react";
 
 import { Text } from "../../../atoms/text/Text";
@@ -11,7 +11,6 @@ import { useHydrogen } from "../../../hooks/useHydrogen";
 import { SettingTile } from "../../components/setting-tile/SettingTile";
 import { Label } from "../../../atoms/text/Label";
 import { Button } from "../../../atoms/button/Button";
-import { submitLogsToRageshakeServer } from "./rageshake";
 import { Dots } from "../../../atoms/loading/Dots";
 import { useAsyncCallback } from "../../../hooks/useAsyncCallback";
 import { saveData } from "../../../utils/common";
