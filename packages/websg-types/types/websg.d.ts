@@ -558,6 +558,8 @@ declare namespace WebSGNetworking {
     get id(): string;
     get isHost(): boolean;
     get isLocal(): boolean;
+    get translation(): WebSG.Vector3;
+    get rotation(): WebSG.Quaternion;
     send(message: string | ArrayBuffer, reliable: boolean): undefined;
   }
 
@@ -590,12 +592,36 @@ declare namespace WebSGNetworking {
 
 declare const network: WebSGNetworking.Network;
 
-interface ThirdRoom {
+declare namespace ThirdRoom {
+  class ActionBarListener {
+    actions(): ActionBarIterator;
+    dispose(): undefined;
+  }
+
+  class ActionBarIterator {
+    next(): { value: string; done: boolean };
+    [Symbol.iterator](): ActionBarIterator;
+  }
+
+  interface ActionBarItem {
+    id: string;
+    label: string;
+    thumbnail: WebSG.Image;
+  }
+
+  class ActionBar {
+    setItems(items: ActionBarItem[]): undefined;
+    createListener(): ActionBarListener;
+  }
+}
+
+declare class ThirdRoom {
   enableMatrixMaterial(enabled: boolean): undefined;
   getAudioDataSize(): number;
   getAudioTimeData(data: Float32Array): number;
   getAudioFrequencyData(data: Float32Array): number;
   inAR(): boolean;
+  get actionBar(): ThirdRoom.ActionBar;
 }
 
 declare const thirdroom: ThirdRoom;
