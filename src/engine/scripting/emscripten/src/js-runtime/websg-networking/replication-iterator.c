@@ -43,7 +43,6 @@ static JSValue js_websg_replication_iterator_next(
     *pdone = FALSE;
     return JS_EXCEPTION;
   }
-
   
   bool spawning = it->type == WebSGReplicatorIteratorType_Spawned;
   bool despawning = it->type == WebSGReplicatorIteratorType_Despawned;

@@ -93,7 +93,6 @@ static JSValue js_websg_replicator_spawned(JSContext *ctx, JSValueConst this_val
   return js_websg_create_replication_iterator(ctx, replicator_data, WebSGReplicatorIteratorType_Spawned);
 }
 
-// out of memory bounds access here
 static JSValue js_websg_replicator_despawned(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
   WebSGReplicatorData *replicator_data = JS_GetOpaque(this_val, js_websg_replicator_class_id);
   return js_websg_create_replication_iterator(ctx, replicator_data, WebSGReplicatorIteratorType_Despawned);
