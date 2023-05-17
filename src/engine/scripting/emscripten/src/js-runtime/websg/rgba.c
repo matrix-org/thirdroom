@@ -118,6 +118,7 @@ JSValue js_websg_create_rgba(JSContext *ctx, float* elements) {
   JSValue rgba = JS_NewObjectClass(ctx, js_websg_rgba_class_id);
   WebSGRGBAData *rgba_data = js_mallocz(ctx, sizeof(WebSGRGBAData));
   rgba_data->elements = elements;
+  JS_SetOpaque(rgba, rgba_data);
   return rgba;
 }
 
