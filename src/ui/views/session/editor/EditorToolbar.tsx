@@ -382,12 +382,14 @@ export function EditorToolbar() {
         </>
       }
       center={
-        <ToolbarItemGroup>
-          <TransformOrientationSwitcher />
-          <TransformPivotSwitcher />
-          <TransformSnapping />
-          <GridToggle />
-        </ToolbarItemGroup>
+        editorMode === EditorMode.SceneEditor && (
+          <ToolbarItemGroup>
+            <TransformOrientationSwitcher />
+            <TransformPivotSwitcher />
+            <TransformSnapping />
+            <GridToggle />
+          </ToolbarItemGroup>
+        )
       }
       right={
         <ToolbarItemGroup>
