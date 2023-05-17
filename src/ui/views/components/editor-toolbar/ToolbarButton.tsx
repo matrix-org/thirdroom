@@ -16,7 +16,7 @@ interface ToolbarButtonProps {
 export const ToolbarButton = forwardRef<
   HTMLButtonElement,
   ToolbarButtonProps & ButtonHTMLAttributes<HTMLButtonElement>
->(({ className, active, outlined, before, after, children, ...props }) => (
+>(({ className, active, outlined, before, after, children, ...props }, ref) => (
   <button
     className={classNames(
       "ToolbarButton",
@@ -30,6 +30,7 @@ export const ToolbarButton = forwardRef<
     type="button"
     aria-pressed={active}
     {...props}
+    ref={ref}
   >
     {before}
     {typeof children === "string" ? (

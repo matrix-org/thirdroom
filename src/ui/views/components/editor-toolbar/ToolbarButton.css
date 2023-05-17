@@ -40,6 +40,7 @@
   display: inline-flex;
   border-radius: var(--br-xxs);
   outline: 1px solid var(--bg-surface-border);
+  outline-offset: -1px;
   overflow: hidden;
 
   & .ToolbarButton {

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { ReactNode, useMemo, useState } from "react";
 import { useKBar } from "kbar";
 import { useAtom, useAtomValue } from "jotai";
 
@@ -16,33 +16,19 @@ import OpenWithIC from "../../../../../res/ic/open-with.svg";
 import AutoRenewIC from "../../../../../res/ic/auto-renew.svg";
 import ResizeIC from "../../../../../res/ic/resize.svg";
 import WebAssetIC from "../../../../../res/ic/web-asset.svg";
+import LanguageIC from "../../../../../res/ic/language.svg";
+import ActivityZoneIC from "../../../../../res/ic/activity-zone.svg";
+import MyLocationIC from "../../../../../res/ic/my-location.svg";
+import FilterCenterFocusIC from "../../../../../res/ic/filter-center-focus.svg";
+import BorderBottomIC from "../../../../../res/ic/border-bottom.svg";
+import MagnetIC from "../../../../../res/ic/magnet.svg";
+import Grid4x4IC from "../../../../../res/ic/grid4x4.svg";
 import { DropdownMenu } from "../../../atoms/menu/DropdownMenu";
 import { DropdownMenuItem } from "../../../atoms/menu/DropdownMenuItem";
 import { Label } from "../../../atoms/text/Label";
 import { Tooltip } from "../../../atoms/tooltip/Tooltip";
-
-interface IEditorMode {
-  mode: EditorMode;
-  title: string;
-  icon: string;
-}
-
-const useEditorModeMenu = (): IEditorMode[] =>
-  useMemo(
-    () => [
-      {
-        mode: EditorMode.SceneEditor,
-        title: "Scene Editor",
-        icon: Box3dIC,
-      },
-      {
-        mode: EditorMode.ScriptEditor,
-        title: "Script Editor",
-        icon: CurlyBracketIC,
-      },
-    ],
-    []
-  );
+import { SettingTile } from "../../components/setting-tile/SettingTile";
+import { NumericInput } from "../../../atoms/input/NumericInput";
 
 export enum TransformMode {
   Grab = "grab",
@@ -51,31 +37,60 @@ export enum TransformMode {
   Scale = "scale",
 }
 
-interface ITransformMode {
-  mode: TransformMode;
+export enum TransformOrientation {
+  Global = "global",
+  Selection = "selection",
+}
+
+export enum TransformPivot {
+  ActiveSelection = "active-selection",
+  SelectionCenter = "selection-center",
+  SelectionBottom = "selection-bottom",
+}
+
+interface IMenuItem<T extends string> {
+  id: T;
   title: string;
   icon: string;
 }
-const useTransformModeMenu = (): ITransformMode[] =>
+
+const useEditorModeMenu = (): IMenuItem<EditorMode>[] =>
   useMemo(
     () => [
       {
-        mode: TransformMode.Grab,
+        id: EditorMode.SceneEditor,
+        title: "Scene Editor",
+        icon: Box3dIC,
+      },
+      {
+        id: EditorMode.ScriptEditor,
+        title: "Script Editor",
+        icon: CurlyBracketIC,
+      },
+    ],
+    []
+  );
+
+const useTransformModeMenu = (): IMenuItem<TransformMode>[] =>
+  useMemo(
+    () => [
+      {
+        id: TransformMode.Grab,
         title: "Grab",
         icon: BackHandIC,
       },
       {
-        mode: TransformMode.Translate,
+        id: TransformMode.Translate,
         title: "Translate",
         icon: OpenWithIC,
       },
       {
-        mode: TransformMode.Rotate,
+        id: TransformMode.Rotate,
         title: "Rotate",
         icon: AutoRenewIC,
       },
       {
-        mode: TransformMode.Scale,
+        id: TransformMode.Scale,
         title: "Scale",
         icon: ResizeIC,
       },
@@ -83,34 +98,87 @@ const useTransformModeMenu = (): ITransformMode[] =>
     []
   );
 
+const useTransformOrientationMenu = (): IMenuItem<TransformOrientation>[] =>
+  useMemo(
+    () => [
+      {
+        id: TransformOrientation.Global,
+        title: "Global",
+        icon: LanguageIC,
+      },
+      {
+        id: TransformOrientation.Selection,
+        title: "Selection",
+        icon: ActivityZoneIC,
+      },
+    ],
+    []
+  );
+
+const useTransformPivotMenu = (): IMenuItem<TransformPivot>[] =>
+  useMemo(
+    () => [
+      {
+        id: TransformPivot.ActiveSelection,
+        title: "Active Selection",
+        icon: MyLocationIC,
+      },
+      {
+        id: TransformPivot.SelectionCenter,
+        title: "Selection Center",
+        icon: FilterCenterFocusIC,
+      },
+      {
+        id: TransformPivot.SelectionBottom,
+        title: "Selection Bottom",
+        icon: BorderBottomIC,
+      },
+    ],
+    []
+  );
+
+type SwitcherMenuProps<T extends string> = {
+  selected: T;
+  onSelect: (id: T) => void;
+  menu: IMenuItem<T>[];
+  children: ReactNode;
+};
+export function SwitcherMenu<T extends string>({ selected, onSelect, menu, children }: SwitcherMenuProps<T>) {
+  return (
+    <DropdownMenu
+      align="start"
+      style={{ padding: "var(--sp-xxs) 0" }}
+      content={
+        <>
+          <Label style={{ padding: "var(--sp-xxs) var(--sp-sm)" }}>Transform Pivot Point</Label>
+          {menu.map((menuItem) => (
+            <DropdownMenuItem
+              key={menuItem.id}
+              className="gap-xs"
+              variant={menuItem.id === selected ? "primary" : "surface"}
+              onSelect={() => onSelect(menuItem.id)}
+              before={<Icon color={menuItem.id === selected ? "primary" : "surface"} src={menuItem.icon} />}
+            >
+              {menuItem.title}
+            </DropdownMenuItem>
+          ))}
+        </>
+      }
+    >
+      {children}
+    </DropdownMenu>
+  );
+}
+
 export function EditorModeSwitcher() {
   const [editorMode, setEditorMode] = useAtom(editorModeAtom);
   const editorModeMenu = useEditorModeMenu();
-  const activeMenuItem = editorModeMenu.find((i) => i.mode === editorMode);
+  const activeMenuItem = editorModeMenu.find((i) => i.id === editorMode);
 
   return (
     <>
       {activeMenuItem && (
-        <DropdownMenu
-          align="start"
-          style={{ padding: "var(--sp-xxs) 0" }}
-          content={
-            <>
-              <Label style={{ padding: "var(--sp-xxs) var(--sp-sm)" }}>Editor Modes</Label>
-              {editorModeMenu.map((menuItem) => (
-                <DropdownMenuItem
-                  key={menuItem.mode}
-                  className="gap-xs"
-                  variant={menuItem.mode === editorMode ? "primary" : "surface"}
-                  onSelect={() => setEditorMode(menuItem.mode)}
-                  before={<Icon color={menuItem.mode === editorMode ? "primary" : "surface"} src={menuItem.icon} />}
-                >
-                  {menuItem.title}
-                </DropdownMenuItem>
-              ))}
-            </>
-          }
-        >
+        <SwitcherMenu selected={editorMode} onSelect={setEditorMode} menu={editorModeMenu}>
           <ToolbarButton
             before={<Icon size="sm" src={activeMenuItem.icon} />}
             after={<Icon size="sm" src={ChevronBottomIC} />}
@@ -118,7 +186,7 @@ export function EditorModeSwitcher() {
           >
             {activeMenuItem.title}
           </ToolbarButton>
-        </DropdownMenu>
+        </SwitcherMenu>
       )}
     </>
   );
@@ -131,16 +199,152 @@ export function TransformModeSwitcher() {
   return (
     <ToolbarButtonGroup>
       {transformModeMenu.map((menuItem, index) => (
-        <div key={menuItem.mode} className="inline-flex">
+        <div key={menuItem.id} className="inline-flex">
           {index !== 0 && <ToolbarButtonDivider />}
           <Tooltip side="bottom" content={menuItem.title}>
-            <ToolbarButton active={selectedMode === menuItem.mode} onClick={() => setSelectedMode(menuItem.mode)}>
-              <Icon size="sm" src={menuItem.icon} color={selectedMode === menuItem.mode ? "primary" : "surface"} />
+            <ToolbarButton active={selectedMode === menuItem.id} onClick={() => setSelectedMode(menuItem.id)}>
+              <Icon size="sm" src={menuItem.icon} color={selectedMode === menuItem.id ? "primary" : "surface"} />
             </ToolbarButton>
           </Tooltip>
         </div>
       ))}
     </ToolbarButtonGroup>
+  );
+}
+
+export function TransformOrientationSwitcher() {
+  const [selected, setSelected] = useState(TransformOrientation.Global);
+  const transformOrientationMenu = useTransformOrientationMenu();
+
+  const activeMenuItem = transformOrientationMenu.find((item) => item.id === selected);
+
+  return (
+    <>
+      {activeMenuItem && (
+        <SwitcherMenu selected={selected} onSelect={setSelected} menu={transformOrientationMenu}>
+          <ToolbarButton
+            before={<Icon size="sm" src={activeMenuItem.icon} />}
+            after={<Icon size="sm" src={ChevronBottomIC} />}
+            outlined
+          >
+            {activeMenuItem.title}
+          </ToolbarButton>
+        </SwitcherMenu>
+      )}
+    </>
+  );
+}
+
+export function TransformPivotSwitcher() {
+  const [selected, setSelected] = useState(TransformPivot.ActiveSelection);
+  const transformPivotMenu = useTransformPivotMenu();
+
+  const activeMenuItem = transformPivotMenu.find((item) => item.id === selected);
+
+  return (
+    <>
+      {activeMenuItem && (
+        <SwitcherMenu selected={selected} onSelect={setSelected} menu={transformPivotMenu}>
+          <ToolbarButton
+            before={<Icon size="sm" src={activeMenuItem.icon} />}
+            after={<Icon size="sm" src={ChevronBottomIC} />}
+            outlined
+          >
+            {activeMenuItem.title}
+          </ToolbarButton>
+        </SwitcherMenu>
+      )}
+    </>
+  );
+}
+
+export function TransformSnapping() {
+  const [snap, setSnap] = useState(false);
+  const [translateSnap, setTranslateSnap] = useState(1);
+  const [rotateSnap, setRotateSnap] = useState(1);
+  const [scaleSnap, setScaleSnap] = useState(1);
+
+  return (
+    <ToolbarButtonGroup>
+      <Tooltip side="bottom" content="Toggle Snapping">
+        <ToolbarButton active={snap} onClick={() => setSnap(!snap)}>
+          <Icon size="sm" src={MagnetIC} color={snap ? "primary" : "surface"} />
+        </ToolbarButton>
+      </Tooltip>
+      <ToolbarButtonDivider />
+
+      <DropdownMenu
+        align="start"
+        style={{ padding: "var(--sp-xxs) 0" }}
+        content={
+          <div className="flex flex-column gap-sm" style={{ padding: "var(--sp-xs) var(--sp-sm)", width: "200px" }}>
+            <SettingTile label={<Label>Translate Snapping</Label>}>
+              <NumericInput
+                type="f32"
+                inputSize="sm"
+                value={translateSnap}
+                onChange={setTranslateSnap}
+                min={0}
+                smStep={5}
+                lgStep={25}
+                after={
+                  <Text variant="b3" color="surface-low">
+                    m
+                  </Text>
+                }
+              />
+            </SettingTile>
+            <SettingTile label={<Label>Rotate Snapping</Label>}>
+              <NumericInput
+                inputSize="sm"
+                value={rotateSnap}
+                onChange={setRotateSnap}
+                min={0}
+                max={360}
+                smStep={5}
+                lgStep={25}
+                after={
+                  <Text variant="b3" color="surface-low">
+                    deg
+                  </Text>
+                }
+              />
+            </SettingTile>
+            <SettingTile label={<Label>Scale Snapping</Label>}>
+              <NumericInput
+                type="f32"
+                inputSize="sm"
+                value={scaleSnap}
+                onChange={setScaleSnap}
+                min={0}
+                smStep={5}
+                lgStep={25}
+                after={
+                  <Text variant="b3" color="surface-low">
+                    m
+                  </Text>
+                }
+              />
+            </SettingTile>
+          </div>
+        }
+      >
+        <ToolbarButton>
+          <Icon size="sm" src={ChevronBottomIC} />
+        </ToolbarButton>
+      </DropdownMenu>
+    </ToolbarButtonGroup>
+  );
+}
+
+export function GridToggle() {
+  const [grid, setGrid] = useState(false);
+  return (
+    <Tooltip side="bottom" content="Toggle Grid">
+      <ToolbarButton active={grid} onClick={() => setGrid(!grid)} outlined>
+        <Icon size="sm" src={Grid4x4IC} color={grid ? "primary" : "surface"} />
+      </ToolbarButton>
+    </Tooltip>
   );
 }
 
@@ -176,6 +380,14 @@ export function EditorToolbar() {
             </ToolbarItemGroup>
           )}
         </>
+      }
+      center={
+        <ToolbarItemGroup>
+          <TransformOrientationSwitcher />
+          <TransformPivotSwitcher />
+          <TransformSnapping />
+          <GridToggle />
+        </ToolbarItemGroup>
       }
       right={
         <ToolbarItemGroup>
