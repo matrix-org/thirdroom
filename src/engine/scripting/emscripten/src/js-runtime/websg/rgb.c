@@ -61,7 +61,7 @@ static JSValue js_websg_rgb_set_array(JSContext *ctx, JSValueConst this_val, int
   }
 
   if (rgb_data->set_array == NULL) {
-    return JS_UNDEFINED;
+    return JS_DupValue(ctx, this_val);
   }
 
   if (rgb_data->set_array(rgb_data->resource_id, rgb_data->elements) < 0) {
@@ -69,7 +69,7 @@ static JSValue js_websg_rgb_set_array(JSContext *ctx, JSValueConst this_val, int
     return JS_EXCEPTION;
   }
 
-  return JS_UNDEFINED;
+  return JS_DupValue(ctx, this_val);
 }
 
 static const JSCFunctionListEntry js_websg_rgb_proto_funcs[] = {
@@ -81,6 +81,7 @@ static const JSCFunctionListEntry js_websg_rgb_proto_funcs[] = {
   JS_CGETSET_MAGIC_DEF("b", js_websg_rgb_get, js_websg_rgb_set, 2),
   JS_CFUNC_DEF("set", 1, js_websg_rgb_set_array),
   JS_PROP_INT32_DEF("length", 3, JS_PROP_ENUMERABLE),
+  JS_PROP_STRING_DEF("[Symbol.toStringTag]", "RGB", JS_PROP_CONFIGURABLE),
 };
 
 static JSValue js_websg_rgb_constructor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {

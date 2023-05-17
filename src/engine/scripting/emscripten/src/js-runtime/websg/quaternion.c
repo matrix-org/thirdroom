@@ -69,7 +69,7 @@ static JSValue js_websg_quaternion_set_array(JSContext *ctx, JSValueConst this_v
   }
 
   if (quat_data->set_array == NULL) {
-    return JS_UNDEFINED;
+    return JS_DupValue(ctx, this_val);
   }
 
   if (quat_data->set_array(quat_data->resource_id, quat_data->elements) < 0) {
@@ -77,7 +77,7 @@ static JSValue js_websg_quaternion_set_array(JSContext *ctx, JSValueConst this_v
     return JS_EXCEPTION;
   }
 
-  return JS_UNDEFINED;
+  return JS_DupValue(ctx, this_val);
 }
 
 static const JSCFunctionListEntry js_websg_quaternion_proto_funcs[] = {
@@ -91,6 +91,7 @@ static const JSCFunctionListEntry js_websg_quaternion_proto_funcs[] = {
   JS_CGETSET_MAGIC_DEF("w", js_websg_quaternion_get, js_websg_quaternion_set, 3),
   JS_CFUNC_DEF("set", 1, js_websg_quaternion_set_array),
   JS_PROP_INT32_DEF("length", 4, JS_PROP_ENUMERABLE),
+  JS_PROP_STRING_DEF("[Symbol.toStringTag]", "Quaternion", JS_PROP_CONFIGURABLE),
 };
 
 static JSValue js_websg_quaternion_constructor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
