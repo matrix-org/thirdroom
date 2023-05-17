@@ -192,6 +192,7 @@ import_websg(node_get_light) light_id_t websg_node_get_light(node_id_t node_id);
 import_websg(node_set_light) int32_t websg_node_set_light(node_id_t node_id, light_id_t light_id);
 import_websg(node_get_collider) collider_id_t websg_node_get_collider(node_id_t node_id);
 import_websg(node_set_collider) int32_t websg_node_set_collider(node_id_t node_id, collider_id_t collider_id);
+import_websg(node_dispose) int32_t websg_node_dispose(node_id_t node_id);
 
 typedef struct CameraRigOptions {
   float_t pitch;

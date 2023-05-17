@@ -118,6 +118,7 @@ describe("Network Tests", () => {
     it("should #deserializeTransformSnapshot()", () => {
       const writer = createCursorView();
       const state = mockGameState();
+      const network = getModule(state, NetworkModule);
 
       const node = new RemoteNode(state.resourceManager);
       const eid = node.eid;
@@ -138,7 +139,7 @@ describe("Network Tests", () => {
 
       const reader = createCursorView(writer.buffer);
 
-      deserializeTransformSnapshot(reader, node);
+      deserializeTransformSnapshot(network, reader, 0, node);
 
       strictEqual(Networked.position[eid][0], 1);
       strictEqual(Networked.position[eid][1], 2);

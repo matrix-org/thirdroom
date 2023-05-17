@@ -246,6 +246,8 @@ export function createRemoteResourceManager(ctx: GameState): RemoteResourceManag
     nextCollisionListenerId: 1,
     actionBarListeners: [],
     nextActionBarListenerId: 1,
+    replicators: [],
+    nextReplicatorId: 1,
     matrixListening: false,
     inboundMatrixWidgetMessages: [],
     nextNetworkListenerId: 1,

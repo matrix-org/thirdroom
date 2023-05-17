@@ -580,6 +580,24 @@ declare namespace WebSGNetworking {
     close(): undefined;
   }
 
+  interface Replication {
+    node: WebSG.Node;
+    peer: WebSGNetworking.Peer;
+    data: ArrayBuffer;
+  }
+
+  class ReplicationIterator {
+    next(): { value: Replication; done: boolean };
+    [Symbol.iterator](): ReplicationIterator;
+  }
+
+  interface Replicator {
+    spawn(data?: ArrayBuffer): WebSG.Node;
+    despawn(node: WebSG.Node, data?: ArrayBuffer): void;
+    spawned(): ReplicationIterator;
+    despawned(): ReplicationIterator;
+  }
+
   class Network {
     get host(): Peer | undefined;
     get local(): Peer | undefined;
@@ -587,6 +605,7 @@ declare namespace WebSGNetworking {
     broadcast(message: string | ArrayBuffer, reliable: boolean): undefined;
     onpeerentered: ((peer: Peer) => any) | null;
     onpeerexited: ((peer: Peer) => any) | null;
+    defineReplicator(factory: () => WebSG.Node): Replicator;
   }
 }
 

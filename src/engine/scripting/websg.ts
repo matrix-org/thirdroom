@@ -53,6 +53,7 @@ import {
   RemoteUICanvas,
   RemoteUIElement,
   RemoteUIText,
+  removeObjectFromWorld,
 } from "../resource/RemoteResources";
 import { addChild, removeChild, traverse } from "../component/transform";
 import {
@@ -810,6 +811,18 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       }
 
       return wasmCtx.resourceManager.nodeIdToComponentStoreIndex.get(node.eid) || 0;
+    },
+    node_dispose(nodeId: number) {
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+      if (!node) {
+        return -1;
+      }
+
+      // TODO: add to queue and drain at the end of the frame
+      removeObjectFromWorld(ctx, node);
+
+      return 0;
     },
     world_create_scene(propsPtr: number) {
       try {

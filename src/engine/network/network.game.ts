@@ -44,6 +44,7 @@ import { getRemoteResource, tryGetRemoteResource } from "../resource/resource.ga
 import { RemoteNode, removeObjectFromWorld } from "../resource/RemoteResources";
 import { Networked, Owned } from "./NetworkComponents";
 import { XRMode } from "../renderer/renderer.common";
+import { Replicator } from "./Replicator";
 
 /*********
  * Types *
@@ -73,6 +74,8 @@ export interface GameNetworkState {
   messageHandlers: { [key: number]: (input: NetPipeData) => void };
   cursorView: CursorView;
   tickRate: number;
+  prefabToReplicator: Map<string, Replicator>;
+  networkIdToReplicator: Map<number, Replicator>;
   // feature flags
   interpolate: boolean;
   clientSidePrediction: boolean;
@@ -119,6 +122,8 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
       removedLocalIds: [],
       messageHandlers: {},
       cursorView: createCursorView(),
+      prefabToReplicator: new Map(),
+      networkIdToReplicator: new Map(),
       tickRate: 10,
       interpolate: false,
       clientSidePrediction: true,
