@@ -389,6 +389,27 @@ static JSValue js_websg_node_get_component(JSContext *ctx, JSValueConst this_val
   return js_websg_component_store_get_instance(ctx, component_store_data, node_data->component_store_index);
 }
 
+static JSValue js_websg_node_set_forward_direction(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  WebSGNodeData *node_data = JS_GetOpaque(this_val, js_websg_node_class_id);
+
+  float_t *direction = js_mallocz(ctx, sizeof(float_t) * 3);
+
+  if (js_get_float_array_like(ctx, argv[0], direction, 3) < 0) {
+    js_free(ctx, direction);
+    return JS_EXCEPTION;
+  }
+
+  if (websg_node_set_forward_direction(node_data->node_id, direction) == -1) {
+    js_free(ctx, direction);
+    JS_ThrowInternalError(ctx, "WebSG: Couldn't set forward direction.");
+    return JS_EXCEPTION;
+  }
+
+  js_free(ctx, direction);
+
+  return JS_UNDEFINED;
+}
+
 // Implement the addChild and removeChild methods
 static const JSCFunctionListEntry js_websg_node_proto_funcs[] = {
   JS_CFUNC_DEF("addChild", 1, js_websg_node_add_child),
@@ -413,6 +434,7 @@ static const JSCFunctionListEntry js_websg_node_proto_funcs[] = {
   JS_CFUNC_DEF("removeComponent", 1, js_websg_node_remove_component),
   JS_CFUNC_DEF("hasComponent", 1, js_websg_node_has_component),
   JS_CFUNC_DEF("getComponent", 1, js_websg_node_get_component),
+  JS_CFUNC_DEF("setForwardDirection", 1, js_websg_node_set_forward_direction),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "Node", JS_PROP_CONFIGURABLE),
 };
 

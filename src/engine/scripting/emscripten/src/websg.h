@@ -118,6 +118,7 @@ import_websg(node_add_component) int32_t websg_node_add_component(node_id_t node
 import_websg(node_remove_component) int32_t websg_node_remove_component(node_id_t node_id, component_id_t component_id);
 import_websg(node_has_component) int32_t websg_node_has_component(node_id_t node_id, component_id_t component_id);
 import_websg(node_get_component_store_index) uint32_t websg_node_get_component_store_index(node_id_t node_id);
+import_websg(node_set_forward_direction) int32_t websg_node_set_forward_direction(node_id_t node_id, float_t *direction);
 
 /*********
  * Scene *
@@ -813,5 +814,9 @@ import_websg(ui_text_get_color) int32_t websg_ui_text_get_color(ui_element_id_t 
 import_websg(ui_text_set_color) int32_t websg_ui_text_set_color(ui_element_id_t element_id, float_t *color);
 import_websg(ui_text_get_color_element) float_t websg_ui_text_get_color_element(ui_element_id_t ui_element_id, uint32_t index);
 import_websg(ui_text_set_color_element) int32_t websg_ui_text_set_color_element(ui_element_id_t ui_element_id, uint32_t index, float_t value);
+
+
+import_websg(get_primary_input_source_origin_element) float_t websg_get_primary_input_source_origin_element(uint32_t index);
+import_websg(get_primary_input_source_direction_element) float_t websg_get_primary_input_source_direction_element(uint32_t index);
 
 #endif

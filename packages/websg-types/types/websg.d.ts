@@ -606,6 +606,8 @@ declare namespace WebSG {
     set componentStoreSize(value: number);
     findComponentStoreByName(name: string): ComponentStore | undefined;
     stopOrbit(): undefined;
+    get primaryInputSourceOrigin(): Vector3;
+    get primaryInputSourceDirection(): Vector3;
     onload: (() => any) | null;
     onenter: (() => any) | null;
     onupdate: ((dt: number, time: number) => any) | null;

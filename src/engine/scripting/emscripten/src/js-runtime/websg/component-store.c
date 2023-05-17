@@ -100,7 +100,7 @@ JSValue js_websg_new_component_store_instance(
   }
 
   // This is the backing store for component data
-  void *store = js_mallocz(ctx, store_byte_length);
+  void *store = store_byte_length == 0 ? NULL : js_mallocz(ctx, store_byte_length);
 
   websg_world_set_component_store(component_id, store);
 
