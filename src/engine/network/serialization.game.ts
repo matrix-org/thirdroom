@@ -341,16 +341,18 @@ function writeCreation(network: GameNetworkState, v: CursorView, eid: number) {
 
   writeUint32(v, nid);
   writeString(v, prefabName);
+  const writeDataByteLength = spaceUint32(v);
 
   const replicator = getReplicator(network, prefabName);
   if (!replicator) {
+    writeDataByteLength(0);
     return;
   }
 
-  const data = replicator.nidToData.get(nid);
-  writeUint32(v, data?.byteLength || 0);
-  if (data) {
-    if (data.byteLength) writeArrayBuffer(v, data);
+  const data = replicator.eidToData.get(eid);
+  writeDataByteLength(data?.byteLength || 0);
+  if (data && data.byteLength) {
+    writeArrayBuffer(v, data);
   }
 }
 
@@ -388,6 +390,7 @@ export function deserializeCreates(input: NetPipeData) {
   for (let i = 0; i < count; i++) {
     const nid = readUint32(v);
     const prefabName = readString(v);
+    const dataByteLength = readUint32(v);
 
     const existingEntity = network.networkIdToEntityId.get(nid);
 
@@ -400,7 +403,6 @@ export function deserializeCreates(input: NetPipeData) {
 
     const replicator = getReplicator(network, prefabName);
     if (replicator) {
-      const dataByteLength = readUint32(v);
       const data = dataByteLength > 0 ? readArrayBuffer(v, dataByteLength) : undefined;
 
       replicator.spawned.push({
@@ -508,7 +510,7 @@ export function serializeDeletes(input: NetPipeData) {
     const eid = entities[i];
     const nid = Networked.networkId[eid];
     writeUint32(v, nid);
-    console.info("serialized deletion for nid", nid, "eid", eid);
+    console.info("serialized deletion for nid", nid, "eid", eid, "prefab", Prefab.get(eid));
   }
   return input;
 }

@@ -413,6 +413,10 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
       const peerId = network.peerId;
       const peerIndex = network.peerIdToIndex.get(peerId)!;
 
+      if (data) {
+        replicator.eidToData.set(nodeId, data);
+      }
+
       replicator.spawned.push({ nodeId, peerIndex, data });
 
       return 0;
@@ -435,6 +439,10 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
       const data = byteLength > 0 ? buffer : undefined;
       const peerId = network.peerId;
       const peerIndex = network.peerIdToIndex.get(peerId)!;
+
+      if (data) {
+        replicator.eidToData.set(nodeId, data);
+      }
 
       replicator.despawned.push({ nodeId, peerIndex, data });
 
@@ -536,7 +544,7 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
       const prefabName = `replicator-${replicatorId}`;
       const replicator = network.prefabToReplicator.get(prefabName);
       if (!replicator) {
-        console.error("Error popping replicator spawn queue, replicator not found");
+        console.error("Error shifting replicator spawn queue, replicator not found");
         return -1;
       }
 
@@ -548,7 +556,7 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
       const prefabName = `replicator-${replicatorId}`;
       const replicator = network.prefabToReplicator.get(prefabName);
       if (!replicator) {
-        console.error("Error popping replicator despawn queue, replicator not found");
+        console.error("Error shifting replicator despawn queue, replicator not found");
         return -1;
       }
 

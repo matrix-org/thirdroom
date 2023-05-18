@@ -11,7 +11,7 @@ export interface Replicator {
   spawned: Replication[];
   despawned: Replication[];
   deferredUpdates: { nid: number; position: Float32Array; quaternion: Float32Array }[];
-  nidToData: Map<number, ArrayBuffer>;
+  eidToData: Map<number, ArrayBuffer>;
 }
 
 export const createReplicator = (network: GameNetworkState, prefab: string) => {
@@ -20,7 +20,7 @@ export const createReplicator = (network: GameNetworkState, prefab: string) => {
   const replicator: Replicator = {
     spawned,
     despawned,
-    nidToData: new Map(),
+    eidToData: new Map(),
     deferredUpdates: [],
   };
   network.prefabToReplicator.set(prefab, replicator);
