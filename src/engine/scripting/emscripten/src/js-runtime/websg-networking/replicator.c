@@ -38,23 +38,23 @@ static JSValue js_websg_replicator_spawn(JSContext *ctx, JSValueConst this_val, 
     return JS_EXCEPTION;
   }
 
-  size_t byte_length;
+  size_t byte_length = 0;
   uint8_t *buffer;
 
   if (!JS_IsUndefined(argv[0])) {
     buffer = JS_GetArrayBuffer(ctx, &byte_length, argv[0]);
   }
 
-  JSValue result = JS_Call(ctx, replicator_data->factory_function, JS_UNDEFINED, 0, NULL);
+  JSValue node = JS_Call(ctx, replicator_data->factory_function, JS_UNDEFINED, 0, NULL);
 
-  WebSGNodeData *node_data = JS_GetOpaque(result, js_websg_node_class_id);
+  WebSGNodeData *node_data = JS_GetOpaque(node, js_websg_node_class_id);
 
   if (websg_replicator_spawn_local(replicator_data->replicator_id, node_data->node_id, buffer, byte_length) != 0) {
     JS_ThrowTypeError(ctx, "WebSGNetworking: Error during replicator spawn.");
     return JS_EXCEPTION;
   }
 
-  return result;
+  return JS_DupValue(ctx, node);
 }
 
 static JSValue js_websg_replicator_despawn(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
@@ -73,7 +73,7 @@ static JSValue js_websg_replicator_despawn(JSContext *ctx, JSValueConst this_val
   JSValue node = argv[0];
   WebSGNodeData *node_data = JS_GetOpaque(node, js_websg_node_class_id);
 
-  size_t byte_length;
+  size_t byte_length = 0;
   uint8_t *buffer;
 
   if (!JS_IsUndefined(argv[1])) {
@@ -85,7 +85,7 @@ static JSValue js_websg_replicator_despawn(JSContext *ctx, JSValueConst this_val
     return JS_EXCEPTION;
   }
 
-  return node;
+  return JS_UNDEFINED;
 }
 
 static JSValue js_websg_replicator_spawned(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {

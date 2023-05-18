@@ -413,6 +413,12 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
       const peerId = network.peerId;
       const peerIndex = network.peerIdToIndex.get(peerId)!;
 
+      console.log("replicator_spawn_local");
+      console.log("buffer", buffer);
+      console.log("data", data);
+      console.log("peerId", peerId);
+      console.log("peerIndex", peerIndex);
+
       if (data) {
         replicator.eidToData.set(nodeId, data);
       }
@@ -596,14 +602,16 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
           return 0;
         }
 
-        const byteLength = replication.data?.byteLength || 0;
+        if (!replication.data) {
+          return 0;
+        }
 
-        if (byteLength > maxBufLength) {
+        if (replication.data.byteLength > maxBufLength) {
           console.error("Failed to receive replication, length exceeded buffer length");
           return -1;
         }
 
-        return writeArrayBuffer(wasmCtx, packetPtr, replication.data || new ArrayBuffer(0));
+        return writeArrayBuffer(wasmCtx, packetPtr, replication.data);
       } catch (e) {
         console.error("Error writing packet to write buffer:", e);
         return -1;

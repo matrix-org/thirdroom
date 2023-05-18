@@ -147,6 +147,7 @@ static JSValue js_websg_replication_iterator_next(
     }
   }
 
+  js_free(ctx, target);
   js_free(ctx, info);
 
   return js_websg_new_replication_instance(ctx, node, peer, data);
@@ -159,7 +160,7 @@ static JSValue js_websg_replication_iterator(JSContext *ctx, JSValueConst this_v
 
 static const JSCFunctionListEntry js_children_iterator_proto_funcs[] = {
   JS_ITERATOR_NEXT_DEF("next", 0, js_websg_replication_iterator_next, 0),
-  JS_PROP_STRING_DEF("[Symbol.toStringTag]", "WebSGReplicationIterator", JS_PROP_CONFIGURABLE),
+  JS_PROP_STRING_DEF("[Symbol.toStringTag]", "ReplicationIterator", JS_PROP_CONFIGURABLE),
   JS_CFUNC_DEF("[Symbol.iterator]", 0, js_websg_replication_iterator),
 };
 

@@ -62,7 +62,7 @@ JSValue js_websg_new_replication_instance(
 
   if (JS_IsUndefined(data)) {
     JS_SetPropertyStr(ctx, replication, "data", JS_UNDEFINED);
-  }else {
+  } else {
     JS_SetPropertyStr(ctx, replication, "data", data);
   }
 
