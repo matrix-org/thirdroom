@@ -2216,6 +2216,12 @@ declare namespace ThirdRoom {
     thumbnail: WebSG.Image;
   }
 
+  /**
+   * Represents the action bar at the bottom of the screen.
+   * Items can be set via the {@link ThirdRoom.ActionBar.setItems} method.
+   * You can listen for triggered actions by creating a new listener via the
+   * {@link ThirdRoom.ActionBar.createListener} method.
+   */
   class ActionBar {
     setItems(items: ActionBarItem[]): undefined;
     createListener(): ActionBarListener;
