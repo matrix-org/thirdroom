@@ -129,7 +129,7 @@ declare namespace WebSG {
 
   class Matrix4 {
     [n: number]: number;
-    set(value: ArrayLike<number>): undefined;
+    set(value: ArrayLike<number>): this;
     readonly length: number;
   }
 
@@ -242,6 +242,10 @@ declare namespace WebSG {
     addPhysicsBody(props?: PhysicsBodyProps): PhysicsBody;
     removePhysicsBody(): undefined;
     startOrbit(options?: OrbitOptions): undefined;
+    addComponent(component: ComponentStore): undefined;
+    removeComponent(component: ComponentStore): undefined;
+    hasComponent(component: ComponentStore): boolean;
+    getComponent(component: ComponentStore): Component | undefined;
   }
 
   type PhysicsBodyType = "kinematic" | "rigid" | "static";
@@ -285,7 +289,7 @@ declare namespace WebSG {
     y: number;
     z: number;
     w: number;
-    set(value: ArrayLike<number>): undefined;
+    set(value: ArrayLike<number>): this;
     readonly length: number;
   }
 
@@ -294,7 +298,7 @@ declare namespace WebSG {
     r: number;
     g: number;
     b: number;
-    set(value: ArrayLike<number>): undefined;
+    set(value: ArrayLike<number>): this;
     readonly length: number;
   }
 
@@ -304,7 +308,7 @@ declare namespace WebSG {
     g: number;
     b: number;
     a: number;
-    set(value: ArrayLike<number>): undefined;
+    set(value: ArrayLike<number>): this;
     readonly length: number;
   }
 
@@ -489,7 +493,23 @@ declare namespace WebSG {
     [index: number]: number;
     x: number;
     y: number;
-    set(value: ArrayLike<number>): undefined;
+    constructor();
+    constructor(x: number, y: number);
+    constructor(array: ArrayLike<number>);
+    set(value: ArrayLike<number>): this;
+    setScalar(value: number): this;
+    add(vector: ArrayLike<number>): this;
+    addVectors(a: ArrayLike<number>, b: ArrayLike<number>): this;
+    addScaledVector(vector: ArrayLike<number>, scale: number): this;
+    subtract(vector: ArrayLike<number>): this;
+    subtractVectors(a: ArrayLike<number>, b: ArrayLike<number>): this;
+    subtractScaledVector(vector: ArrayLike<number>, scale: number): this;
+    multiply(vector: ArrayLike<number>): this;
+    multiplyVectors(a: ArrayLike<number>, b: ArrayLike<number>): this;
+    multiplyScalar(scalar: number): this;
+    divide(vector: ArrayLike<number>): this;
+    divideVectors(a: ArrayLike<number>, b: ArrayLike<number>): this;
+    divideScalar(scalar: number): this;
     readonly length: number;
   }
 
@@ -498,7 +518,23 @@ declare namespace WebSG {
     x: number;
     y: number;
     z: number;
-    set(value: ArrayLike<number>): undefined;
+    constructor();
+    constructor(x: number, y: number, z: number);
+    constructor(array: ArrayLike<number>);
+    set(value: ArrayLike<number>): this;
+    setScalar(value: number): this;
+    add(vector: ArrayLike<number>): this;
+    addVectors(a: ArrayLike<number>, b: ArrayLike<number>): this;
+    addScaledVector(vector: ArrayLike<number>, scale: number): this;
+    subtract(vector: ArrayLike<number>): this;
+    subtractVectors(a: ArrayLike<number>, b: ArrayLike<number>): this;
+    subtractScaledVector(vector: ArrayLike<number>, scale: number): this;
+    multiply(vector: ArrayLike<number>): this;
+    multiplyVectors(a: ArrayLike<number>, b: ArrayLike<number>): this;
+    multiplyScalar(scalar: number): this;
+    divide(vector: ArrayLike<number>): this;
+    divideVectors(a: ArrayLike<number>, b: ArrayLike<number>): this;
+    divideScalar(scalar: number): this;
     readonly length: number;
   }
 
@@ -512,8 +548,30 @@ declare namespace WebSG {
     right: number;
     bottom: number;
     left: number;
-    set(value: ArrayLike<number>): undefined;
+    constructor();
+    constructor(x: number, y: number, z: number, w: number);
+    constructor(array: ArrayLike<number>);
+    set(value: ArrayLike<number>): this;
+    setScalar(value: number): this;
+    add(vector: ArrayLike<number>): this;
+    addVectors(a: ArrayLike<number>, b: ArrayLike<number>): this;
+    addScaledVector(vector: ArrayLike<number>, scale: number): this;
+    subtract(vector: ArrayLike<number>): this;
+    subtractVectors(a: ArrayLike<number>, b: ArrayLike<number>): this;
+    subtractScaledVector(vector: ArrayLike<number>, scale: number): this;
+    multiply(vector: ArrayLike<number>): this;
+    multiplyVectors(a: ArrayLike<number>, b: ArrayLike<number>): this;
+    multiplyScalar(scalar: number): this;
+    divide(vector: ArrayLike<number>): this;
+    divideVectors(a: ArrayLike<number>, b: ArrayLike<number>): this;
+    divideScalar(scalar: number): this;
     readonly length: number;
+  }
+
+  class ComponentStore {}
+
+  class Component {
+    [propName: string]: unknown;
   }
 
   class World {
@@ -544,6 +602,9 @@ declare namespace WebSG {
     createUIButton(props?: UIButtonProps): UIButton;
     findUIElementByName(name: string): UIElement | undefined;
     createCollisionListener(): CollisionListener;
+    get componentStoreSize(): number;
+    set componentStoreSize(value: number);
+    findComponentStoreByName(name: string): ComponentStore | undefined;
     stopOrbit(): undefined;
     onload: (() => any) | null;
     onenter: (() => any) | null;

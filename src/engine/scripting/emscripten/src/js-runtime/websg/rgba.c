@@ -61,7 +61,7 @@ static JSValue js_websg_rgba_set_array(JSContext *ctx, JSValueConst this_val, in
   }
 
   if (rgba_data->set_array == NULL) {
-    return JS_UNDEFINED;
+    return JS_DupValue(ctx, this_val);
   }
 
   if (rgba_data->set_array(rgba_data->resource_id, rgba_data->elements) < 0) {
@@ -69,7 +69,7 @@ static JSValue js_websg_rgba_set_array(JSContext *ctx, JSValueConst this_val, in
     return JS_EXCEPTION;
   }
 
-  return JS_UNDEFINED;
+  return JS_DupValue(ctx, this_val);
 }
 
 static const JSCFunctionListEntry js_websg_rgba_proto_funcs[] = {
@@ -83,6 +83,7 @@ static const JSCFunctionListEntry js_websg_rgba_proto_funcs[] = {
   JS_CGETSET_MAGIC_DEF("a", js_websg_rgba_get, js_websg_rgba_set, 3),
   JS_CFUNC_DEF("set", 1, js_websg_rgba_set_array),
   JS_PROP_INT32_DEF("length", 4, JS_PROP_ENUMERABLE),
+  JS_PROP_STRING_DEF("[Symbol.toStringTag]", "RGBA", JS_PROP_CONFIGURABLE),
 };
 
 static JSValue js_websg_rgba_constructor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
