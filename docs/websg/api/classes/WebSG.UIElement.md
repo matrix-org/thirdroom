@@ -1,4 +1,4 @@
-[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / UIElement
+[WebSG API](../README.md) / [WebSG](../modules/WebSG.md) / UIElement
 
 # Class: UIElement
 
@@ -91,7 +91,7 @@ Readonly RGBA object representing the background color of the UI element.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1594](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1594)
+[packages/websg-types/types/websg.d.ts:1624](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1624)
 
 ___
 
@@ -107,7 +107,7 @@ Readonly RGBA object representing the border color of the UI element.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1600](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1600)
+[packages/websg-types/types/websg.d.ts:1630](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1630)
 
 ___
 
@@ -123,7 +123,7 @@ Readonly Vector4 object representing the border radius of the UI element.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1624](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1624)
+[packages/websg-types/types/websg.d.ts:1654](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1654)
 
 ___
 
@@ -139,7 +139,7 @@ Readonly Vector4 object representing the border width of the UI element.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1618](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1618)
+[packages/websg-types/types/websg.d.ts:1648](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1648)
 
 ___
 
@@ -155,7 +155,7 @@ Readonly Vector4 object representing the margin of the UI element.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1612](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1612)
+[packages/websg-types/types/websg.d.ts:1642](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1642)
 
 ___
 
@@ -171,7 +171,7 @@ Readonly Vector4 object representing the padding of the UI element.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1606](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1606)
+[packages/websg-types/types/websg.d.ts:1636](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1636)
 
 ___
 
@@ -181,7 +181,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:457](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L457)
+[src/engine/scripting/websg-api.d.ts:457](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L457)
 
 ___
 
@@ -191,7 +191,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:458](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L458)
+[src/engine/scripting/websg-api.d.ts:458](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L458)
 
 ## Accessors
 
@@ -213,7 +213,7 @@ UIElementProps.alignContent
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1376](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1376)
+[packages/websg-types/types/websg.d.ts:1406](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1406)
 
 • `set` **alignContent**(`value`): `void`
 
@@ -235,7 +235,7 @@ UIElementProps.alignContent
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1382](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1382)
+[packages/websg-types/types/websg.d.ts:1412](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1412)
 
 ___
 
@@ -257,7 +257,7 @@ UIElementProps.alignItems
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1388](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1388)
+[packages/websg-types/types/websg.d.ts:1418](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1418)
 
 • `set` **alignItems**(`value`): `void`
 
@@ -279,7 +279,7 @@ UIElementProps.alignItems
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1394](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1394)
+[packages/websg-types/types/websg.d.ts:1424](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1424)
 
 ___
 
@@ -301,7 +301,7 @@ UIElementProps.alignSelf
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1400](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1400)
+[packages/websg-types/types/websg.d.ts:1430](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1430)
 
 • `set` **alignSelf**(`value`): `void`
 
@@ -323,7 +323,7 @@ UIElementProps.alignSelf
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1406](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1406)
+[packages/websg-types/types/websg.d.ts:1436](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1436)
 
 ___
 
@@ -345,7 +345,7 @@ UIElementProps.bottom
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1352](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1352)
+[packages/websg-types/types/websg.d.ts:1382](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1382)
 
 • `set` **bottom**(`value`): `void`
 
@@ -367,7 +367,7 @@ UIElementProps.bottom
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1358](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1358)
+[packages/websg-types/types/websg.d.ts:1388](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1388)
 
 ___
 
@@ -389,7 +389,7 @@ UIElementProps.flexBasis
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1436](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1436)
+[packages/websg-types/types/websg.d.ts:1466](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1466)
 
 • `set` **flexBasis**(`value`): `void`
 
@@ -411,7 +411,7 @@ UIElementProps.flexBasis
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1442](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1442)
+[packages/websg-types/types/websg.d.ts:1472](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1472)
 
 ___
 
@@ -433,7 +433,7 @@ UIElementProps.flexDirection
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1412](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1412)
+[packages/websg-types/types/websg.d.ts:1442](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1442)
 
 • `set` **flexDirection**(`value`): `void`
 
@@ -455,7 +455,7 @@ UIElementProps.flexDirection
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1418](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1418)
+[packages/websg-types/types/websg.d.ts:1448](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1448)
 
 ___
 
@@ -477,7 +477,7 @@ UIElementProps.flexGrow
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1448](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1448)
+[packages/websg-types/types/websg.d.ts:1478](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1478)
 
 • `set` **flexGrow**(`value`): `void`
 
@@ -499,7 +499,7 @@ UIElementProps.flexGrow
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1454](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1454)
+[packages/websg-types/types/websg.d.ts:1484](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1484)
 
 ___
 
@@ -521,7 +521,7 @@ UIElementProps.flexShrink
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1460](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1460)
+[packages/websg-types/types/websg.d.ts:1490](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1490)
 
 • `set` **flexShrink**(`value`): `void`
 
@@ -543,7 +543,7 @@ UIElementProps.flexShrink
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1466](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1466)
+[packages/websg-types/types/websg.d.ts:1496](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1496)
 
 ___
 
@@ -565,7 +565,7 @@ UIElementProps.flexWrap
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1424](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1424)
+[packages/websg-types/types/websg.d.ts:1454](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1454)
 
 • `set` **flexWrap**(`value`): `void`
 
@@ -587,7 +587,7 @@ UIElementProps.flexWrap
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1430](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1430)
+[packages/websg-types/types/websg.d.ts:1460](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1460)
 
 ___
 
@@ -609,7 +609,7 @@ UIElementProps.height
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1496](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1496)
+[packages/websg-types/types/websg.d.ts:1526](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1526)
 
 • `set` **height**(`value`): `void`
 
@@ -631,7 +631,7 @@ UIElementProps.height
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1502](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1502)
+[packages/websg-types/types/websg.d.ts:1532](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1532)
 
 ___
 
@@ -653,7 +653,7 @@ UIElementProps.justifyContent
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1472](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1472)
+[packages/websg-types/types/websg.d.ts:1502](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1502)
 
 • `set` **justifyContent**(`value`): `void`
 
@@ -675,7 +675,7 @@ UIElementProps.justifyContent
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1478](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1478)
+[packages/websg-types/types/websg.d.ts:1508](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1508)
 
 ___
 
@@ -697,7 +697,7 @@ UIElementProps.left
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1364](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1364)
+[packages/websg-types/types/websg.d.ts:1394](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1394)
 
 • `set` **left**(`value`): `void`
 
@@ -719,7 +719,7 @@ UIElementProps.left
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1370](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1370)
+[packages/websg-types/types/websg.d.ts:1400](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1400)
 
 ___
 
@@ -741,7 +741,7 @@ UIElementProps.maxHeight
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1544](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1544)
+[packages/websg-types/types/websg.d.ts:1574](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1574)
 
 • `set` **maxHeight**(`value`): `void`
 
@@ -763,7 +763,7 @@ UIElementProps.maxHeight
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1550](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1550)
+[packages/websg-types/types/websg.d.ts:1580](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1580)
 
 ___
 
@@ -785,7 +785,7 @@ UIElementProps.maxWidth
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1532](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1532)
+[packages/websg-types/types/websg.d.ts:1562](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1562)
 
 • `set` **maxWidth**(`value`): `void`
 
@@ -807,7 +807,7 @@ UIElementProps.maxWidth
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1538](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1538)
+[packages/websg-types/types/websg.d.ts:1568](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1568)
 
 ___
 
@@ -829,7 +829,7 @@ UIElementProps.minHeight
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1520](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1520)
+[packages/websg-types/types/websg.d.ts:1550](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1550)
 
 • `set` **minHeight**(`value`): `void`
 
@@ -851,7 +851,7 @@ UIElementProps.minHeight
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1526](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1526)
+[packages/websg-types/types/websg.d.ts:1556](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1556)
 
 ___
 
@@ -873,7 +873,7 @@ UIElementProps.minWidth
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1508](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1508)
+[packages/websg-types/types/websg.d.ts:1538](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1538)
 
 • `set` **minWidth**(`value`): `void`
 
@@ -895,7 +895,7 @@ UIElementProps.minWidth
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1514](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1514)
+[packages/websg-types/types/websg.d.ts:1544](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1544)
 
 ___
 
@@ -917,7 +917,7 @@ UIElementProps.position
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1316](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1316)
+[packages/websg-types/types/websg.d.ts:1346](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1346)
 
 • `set` **position**(`value`): `void`
 
@@ -939,7 +939,7 @@ UIElementProps.position
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1322](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1322)
+[packages/websg-types/types/websg.d.ts:1352](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1352)
 
 ___
 
@@ -961,7 +961,7 @@ UIElementProps.right
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1340](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1340)
+[packages/websg-types/types/websg.d.ts:1370](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1370)
 
 • `set` **right**(`value`): `void`
 
@@ -983,7 +983,7 @@ UIElementProps.right
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1346](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1346)
+[packages/websg-types/types/websg.d.ts:1376](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1376)
 
 ___
 
@@ -1005,7 +1005,7 @@ UIElementProps.top
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1328](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1328)
+[packages/websg-types/types/websg.d.ts:1358](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1358)
 
 • `set` **top**(`value`): `void`
 
@@ -1027,7 +1027,7 @@ UIElementProps.top
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1334](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1334)
+[packages/websg-types/types/websg.d.ts:1364](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1364)
 
 ___
 
@@ -1049,7 +1049,7 @@ UIElementProps.width
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1484](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1484)
+[packages/websg-types/types/websg.d.ts:1514](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1514)
 
 • `set` **width**(`value`): `void`
 
@@ -1071,7 +1071,7 @@ UIElementProps.width
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1490](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1490)
+[packages/websg-types/types/websg.d.ts:1520](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1520)
 
 ## Methods
 
@@ -1099,7 +1099,7 @@ The current UI element for chaining.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1556](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1556)
+[packages/websg-types/types/websg.d.ts:1586](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1586)
 
 ___
 
@@ -1117,7 +1117,7 @@ An iterator for the children of the current UI element.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1576](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1576)
+[packages/websg-types/types/websg.d.ts:1606](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1606)
 
 ___
 
@@ -1141,7 +1141,7 @@ The child UI element or undefined if the index is out of bounds.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1570](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1570)
+[packages/websg-types/types/websg.d.ts:1600](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1600)
 
 ___
 
@@ -1165,7 +1165,7 @@ The current UI element for chaining.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1563](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1563)
+[packages/websg-types/types/websg.d.ts:1593](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1593)
 
 ___
 
@@ -1189,7 +1189,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:424](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L424)
+[src/engine/scripting/websg-api.d.ts:424](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L424)
 
 ___
 
@@ -1213,4 +1213,4 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:423](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L423)
+[src/engine/scripting/websg-api.d.ts:423](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L423)

@@ -1,4 +1,4 @@
-[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / FlexAlign
+[WebSG API](../README.md) / [WebSG](../modules/WebSG.md) / FlexAlign
 
 # Enumeration: FlexAlign
 
@@ -25,7 +25,7 @@
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:383](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L383)
+[src/engine/scripting/websg-api.d.ts:383](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L383)
 
 ___
 
@@ -35,7 +35,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:388](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L388)
+[src/engine/scripting/websg-api.d.ts:388](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L388)
 
 ___
 
@@ -45,7 +45,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:385](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L385)
+[src/engine/scripting/websg-api.d.ts:385](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L385)
 
 ___
 
@@ -55,7 +55,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:386](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L386)
+[src/engine/scripting/websg-api.d.ts:386](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L386)
 
 ___
 
@@ -65,7 +65,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:384](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L384)
+[src/engine/scripting/websg-api.d.ts:384](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L384)
 
 ___
 
@@ -75,7 +75,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:390](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L390)
+[src/engine/scripting/websg-api.d.ts:390](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L390)
 
 ___
 
@@ -85,7 +85,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:389](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L389)
+[src/engine/scripting/websg-api.d.ts:389](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L389)
 
 ___
 
@@ -95,4 +95,4 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:387](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L387)
+[src/engine/scripting/websg-api.d.ts:387](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L387)

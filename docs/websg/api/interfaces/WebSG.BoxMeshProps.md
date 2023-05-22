@@ -1,4 +1,4 @@
-[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / BoxMeshProps
+[WebSG API](../README.md) / [WebSG](../modules/WebSG.md) / BoxMeshProps
 
 # Interface: BoxMeshProps
 
@@ -22,9 +22,9 @@ BoxMeshProps is an interface for defining properties of a box mesh.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:291](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L291)
+[src/engine/scripting/websg-api.d.ts:291](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L291)
 
-[packages/websg-types/types/websg.d.ts:562](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L562)
+[packages/websg-types/types/websg.d.ts:570](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L570)
 
 ___
 
@@ -34,9 +34,9 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:290](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L290)
+[src/engine/scripting/websg-api.d.ts:290](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L290)
 
-[packages/websg-types/types/websg.d.ts:561](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L561)
+[packages/websg-types/types/websg.d.ts:569](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L569)
 
 ___
 
@@ -46,6 +46,6 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:289](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L289)
+[src/engine/scripting/websg-api.d.ts:289](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L289)
 
-[packages/websg-types/types/websg.d.ts:560](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L560)
+[packages/websg-types/types/websg.d.ts:568](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L568)

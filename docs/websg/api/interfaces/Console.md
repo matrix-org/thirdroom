@@ -1,8 +1,6 @@
-[websg-types](../README.md) / [Exports](../modules.md) / Console
+[WebSG API](../README.md) / Console
 
 # Interface: Console
-
-Console interface provides a way to log information to the browser's console.
 
 ## Table of contents
 
@@ -642,7 +640,7 @@ Logs the provided data to the browser's console.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2215](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L2215)
+[packages/websg-types/types/websg.d.ts:2352](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2352)
 
 ▸ **log**(`message?`, `...optionalParams`): `void`
 

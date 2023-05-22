@@ -1,4 +1,4 @@
-[websg-types](../README.md) / [Exports](../modules.md) / WebSG
+[WebSG API](../README.md) / WebSG
 
 # Namespace: WebSG
 
@@ -27,6 +27,10 @@ WebSG Documentation
 
 - [Accessor](../classes/WebSG.Accessor.md)
 - [Collider](../classes/WebSG.Collider.md)
+- [Collision](../classes/WebSG.Collision.md)
+- [CollisionIterator](../classes/WebSG.CollisionIterator.md)
+- [CollisionListener](../classes/WebSG.CollisionListener.md)
+- [Image](../classes/WebSG.Image.md)
 - [Interactable](../classes/WebSG.Interactable.md)
 - [Light](../classes/WebSG.Light.md)
 - [Material](../classes/WebSG.Material.md)
@@ -89,12 +93,14 @@ WebSG Documentation
 
 - [AlphaMode](WebSG.md#alphamode)
 - [InteractableProps](WebSG.md#interactableprops)
+- [InteractableType](WebSG.md#interactabletype)
 - [LightType](WebSG.md#lighttype)
 
 ### Variables
 
 - [AlphaMode](WebSG.md#alphamode-1)
 - [ColliderType](WebSG.md#collidertype)
+- [InteractableType](WebSG.md#interactabletype-1)
 - [PhysicsBodyType](WebSG.md#physicsbodytype)
 
 ## Type Aliases
@@ -107,9 +113,9 @@ AlphaMode is a union type representing the available alpha modes.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:279](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L279)
+[packages/websg-types/types/websg.d.ts:287](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L287)
 
-[packages/websg-types/types/websg.d.ts:285](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L285)
+[packages/websg-types/types/websg.d.ts:293](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L293)
 
 ___
 
@@ -117,9 +123,27 @@ ___
 
 Ƭ **InteractableProps**: `Object`
 
+#### Type declaration
+
+| Name | Type |
+| :------ | :------ |
+| `type` | [`InteractableType`](WebSG.md#interactabletype-1) |
+
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:146](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L146)
+[packages/websg-types/types/websg.d.ts:152](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L152)
+
+___
+
+### InteractableType
+
+Ƭ **InteractableType**: ``1`` \| ``2``
+
+#### Defined in
+
+[packages/websg-types/types/websg.d.ts:146](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L146)
+
+[packages/websg-types/types/websg.d.ts:147](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L147)
 
 ___
 
@@ -139,7 +163,7 @@ LightType is an object containing the string constants for the available types o
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:202](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L202)
+[packages/websg-types/types/websg.d.ts:210](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L210)
 
 ## Variables
 
@@ -163,9 +187,9 @@ AlphaMode
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:279](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L279)
+[packages/websg-types/types/websg.d.ts:287](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L287)
 
-[packages/websg-types/types/websg.d.ts:285](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L285)
+[packages/websg-types/types/websg.d.ts:293](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L293)
 
 ___
 
@@ -181,7 +205,26 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:499](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L499)
+[src/engine/scripting/websg-api.d.ts:499](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L499)
+
+___
+
+### InteractableType
+
+• **InteractableType**: `Object`
+
+#### Type declaration
+
+| Name | Type |
+| :------ | :------ |
+| `Grabbable` | ``2`` |
+| `Interactable` | ``1`` |
+
+#### Defined in
+
+[packages/websg-types/types/websg.d.ts:146](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L146)
+
+[packages/websg-types/types/websg.d.ts:147](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L147)
 
 ___
 
@@ -197,4 +240,4 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:503](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L503)
+[src/engine/scripting/websg-api.d.ts:503](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L503)

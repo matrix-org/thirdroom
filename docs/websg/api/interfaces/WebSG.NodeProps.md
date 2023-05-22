@@ -1,4 +1,4 @@
-[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / NodeProps
+[WebSG API](../README.md) / [WebSG](../modules/WebSG.md) / NodeProps
 
 # Interface: NodeProps
 
@@ -27,7 +27,7 @@ Interface representing the properties you can create a Node object with.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:177](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L177)
+[src/engine/scripting/websg-api.d.ts:177](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L177)
 
 ___
 
@@ -39,9 +39,9 @@ The initial mesh associated with the node.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:179](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L179)
+[src/engine/scripting/websg-api.d.ts:179](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L179)
 
-[packages/websg-types/types/websg.d.ts:595](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L595)
+[packages/websg-types/types/websg.d.ts:603](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L603)
 
 ___
 
@@ -53,7 +53,7 @@ The initial name of the node.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:589](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L589)
+[packages/websg-types/types/websg.d.ts:597](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L597)
 
 ___
 
@@ -65,9 +65,9 @@ The initial rotation of the node.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:175](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L175)
+[src/engine/scripting/websg-api.d.ts:175](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L175)
 
-[packages/websg-types/types/websg.d.ts:613](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L613)
+[packages/websg-types/types/websg.d.ts:621](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L621)
 
 ___
 
@@ -79,9 +79,9 @@ The initial scale of the node.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:176](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L176)
+[src/engine/scripting/websg-api.d.ts:176](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L176)
 
-[packages/websg-types/types/websg.d.ts:619](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L619)
+[packages/websg-types/types/websg.d.ts:627](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L627)
 
 ___
 
@@ -91,7 +91,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:178](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L178)
+[src/engine/scripting/websg-api.d.ts:178](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L178)
 
 ___
 
@@ -103,9 +103,9 @@ The initial translation of the node.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:174](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L174)
+[src/engine/scripting/websg-api.d.ts:174](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L174)
 
-[packages/websg-types/types/websg.d.ts:607](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L607)
+[packages/websg-types/types/websg.d.ts:615](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L615)
 
 ___
 
@@ -117,4 +117,4 @@ The initial UI canvas associated with the node.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:601](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L601)
+[packages/websg-types/types/websg.d.ts:609](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L609)

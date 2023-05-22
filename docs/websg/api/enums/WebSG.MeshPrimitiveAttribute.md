@@ -1,4 +1,4 @@
-[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / MeshPrimitiveAttribute
+[WebSG API](../README.md) / [WebSG](../modules/WebSG.md) / MeshPrimitiveAttribute
 
 # Enumeration: MeshPrimitiveAttribute
 
@@ -25,7 +25,7 @@
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:244](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L244)
+[src/engine/scripting/websg-api.d.ts:244](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L244)
 
 ___
 
@@ -35,7 +35,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:245](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L245)
+[src/engine/scripting/websg-api.d.ts:245](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L245)
 
 ___
 
@@ -45,7 +45,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:240](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L240)
+[src/engine/scripting/websg-api.d.ts:240](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L240)
 
 ___
 
@@ -55,7 +55,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:239](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L239)
+[src/engine/scripting/websg-api.d.ts:239](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L239)
 
 ___
 
@@ -65,7 +65,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:241](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L241)
+[src/engine/scripting/websg-api.d.ts:241](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L241)
 
 ___
 
@@ -75,7 +75,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:242](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L242)
+[src/engine/scripting/websg-api.d.ts:242](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L242)
 
 ___
 
@@ -85,7 +85,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:243](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L243)
+[src/engine/scripting/websg-api.d.ts:243](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L243)
 
 ___
 
@@ -95,4 +95,4 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:246](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L246)
+[src/engine/scripting/websg-api.d.ts:246](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L246)

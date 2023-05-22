@@ -1,4 +1,4 @@
-[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / UIElementIterator
+[WebSG API](../README.md) / [WebSG](../modules/WebSG.md) / UIElementIterator
 
 # Class: UIElementIterator
 
@@ -33,7 +33,7 @@
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1305](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1305)
+[packages/websg-types/types/websg.d.ts:1335](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1335)
 
 ___
 
@@ -52,4 +52,4 @@ ___
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1304](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1304)
+[packages/websg-types/types/websg.d.ts:1334](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1334)

@@ -1,4 +1,4 @@
-[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / Material
+[WebSG API](../README.md) / [WebSG](../modules/WebSG.md) / Material
 
 # Class: Material
 
@@ -41,7 +41,7 @@ Creates a new Material instance.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:351](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L351)
+[packages/websg-types/types/websg.d.ts:359](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L359)
 
 ## Accessors
 
@@ -59,7 +59,7 @@ Returns the base color factor of the Material object as an RGBA instance.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:359](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L359)
+[packages/websg-types/types/websg.d.ts:367](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L367)
 
 ___
 
@@ -77,7 +77,7 @@ Gets the base color texture of the Material object.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:366](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L366)
+[packages/websg-types/types/websg.d.ts:374](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L374)
 
 • `set` **baseColorTexture**(`texture`): `void`
 
@@ -95,7 +95,7 @@ Sets the base color texture of the Material object.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:372](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L372)
+[packages/websg-types/types/websg.d.ts:380](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L380)
 
 ___
 
@@ -113,7 +113,7 @@ Returns the emissive factor of the Material object as an RGB instance.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:406](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L406)
+[packages/websg-types/types/websg.d.ts:414](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L414)
 
 ___
 
@@ -131,7 +131,7 @@ Gets the metallic factor of the Material object.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:379](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L379)
+[packages/websg-types/types/websg.d.ts:387](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L387)
 
 • `set` **metallicFactor**(`value`): `void`
 
@@ -149,7 +149,7 @@ Sets the metallic factor of the Material object.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:385](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L385)
+[packages/websg-types/types/websg.d.ts:393](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L393)
 
 ___
 
@@ -167,7 +167,7 @@ Gets the roughness factor of the Material object.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:392](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L392)
+[packages/websg-types/types/websg.d.ts:400](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L400)
 
 • `set` **roughnessFactor**(`value`): `void`
 
@@ -185,7 +185,7 @@ Sets the roughness factor of the Material object.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:398](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L398)
+[packages/websg-types/types/websg.d.ts:406](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L406)
 
 ## Methods
 
@@ -199,7 +199,7 @@ Sets the roughness factor of the Material object.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:490](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L490)
+[src/engine/scripting/websg-api.d.ts:490](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L490)
 
 ___
 
@@ -219,4 +219,4 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:491](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L491)
+[src/engine/scripting/websg-api.d.ts:491](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L491)

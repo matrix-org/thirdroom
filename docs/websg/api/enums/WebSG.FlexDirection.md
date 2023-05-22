@@ -1,4 +1,4 @@
-[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / FlexDirection
+[WebSG API](../README.md) / [WebSG](../modules/WebSG.md) / FlexDirection
 
 # Enumeration: FlexDirection
 
@@ -21,7 +21,7 @@
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:370](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L370)
+[src/engine/scripting/websg-api.d.ts:370](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L370)
 
 ___
 
@@ -31,7 +31,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:371](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L371)
+[src/engine/scripting/websg-api.d.ts:371](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L371)
 
 ___
 
@@ -41,7 +41,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:372](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L372)
+[src/engine/scripting/websg-api.d.ts:372](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L372)
 
 ___
 
@@ -51,4 +51,4 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:373](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L373)
+[src/engine/scripting/websg-api.d.ts:373](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L373)

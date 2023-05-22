@@ -1,4 +1,4 @@
-[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / Scene
+[WebSG API](../README.md) / [WebSG](../modules/WebSG.md) / Scene
 
 # Class: Scene
 
@@ -47,7 +47,7 @@ This Scene instance, for chaining.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:162](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L162)
+[src/engine/scripting/websg-api.d.ts:162](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L162)
 
 ▸ **addNode**(`node`): [`Scene`](WebSG.Scene.md)
 
@@ -67,7 +67,7 @@ The instance of the Scene class (for method chaining).
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1015](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1015)
+[packages/websg-types/types/websg.d.ts:1043](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1043)
 
 ___
 
@@ -91,7 +91,7 @@ The node at the given index, or undefined if no node exists at the index.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1029](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1029)
+[packages/websg-types/types/websg.d.ts:1057](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1057)
 
 ___
 
@@ -109,7 +109,7 @@ An iterator for the nodes in the scene.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1035](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1035)
+[packages/websg-types/types/websg.d.ts:1063](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1063)
 
 ___
 
@@ -133,7 +133,7 @@ This Scene instance, for chaining.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:170](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L170)
+[src/engine/scripting/websg-api.d.ts:170](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L170)
 
 ▸ **removeNode**(`node`): [`Scene`](WebSG.Scene.md)
 
@@ -153,4 +153,4 @@ The instance of the Scene class (for method chaining).
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1022](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1022)
+[packages/websg-types/types/websg.d.ts:1050](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1050)

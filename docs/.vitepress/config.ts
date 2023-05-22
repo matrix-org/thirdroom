@@ -1,4 +1,5 @@
 import { defineConfig } from "vitepress";
+import { vitepressPluginTypedoc } from "./plugins/vitepress-plugin-typedoc";
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
@@ -32,7 +33,7 @@ export default defineConfig({
         items: [
           { text: "Overview", link: "/websg/" },
           { text: "Tutorial", link: "/websg/tutorial" },
-          { text: "API Reference", link: "/websg/api/modules" },
+          { text: "API Reference", link: "/websg/api/interfaces/WebSGGlobalScope" },
         ],
       },
       {
@@ -67,5 +68,8 @@ export default defineConfig({
       { icon: "mastodon", link: "https://mastodon.matrix.org/@thirdroom" },
       { icon: "twitter", link: "https://twitter.com/thirdroomio" },
     ],
+  },
+  vite: {
+    plugins: [vitepressPluginTypedoc()],
   },
 });

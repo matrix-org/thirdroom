@@ -1851,11 +1851,81 @@ declare namespace WebSG {
   }
 
   /**
-   * Class representing a 3D world.
+   * Class representing a 3D world composed of {@link WebSG.Scene | scenes}, {@link WebSG.Node | nodes},
+   * {@link WebSG.Mesh | meshes}, {@link WebSG.Material | materials}, and other properties defined by
+   * the [glTF 2.0 specification](https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html).
+   *
+   * Currently a World contains resources loaded for the environment's glTF document. This means you do not have direct
+   * access to user's avatars in the world's scene graph. On script initialization, the world will be empty. It is not
+   * until {@link WebSG.World.onload | world.onload} is called that {@link WebSG.World.environment | world.environment}
+   * will be set to the default {@link WebSG.Scene | scene} in the world's initial glTF document. All other resources
+   * such as textures, materials, and meshes referenced by the document will be loaded at this time and can be accessed
+   * via methods such as {@link WebSG.World.findNodeByName | world.findNodeByName }.
+   *
+   * @example
+   * In the following example {@link WebSG.World.findNodeByName | world.findNodeByName } is used to
+   * find a {@link WebSG.Node | node } by its name and log the reference to the console.
+   * ```js
+   * // World not yet loaded
+   *
+   * world.onload = () => {
+   *   // World loaded
+   *   const lightNode = world.findNodeByName("Light");
+   *   console.log(lightNode);
+   * };
+   * ```
+   *
+   * Once a world is loaded you can modify the scene graph by adding, removing, or modifying nodes.
+   *
+   * @example
+   * ```js
+   * world.onload = () => {
+   *   const newNode = world.createNode();
+   *   world.environment.addNode(newNode); // Nodes must be added to a scene to be rendered
+   *
+   *   newNode.mesh = world.findMeshByName("Teapot");
+   *
+   *   world.environment.removeNode(newNode);
+   * };
+   * ```
+   *
+   * If you want to modify the scene graph each frame you can use the
+   * {@link WebSG.World.onupdate | world.onupdate} callback.
+   *
+   * @example
+   * ```js
+   * world.onload = () => {
+   *   const newNode = world.createNode();
+   *   world.environment.addNode(newNode);
+   *
+   *   newNode.mesh = world.findMeshByName("Teapot");
+   *
+   *   world.onupdate = (dt, time) => {
+   *     newNode.translation.y = Math.sin(time) * 5;
+   *   };
+   * };
+   * ```
+   *
+   * Once the local user has entered the world, the networking interface will be fully initialized. You access
+   * the local user's {@link WebSGNetworking.Peer | peer} via the global
+   * {@link WebSGNetworking.Network | network.local} variable. This can be used to get the local user's transform.
+   *
+   * @example
+   * ```js
+   * world.onenter = () => {
+   *   const localUser = network.local;
+   *   console.log(localUser.transform);
+   *   console.log(localUser.rotation);
+   * };
+   * ```
+   *
+   * Overall, world is the main interface for creating new resources. See the individual factory functions
+   * for more details.
    */
   class World {
     /**
      * Gets the environment of the world.
+     * Note this is not set until `world.onload` is called.
      * @returns {Scene} The environment scene of the world.
      */
     get environment(): Scene;
@@ -2154,37 +2224,49 @@ declare namespace ThirdRoom {
 
 declare class ThirdRoom {
   /**
-   * Enables or disables the use of Matrix materials.
+   * Enables or disables the use of the custom Matrix-style material on the world.
+   *
+   * @experimental Note that this is not a standard function and could be removed or disabled in the future.
    * @param {boolean} enabled - Whether to enable or disable Matrix materials.
    * @returns {undefined}
    */
   enableMatrixMaterial(enabled: boolean): undefined;
 
   /**
-   * Gets the size of the audio data buffer.
+   * Gets the size of the local audio input source's audio data buffer.
+   * Similar to the WebAudio [AnalyserNode.frequencyBinCount](https://developer.mozilla.org/en-US/docs/Web/API/AnalyserNode/frequencyBinCount)
    * @returns {number} - The size of the audio data buffer.
    */
   getAudioDataSize(): number;
 
   /**
-   * Gets the audio time data and fills the provided Float32Array.
-   * @param {Float32Array} data - The array to store the audio time data.
+   * Gets the local audio input source's time data and fills the provided Uint8Array.
+   * The data array must be at least the size returned by {@link ThirdRoom.getAudioDataSize | getAudioDataSize}.
+   * Similar to the WebAudio [AnalyserNode.getByteTimeDomainData](https://developer.mozilla.org/en-US/docs/Web/API/AnalyserNode/getByteTimeDomainData)
+   * @param {Uint8Array} data - The array to store the audio time data.
    * @returns {number} - The number of elements filled in the data array.
    */
   getAudioTimeData(data: Float32Array): number;
 
   /**
-   * Gets the audio frequency data and fills the provided Float32Array.
-   * @param {Float32Array} data - The array to store the audio frequency data.
+   * Gets the local audio input source's frequency data and fills the provided Uint8Array.
+   * The data array must be at least the size returned by {@link ThirdRoom.getAudioDataSize | getAudioDataSize}.
+   * Similar to the WebAudio [AnalyserNode.getByteFrequencyData](https://developer.mozilla.org/en-US/docs/Web/API/AnalyserNode/getByteFrequencyData)
+   * @param {Uint8Array} data - The array to store the audio frequency data.
    * @returns {number} - The number of elements filled in the data array.
    */
   getAudioFrequencyData(data: Float32Array): number;
 
   /**
-   * Determines if the app is running in an Augmented Reality (AR) environment.
-   * @returns {boolean} - True if the app is running in an AR environment, false otherwise.
+   * Determines if the local user is currently in an Augmented Reality (AR) environment.
+   * Checks to see if the local user is in immersive AR mode and if the world supports AR.
+   * @returns {boolean} - True if the script is running in an AR environment, false otherwise.
    */
   inAR(): boolean;
+
+  /**
+   * Returns the {@link ThirdRoom.ActionBar | ActionBar} object.
+   */
   get actionBar(): ThirdRoom.ActionBar;
 }
 
@@ -2261,9 +2343,6 @@ interface MatrixWidgetAPI {
  */
 declare const matrix: MatrixWidgetAPI;
 
-/**
- * Console interface provides a way to log information to the browser's console.
- */
 interface Console {
   /**
    * Logs the provided data to the browser's console.
@@ -2278,3 +2357,62 @@ interface Console {
  * @global {Console} console
  */
 declare const console: Console;
+
+/**
+ * The global scope of a WebSG script. All scripts have access to these global properties.
+ *
+ * @example
+ * In the following example {@link WebSG.World.findNodeByName | world.findNodeByName } is used to
+ * find {@link WebSG.Node | nodes } by their name defined in the associated glTF document.
+ *
+ * {@link WebSG.World.onload | world.onload } and {@link WebSG.World.onupdate | world.onupdate }
+ * are lifecycle methods that are called when the world is loaded and updated on each frame.
+ * ```js
+ * world.onload = () => {
+ *   const lightNode = world.findNodeByName("Light");
+ *
+ *   const lightSwitch = world.findNodeByName("LightSwitch");
+ *   lightSwitch.addInteractable();
+ *
+ *   let lightOn = true;
+ *
+ *   world.onupdate = (dt) => {
+ *     if (lightSwitch.interactable.pressed) {
+ *       lightOn = !lightOn;
+ *       lightNode.light.intensity = lightOn ? 20 : 0;
+ *     }
+ *   };
+ * };
+ * ```
+ */
+declare interface WebSGGlobalScope {
+  /**
+   * Returns the {@link Console | console } associated with the current script.
+   * Used for logging messages to the browser's console.
+   */
+  readonly console: Console;
+
+  /**
+   * Returns the {@link WebSG.World | world } associated with the current script.
+   * Used for accessing the current world's scene graph and other world properties/methods.
+   */
+  readonly world: WebSG.World;
+
+  /**
+   * Returns the {@link ThirdRoom | thirdroom } instance associated with the current script.
+   * Used for ThirdRoom-specific properties/methods not available in the WebSG API.
+   */
+  readonly thirdroom: ThirdRoom;
+
+  /**
+   * Returns the {@link MatrixWidgetAPI | matrix } instance associated with the current script.
+   * Used for sending and receiving matrix events to and from the associated matrix room.
+   */
+  readonly matrix: MatrixWidgetAPI;
+
+  /**
+   * Returns the {@link WebSGNetworking.Network | network } instance associated with the current script.
+   * Used for sending and receiving network messages to and from other peers in the room over WebRTC.
+   */
+  readonly network: WebSGNetworking.Network;
+}

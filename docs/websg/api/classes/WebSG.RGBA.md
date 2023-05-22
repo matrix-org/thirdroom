@@ -1,4 +1,4 @@
-[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / RGBA
+[WebSG API](../README.md) / [WebSG](../modules/WebSG.md) / RGBA
 
 # Class: RGBA
 
@@ -44,7 +44,7 @@ The alpha component of the color.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:980](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L980)
+[packages/websg-types/types/websg.d.ts:1008](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1008)
 
 ___
 
@@ -56,7 +56,7 @@ The blue component of the color.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:974](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L974)
+[packages/websg-types/types/websg.d.ts:1002](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1002)
 
 ___
 
@@ -68,7 +68,7 @@ The green component of the color.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:968](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L968)
+[packages/websg-types/types/websg.d.ts:996](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L996)
 
 ___
 
@@ -80,7 +80,7 @@ The number of components in the RGBA color.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:994](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L994)
+[packages/websg-types/types/websg.d.ts:1022](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1022)
 
 ___
 
@@ -92,7 +92,7 @@ The red component of the color.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:962](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L962)
+[packages/websg-types/types/websg.d.ts:990](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L990)
 
 ## Methods
 
@@ -114,4 +114,4 @@ Sets the RGBA color components to the given values.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:987](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L987)
+[packages/websg-types/types/websg.d.ts:1015](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1015)

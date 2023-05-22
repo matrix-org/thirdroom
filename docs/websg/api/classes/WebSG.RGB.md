@@ -1,4 +1,4 @@
-[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / RGB
+[WebSG API](../README.md) / [WebSG](../modules/WebSG.md) / RGB
 
 # Class: RGB
 
@@ -43,7 +43,7 @@ The blue component of the color.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:931](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L931)
+[packages/websg-types/types/websg.d.ts:959](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L959)
 
 ___
 
@@ -55,7 +55,7 @@ The green component of the color.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:925](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L925)
+[packages/websg-types/types/websg.d.ts:953](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L953)
 
 ___
 
@@ -67,7 +67,7 @@ The number of components in the RGB color.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:945](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L945)
+[packages/websg-types/types/websg.d.ts:973](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L973)
 
 ___
 
@@ -79,7 +79,7 @@ The red component of the color.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:919](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L919)
+[packages/websg-types/types/websg.d.ts:947](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L947)
 
 ## Methods
 
@@ -101,4 +101,4 @@ Sets the RGB color components to the given values.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:938](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L938)
+[packages/websg-types/types/websg.d.ts:966](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L966)

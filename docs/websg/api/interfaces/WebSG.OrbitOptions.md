@@ -1,4 +1,4 @@
-[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / OrbitOptions
+[WebSG API](../README.md) / [WebSG](../modules/WebSG.md) / OrbitOptions
 
 # Interface: OrbitOptions
 
@@ -25,7 +25,7 @@ Positive values tilt the camera upwards, while negative values tilt it downwards
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:631](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L631)
+[packages/websg-types/types/websg.d.ts:639](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L639)
 
 ___
 
@@ -38,7 +38,7 @@ Positive values rotate the camera to the right, while negative values rotate it 
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:638](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L638)
+[packages/websg-types/types/websg.d.ts:646](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L646)
 
 ___
 
@@ -51,4 +51,4 @@ Positive values move the camera closer to the object, while negative values move
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:645](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L645)
+[packages/websg-types/types/websg.d.ts:653](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L653)

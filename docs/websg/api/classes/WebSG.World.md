@@ -1,10 +1,83 @@
-[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / World
+[WebSG API](../README.md) / [WebSG](../modules/WebSG.md) / World
 
 # Class: World
 
 [WebSG](../modules/WebSG.md).World
 
-Class representing a 3D world.
+Class representing a 3D world composed of [scenes](WebSG.Scene.md), [nodes](WebSG.Node.md),
+[meshes](WebSG.Mesh.md), [materials](WebSG.Material.md), and other properties defined by
+the [glTF 2.0 specification](https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html).
+
+Currently a World contains resources loaded for the environment's glTF document. This means you do not have direct
+access to user's avatars in the world's scene graph. On script initialization, the world will be empty. It is not
+until [world.onload](WebSG.World.md#onload) is called that [world.environment](WebSG.World.md#environment)
+will be set to the default [scene](WebSG.Scene.md) in the world's initial glTF document. All other resources
+such as textures, materials, and meshes referenced by the document will be loaded at this time and can be accessed
+via methods such as [world.findNodeByName ](WebSG.World.md#findnodebyname).
+
+**`Example`**
+
+In the following example [world.findNodeByName](WebSG.World.md#findnodebyname) is used to
+find a [node](WebSG.Node.md) by its name and log the reference to the console.
+```js
+// World not yet loaded
+
+world.onload = () => {
+  // World loaded
+  const lightNode = world.findNodeByName("Light");
+  console.log(lightNode);
+};
+```
+
+Once a world is loaded you can modify the scene graph by adding, removing, or modifying nodes.
+
+**`Example`**
+
+```js
+world.onload = () => {
+  const newNode = world.createNode();
+  world.environment.addNode(newNode); // Nodes must be added to a scene to be rendered
+
+  newNode.mesh = world.findMeshByName("Teapot");
+
+  world.environment.removeNode(newNode);
+};
+```
+
+If you want to modify the scene graph each frame you can use the
+[world.onupdate](WebSG.World.md#onupdate) callback.
+
+**`Example`**
+
+```js
+world.onload = () => {
+  const newNode = world.createNode();
+  world.environment.addNode(newNode);
+
+  newNode.mesh = world.findMeshByName("Teapot");
+
+  world.onupdate = (dt, time) => {
+    newNode.translation.y = Math.sin(time) * 5;
+  };
+};
+```
+
+Once the local user has entered the world, the networking interface will be fully initialized. You access
+the local user's [peer](WebSGNetworking.Peer.md) via the global
+[network.local](WebSGNetworking.Network.md) variable. This can be used to get the local user's transform.
+
+**`Example`**
+
+```js
+world.onenter = () => {
+  const localUser = network.local;
+  console.log(localUser.transform);
+  console.log(localUser.rotation);
+};
+```
+
+Overall, world is the main interface for creating new resources. See the individual factory functions
+for more details.
 
 ## Table of contents
 
@@ -24,6 +97,7 @@ Class representing a 3D world.
 - [createAccessorFrom](WebSG.World.md#createaccessorfrom)
 - [createBoxMesh](WebSG.World.md#createboxmesh)
 - [createCollider](WebSG.World.md#createcollider)
+- [createCollisionListener](WebSG.World.md#createcollisionlistener)
 - [createLight](WebSG.World.md#createlight)
 - [createMaterial](WebSG.World.md#creatematerial)
 - [createMesh](WebSG.World.md#createmesh)
@@ -36,6 +110,7 @@ Class representing a 3D world.
 - [createUnlitMaterial](WebSG.World.md#createunlitmaterial)
 - [findAccessorByName](WebSG.World.md#findaccessorbyname)
 - [findColliderByName](WebSG.World.md#findcolliderbyname)
+- [findImageByName](WebSG.World.md#findimagebyname)
 - [findLightByName](WebSG.World.md#findlightbyname)
 - [findMaterialByName](WebSG.World.md#findmaterialbyname)
 - [findMeshByName](WebSG.World.md#findmeshbyname)
@@ -60,7 +135,7 @@ Class representing a 3D world.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:37](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L37)
+[src/engine/scripting/websg-api.d.ts:37](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L37)
 
 ___
 
@@ -76,7 +151,7 @@ onenter
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2031](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L2031)
+[packages/websg-types/types/websg.d.ts:2135](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2135)
 
 ___
 
@@ -92,7 +167,7 @@ onload
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2025](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L2025)
+[packages/websg-types/types/websg.d.ts:2129](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2129)
 
 ___
 
@@ -116,7 +191,7 @@ The total time since the start of the world in seconds.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2039](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L2039)
+[packages/websg-types/types/websg.d.ts:2143](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2143)
 
 ## Methods
 
@@ -141,7 +216,7 @@ The newly created accessor.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:126](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L126)
+[src/engine/scripting/websg-api.d.ts:126](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L126)
 
 ▸ **createAccessorFrom**(`buffer`, `props`): [`Accessor`](WebSG.Accessor.md)
 
@@ -162,7 +237,7 @@ The created Accessor.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1845](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1845)
+[packages/websg-types/types/websg.d.ts:1945](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1945)
 
 ___
 
@@ -186,7 +261,7 @@ The newly created box mesh.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:77](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L77)
+[src/engine/scripting/websg-api.d.ts:77](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L77)
 
 ▸ **createBoxMesh**(`props`): [`Mesh`](WebSG.Mesh.md)
 
@@ -206,7 +281,7 @@ The created Box Mesh.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1915](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1915)
+[packages/websg-types/types/websg.d.ts:2015](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2015)
 
 ___
 
@@ -230,7 +305,7 @@ The newly created collider.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:85](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L85)
+[src/engine/scripting/websg-api.d.ts:85](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L85)
 
 ▸ **createCollider**(`props`): [`Collider`](WebSG.Collider.md)
 
@@ -250,7 +325,21 @@ The created Collider.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1859](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1859)
+[packages/websg-types/types/websg.d.ts:1959](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1959)
+
+___
+
+### createCollisionListener
+
+▸ **createCollisionListener**(): [`CollisionListener`](WebSG.CollisionListener.md)
+
+#### Returns
+
+[`CollisionListener`](WebSG.CollisionListener.md)
+
+#### Defined in
+
+[packages/websg-types/types/websg.d.ts:2116](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2116)
 
 ___
 
@@ -274,7 +363,7 @@ The created Light.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1873](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1873)
+[packages/websg-types/types/websg.d.ts:1973](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1973)
 
 ___
 
@@ -298,7 +387,7 @@ The created Material.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1894](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1894)
+[packages/websg-types/types/websg.d.ts:1994](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1994)
 
 ___
 
@@ -322,7 +411,7 @@ The newly created mesh.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:134](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L134)
+[src/engine/scripting/websg-api.d.ts:134](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L134)
 
 ▸ **createMesh**(`props`): [`Mesh`](WebSG.Mesh.md)
 
@@ -342,7 +431,7 @@ The created Mesh.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1908](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1908)
+[packages/websg-types/types/websg.d.ts:2008](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2008)
 
 ___
 
@@ -366,7 +455,7 @@ The newly created node.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:69](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L69)
+[src/engine/scripting/websg-api.d.ts:69](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L69)
 
 ▸ **createNode**(`props?`): [`Node`](WebSG.Node.md)
 
@@ -390,7 +479,7 @@ createNode
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1931](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1931)
+[packages/websg-types/types/websg.d.ts:2031](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2031)
 
 ___
 
@@ -418,7 +507,7 @@ createScene
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1947](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1947)
+[packages/websg-types/types/websg.d.ts:2047](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2047)
 
 ___
 
@@ -442,7 +531,7 @@ The newly created UI button element.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:117](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L117)
+[src/engine/scripting/websg-api.d.ts:117](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L117)
 
 ▸ **createUIButton**(`props?`): [`UIButton`](WebSG.UIButton.md)
 
@@ -470,7 +559,7 @@ createUIButton
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2004](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L2004)
+[packages/websg-types/types/websg.d.ts:2106](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2106)
 
 ___
 
@@ -494,7 +583,7 @@ The newly created UI canvas.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:93](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L93)
+[src/engine/scripting/websg-api.d.ts:93](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L93)
 
 ▸ **createUICanvas**(`props?`): [`UICanvas`](WebSG.UICanvas.md)
 
@@ -518,7 +607,7 @@ createUICanvas
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1971](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1971)
+[packages/websg-types/types/websg.d.ts:2073](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2073)
 
 ___
 
@@ -542,7 +631,7 @@ The newly created UI element.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:101](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L101)
+[src/engine/scripting/websg-api.d.ts:101](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L101)
 
 ▸ **createUIElement**(`props?`): [`UIElement`](WebSG.UIElement.md)
 
@@ -566,7 +655,7 @@ createUIElement
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1987](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1987)
+[packages/websg-types/types/websg.d.ts:2089](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2089)
 
 ___
 
@@ -590,7 +679,7 @@ The newly created UI text element.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:109](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L109)
+[src/engine/scripting/websg-api.d.ts:109](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L109)
 
 ▸ **createUIText**(`props?`): [`UIText`](WebSG.UIText.md)
 
@@ -614,7 +703,7 @@ createUIText
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1995](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1995)
+[packages/websg-types/types/websg.d.ts:2097](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2097)
 
 ___
 
@@ -638,7 +727,7 @@ The created unlit Material.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1887](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1887)
+[packages/websg-types/types/websg.d.ts:1987](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1987)
 
 ___
 
@@ -662,7 +751,7 @@ The found Accessor or undefined if not found.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1852](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1852)
+[packages/websg-types/types/websg.d.ts:1952](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1952)
 
 ___
 
@@ -686,7 +775,27 @@ The found Collider or undefined if not found.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1866](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1866)
+[packages/websg-types/types/websg.d.ts:1966](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1966)
+
+___
+
+### findImageByName
+
+▸ **findImageByName**(`name`): `undefined` \| [`Image`](WebSG.Image.md)
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `name` | `string` |
+
+#### Returns
+
+`undefined` \| [`Image`](WebSG.Image.md)
+
+#### Defined in
+
+[packages/websg-types/types/websg.d.ts:2065](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2065)
 
 ___
 
@@ -710,7 +819,7 @@ The found Light or undefined if not found.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1880](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1880)
+[packages/websg-types/types/websg.d.ts:1980](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1980)
 
 ___
 
@@ -734,7 +843,7 @@ The found material or undefined if not found.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:61](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L61)
+[src/engine/scripting/websg-api.d.ts:61](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L61)
 
 ▸ **findMaterialByName**(`name`): `undefined` \| [`Material`](WebSG.Material.md)
 
@@ -754,7 +863,7 @@ The found Material or undefined if not found.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1901](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1901)
+[packages/websg-types/types/websg.d.ts:2001](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2001)
 
 ___
 
@@ -778,7 +887,7 @@ The found mesh or undefined if not found.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:53](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L53)
+[src/engine/scripting/websg-api.d.ts:53](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L53)
 
 ▸ **findMeshByName**(`name`): `undefined` \| [`Mesh`](WebSG.Mesh.md)
 
@@ -802,7 +911,7 @@ findMeshByName
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1923](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1923)
+[packages/websg-types/types/websg.d.ts:2023](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2023)
 
 ___
 
@@ -826,7 +935,7 @@ The found node or undefined if not found.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:45](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L45)
+[src/engine/scripting/websg-api.d.ts:45](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L45)
 
 ▸ **findNodeByName**(`name`): `undefined` \| [`Node`](WebSG.Node.md)
 
@@ -850,7 +959,7 @@ findNodeByName
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1939](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1939)
+[packages/websg-types/types/websg.d.ts:2039](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2039)
 
 ___
 
@@ -878,7 +987,7 @@ findSceneByName
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1955](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1955)
+[packages/websg-types/types/websg.d.ts:2055](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2055)
 
 ___
 
@@ -906,7 +1015,7 @@ findTextureByName
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1963](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1963)
+[packages/websg-types/types/websg.d.ts:2063](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2063)
 
 ___
 
@@ -934,7 +1043,7 @@ findUICanvasByName
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1979](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1979)
+[packages/websg-types/types/websg.d.ts:2081](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2081)
 
 ___
 
@@ -962,7 +1071,7 @@ findUIElementByName
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2012](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L2012)
+[packages/websg-types/types/websg.d.ts:2114](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2114)
 
 ___
 
@@ -978,7 +1087,7 @@ Stops orbiting
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:139](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L139)
+[src/engine/scripting/websg-api.d.ts:139](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L139)
 
 ▸ **stopOrbit**(): `undefined`
 
@@ -994,4 +1103,4 @@ stopOrbit
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2019](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L2019)
+[packages/websg-types/types/websg.d.ts:2123](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2123)

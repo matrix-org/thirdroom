@@ -1,4 +1,4 @@
-[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / Texture
+[WebSG API](../README.md) / [WebSG](../modules/WebSG.md) / Texture
 
 # Class: Texture
 

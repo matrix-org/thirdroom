@@ -1,4 +1,4 @@
-[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / ReadonlyMatrix4
+[WebSG API](../README.md) / [WebSG](../modules/WebSG.md) / ReadonlyMatrix4
 
 # Class: ReadonlyMatrix4
 
@@ -42,4 +42,4 @@ Returns the length of the ReadonlyMatrix4 instance.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:456](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L456)
+[packages/websg-types/types/websg.d.ts:464](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L464)

@@ -1,4 +1,4 @@
-[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / Interactable
+[WebSG API](../README.md) / [WebSG](../modules/WebSG.md) / Interactable
 
 # Class: Interactable
 
@@ -37,7 +37,7 @@ with, providing information about its current interaction state.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:354](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L354)
+[src/engine/scripting/websg-api.d.ts:354](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L354)
 
 ___
 
@@ -47,7 +47,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:353](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L353)
+[src/engine/scripting/websg-api.d.ts:353](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L353)
 
 ___
 
@@ -57,7 +57,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:355](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L355)
+[src/engine/scripting/websg-api.d.ts:355](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L355)
 
 ## Methods
 
@@ -71,4 +71,4 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:356](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L356)
+[src/engine/scripting/websg-api.d.ts:356](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L356)

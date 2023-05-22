@@ -1,4 +1,4 @@
-[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / UICanvasProps
+[WebSG API](../README.md) / [WebSG](../modules/WebSG.md) / UICanvasProps
 
 # Interface: UICanvasProps
 
@@ -31,7 +31,7 @@ The canvas height in pixels.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1112](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1112)
+[packages/websg-types/types/websg.d.ts:1142](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1142)
 
 ___
 
@@ -43,9 +43,9 @@ The root UI element of the canvas.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:413](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L413)
+[src/engine/scripting/websg-api.d.ts:413](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L413)
 
-[packages/websg-types/types/websg.d.ts:1100](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1100)
+[packages/websg-types/types/websg.d.ts:1130](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1130)
 
 ___
 
@@ -57,9 +57,9 @@ The canvas size as an array-like object in meters.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:414](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L414)
+[src/engine/scripting/websg-api.d.ts:414](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L414)
 
-[packages/websg-types/types/websg.d.ts:1118](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1118)
+[packages/websg-types/types/websg.d.ts:1148](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1148)
 
 ___
 
@@ -71,4 +71,4 @@ The canvas width in pixels.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1106](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1106)
+[packages/websg-types/types/websg.d.ts:1136](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1136)

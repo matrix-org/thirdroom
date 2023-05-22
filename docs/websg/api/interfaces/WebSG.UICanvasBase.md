@@ -1,4 +1,4 @@
-[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / UICanvasBase
+[WebSG API](../README.md) / [WebSG](../modules/WebSG.md) / UICanvasBase
 
 # Interface: UICanvasBase
 
@@ -28,4 +28,4 @@
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:409](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L409)
+[src/engine/scripting/websg-api.d.ts:409](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L409)

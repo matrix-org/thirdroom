@@ -1,4 +1,4 @@
-[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / AccessorComponentType
+[WebSG API](../README.md) / [WebSG](../modules/WebSG.md) / AccessorComponentType
 
 # Enumeration: AccessorComponentType
 
@@ -23,7 +23,7 @@
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:320](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L320)
+[src/engine/scripting/websg-api.d.ts:320](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L320)
 
 ___
 
@@ -33,7 +33,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:317](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L317)
+[src/engine/scripting/websg-api.d.ts:317](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L317)
 
 ___
 
@@ -43,7 +43,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:315](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L315)
+[src/engine/scripting/websg-api.d.ts:315](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L315)
 
 ___
 
@@ -53,7 +53,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:318](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L318)
+[src/engine/scripting/websg-api.d.ts:318](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L318)
 
 ___
 
@@ -63,7 +63,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:319](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L319)
+[src/engine/scripting/websg-api.d.ts:319](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L319)
 
 ___
 
@@ -73,4 +73,4 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:316](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L316)
+[src/engine/scripting/websg-api.d.ts:316](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L316)

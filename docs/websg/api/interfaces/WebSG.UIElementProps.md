@@ -1,4 +1,4 @@
-[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / UIElementProps
+[WebSG API](../README.md) / [WebSG](../modules/WebSG.md) / UIElementProps
 
 # Interface: UIElementProps
 
@@ -55,9 +55,9 @@ The alignment of the element's content.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:439](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L439)
+[src/engine/scripting/websg-api.d.ts:439](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L439)
 
-[packages/websg-types/types/websg.d.ts:1280](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1280)
+[packages/websg-types/types/websg.d.ts:1310](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1310)
 
 ___
 
@@ -69,9 +69,9 @@ The alignment of the element's items.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:440](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L440)
+[src/engine/scripting/websg-api.d.ts:440](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L440)
 
-[packages/websg-types/types/websg.d.ts:1281](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1281)
+[packages/websg-types/types/websg.d.ts:1311](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1311)
 
 ___
 
@@ -83,9 +83,9 @@ The alignment of the element itself.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:441](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L441)
+[src/engine/scripting/websg-api.d.ts:441](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L441)
 
-[packages/websg-types/types/websg.d.ts:1282](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1282)
+[packages/websg-types/types/websg.d.ts:1312](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1312)
 
 ___
 
@@ -97,9 +97,9 @@ The background color of the element.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:428](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L428)
+[src/engine/scripting/websg-api.d.ts:428](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L428)
 
-[packages/websg-types/types/websg.d.ts:1295](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1295)
+[packages/websg-types/types/websg.d.ts:1325](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1325)
 
 ___
 
@@ -111,9 +111,9 @@ The border color of the element.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:429](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L429)
+[src/engine/scripting/websg-api.d.ts:429](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L429)
 
-[packages/websg-types/types/websg.d.ts:1296](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1296)
+[packages/websg-types/types/websg.d.ts:1326](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1326)
 
 ___
 
@@ -125,9 +125,9 @@ The border radius of the element.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:433](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L433)
+[src/engine/scripting/websg-api.d.ts:433](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L433)
 
-[packages/websg-types/types/websg.d.ts:1300](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1300)
+[packages/websg-types/types/websg.d.ts:1330](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1330)
 
 ___
 
@@ -139,9 +139,9 @@ The border width of the element.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:432](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L432)
+[src/engine/scripting/websg-api.d.ts:432](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L432)
 
-[packages/websg-types/types/websg.d.ts:1299](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1299)
+[packages/websg-types/types/websg.d.ts:1329](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1329)
 
 ___
 
@@ -153,9 +153,9 @@ The distance from the bottom edge of the parent element.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:437](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L437)
+[src/engine/scripting/websg-api.d.ts:437](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L437)
 
-[packages/websg-types/types/websg.d.ts:1277](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1277)
+[packages/websg-types/types/websg.d.ts:1307](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1307)
 
 ___
 
@@ -167,9 +167,9 @@ The initial size of the element along the main axis.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:444](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L444)
+[src/engine/scripting/websg-api.d.ts:444](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L444)
 
-[packages/websg-types/types/websg.d.ts:1285](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1285)
+[packages/websg-types/types/websg.d.ts:1315](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1315)
 
 ___
 
@@ -181,9 +181,9 @@ The direction of the flex layout.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:442](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L442)
+[src/engine/scripting/websg-api.d.ts:442](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L442)
 
-[packages/websg-types/types/websg.d.ts:1283](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1283)
+[packages/websg-types/types/websg.d.ts:1313](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1313)
 
 ___
 
@@ -195,9 +195,9 @@ The factor by which the element should grow if there is extra space.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:445](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L445)
+[src/engine/scripting/websg-api.d.ts:445](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L445)
 
-[packages/websg-types/types/websg.d.ts:1286](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1286)
+[packages/websg-types/types/websg.d.ts:1316](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1316)
 
 ___
 
@@ -209,9 +209,9 @@ The factor by which the element should shrink if there is not enough space.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:446](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L446)
+[src/engine/scripting/websg-api.d.ts:446](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L446)
 
-[packages/websg-types/types/websg.d.ts:1287](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1287)
+[packages/websg-types/types/websg.d.ts:1317](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1317)
 
 ___
 
@@ -223,9 +223,9 @@ The wrapping behavior of the flex layout.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:443](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L443)
+[src/engine/scripting/websg-api.d.ts:443](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L443)
 
-[packages/websg-types/types/websg.d.ts:1284](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1284)
+[packages/websg-types/types/websg.d.ts:1314](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1314)
 
 ___
 
@@ -237,9 +237,9 @@ The height of the element.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:449](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L449)
+[src/engine/scripting/websg-api.d.ts:449](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L449)
 
-[packages/websg-types/types/websg.d.ts:1290](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1290)
+[packages/websg-types/types/websg.d.ts:1320](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1320)
 
 ___
 
@@ -251,9 +251,9 @@ The justification of the element's content.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:447](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L447)
+[src/engine/scripting/websg-api.d.ts:447](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L447)
 
-[packages/websg-types/types/websg.d.ts:1288](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1288)
+[packages/websg-types/types/websg.d.ts:1318](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1318)
 
 ___
 
@@ -265,9 +265,9 @@ The distance from the left edge of the parent element.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:438](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L438)
+[src/engine/scripting/websg-api.d.ts:438](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L438)
 
-[packages/websg-types/types/websg.d.ts:1278](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1278)
+[packages/websg-types/types/websg.d.ts:1308](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1308)
 
 ___
 
@@ -279,9 +279,9 @@ The margin of the element.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:431](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L431)
+[src/engine/scripting/websg-api.d.ts:431](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L431)
 
-[packages/websg-types/types/websg.d.ts:1298](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1298)
+[packages/websg-types/types/websg.d.ts:1328](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1328)
 
 ___
 
@@ -293,9 +293,9 @@ The maximum height of the element.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:453](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L453)
+[src/engine/scripting/websg-api.d.ts:453](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L453)
 
-[packages/websg-types/types/websg.d.ts:1294](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1294)
+[packages/websg-types/types/websg.d.ts:1324](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1324)
 
 ___
 
@@ -307,9 +307,9 @@ The maximum width of the element.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:452](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L452)
+[src/engine/scripting/websg-api.d.ts:452](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L452)
 
-[packages/websg-types/types/websg.d.ts:1293](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1293)
+[packages/websg-types/types/websg.d.ts:1323](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1323)
 
 ___
 
@@ -321,9 +321,9 @@ The minimum height of the element.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:451](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L451)
+[src/engine/scripting/websg-api.d.ts:451](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L451)
 
-[packages/websg-types/types/websg.d.ts:1292](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1292)
+[packages/websg-types/types/websg.d.ts:1322](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1322)
 
 ___
 
@@ -335,9 +335,9 @@ The minimum width of the element.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:450](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L450)
+[src/engine/scripting/websg-api.d.ts:450](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L450)
 
-[packages/websg-types/types/websg.d.ts:1291](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1291)
+[packages/websg-types/types/websg.d.ts:1321](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1321)
 
 ___
 
@@ -349,9 +349,9 @@ The padding of the element.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:430](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L430)
+[src/engine/scripting/websg-api.d.ts:430](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L430)
 
-[packages/websg-types/types/websg.d.ts:1297](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1297)
+[packages/websg-types/types/websg.d.ts:1327](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1327)
 
 ___
 
@@ -363,9 +363,9 @@ The position type of the element ("relative" or "absolute").
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:434](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L434)
+[src/engine/scripting/websg-api.d.ts:434](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L434)
 
-[packages/websg-types/types/websg.d.ts:1279](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1279)
+[packages/websg-types/types/websg.d.ts:1309](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1309)
 
 ___
 
@@ -377,9 +377,9 @@ The distance from the right edge of the parent element.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:436](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L436)
+[src/engine/scripting/websg-api.d.ts:436](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L436)
 
-[packages/websg-types/types/websg.d.ts:1276](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1276)
+[packages/websg-types/types/websg.d.ts:1306](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1306)
 
 ___
 
@@ -391,9 +391,9 @@ The distance from the top edge of the parent element.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:435](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L435)
+[src/engine/scripting/websg-api.d.ts:435](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L435)
 
-[packages/websg-types/types/websg.d.ts:1275](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1275)
+[packages/websg-types/types/websg.d.ts:1305](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1305)
 
 ___
 
@@ -405,6 +405,6 @@ The width of the element.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:448](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L448)
+[src/engine/scripting/websg-api.d.ts:448](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L448)
 
-[packages/websg-types/types/websg.d.ts:1289](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L1289)
+[packages/websg-types/types/websg.d.ts:1319](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1319)

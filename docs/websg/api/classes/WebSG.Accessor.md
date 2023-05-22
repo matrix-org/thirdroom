@@ -1,4 +1,4 @@
-[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / Accessor
+[WebSG API](../README.md) / [WebSG](../modules/WebSG.md) / Accessor
 
 # Class: Accessor
 
@@ -41,7 +41,7 @@ with new data.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:325](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L325)
+[src/engine/scripting/websg-api.d.ts:325](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L325)
 
 ___
 
@@ -51,7 +51,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:326](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L326)
+[src/engine/scripting/websg-api.d.ts:326](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L326)
 
 ___
 
@@ -61,7 +61,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:328](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L328)
+[src/engine/scripting/websg-api.d.ts:328](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L328)
 
 ___
 
@@ -71,7 +71,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:330](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L330)
+[src/engine/scripting/websg-api.d.ts:330](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L330)
 
 ___
 
@@ -81,7 +81,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:329](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L329)
+[src/engine/scripting/websg-api.d.ts:329](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L329)
 
 ___
 
@@ -91,7 +91,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:327](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L327)
+[src/engine/scripting/websg-api.d.ts:327](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L327)
 
 ___
 
@@ -101,7 +101,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:324](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L324)
+[src/engine/scripting/websg-api.d.ts:324](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L324)
 
 ## Methods
 
@@ -140,4 +140,4 @@ Returns the current Accessor instance to allow
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:85](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L85)
+[packages/websg-types/types/websg.d.ts:85](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L85)

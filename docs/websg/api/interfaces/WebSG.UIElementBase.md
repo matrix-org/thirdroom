@@ -1,4 +1,4 @@
-[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / UIElementBase
+[WebSG API](../README.md) / [WebSG](../modules/WebSG.md) / UIElementBase
 
 # Interface: UIElementBase
 
@@ -40,7 +40,7 @@
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:422](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L422)
+[src/engine/scripting/websg-api.d.ts:422](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L422)
 
 ___
 
@@ -60,7 +60,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:424](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L424)
+[src/engine/scripting/websg-api.d.ts:424](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L424)
 
 ___
 
@@ -80,4 +80,4 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:423](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L423)
+[src/engine/scripting/websg-api.d.ts:423](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L423)

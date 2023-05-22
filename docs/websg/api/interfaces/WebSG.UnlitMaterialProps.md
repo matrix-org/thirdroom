@@ -1,4 +1,4 @@
-[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / UnlitMaterialProps
+[WebSG API](../README.md) / [WebSG](../modules/WebSG.md) / UnlitMaterialProps
 
 # Interface: UnlitMaterialProps
 
@@ -28,7 +28,7 @@ The optional alpha cutoff value for the material. Default is 0.5.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:302](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L302)
+[packages/websg-types/types/websg.d.ts:310](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L310)
 
 ___
 
@@ -40,7 +40,7 @@ The optional alpha mode for the material. Default is 'OPAQUE'.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:303](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L303)
+[packages/websg-types/types/websg.d.ts:311](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L311)
 
 ___
 
@@ -52,7 +52,7 @@ The optional RGBA base color factor.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:299](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L299)
+[packages/websg-types/types/websg.d.ts:307](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L307)
 
 ___
 
@@ -64,7 +64,7 @@ The optional base color texture.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:300](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L300)
+[packages/websg-types/types/websg.d.ts:308](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L308)
 
 ___
 
@@ -76,7 +76,7 @@ Whether the material is visible from both sides. Default is false.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:301](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L301)
+[packages/websg-types/types/websg.d.ts:309](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L309)
 
 ___
 
@@ -88,4 +88,4 @@ The optional name of the material.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:298](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L298)
+[packages/websg-types/types/websg.d.ts:306](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L306)

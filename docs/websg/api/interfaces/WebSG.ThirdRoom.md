@@ -1,4 +1,4 @@
-[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / ThirdRoom
+[WebSG API](../README.md) / [WebSG](../modules/WebSG.md) / ThirdRoom
 
 # Interface: ThirdRoom
 
@@ -22,4 +22,4 @@
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:524](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L524)
+[src/engine/scripting/websg-api.d.ts:524](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L524)

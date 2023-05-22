@@ -1,4 +1,4 @@
-[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / LightProps
+[WebSG API](../README.md) / [WebSG](../modules/WebSG.md) / LightProps
 
 # Interface: LightProps
 
@@ -29,7 +29,7 @@ The optional RGB color of the light. Default is white.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:223](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L223)
+[packages/websg-types/types/websg.d.ts:231](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L231)
 
 ___
 
@@ -41,7 +41,7 @@ The optional inner cone angle of the light, for spot lights.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:225](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L225)
+[packages/websg-types/types/websg.d.ts:233](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L233)
 
 ___
 
@@ -53,7 +53,7 @@ The optional intensity of the light. Default is 1.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:222](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L222)
+[packages/websg-types/types/websg.d.ts:230](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L230)
 
 ___
 
@@ -65,7 +65,7 @@ The optional name of the light.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:221](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L221)
+[packages/websg-types/types/websg.d.ts:229](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L229)
 
 ___
 
@@ -77,7 +77,7 @@ The optional outer cone angle of the light, for spot lights.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:226](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L226)
+[packages/websg-types/types/websg.d.ts:234](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L234)
 
 ___
 
@@ -89,7 +89,7 @@ The optional range of the light, for point and spot lights.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:224](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L224)
+[packages/websg-types/types/websg.d.ts:232](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L232)
 
 ___
 
@@ -101,4 +101,4 @@ The type of the light.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:220](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L220)
+[packages/websg-types/types/websg.d.ts:228](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L228)

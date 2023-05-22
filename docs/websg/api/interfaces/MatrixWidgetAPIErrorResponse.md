@@ -1,4 +1,4 @@
-[websg-types](../README.md) / [Exports](../modules.md) / MatrixWidgetAPIErrorResponse
+[WebSG API](../README.md) / MatrixWidgetAPIErrorResponse
 
 # Interface: MatrixWidgetAPIErrorResponse
 
@@ -33,7 +33,7 @@ MatrixWidgetAPIErrorResponse interface represents an error response to a Matrix 
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2145](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L2145)
+[packages/websg-types/types/websg.d.ts:2285](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2285)
 
 ___
 
@@ -47,7 +47,7 @@ ___
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2143](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L2143)
+[packages/websg-types/types/websg.d.ts:2283](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2283)
 
 ___
 
@@ -61,7 +61,7 @@ ___
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2147](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L2147)
+[packages/websg-types/types/websg.d.ts:2287](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2287)
 
 ___
 
@@ -75,7 +75,7 @@ ___
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2144](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L2144)
+[packages/websg-types/types/websg.d.ts:2284](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2284)
 
 ___
 
@@ -96,7 +96,7 @@ ___
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2161](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L2161)
+[packages/websg-types/types/websg.d.ts:2301](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2301)
 
 ___
 
@@ -110,4 +110,4 @@ ___
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2146](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L2146)
+[packages/websg-types/types/websg.d.ts:2286](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2286)

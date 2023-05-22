@@ -1,4 +1,4 @@
-[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / Matrix4
+[WebSG API](../README.md) / [WebSG](../modules/WebSG.md) / Matrix4
 
 # Class: Matrix4
 
@@ -46,7 +46,7 @@ Returns the length of the Matrix4 instance.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:434](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L434)
+[packages/websg-types/types/websg.d.ts:442](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L442)
 
 ## Methods
 
@@ -68,4 +68,4 @@ Sets the values of the Matrix4 instance.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:426](https://github.com/matrix-org/thirdroom/blob/53b6168d/packages/websg-types/types/websg.d.ts#L426)
+[packages/websg-types/types/websg.d.ts:434](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L434)

@@ -1,4 +1,4 @@
-[websg-types](../README.md) / [Exports](../modules.md) / [WebSG](../modules/WebSG.md) / Network
+[WebSG API](../README.md) / [WebSG](../modules/WebSG.md) / Network
 
 # Interface: Network
 
@@ -31,7 +31,7 @@
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:544](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L544)
+[src/engine/scripting/websg-api.d.ts:544](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L544)
 
 ___
 
@@ -45,7 +45,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:542](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L542)
+[src/engine/scripting/websg-api.d.ts:542](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L542)
 
 ___
 
@@ -59,7 +59,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:541](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L541)
+[src/engine/scripting/websg-api.d.ts:541](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L541)
 
 ___
 
@@ -79,4 +79,4 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:543](https://github.com/matrix-org/thirdroom/blob/53b6168d/src/engine/scripting/websg-api.d.ts#L543)
+[src/engine/scripting/websg-api.d.ts:543](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L543)
