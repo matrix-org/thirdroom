@@ -21,26 +21,31 @@ world.onload = () => {
   const root = world.createUIElement({
     backgroundColor: [0, 0, 0, 0.5],
     flexDirection: "row",
-    alignItems: "space-between",
-    flexGrow: 1,
+    width: 1024,
+    height: 512,
   });
 
-  const teamScores = [0, 0];
-  const teamScoreTextElements = [
-    createTeamScoreboard(scoreboard, "Red Team"),
-    createTeamScoreboard(scoreboard, "Blue Team"),
-  ];
-
-  const scoreboard = world.findNodeByName("Scoreboard");
-  scoreboard.uiCanvas = world.createUICanvas({
+  const uiCanvas = world.createUICanvas({
     size: [1, 0.5],
     width: 1024,
     height: 512,
     root,
   });
 
+  const scoreboard = world.findNodeByName("Scoreboard");
+
+  const teamScores = [0, 0];
+  const teamScoreTextElements = [
+    createTeamScoreboard(root, "Red", [1, 0, 0, 1]),
+    createTeamScoreboard(root, "Blue", [0, 0, 1, 1]),
+  ];
+
+  scoreboard.uiCanvas = uiCanvas;
+
   function countScore(team) {
-    teamScoreTextElements[team].value = teamScores[team] += 1;
+    const index = team - 1;
+    teamScoreTextElements[index].value = teamScores[index] += 2;
+    uiCanvas.redraw();
   }
 
   world.onupdate = (dt, time) => {
@@ -53,19 +58,23 @@ world.onload = () => {
         mesh: basketball.mesh,
       });
 
-      const ray = network.local.primaryInputSource.ray;
-      ball.setForwardDirection(ray.direction);
-      ball.translation.set(ray.origin).addScaledVector(ray.direction, 0.5);
+      const origin = world.primaryInputSourceOrigin;
+      const direction = world.primaryInputSourceDirection;
+
+      ball.setForwardDirection(direction);
+      ball.translation.set(origin).addScaledVector(direction, 0.5);
 
       ball.collider = basketball.collider;
       ball.addPhysicsBody({
         type: WebSG.PhysicsBodyType.Rigid,
+        mass: 1,
       });
       ball.addInteractable({
         type: WebSG.InteractableType.Grabbable,
       });
+      ball.addComponent(Basketball);
 
-      impulse.set(ray.direction).multiplyScalar(33);
+      impulse.set(direction).multiplyScalar(8);
       ball.physicsBody.applyImpulse(impulse);
 
       world.environment.addNode(ball);
@@ -85,19 +94,27 @@ world.onload = () => {
   };
 };
 
-function createTeamScoreboard(scoreboard, teamName) {
+function createTeamScoreboard(scoreboard, teamName, teamColor) {
   const teamContainer = world.createUIElement({
-    flexGrow: 1,
     flexDirection: "column",
+    flexGrow: 1,
+    padding: [100, 0, 0, 100],
   });
 
   const teamNameText = world.createUIText({
     value: teamName,
+    fontSize: 128,
+    color: teamColor,
+    fontWeight: "bold",
   });
   teamContainer.addChild(teamNameText);
 
   const teamScoreText = world.createUIText({
     value: "0",
+    fontSize: 256,
+    color: [1, 1, 1, 1],
+    fontWeight: "bold",
+    padding: [20, 0, 0, 60],
   });
   teamContainer.addChild(teamScoreText);
 

@@ -23,6 +23,7 @@
 #include "./component-store.h"
 #include "./query.h"
 #include "./collision-listener.h"
+#include "./vector3.h"
 
 JSClassID js_websg_world_class_id;
 
@@ -161,6 +162,14 @@ void js_websg_define_world(JSContext *ctx, JSValue websg) {
 
 }
 
+static float_t js_get_primary_input_source_origin_element(uint32_t resource_id, uint32_t index) {
+  return websg_get_primary_input_source_origin_element(index);
+}
+
+static float_t js_get_primary_input_source_direction_element(uint32_t resource_id, uint32_t index) {
+  return websg_get_primary_input_source_direction_element(index);
+}
+
 JSValue js_websg_new_world(JSContext *ctx) {
   JSValue world = JS_NewObjectClass(ctx, js_websg_world_class_id);
 
@@ -182,6 +191,22 @@ JSValue js_websg_new_world(JSContext *ctx) {
   world_data->ui_elements = JS_NewObject(ctx);
   world_data->component_stores = JS_NewObject(ctx);
   JS_SetOpaque(world, world_data);
+
+  js_websg_define_vector3_prop_read_only(
+    ctx,
+    world,
+    "primaryInputSourceOrigin",
+    0,
+    &js_get_primary_input_source_origin_element
+  );
+
+  js_websg_define_vector3_prop_read_only(
+    ctx,
+    world,
+    "primaryInputSourceDirection",
+    0,
+    &js_get_primary_input_source_direction_element
+  );
 
   return world;
 }
