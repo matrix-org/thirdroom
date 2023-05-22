@@ -141,15 +141,17 @@ JSValue js_websg_node_add_interactable(JSContext *ctx, JSValueConst this_val, in
   InteractableProps *props = js_mallocz(ctx, sizeof(InteractableProps));
   props->type = InteractableType_Interactable;
 
-  JSValue type_val = JS_GetPropertyStr(ctx, argv[0], "type");
-  if (!JS_IsUndefined(type_val)) { 
-    uint32_t type;
+  if (!JS_IsUndefined(argv[0])) {
+    JSValue type_val = JS_GetPropertyStr(ctx, argv[0], "type");
+    if (!JS_IsUndefined(type_val)) { 
+      uint32_t type;
 
-    if (JS_ToUint32(ctx, &type, type_val) == -1) {
-      return JS_EXCEPTION;
+      if (JS_ToUint32(ctx, &type, type_val) == -1) {
+        return JS_EXCEPTION;
+      }
+
+      props->type = type;
     }
-
-    props->type = type;
   }
 
   int32_t result = websg_node_add_interactable(node_data->node_id, props);

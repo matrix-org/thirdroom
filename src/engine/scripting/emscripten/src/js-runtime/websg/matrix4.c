@@ -15,6 +15,7 @@ static void js_websg_matrix4_finalizer(JSRuntime *rt, JSValue val) {
   WebSGMatrix4Data *matrix_data = JS_GetOpaque(val, js_websg_matrix4_class_id);
 
   if (matrix_data) {
+    js_free_rt(rt, matrix_data->elements);
     js_free_rt(rt, matrix_data);
   }
 }
@@ -63,6 +64,9 @@ static JSValue js_websg_matrix4_set(JSContext *ctx, JSValueConst this_val, JSVal
 static JSValue js_websg_matrix4_set_array(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
   WebSGMatrix4Data *matrix_data = JS_GetOpaque(this_val, js_websg_matrix4_class_id);
 
+  if (matrix_data->read_only == 1) {
+    return JS_ThrowTypeError(ctx, "Matrix4 is marked as read only.");
+  }
 
   if (js_get_float_array_like(ctx, argv[0], matrix_data->elements, 16) < 0) {
     return JS_EXCEPTION;
@@ -133,6 +137,13 @@ void js_websg_define_matrix4(JSContext *ctx, JSValue websg) {
  * Public Methods
  **/
 
+JSValue js_websg_create_matrix4(JSContext *ctx, float* elements) {
+  JSValue matrix4 = JS_NewObjectClass(ctx, js_websg_matrix4_class_id);
+  WebSGMatrix4Data *matrix_data = js_mallocz(ctx, sizeof(WebSGMatrix4Data));
+  matrix_data->elements = elements;
+  return matrix4;
+}
+
 JSValue js_websg_new_matrix4_get_set(
   JSContext *ctx,
   uint32_t resource_id,
@@ -144,6 +155,7 @@ JSValue js_websg_new_matrix4_get_set(
   JSValue matrix4 = JS_NewObjectClass(ctx, js_websg_matrix4_class_id);
 
   WebSGMatrix4Data *matrix_data = js_mallocz(ctx, sizeof(WebSGMatrix4Data));
+  matrix_data->elements = js_mallocz(ctx, sizeof(float_t) * 16);
   matrix_data->get = get;
   matrix_data->set = set;
   matrix_data->set_array = set_array;

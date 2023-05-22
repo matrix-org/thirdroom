@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include "../../../../src/engine/scripting/emscripten/src/websg.h"
-#include "../../../../src/engine/scripting/emscripten/src/websg-network.h"
+#include "../../../../src/engine/scripting/emscripten/src/websg-networking.h"
 
 node_id_t material_button;
 node_id_t room1_switch;
@@ -22,6 +22,8 @@ texture_id_t planks_texture;
 bool material_button_state = true;
 bool room1_switch_state = true;
 bool room2_switch_state = true;
+
+network_listener_id_t network_listener;
 
 int PACKET_BYTES = 3;
 bool entered = false;
@@ -67,12 +69,12 @@ export void websg_load() {
 
 export void websg_enter() {
   entered = true;
-  websg_network_listen();
+  network_listener = websg_network_listen();
 }
 
 export void websg_update(float_t dt) {
   // consume net packets
-  while (entered && websg_network_receive(inbound_network_packet, PACKET_BYTES) > 0) {
+  while (entered && websg_network_listener_receive(network_listener, inbound_network_packet, PACKET_BYTES) > 0) {
     // material_button
     material_button_state = inbound_network_packet[0];
     websg_material_set_base_color_texture(left_cube_material, material_button_state ? planks_texture : bricks_texture);
@@ -113,6 +115,6 @@ export void websg_update(float_t dt) {
     outbound_network_packet[1] = room1_switch_state ? 1 : 0;
     outbound_network_packet[2] = room2_switch_state ? 1 : 0;
 
-    websg_network_broadcast(outbound_network_packet, PACKET_BYTES);
+    websg_network_broadcast(outbound_network_packet, PACKET_BYTES, 1, 1);
   }
 }

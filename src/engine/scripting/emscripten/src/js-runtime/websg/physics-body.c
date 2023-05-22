@@ -44,7 +44,25 @@ static JSClassDef js_websg_physics_body_class = {
   .finalizer = js_websg_physics_body_finalizer
 };
 
+static JSValue js_websg_physics_body_apply_impulse(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  WebSGPhysicsBodyData *physics_body_data = JS_GetOpaque(this_val, js_websg_physics_body_class_id);
+
+  float_t *impulse = js_mallocz(ctx, sizeof(float_t) * 3);
+
+  if (js_get_float_array_like(ctx, argv[0], impulse, 3) < 0) {
+    return JS_EXCEPTION;
+  }
+
+  if (websg_physics_body_apply_impulse(physics_body_data->node_id, impulse) == -1) {
+    JS_ThrowInternalError(ctx, "WebSGPhysicsBody: error applying impulse.");
+    return JS_EXCEPTION;
+  }
+
+  return JS_UNDEFINED;
+}
+
 static const JSCFunctionListEntry js_websg_physics_body_proto_funcs[] = {
+  JS_CFUNC_DEF("applyImpulse", 1, js_websg_physics_body_apply_impulse),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "PhysicsBody", JS_PROP_CONFIGURABLE),
 };
 
@@ -128,6 +146,20 @@ JSValue js_websg_node_add_physics_body(JSContext *ctx, JSValueConst this_val, in
   }
 
   props->type = physics_body_type;
+
+  JSValue mass_val = JS_GetPropertyStr(ctx, argv[0], "mass");
+
+  if (!JS_IsUndefined(mass_val)) {
+    double mass;
+
+    if (JS_ToFloat64(ctx, &mass, mass_val) == -1) {
+      return JS_EXCEPTION;
+    }
+
+    props->mass = (float) mass;
+  } else {
+    props->mass = 1;
+  }
 
   JSValue linear_velocity_val = JS_GetPropertyStr(ctx, argv[0], "linearVelocity");
 

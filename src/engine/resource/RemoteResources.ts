@@ -1,8 +1,8 @@
 import { AnimationClip } from "three";
 
 import { getLastSibling } from "../component/transform";
-import { GameState } from "../GameTypes";
-import { defineRemoteResourceClass } from "./RemoteResourceClass";
+import { GameState, RemoteResourceManager } from "../GameTypes";
+import { defineRemoteResourceClass, InitialRemoteResourceProps } from "./RemoteResourceClass";
 import {
   NametagResource,
   SamplerResource,
@@ -172,6 +172,14 @@ export class RemoteNode extends defineRemoteResourceClass(NodeResource) {
   declare uiCanvas: RemoteUICanvas | undefined;
   declare collider: RemoteCollider | undefined;
   declare physicsBody: RemotePhysicsBody | undefined;
+
+  constructor(
+    manager: RemoteResourceManager,
+    initialProps?: InitialRemoteResourceProps<(typeof RemoteNode)["resourceDef"]>
+  ) {
+    super(manager, initialProps);
+    manager.nodeIdToComponentStoreIndex.set(this.eid, manager.nextComponentStoreIndex++);
+  }
 
   get isStatic() {
     return !this.manager.ctx.editorLoaded && this.u32View[NodeIsStaticOffset] === 1;

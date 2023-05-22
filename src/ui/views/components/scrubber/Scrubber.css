@@ -1,0 +1,17 @@
+.Scrubber {
+  display: inline-flex;
+}
+
+.Scrubber,
+.Scrubber * {
+  cursor: ew-resize;
+  user-select: none;
+}
+
+.Scrubber__cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  transform: translate(0, 0);
+  z-index: 999;
+}

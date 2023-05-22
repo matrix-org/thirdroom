@@ -10,6 +10,7 @@ static void js_websg_rgb_finalizer(JSRuntime *rt, JSValue val) {
   WebSGRGBData *rgb_data = JS_GetOpaque(val, js_websg_rgb_class_id);
 
   if (rgb_data) {
+    js_free_rt(rt, rgb_data->elements);
     js_free_rt(rt, rgb_data);
   }
 }
@@ -110,6 +111,13 @@ void js_websg_define_rgb(JSContext *ctx, JSValue websg) {
   );
 }
 
+JSValue js_websg_create_rgb(JSContext *ctx, float* elements) {
+  JSValue rgb = JS_NewObjectClass(ctx, js_websg_rgb_class_id);
+  WebSGRGBData *rgb_data = js_mallocz(ctx, sizeof(WebSGRGBData));
+  rgb_data->elements = elements;
+  return rgb;
+}
+
 JSValue js_websg_new_rgb_get_set(
   JSContext *ctx,
   uint32_t resource_id,
@@ -120,6 +128,7 @@ JSValue js_websg_new_rgb_get_set(
   JSValue rgb = JS_NewObjectClass(ctx, js_websg_rgb_class_id);
 
   WebSGRGBData *rgb_data = js_mallocz(ctx, sizeof(WebSGRGBData));
+  rgb_data->elements = js_mallocz(ctx, sizeof(float_t) * 3);
   rgb_data->get = get;
   rgb_data->set = set;
   rgb_data->set_array = set_array;

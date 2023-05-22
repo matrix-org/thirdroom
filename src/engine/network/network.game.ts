@@ -10,9 +10,10 @@ import {
   AddPeerIdMessage,
   InitializeNetworkStateMessage,
   NetworkMessageType,
+  PeerEnteredMessage,
+  PeerExitedMessage,
   RemovePeerIdMessage,
   SetHostMessage,
-  SetPeerIdMessage,
 } from "./network.common";
 import { deserializeRemoveOwnership } from "./ownership.game";
 import { createHistorian, Historian } from "./Historian";
@@ -61,12 +62,12 @@ export interface GameNetworkState {
   newPeers: string[];
   peerIdCount: number;
   peerIdToIndex: Map<string, number>;
+  indexToPeerId: Map<number, string>;
   peerIdToHistorian: Map<string, Historian>;
   peerIdToEntityId: Map<string, number>;
   peerIdToXRMode: Map<string, XRMode>;
   entityIdToPeerId: Map<number, string>;
   networkIdToEntityId: Map<number, number>;
-  indexToPeerId: Map<number, string>;
   localIdCount: number;
   removedLocalIds: number[];
   messageHandlers: { [key: number]: (input: NetPipeData) => void };
@@ -144,7 +145,6 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
 
     const disposables = [
       registerMessageHandler(ctx, NetworkMessageType.SetHost, onSetHost),
-      registerMessageHandler(ctx, NetworkMessageType.SetPeerId, onSetPeerId),
       registerMessageHandler(ctx, NetworkMessageType.AddPeerId, onAddPeerId),
       registerMessageHandler(ctx, NetworkMessageType.RemovePeerId, onRemovePeerId),
       registerMessageHandler(ctx, ThirdRoomMessageType.ExitWorld, onExitWorld),
@@ -175,6 +175,10 @@ const onAddPeerId = (ctx: GameState, message: AddPeerIdMessage) => {
   network.peerIdToHistorian.set(peerId, createHistorian());
 
   mapPeerIdAndIndex(network, peerId);
+
+  const peerIndex = network.peerIdToIndex.get(peerId) || 0;
+
+  ctx.sendMessage<PeerEnteredMessage>(Thread.Game, { type: NetworkMessageType.PeerEntered, peerIndex });
 };
 
 const onRemovePeerId = (ctx: GameState, message: RemovePeerIdMessage) => {
@@ -204,6 +208,8 @@ const onRemovePeerId = (ctx: GameState, message: RemovePeerIdMessage) => {
     }
 
     network.peers.splice(peerArrIndex, 1);
+
+    ctx.sendMessage<PeerExitedMessage>(Thread.Game, { type: NetworkMessageType.PeerExited, peerIndex });
   } else {
     console.warn(`cannot remove peerId ${peerId}, does not exist in peer list`);
   }
@@ -239,11 +245,10 @@ export function NetworkExitWorldQueueSystem(ctx: GameState) {
 }
 
 // Set local peer id
-const onSetPeerId = (ctx: GameState, message: SetPeerIdMessage) => {
+export const setLocalPeerId = (ctx: GameState, localPeerId: string) => {
   const network = getModule(ctx, NetworkModule);
-  const { peerId } = message;
-  network.peerId = peerId;
-  mapPeerIdAndIndex(network, peerId);
+  network.peerId = localPeerId;
+  mapPeerIdAndIndex(network, localPeerId);
 };
 
 const onSetHost = async (ctx: GameState, message: SetHostMessage) => {

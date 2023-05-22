@@ -840,6 +840,8 @@ declare namespace WebSG {
      */
     type: PhysicsBodyType;
 
+    mass?: number;
+
     /**
      * The linear velocity of the physics body as an array of three numbers [x, y, z].
      * @type {ArrayLike<number>}
@@ -859,7 +861,25 @@ declare namespace WebSG {
     inertiaTensor?: ArrayLike<number>;
   }
 
-  class PhysicsBody {}
+  class PhysicsBody {
+    applyImpulse(impulse: ArrayLike<number>): undefined;
+  }
+
+  class Collision {
+    nodeA: Node;
+    nodeB: Node;
+    started: boolean;
+  }
+
+  class CollisionIterator {
+    next(): { value: Collision; done: boolean };
+    [Symbol.iterator](): CollisionIterator;
+  }
+
+  class CollisionListener {
+    collisions(): CollisionIterator;
+    dispose(): void;
+  }
 
   /**
    * A Quaternion class with x, y, z, and w components. The class provides methods to set the components of the quaternion using an array-like syntax.
@@ -1044,6 +1064,8 @@ declare namespace WebSG {
   }
 
   class Texture {}
+
+  class Image {}
 
   /**
    * Interface for UIButton properties.
@@ -1970,6 +1992,8 @@ declare namespace WebSG {
      */
     findTextureByName(name: string): Texture | undefined;
 
+    findImageByName(name: string): Image | undefined;
+
     /**
      * Creates a new UICanvas with the given properties.
      * @method createUICanvas
@@ -2019,6 +2043,8 @@ declare namespace WebSG {
      */
     findUIElementByName(name: string): UIElement | undefined;
 
+    createCollisionListener(): CollisionListener;
+
     /**
      * Stops any ongoing orbiting operation.
      * @method stopOrbit
@@ -2054,56 +2080,79 @@ declare namespace WebSG {
  */
 declare const world: WebSG.World;
 
-/**
- * WebSGNetworking interface represents the networking methods available
- * for sending and receiving data in a WebSG app.
- */
-interface WebSGNetworking {
-  /**
-   * Starts listening for incoming network connections.
-   * @returns {undefined}
-   */
-  listen(): undefined;
+declare namespace WebSGNetworking {
+  class Peer {
+    get id(): string;
+    get isHost(): boolean;
+    get isLocal(): boolean;
+    get translation(): WebSG.Vector3;
+    get rotation(): WebSG.Quaternion;
+    send(message: string | ArrayBuffer, reliable: boolean): undefined;
+  }
+
+  class NetworkMessage {
+    peer: Peer;
+    data: ArrayBuffer | string;
+    bytesWritten: number;
+    isBinary: boolean;
+  }
+
+  class NetworkMessageIterator {
+    next(): { value: NetworkMessage; done: boolean };
+    [Symbol.iterator](): NetworkMessageIterator;
+  }
+
+  class NetworkListener {
+    receive(buffer?: ArrayBuffer): NetworkMessageIterator;
+    close(): undefined;
+  }
 
   /**
-   * Closes the current network connections.
-   * @returns {undefined}
+   * Represents the networking methods available
+   * for sending and receiving data in a WebSG app.
    */
-  close(): undefined;
+  class Network {
+    get host(): Peer | undefined;
+    get local(): Peer | undefined;
+    listen(): NetworkListener;
 
-  /**
-   * Broadcasts data to all connected clients.
-   * @param {ArrayBuffer} data - The data to be broadcasted.
-   * @returns {undefined}
-   */
-  broadcast(data: ArrayBuffer): undefined;
-
-  /**
-   * Receives data from the network. Returns the received data as an ArrayBuffer.
-   * If no data is available, returns undefined.
-   * @returns {ArrayBuffer | undefined} - The received data or undefined if no data is available.
-   */
-  receive(): ArrayBuffer | undefined;
-
-  /**
-   * Receives data from the network and writes it into the specified buffer.
-   * Returns the number of bytes received and written to the buffer.
-   * @param {ArrayBuffer} buffer - The buffer to write the received data into.
-   * @returns {number} - The number of bytes received and written to the buffer.
-   */
-  receiveInto(buffer: ArrayBuffer): number;
+    /**
+     * Broadcasts data to all connected clients.
+     * @param {ArrayBuffer} data - The data to be broadcasted.
+     * @returns {undefined}
+     */
+    broadcast(message: string | ArrayBuffer, reliable: boolean): undefined;
+    onpeerentered: ((peer: Peer) => any) | null;
+    onpeerexited: ((peer: Peer) => any) | null;
+  }
 }
 
-/**
- * The global network instance.
- * @global {WebSGNetworking} network
- */
-declare const network: WebSGNetworking;
+declare const network: WebSGNetworking.Network;
 
-/**
- * ThirdRoom interface represents additional functionality for WebSG apps.
- */
-interface ThirdRoom {
+declare namespace ThirdRoom {
+  class ActionBarListener {
+    actions(): ActionBarIterator;
+    dispose(): undefined;
+  }
+
+  class ActionBarIterator {
+    next(): { value: string; done: boolean };
+    [Symbol.iterator](): ActionBarIterator;
+  }
+
+  interface ActionBarItem {
+    id: string;
+    label: string;
+    thumbnail: WebSG.Image;
+  }
+
+  class ActionBar {
+    setItems(items: ActionBarItem[]): undefined;
+    createListener(): ActionBarListener;
+  }
+}
+
+declare class ThirdRoom {
   /**
    * Enables or disables the use of Matrix materials.
    * @param {boolean} enabled - Whether to enable or disable Matrix materials.
@@ -2136,6 +2185,7 @@ interface ThirdRoom {
    * @returns {boolean} - True if the app is running in an AR environment, false otherwise.
    */
   inAR(): boolean;
+  get actionBar(): ThirdRoom.ActionBar;
 }
 
 /**

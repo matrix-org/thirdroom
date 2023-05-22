@@ -5,7 +5,8 @@
   display: flex;
   align-items: center;
 
-  & input {
+  & input,
+  & textarea {
     flex: 1 1 0;
     border: none;
     background-color: transparent;
@@ -19,6 +20,7 @@
       color: var(--tc-surface-low);
     }
   }
+
   & input[type="number"]::-webkit-inner-spin-button,
   & input[type="number"]::-webkit-outer-spin-button {
     appearance: none;
@@ -35,31 +37,44 @@
   gap: var(--sp-xxs);
   padding: 0 var(--sp-xs);
   border-radius: var(--br-xxs);
+  & textarea {
+    margin: var(--sp-xxs) 0;
+  }
 }
 .Input--md {
   gap: var(--sp-xxs);
   padding: 0 var(--sp-xs);
   border-radius: var(--br-sm);
+  & textarea {
+    margin: var(--sp-xs) 0;
+  }
 }
 .Input--lg {
   gap: var(--sp-xs);
   padding: 0 var(--sp-md);
   border-radius: var(--br-lg);
+  & textarea {
+    margin: var(--sp-md) 0;
+  }
 }
-.Input--sm input {
+.Input--sm input,
+.Input--sm textarea {
   min-height: 30px;
   font-size: var(--fs-b3);
   letter-spacing: var(--ls-b3);
   line-height: var(--lh-b3);
 }
 .Input--md input,
-.Input--lg input {
+.Input--md textarea,
+.Input--lg input,
+.Input--lg textarea {
   min-height: 40px;
   font-size: var(--fs-b2);
   letter-spacing: var(--ls-b2);
   line-height: var(--lh-b2);
 }
-.Input--lg input {
+.Input--lg input,
+.Input--lg textarea {
   min-height: 60px;
 }
 
@@ -80,7 +95,8 @@
 .Input--disabled {
   opacity: 0.4;
   cursor: not-allowed;
-  & input {
+  & input,
+  & textarea {
     cursor: not-allowed;
   }
 }

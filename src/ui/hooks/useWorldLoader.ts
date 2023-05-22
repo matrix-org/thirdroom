@@ -10,7 +10,7 @@ import {
   registerMatrixNetworkInterface,
   provideMatrixNetworkInterface,
 } from "../../engine/network/createMatrixNetworkInterface";
-import { connectToTestNet, reconnectPeers } from "../../engine/network/network.main";
+import { reconnectPeers } from "../../engine/network/network.main";
 import { SetObjectCapMessage, SetObjectCapMessageType } from "../../plugins/spawnables/spawnables.common";
 import { enterWorld, exitWorld, loadWorld } from "../../plugins/thirdroom/thirdroom.main";
 import { worldAtom } from "../state/world";
@@ -26,7 +26,7 @@ export interface WorldLoader {
     options?: {
       reload?: boolean;
     }
-  ) => Promise<(() => void) | undefined>;
+  ) => Promise<void>;
   exitWorld: () => void;
 }
 
@@ -111,13 +111,8 @@ export function useWorldLoader(): WorldLoader {
   );
 
   const enterWorldCallback = useCallback(
-    async (world: Room): Promise<(() => void) | undefined> => {
+    async (world: Room): Promise<void> => {
       try {
-        if (import.meta.env.VITE_USE_TESTNET) {
-          connectToTestNet(mainThread);
-          return undefined;
-        }
-
         let groupCall = getWorldGroupCall(session, world);
         if (groupCall) {
           await connectGroupCall(world, groupCall);
@@ -138,7 +133,13 @@ export function useWorldLoader(): WorldLoader {
         );
         registerMatrixNetworkInterface(matrixNetworkInterface);
 
-        await enterWorld(mainThread);
+        const localPeerId = client.session?.userId;
+
+        if (!localPeerId) {
+          throw new Error("Hydrogen session user id is undefined");
+        }
+
+        await enterWorld(mainThread, localPeerId);
 
         const audio = getModule(mainThread, AudioModule);
         audio.context.resume().catch(() => console.error("Couldn't resume audio context"));
@@ -168,13 +169,19 @@ export function useWorldLoader(): WorldLoader {
 
       await loadWorldCallback(world, content);
 
-      await enterWorld(mainThread);
+      const localPeerId = client.session?.userId;
+
+      if (!localPeerId) {
+        throw new Error("Hydrogen session user id is undefined");
+      }
+
+      await enterWorld(mainThread, localPeerId);
 
       setWorld({ type: "ENTER" });
 
       reconnectPeers(mainThread);
     },
-    [loadWorldCallback, setWorld, mainThread]
+    [loadWorldCallback, setWorld, mainThread, client]
   );
 
   return {
