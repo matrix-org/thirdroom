@@ -1,9 +1,11 @@
+import { getCamera } from "../camera/camera.game";
 import { ourPlayerQuery } from "../component/Player";
 import { GameState } from "../GameTypes";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import { XRMode } from "../renderer/renderer.common";
-import { removeObjectFromWorld } from "../resource/RemoteResources";
-import { tryGetRemoteResource } from "../resource/resource.game";
+import { getXRMode } from "../renderer/renderer.game";
+import { RemoteNode, removeObjectFromWorld } from "../resource/RemoteResources";
+import { getRemoteResource, tryGetRemoteResource } from "../resource/resource.game";
 import { createDisposables } from "../utils/createDisposables";
 import { enableActionMap } from "./ActionMappingSystem";
 import {
@@ -119,5 +121,18 @@ export function ResetInputSystem(ctx: GameState) {
     raw["Mouse/movementX"] = 0;
     raw["Mouse/movementY"] = 0;
     raw["Mouse/Scroll"] = 0;
+  }
+}
+
+export function getPrimaryInputSourceNode(ctx: GameState) {
+  const ourPlayer = ourPlayerQuery(ctx.world)[0];
+  const xrRig = getXRMode(ctx) !== XRMode.None ? XRAvatarRig.get(ourPlayer) : undefined;
+  const rightRayNode = xrRig && xrRig.rightRayEid && tryGetRemoteResource<RemoteNode>(ctx, xrRig.rightRayEid);
+
+  if (rightRayNode) {
+    return rightRayNode;
+  } else {
+    const playerNode = getRemoteResource<RemoteNode>(ctx, ourPlayer) as RemoteNode;
+    return getCamera(ctx, playerNode).parent as RemoteNode;
   }
 }

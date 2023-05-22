@@ -431,15 +431,12 @@ declare namespace WebSG {
      * @param {ArrayLike<number>} value - The new values for the Matrix4 instance.
      * @returns {undefined}
      */
-    set(value: ArrayLike<number>): undefined;
+    set(value: ArrayLike<number>): this;
 
     /**
      * Returns the length of the Matrix4 instance.
-     * @readonly
-     * @type {number}
-     * @returns {number} - The length of the Matrix4 instance.
      */
-    get length(): number;
+    readonly length: number;
   }
 
   /**
@@ -448,20 +445,13 @@ declare namespace WebSG {
   class ReadonlyMatrix4 {
     /**
      * Gets the readonly value at a specific index.
-     * @readonly
-     * @type {number}
-     * @param {number} n - The index to access.
-     * @returns {number} - The value at the given index.
      */
     readonly [n: number]: number;
 
     /**
      * Returns the length of the ReadonlyMatrix4 instance.
-     * @readonly
-     * @type {number}
-     * @returns {number} - The length of the ReadonlyMatrix4 instance.
      */
-    get length(): number;
+    readonly length: number;
   }
 
   /**
@@ -814,6 +804,10 @@ declare namespace WebSG {
      * @returns {undefined}
      */
     startOrbit(options?: OrbitOptions): undefined;
+    addComponent(component: ComponentStore): undefined;
+    removeComponent(component: ComponentStore): undefined;
+    hasComponent(component: ComponentStore): boolean;
+    getComponent(component: ComponentStore): Component | undefined;
   }
 
   /**
@@ -918,9 +912,8 @@ declare namespace WebSG {
     /**
      * Sets the quaternion components to the given values.
      * @param {ArrayLike<number>} value - An array-like object containing the quaternion components.
-     * @returns {undefined}
      */
-    set(value: ArrayLike<number>): undefined;
+    set(value: ArrayLike<number>): this;
 
     /**
      * The number of components in the quaternion.
@@ -961,9 +954,8 @@ declare namespace WebSG {
     /**
      * Sets the RGB color components to the given values.
      * @param {ArrayLike<number>} value - An array-like object containing the RGB color components.
-     * @returns {undefined}
      */
-    set(value: ArrayLike<number>): undefined;
+    set(value: ArrayLike<number>): this;
 
     /**
      * The number of components in the RGB color.
@@ -1010,9 +1002,8 @@ declare namespace WebSG {
     /**
      * Sets the RGBA color components to the given values.
      * @param {ArrayLike<number>} value - An array-like object containing the RGBA color components.
-     * @returns {undefined}
      */
-    set(value: ArrayLike<number>): undefined;
+    set(value: ArrayLike<number>): this;
 
     /**
      * The number of components in the RGBA color.
@@ -1776,20 +1767,23 @@ declare namespace WebSG {
     [index: number]: number;
     x: number;
     y: number;
-
-    /**
-     * Sets the values of this vector.
-     * @method set
-     * @param {ArrayLike<number>} value - An array-like object containing the new values for the vector.
-     * @returns {undefined}
-     */
-    set(value: ArrayLike<number>): undefined;
-
-    /**
-     * The length of the vector.
-     * @member {number} length
-     * @readonly
-     */
+    constructor();
+    constructor(x: number, y: number);
+    constructor(array: ArrayLike<number>);
+    set(value: ArrayLike<number>): this;
+    setScalar(value: number): this;
+    add(vector: ArrayLike<number>): this;
+    addVectors(a: ArrayLike<number>, b: ArrayLike<number>): this;
+    addScaledVector(vector: ArrayLike<number>, scale: number): this;
+    subtract(vector: ArrayLike<number>): this;
+    subtractVectors(a: ArrayLike<number>, b: ArrayLike<number>): this;
+    subtractScaledVector(vector: ArrayLike<number>, scale: number): this;
+    multiply(vector: ArrayLike<number>): this;
+    multiplyVectors(a: ArrayLike<number>, b: ArrayLike<number>): this;
+    multiplyScalar(scalar: number): this;
+    divide(vector: ArrayLike<number>): this;
+    divideVectors(a: ArrayLike<number>, b: ArrayLike<number>): this;
+    divideScalar(scalar: number): this;
     readonly length: number;
   }
 
@@ -1802,20 +1796,23 @@ declare namespace WebSG {
     x: number;
     y: number;
     z: number;
-
-    /**
-     * Sets the values of this vector.
-     * @method set
-     * @param {ArrayLike<number>} value - An array-like object containing the new values for the vector.
-     * @returns {undefined}
-     */
-    set(value: ArrayLike<number>): undefined;
-
-    /**
-     * The length of the vector.
-     * @member {number} length
-     * @readonly
-     */
+    constructor();
+    constructor(x: number, y: number, z: number);
+    constructor(array: ArrayLike<number>);
+    set(value: ArrayLike<number>): this;
+    setScalar(value: number): this;
+    add(vector: ArrayLike<number>): this;
+    addVectors(a: ArrayLike<number>, b: ArrayLike<number>): this;
+    addScaledVector(vector: ArrayLike<number>, scale: number): this;
+    subtract(vector: ArrayLike<number>): this;
+    subtractVectors(a: ArrayLike<number>, b: ArrayLike<number>): this;
+    subtractScaledVector(vector: ArrayLike<number>, scale: number): this;
+    multiply(vector: ArrayLike<number>): this;
+    multiplyVectors(a: ArrayLike<number>, b: ArrayLike<number>): this;
+    multiplyScalar(scalar: number): this;
+    divide(vector: ArrayLike<number>): this;
+    divideVectors(a: ArrayLike<number>, b: ArrayLike<number>): this;
+    divideScalar(scalar: number): this;
     readonly length: number;
   }
 
@@ -1833,21 +1830,30 @@ declare namespace WebSG {
     right: number;
     bottom: number;
     left: number;
-
-    /**
-     * Sets the values of this vector.
-     * @method set
-     * @param {ArrayLike<number>} value - An array-like object containing the new values for the vector.
-     * @returns {undefined}
-     */
-    set(value: ArrayLike<number>): undefined;
-
-    /**
-     * The length of the vector.
-     * @member {number} length
-     * @readonly
-     */
+    constructor();
+    constructor(x: number, y: number, z: number, w: number);
+    constructor(array: ArrayLike<number>);
+    set(value: ArrayLike<number>): this;
+    setScalar(value: number): this;
+    add(vector: ArrayLike<number>): this;
+    addVectors(a: ArrayLike<number>, b: ArrayLike<number>): this;
+    addScaledVector(vector: ArrayLike<number>, scale: number): this;
+    subtract(vector: ArrayLike<number>): this;
+    subtractVectors(a: ArrayLike<number>, b: ArrayLike<number>): this;
+    subtractScaledVector(vector: ArrayLike<number>, scale: number): this;
+    multiply(vector: ArrayLike<number>): this;
+    multiplyVectors(a: ArrayLike<number>, b: ArrayLike<number>): this;
+    multiplyScalar(scalar: number): this;
+    divide(vector: ArrayLike<number>): this;
+    divideVectors(a: ArrayLike<number>, b: ArrayLike<number>): this;
+    divideScalar(scalar: number): this;
     readonly length: number;
+  }
+
+  class ComponentStore {}
+
+  class Component {
+    [propName: string]: unknown;
   }
 
   /**
@@ -2112,16 +2118,16 @@ declare namespace WebSG {
      * @returns {UIElement | undefined} - The UIElement found or undefined if not found.
      */
     findUIElementByName(name: string): UIElement | undefined;
-
     createCollisionListener(): CollisionListener;
-
+    get componentStoreSize(): number;
+    set componentStoreSize(value: number);
+    findComponentStoreByName(name: string): ComponentStore | undefined;
     /**
      * Stops any ongoing orbiting operation.
-     * @method stopOrbit
-     * @returns {undefined}
      */
     stopOrbit(): undefined;
-
+    get primaryInputSourceOrigin(): Vector3;
+    get primaryInputSourceDirection(): Vector3;
     /**
      * Called when the world is loaded.
      * @method onload
