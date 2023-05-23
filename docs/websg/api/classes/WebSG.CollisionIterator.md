@@ -35,7 +35,7 @@ An iterator for collisions.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:957](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L957)
+[packages/websg-types/types/websg.d.ts:957](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L957)
 
 ___
 
@@ -56,4 +56,4 @@ Returns the next collision in the iterator.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:956](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L956)
+[packages/websg-types/types/websg.d.ts:956](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L956)

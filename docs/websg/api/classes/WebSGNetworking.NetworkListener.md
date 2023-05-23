@@ -40,7 +40,7 @@ Closes the listener and frees its resources.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2546](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2546)
+[packages/websg-types/types/websg.d.ts:2546](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2546)
 
 ___
 
@@ -62,4 +62,4 @@ This method returns an iterator that can be used to iterate over inbound network
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2541](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2541)
+[packages/websg-types/types/websg.d.ts:2541](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2541)

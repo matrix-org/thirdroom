@@ -28,7 +28,7 @@ The data type of individual components in the data.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:52](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L52)
+[packages/websg-types/types/websg.d.ts:52](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L52)
 
 ___
 
@@ -40,7 +40,7 @@ The number of elements in the accessor.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:56](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L56)
+[packages/websg-types/types/websg.d.ts:56](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L56)
 
 ___
 
@@ -52,7 +52,7 @@ Whether the accessor's data is dynamic and can change over time (default is `fal
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:64](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L64)
+[packages/websg-types/types/websg.d.ts:64](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L64)
 
 ___
 
@@ -64,7 +64,7 @@ The maximum values of the accessor's components (optional).
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:72](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L72)
+[packages/websg-types/types/websg.d.ts:72](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L72)
 
 ___
 
@@ -76,7 +76,7 @@ The minimum values of the accessor's components (optional).
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:68](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L68)
+[packages/websg-types/types/websg.d.ts:68](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L68)
 
 ___
 
@@ -88,7 +88,7 @@ Whether the data should be normalized when accessed (default is `false`).
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:60](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L60)
+[packages/websg-types/types/websg.d.ts:60](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L60)
 
 ___
 
@@ -100,4 +100,4 @@ The shape of the data the accessor represents.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:48](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L48)
+[packages/websg-types/types/websg.d.ts:48](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L48)

@@ -43,7 +43,7 @@ The blue component of the color.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1042](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1042)
+[packages/websg-types/types/websg.d.ts:1042](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1042)
 
 ___
 
@@ -55,7 +55,7 @@ The green component of the color.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1037](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1037)
+[packages/websg-types/types/websg.d.ts:1037](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1037)
 
 ___
 
@@ -67,7 +67,7 @@ The number of components in the RGB color.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1053](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1053)
+[packages/websg-types/types/websg.d.ts:1053](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1053)
 
 ___
 
@@ -79,7 +79,7 @@ The red component of the color.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1032](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1032)
+[packages/websg-types/types/websg.d.ts:1032](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1032)
 
 ## Methods
 
@@ -101,4 +101,4 @@ Sets the RGB color components to the given values.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1048](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1048)
+[packages/websg-types/types/websg.d.ts:1048](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1048)

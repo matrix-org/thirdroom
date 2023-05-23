@@ -35,7 +35,7 @@ An iterator for node objects.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:631](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L631)
+[packages/websg-types/types/websg.d.ts:631](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L631)
 
 ___
 
@@ -56,4 +56,4 @@ Returns the next node in the iterator.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:630](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L630)
+[packages/websg-types/types/websg.d.ts:630](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L630)

@@ -48,7 +48,7 @@ The peer that entered the world.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2583](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2583)
+[packages/websg-types/types/websg.d.ts:2583](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2583)
 
 ___
 
@@ -64,7 +64,7 @@ The peer that exited the world.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2589](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2589)
+[packages/websg-types/types/websg.d.ts:2589](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2589)
 
 ## Accessors
 
@@ -81,7 +81,7 @@ as peers enter and exit the world.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2558](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2558)
+[packages/websg-types/types/websg.d.ts:2558](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2558)
 
 ___
 
@@ -98,7 +98,7 @@ until the user has entered the world and [world.onenter](WebSG.World.md#onenter)
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2564](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2564)
+[packages/websg-types/types/websg.d.ts:2564](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2564)
 
 ## Methods
 
@@ -121,7 +121,7 @@ Broadcasts data to all connected clients.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2577](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2577)
+[packages/websg-types/types/websg.d.ts:2577](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2577)
 
 ___
 
@@ -138,4 +138,4 @@ incoming messages from other peers.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2570](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2570)
+[packages/websg-types/types/websg.d.ts:2570](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2570)

@@ -32,4 +32,4 @@ An array of MeshPrimitive instances that define the geometry of the mesh.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:620](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L620)
+[packages/websg-types/types/websg.d.ts:620](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L620)

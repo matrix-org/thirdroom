@@ -32,7 +32,7 @@ The first node involved in the collision.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:938](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L938)
+[packages/websg-types/types/websg.d.ts:938](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L938)
 
 ___
 
@@ -44,7 +44,7 @@ The second node involved in the collision.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:942](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L942)
+[packages/websg-types/types/websg.d.ts:942](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L942)
 
 ___
 
@@ -56,4 +56,4 @@ Whether the collision started or ended this frame.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:946](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L946)
+[packages/websg-types/types/websg.d.ts:946](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L946)

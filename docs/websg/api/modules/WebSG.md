@@ -115,9 +115,9 @@ AlphaMode is a union type representing the available alpha modes.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:306](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L306)
+[packages/websg-types/types/websg.d.ts:306](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L306)
 
-[packages/websg-types/types/websg.d.ts:311](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L311)
+[packages/websg-types/types/websg.d.ts:311](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L311)
 
 ___
 
@@ -133,7 +133,7 @@ ___
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:174](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L174)
+[packages/websg-types/types/websg.d.ts:174](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L174)
 
 ___
 
@@ -143,9 +143,9 @@ ___
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:168](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L168)
+[packages/websg-types/types/websg.d.ts:168](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L168)
 
-[packages/websg-types/types/websg.d.ts:169](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L169)
+[packages/websg-types/types/websg.d.ts:169](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L169)
 
 ___
 
@@ -165,7 +165,7 @@ LightType is an object containing the string constants for the available types o
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:223](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L223)
+[packages/websg-types/types/websg.d.ts:223](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L223)
 
 ## Variables
 
@@ -185,9 +185,9 @@ AlphaMode is an object containing the string constants for the available alpha m
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:306](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L306)
+[packages/websg-types/types/websg.d.ts:306](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L306)
 
-[packages/websg-types/types/websg.d.ts:311](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L311)
+[packages/websg-types/types/websg.d.ts:311](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L311)
 
 ___
 
@@ -203,7 +203,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:499](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L499)
+[src/engine/scripting/websg-api.d.ts:499](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L499)
 
 ___
 
@@ -220,9 +220,9 @@ ___
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:168](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L168)
+[packages/websg-types/types/websg.d.ts:168](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L168)
 
-[packages/websg-types/types/websg.d.ts:169](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L169)
+[packages/websg-types/types/websg.d.ts:169](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L169)
 
 ___
 
@@ -238,4 +238,4 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:503](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L503)
+[src/engine/scripting/websg-api.d.ts:503](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L503)

@@ -44,7 +44,7 @@ The alpha component of the color.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1083](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1083)
+[packages/websg-types/types/websg.d.ts:1083](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1083)
 
 ___
 
@@ -56,7 +56,7 @@ The blue component of the color.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1078](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1078)
+[packages/websg-types/types/websg.d.ts:1078](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1078)
 
 ___
 
@@ -68,7 +68,7 @@ The green component of the color.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1073](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1073)
+[packages/websg-types/types/websg.d.ts:1073](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1073)
 
 ___
 
@@ -80,7 +80,7 @@ The number of components in the RGBA color.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1094](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1094)
+[packages/websg-types/types/websg.d.ts:1094](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1094)
 
 ___
 
@@ -92,7 +92,7 @@ The red component of the color.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1068](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1068)
+[packages/websg-types/types/websg.d.ts:1068](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1068)
 
 ## Methods
 
@@ -114,4 +114,4 @@ Sets the RGBA color components to the given values.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1089](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1089)
+[packages/websg-types/types/websg.d.ts:1089](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1089)

@@ -27,7 +27,7 @@ The height of the Collider (required for capsule and cylinder types).
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:141](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L141)
+[packages/websg-types/types/websg.d.ts:141](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L141)
 
 ___
 
@@ -39,7 +39,7 @@ Determines if the Collider acts as a trigger.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:129](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L129)
+[packages/websg-types/types/websg.d.ts:129](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L129)
 
 ___
 
@@ -51,7 +51,7 @@ The mesh representing the shape of the Collider (required for hull and trimesh t
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:145](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L145)
+[packages/websg-types/types/websg.d.ts:145](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L145)
 
 ___
 
@@ -63,7 +63,7 @@ The radius of the Collider (required for sphere, capsule, and cylinder types).
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:137](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L137)
+[packages/websg-types/types/websg.d.ts:137](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L137)
 
 ___
 
@@ -75,7 +75,7 @@ The size of the Collider (required for box type).
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:133](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L133)
+[packages/websg-types/types/websg.d.ts:133](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L133)
 
 ___
 
@@ -87,4 +87,4 @@ The type of the Collider.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:125](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L125)
+[packages/websg-types/types/websg.d.ts:125](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L125)

@@ -32,6 +32,15 @@ export default defineConfig({
         text: "Web Scene Graph",
         items: [
           { text: "Overview", link: "/websg/" },
+          {
+            text: "Getting Started Tutorial",
+            link: "/websg/tutorials/basketball-part-1",
+            items: [
+              { text: "Part 1: Interactables", link: "/websg/tutorials/basketball-part-1" },
+              { text: "Part 2: Collisions and UI", link: "/websg/tutorials/basketball-part-2" },
+              { text: "Part 3: Networking", link: "#" },
+            ],
+          },
           { text: "Tutorial", link: "/websg/tutorial" },
           { text: "API Reference", link: "/websg/api/interfaces/WebSGGlobalScope" },
         ],

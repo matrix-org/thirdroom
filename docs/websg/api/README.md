@@ -34,4 +34,4 @@ WebSG API
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2747](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2747)
+[packages/websg-types/types/websg.d.ts:2747](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2747)

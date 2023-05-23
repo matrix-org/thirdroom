@@ -50,7 +50,7 @@ Returns the [WebSG](../modules/WebSG.md) namespace with associated classes and c
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2861](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2861)
+[packages/websg-types/types/websg.d.ts:2861](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2861)
 
 ___
 
@@ -63,7 +63,7 @@ Used for logging messages to the browser's console.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2832](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2832)
+[packages/websg-types/types/websg.d.ts:2832](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2832)
 
 ___
 
@@ -76,7 +76,7 @@ Used for sending and receiving matrix events to and from the associated matrix r
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2850](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2850)
+[packages/websg-types/types/websg.d.ts:2850](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2850)
 
 ___
 
@@ -89,7 +89,7 @@ Used for sending and receiving network messages to and from other peers in the r
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2856](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2856)
+[packages/websg-types/types/websg.d.ts:2856](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2856)
 
 ___
 
@@ -102,7 +102,7 @@ Used for ThirdRoom-specific properties/methods not available in the WebSG API.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2844](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2844)
+[packages/websg-types/types/websg.d.ts:2844](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2844)
 
 ___
 
@@ -115,4 +115,4 @@ Used for accessing the current world's scene graph and other world properties/me
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2838](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2838)
+[packages/websg-types/types/websg.d.ts:2838](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2838)

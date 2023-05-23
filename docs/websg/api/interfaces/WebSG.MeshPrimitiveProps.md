@@ -24,9 +24,9 @@ MeshPrimitiveProps is an interface for defining properties of a mesh primitive.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:270](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L270)
+[src/engine/scripting/websg-api.d.ts:270](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L270)
 
-[packages/websg-types/types/websg.d.ts:531](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L531)
+[packages/websg-types/types/websg.d.ts:531](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L531)
 
 ___
 
@@ -36,9 +36,9 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:271](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L271)
+[src/engine/scripting/websg-api.d.ts:271](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L271)
 
-[packages/websg-types/types/websg.d.ts:529](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L529)
+[packages/websg-types/types/websg.d.ts:529](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L529)
 
 ___
 
@@ -48,9 +48,9 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:272](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L272)
+[src/engine/scripting/websg-api.d.ts:272](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L272)
 
-[packages/websg-types/types/websg.d.ts:530](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L530)
+[packages/websg-types/types/websg.d.ts:530](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L530)
 
 ___
 
@@ -60,9 +60,9 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:273](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L273)
+[src/engine/scripting/websg-api.d.ts:273](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L273)
 
-[packages/websg-types/types/websg.d.ts:528](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L528)
+[packages/websg-types/types/websg.d.ts:528](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L528)
 
 ___
 
@@ -72,4 +72,4 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:274](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L274)
+[src/engine/scripting/websg-api.d.ts:274](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L274)

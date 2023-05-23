@@ -66,9 +66,9 @@ The alignment of the element's content.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:439](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L439)
+[src/engine/scripting/websg-api.d.ts:439](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L439)
 
-[packages/websg-types/types/websg.d.ts:1354](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1354)
+[packages/websg-types/types/websg.d.ts:1354](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1354)
 
 ___
 
@@ -84,9 +84,9 @@ The alignment of the element's items.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:440](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L440)
+[src/engine/scripting/websg-api.d.ts:440](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L440)
 
-[packages/websg-types/types/websg.d.ts:1358](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1358)
+[packages/websg-types/types/websg.d.ts:1358](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1358)
 
 ___
 
@@ -102,9 +102,9 @@ The alignment of the element itself.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:441](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L441)
+[src/engine/scripting/websg-api.d.ts:441](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L441)
 
-[packages/websg-types/types/websg.d.ts:1362](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1362)
+[packages/websg-types/types/websg.d.ts:1362](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1362)
 
 ___
 
@@ -120,9 +120,9 @@ The background color of the element.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:428](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L428)
+[src/engine/scripting/websg-api.d.ts:428](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L428)
 
-[packages/websg-types/types/websg.d.ts:1414](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1414)
+[packages/websg-types/types/websg.d.ts:1414](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1414)
 
 ___
 
@@ -138,9 +138,9 @@ The border color of the element.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:429](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L429)
+[src/engine/scripting/websg-api.d.ts:429](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L429)
 
-[packages/websg-types/types/websg.d.ts:1418](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1418)
+[packages/websg-types/types/websg.d.ts:1418](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1418)
 
 ___
 
@@ -156,9 +156,9 @@ The border radius of the element in pixels.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:433](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L433)
+[src/engine/scripting/websg-api.d.ts:433](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L433)
 
-[packages/websg-types/types/websg.d.ts:1434](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1434)
+[packages/websg-types/types/websg.d.ts:1434](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1434)
 
 ___
 
@@ -174,9 +174,9 @@ The border width of the element in pixels.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:432](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L432)
+[src/engine/scripting/websg-api.d.ts:432](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L432)
 
-[packages/websg-types/types/websg.d.ts:1430](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1430)
+[packages/websg-types/types/websg.d.ts:1430](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1430)
 
 ___
 
@@ -192,9 +192,9 @@ The distance from the bottom edge of the parent element.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:437](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L437)
+[src/engine/scripting/websg-api.d.ts:437](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L437)
 
-[packages/websg-types/types/websg.d.ts:1342](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1342)
+[packages/websg-types/types/websg.d.ts:1342](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1342)
 
 ___
 
@@ -210,9 +210,9 @@ The color of the text as an array-like structure of [r, g, b, a] values, where e
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:473](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L473)
+[src/engine/scripting/websg-api.d.ts:473](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L473)
 
-[packages/websg-types/types/websg.d.ts:1770](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1770)
+[packages/websg-types/types/websg.d.ts:1770](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1770)
 
 ___
 
@@ -228,9 +228,9 @@ The initial size of the element along the main axis.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:444](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L444)
+[src/engine/scripting/websg-api.d.ts:444](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L444)
 
-[packages/websg-types/types/websg.d.ts:1374](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1374)
+[packages/websg-types/types/websg.d.ts:1374](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1374)
 
 ___
 
@@ -246,9 +246,9 @@ The direction of the flex layout.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:442](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L442)
+[src/engine/scripting/websg-api.d.ts:442](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L442)
 
-[packages/websg-types/types/websg.d.ts:1366](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1366)
+[packages/websg-types/types/websg.d.ts:1366](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1366)
 
 ___
 
@@ -264,9 +264,9 @@ The factor by which the element should grow if there is extra space.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:445](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L445)
+[src/engine/scripting/websg-api.d.ts:445](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L445)
 
-[packages/websg-types/types/websg.d.ts:1378](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1378)
+[packages/websg-types/types/websg.d.ts:1378](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1378)
 
 ___
 
@@ -282,9 +282,9 @@ The factor by which the element should shrink if there is not enough space.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:446](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L446)
+[src/engine/scripting/websg-api.d.ts:446](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L446)
 
-[packages/websg-types/types/websg.d.ts:1382](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1382)
+[packages/websg-types/types/websg.d.ts:1382](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1382)
 
 ___
 
@@ -300,9 +300,9 @@ The wrapping behavior of the flex layout.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:443](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L443)
+[src/engine/scripting/websg-api.d.ts:443](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L443)
 
-[packages/websg-types/types/websg.d.ts:1370](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1370)
+[packages/websg-types/types/websg.d.ts:1370](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1370)
 
 ___
 
@@ -319,9 +319,9 @@ Any valid css font-family property value is allowed.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:469](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L469)
+[src/engine/scripting/websg-api.d.ts:469](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L469)
 
-[packages/websg-types/types/websg.d.ts:1753](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1753)
+[packages/websg-types/types/websg.d.ts:1753](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1753)
 
 ___
 
@@ -337,9 +337,9 @@ The font size of the text in pixels.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:472](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L472)
+[src/engine/scripting/websg-api.d.ts:472](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L472)
 
-[packages/websg-types/types/websg.d.ts:1775](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1775)
+[packages/websg-types/types/websg.d.ts:1775](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1775)
 
 ___
 
@@ -356,9 +356,9 @@ Any valid css font-style property value is allowed.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:471](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L471)
+[src/engine/scripting/websg-api.d.ts:471](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L471)
 
-[packages/websg-types/types/websg.d.ts:1759](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1759)
+[packages/websg-types/types/websg.d.ts:1759](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1759)
 
 ___
 
@@ -375,9 +375,9 @@ Any valid css font-weight property value is allowed.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:470](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L470)
+[src/engine/scripting/websg-api.d.ts:470](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L470)
 
-[packages/websg-types/types/websg.d.ts:1765](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1765)
+[packages/websg-types/types/websg.d.ts:1765](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1765)
 
 ___
 
@@ -393,9 +393,9 @@ The height of the element in pixels.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:449](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L449)
+[src/engine/scripting/websg-api.d.ts:449](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L449)
 
-[packages/websg-types/types/websg.d.ts:1394](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1394)
+[packages/websg-types/types/websg.d.ts:1394](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1394)
 
 ___
 
@@ -411,9 +411,9 @@ The justification of the element's content.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:447](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L447)
+[src/engine/scripting/websg-api.d.ts:447](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L447)
 
-[packages/websg-types/types/websg.d.ts:1386](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1386)
+[packages/websg-types/types/websg.d.ts:1386](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1386)
 
 ___
 
@@ -425,9 +425,9 @@ The button label text.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:462](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L462)
+[src/engine/scripting/websg-api.d.ts:462](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L462)
 
-[packages/websg-types/types/websg.d.ts:1157](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1157)
+[packages/websg-types/types/websg.d.ts:1157](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1157)
 
 ___
 
@@ -443,9 +443,9 @@ The distance from the left edge of the parent element.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:438](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L438)
+[src/engine/scripting/websg-api.d.ts:438](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L438)
 
-[packages/websg-types/types/websg.d.ts:1346](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1346)
+[packages/websg-types/types/websg.d.ts:1346](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1346)
 
 ___
 
@@ -461,9 +461,9 @@ The margin of the element in pixels.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:431](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L431)
+[src/engine/scripting/websg-api.d.ts:431](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L431)
 
-[packages/websg-types/types/websg.d.ts:1426](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1426)
+[packages/websg-types/types/websg.d.ts:1426](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1426)
 
 ___
 
@@ -479,9 +479,9 @@ The maximum height of the element in pixels.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:453](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L453)
+[src/engine/scripting/websg-api.d.ts:453](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L453)
 
-[packages/websg-types/types/websg.d.ts:1410](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1410)
+[packages/websg-types/types/websg.d.ts:1410](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1410)
 
 ___
 
@@ -497,9 +497,9 @@ The maximum width of the element in pixels.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:452](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L452)
+[src/engine/scripting/websg-api.d.ts:452](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L452)
 
-[packages/websg-types/types/websg.d.ts:1406](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1406)
+[packages/websg-types/types/websg.d.ts:1406](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1406)
 
 ___
 
@@ -515,9 +515,9 @@ The minimum height of the element in pixels.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:451](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L451)
+[src/engine/scripting/websg-api.d.ts:451](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L451)
 
-[packages/websg-types/types/websg.d.ts:1402](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1402)
+[packages/websg-types/types/websg.d.ts:1402](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1402)
 
 ___
 
@@ -533,9 +533,9 @@ The minimum width of the element in pixels.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:450](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L450)
+[src/engine/scripting/websg-api.d.ts:450](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L450)
 
-[packages/websg-types/types/websg.d.ts:1398](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1398)
+[packages/websg-types/types/websg.d.ts:1398](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1398)
 
 ___
 
@@ -551,9 +551,9 @@ The padding of the element in pixels.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:430](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L430)
+[src/engine/scripting/websg-api.d.ts:430](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L430)
 
-[packages/websg-types/types/websg.d.ts:1422](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1422)
+[packages/websg-types/types/websg.d.ts:1422](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1422)
 
 ___
 
@@ -569,9 +569,9 @@ The position type of the element (ex. "relative" or "absolute").
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:434](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L434)
+[src/engine/scripting/websg-api.d.ts:434](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L434)
 
-[packages/websg-types/types/websg.d.ts:1350](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1350)
+[packages/websg-types/types/websg.d.ts:1350](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1350)
 
 ___
 
@@ -587,9 +587,9 @@ The distance from the right edge of the parent element.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:436](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L436)
+[src/engine/scripting/websg-api.d.ts:436](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L436)
 
-[packages/websg-types/types/websg.d.ts:1338](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1338)
+[packages/websg-types/types/websg.d.ts:1338](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1338)
 
 ___
 
@@ -605,9 +605,9 @@ The distance from the top edge of the parent element.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:435](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L435)
+[src/engine/scripting/websg-api.d.ts:435](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L435)
 
-[packages/websg-types/types/websg.d.ts:1334](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1334)
+[packages/websg-types/types/websg.d.ts:1334](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1334)
 
 ___
 
@@ -623,9 +623,9 @@ The text content of the UIText element.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:468](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L468)
+[src/engine/scripting/websg-api.d.ts:468](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L468)
 
-[packages/websg-types/types/websg.d.ts:1747](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1747)
+[packages/websg-types/types/websg.d.ts:1747](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1747)
 
 ___
 
@@ -641,6 +641,6 @@ The width of the element in pixels.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:448](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L448)
+[src/engine/scripting/websg-api.d.ts:448](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L448)
 
-[packages/websg-types/types/websg.d.ts:1390](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1390)
+[packages/websg-types/types/websg.d.ts:1390](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1390)

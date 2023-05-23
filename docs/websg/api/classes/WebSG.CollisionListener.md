@@ -42,7 +42,7 @@ Returns an iterator for the collisions that occurred since the last call to .col
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:972](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L972)
+[packages/websg-types/types/websg.d.ts:972](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L972)
 
 ___
 
@@ -58,4 +58,4 @@ Disposes of the collision listener and stops listening to collisions.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:976](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L976)
+[packages/websg-types/types/websg.d.ts:976](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L976)

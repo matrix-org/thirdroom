@@ -35,7 +35,7 @@ An iterator for UIElement objects.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1445](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1445)
+[packages/websg-types/types/websg.d.ts:1445](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1445)
 
 ___
 
@@ -56,4 +56,4 @@ Gets the next UI element in the iterator.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1444](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1444)
+[packages/websg-types/types/websg.d.ts:1444](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1444)

@@ -73,7 +73,7 @@ Class representing a node in a scene graph.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:189](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L189)
+[src/engine/scripting/websg-api.d.ts:189](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L189)
 
 ___
 
@@ -91,7 +91,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:197](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L197)
+[src/engine/scripting/websg-api.d.ts:197](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L197)
 
 ___
 
@@ -115,7 +115,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:202](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L202)
+[src/engine/scripting/websg-api.d.ts:202](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L202)
 
 ___
 
@@ -133,7 +133,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:192](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L192)
+[src/engine/scripting/websg-api.d.ts:192](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L192)
 
 ___
 
@@ -143,7 +143,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:220](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L220)
+[src/engine/scripting/websg-api.d.ts:220](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L220)
 
 ___
 
@@ -167,7 +167,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:191](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L191)
+[src/engine/scripting/websg-api.d.ts:191](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L191)
 
 ___
 
@@ -177,7 +177,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:196](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L196)
+[src/engine/scripting/websg-api.d.ts:196](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L196)
 
 ___
 
@@ -187,7 +187,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:215](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L215)
+[src/engine/scripting/websg-api.d.ts:215](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L215)
 
 ___
 
@@ -197,7 +197,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:219](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L219)
+[src/engine/scripting/websg-api.d.ts:219](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L219)
 
 ___
 
@@ -215,9 +215,9 @@ The node's local transformation matrix as a Matrix4.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:209](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L209)
+[src/engine/scripting/websg-api.d.ts:209](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L209)
 
-[packages/websg-types/types/websg.d.ts:714](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L714)
+[packages/websg-types/types/websg.d.ts:714](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L714)
 
 ___
 
@@ -227,7 +227,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:218](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L218)
+[src/engine/scripting/websg-api.d.ts:218](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L218)
 
 ___
 
@@ -237,7 +237,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:193](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L193)
+[src/engine/scripting/websg-api.d.ts:193](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L193)
 
 ___
 
@@ -247,7 +247,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:201](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L201)
+[src/engine/scripting/websg-api.d.ts:201](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L201)
 
 ___
 
@@ -271,7 +271,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:190](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L190)
+[src/engine/scripting/websg-api.d.ts:190](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L190)
 
 ___
 
@@ -289,7 +289,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:198](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L198)
+[src/engine/scripting/websg-api.d.ts:198](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L198)
 
 ___
 
@@ -307,7 +307,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:203](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L203)
+[src/engine/scripting/websg-api.d.ts:203](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L203)
 
 ___
 
@@ -319,9 +319,9 @@ The node's rotation as a Quaternion.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:207](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L207)
+[src/engine/scripting/websg-api.d.ts:207](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L207)
 
-[packages/websg-types/types/websg.d.ts:704](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L704)
+[packages/websg-types/types/websg.d.ts:704](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L704)
 
 ___
 
@@ -333,9 +333,9 @@ The node's scale as a Vector3.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:208](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L208)
+[src/engine/scripting/websg-api.d.ts:208](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L208)
 
-[packages/websg-types/types/websg.d.ts:709](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L709)
+[packages/websg-types/types/websg.d.ts:709](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L709)
 
 ___
 
@@ -347,9 +347,9 @@ The node's translation as a Vector3.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:206](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L206)
+[src/engine/scripting/websg-api.d.ts:206](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L206)
 
-[packages/websg-types/types/websg.d.ts:699](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L699)
+[packages/websg-types/types/websg.d.ts:699](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L699)
 
 ___
 
@@ -359,7 +359,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:221](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L221)
+[src/engine/scripting/websg-api.d.ts:221](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L221)
 
 ___
 
@@ -369,7 +369,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:216](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L216)
+[src/engine/scripting/websg-api.d.ts:216](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L216)
 
 ___
 
@@ -387,9 +387,9 @@ The node's world transformation matrix as a ReadonlyMatrix4.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:212](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L212)
+[src/engine/scripting/websg-api.d.ts:212](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L212)
 
-[packages/websg-types/types/websg.d.ts:719](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L719)
+[packages/websg-types/types/websg.d.ts:719](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L719)
 
 ## Methods
 
@@ -411,7 +411,7 @@ Adds a component to this node.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:858](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L858)
+[packages/websg-types/types/websg.d.ts:858](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L858)
 
 ___
 
@@ -434,7 +434,7 @@ If the component does not exist on this node, it will return undefined.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:874](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L874)
+[packages/websg-types/types/websg.d.ts:874](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L874)
 
 ___
 
@@ -456,7 +456,7 @@ Checks if this node has a component.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:868](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L868)
+[packages/websg-types/types/websg.d.ts:868](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L868)
 
 ___
 
@@ -478,7 +478,7 @@ Removes a component from this node.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:863](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L863)
+[packages/websg-types/types/websg.d.ts:863](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L863)
 
 ___
 
@@ -500,4 +500,4 @@ Enables orbit camera control mode for this node.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:853](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L853)
+[packages/websg-types/types/websg.d.ts:853](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L853)

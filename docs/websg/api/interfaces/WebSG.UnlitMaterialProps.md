@@ -27,7 +27,7 @@ The alpha cutoff value for the material. Default is 0.5.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:336](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L336)
+[packages/websg-types/types/websg.d.ts:336](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L336)
 
 ___
 
@@ -39,7 +39,7 @@ The alpha mode for the material. Default is 'OPAQUE'.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:340](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L340)
+[packages/websg-types/types/websg.d.ts:340](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L340)
 
 ___
 
@@ -51,7 +51,7 @@ The RGBA base color factor.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:324](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L324)
+[packages/websg-types/types/websg.d.ts:324](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L324)
 
 ___
 
@@ -63,7 +63,7 @@ The base color texture.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:328](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L328)
+[packages/websg-types/types/websg.d.ts:328](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L328)
 
 ___
 
@@ -75,7 +75,7 @@ Whether the material is visible from both sides. Default is false.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:332](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L332)
+[packages/websg-types/types/websg.d.ts:332](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L332)
 
 ___
 
@@ -87,4 +87,4 @@ The name of the material.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:320](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L320)
+[packages/websg-types/types/websg.d.ts:320](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L320)

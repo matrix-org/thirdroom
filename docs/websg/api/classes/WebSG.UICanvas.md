@@ -58,9 +58,9 @@ Gets the canvas size as a Vector2 in meters.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:418](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L418)
+[src/engine/scripting/websg-api.d.ts:418](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L418)
 
-[packages/websg-types/types/websg.d.ts:1262](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1262)
+[packages/websg-types/types/websg.d.ts:1262](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1262)
 
 ## Accessors
 
@@ -80,7 +80,7 @@ UICanvasProps.height
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1245](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1245)
+[packages/websg-types/types/websg.d.ts:1245](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1245)
 
 • `set` **height**(`value`): `void`
 
@@ -102,7 +102,7 @@ UICanvasProps.height
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1251](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1251)
+[packages/websg-types/types/websg.d.ts:1251](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1251)
 
 ___
 
@@ -122,7 +122,7 @@ UICanvasProps.root
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1223](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1223)
+[packages/websg-types/types/websg.d.ts:1223](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1223)
 
 • `set` **root**(`element`): `void`
 
@@ -144,7 +144,7 @@ UICanvasProps.root
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1229](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1229)
+[packages/websg-types/types/websg.d.ts:1229](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1229)
 
 ___
 
@@ -164,7 +164,7 @@ UICanvasProps.width
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1234](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1234)
+[packages/websg-types/types/websg.d.ts:1234](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1234)
 
 • `set` **width**(`value`): `void`
 
@@ -186,7 +186,7 @@ UICanvasProps.width
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1240](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1240)
+[packages/websg-types/types/websg.d.ts:1240](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1240)
 
 ## Methods
 
@@ -207,4 +207,4 @@ This should be called any time the UI elements are changed.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1257](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1257)
+[packages/websg-types/types/websg.d.ts:1257](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1257)
