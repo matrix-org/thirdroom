@@ -10,6 +10,7 @@ export enum InputMessageType {
 
 export interface InitializeInputStateMessage {
   inputRingBuffer: InputRingBuffer;
+  screenSpaceMouseCoords: ScreenSpaceMouseCoordsTripleBuffer;
 }
 
 export interface SetXRReferenceSpaceMessage {
@@ -17,10 +18,15 @@ export interface SetXRReferenceSpaceMessage {
   hand: XRHandedness;
 }
 
+export const screenSpaceMouseCoordsSchema = defineObjectBufferSchema({
+  coords: [Float32Array, 2],
+});
+
+export type ScreenSpaceMouseCoordsTripleBuffer = ObjectTripleBuffer<typeof screenSpaceMouseCoordsSchema>;
+
 export const XRCameraPoseSchema = defineObjectBufferSchema({
   matrix: [Float32Array, 16],
 });
-
 export const XRControllerPosesSchema = defineObjectBufferSchema({
   rayPose: [Float32Array, 16],
   gripPose: [Float32Array, 16],

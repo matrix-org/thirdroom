@@ -118,24 +118,30 @@ export function onDisposeEditor(ctx: GameState) {
   ctx.editorLoaded = false;
 }
 
-export function onSetSelectedEntity(ctx: GameState, message: SetSelectedEntityMessage) {
+function onSetSelectedEntity(ctx: GameState, message: SetSelectedEntityMessage) {
+  selectEditorEntity(ctx, message.eid);
+}
+
+export function selectEditorEntity(ctx: GameState, eid: number) {
   const editor = getModule(ctx, EditorModule);
 
   const selected = selectedQuery(ctx.world);
 
   for (let i = 0; i < selected.length; i++) {
-    const eid = selected[i];
+    const selectedEid = selected[i];
 
-    if (message.eid === eid) {
+    if (eid === selectedEid) {
       continue;
     }
 
-    removeComponent(ctx.world, Selected, eid);
+    removeComponent(ctx.world, Selected, selectedEid);
   }
 
-  addComponent(ctx.world, Selected, message.eid);
+  if (eid) {
+    addComponent(ctx.world, Selected, eid);
+  }
 
-  editor.activeEntity = message.eid;
+  editor.activeEntity = eid;
   editor.activeEntityChanged = true;
 }
 
