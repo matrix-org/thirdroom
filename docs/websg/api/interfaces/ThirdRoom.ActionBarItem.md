@@ -4,6 +4,8 @@
 
 [ThirdRoom](../modules/ThirdRoom.md).ActionBarItem
 
+Represents an item in the action bar.
+
 ## Table of contents
 
 ### Properties
@@ -18,9 +20,11 @@
 
 • **id**: `string`
 
+Used to identify the action when it is triggered.
+
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2214](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2214)
+[packages/websg-types/types/websg.d.ts:2632](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2632)
 
 ___
 
@@ -28,9 +32,11 @@ ___
 
 • **label**: `string`
 
+Used to display what the action does when hovering over an action.
+
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2215](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2215)
+[packages/websg-types/types/websg.d.ts:2636](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2636)
 
 ___
 
@@ -38,6 +44,10 @@ ___
 
 • **thumbnail**: [`Image`](../classes/WebSG.Image.md)
 
+Used to display an icon in the action bar.
+Note that the thumbnail must be a square uncompressed image (e.g. .png or .jpg)
+Basis Universal compressed images (e.g. .ktx2) are not supported.
+
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2216](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2216)
+[packages/websg-types/types/websg.d.ts:2642](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2642)

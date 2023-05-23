@@ -4,6 +4,8 @@
 
 [WebSG](../modules/WebSG.md).UIElementIterator
 
+An iterator for UIElement objects.
+
 ## Table of contents
 
 ### Constructors
@@ -33,13 +35,15 @@
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1335](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1335)
+[packages/websg-types/types/websg.d.ts:1445](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1445)
 
 ___
 
 ### next
 
 ▸ **next**(): `Object`
+
+Gets the next UI element in the iterator.
 
 #### Returns
 
@@ -52,4 +56,4 @@ ___
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1334](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1334)
+[packages/websg-types/types/websg.d.ts:1444](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1444)

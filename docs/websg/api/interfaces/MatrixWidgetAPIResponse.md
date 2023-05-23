@@ -35,7 +35,7 @@ MatrixWidgetAPIResponse interface represents a response to a Matrix widget API r
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2285](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2285)
+[packages/websg-types/types/websg.d.ts:2724](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2724)
 
 ___
 
@@ -49,7 +49,7 @@ ___
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2283](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2283)
+[packages/websg-types/types/websg.d.ts:2722](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2722)
 
 ___
 
@@ -63,7 +63,7 @@ ___
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2287](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2287)
+[packages/websg-types/types/websg.d.ts:2726](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2726)
 
 ___
 
@@ -77,7 +77,7 @@ ___
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2284](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2284)
+[packages/websg-types/types/websg.d.ts:2723](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2723)
 
 ___
 
@@ -87,7 +87,7 @@ ___
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2294](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2294)
+[packages/websg-types/types/websg.d.ts:2733](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2733)
 
 ___
 
@@ -101,4 +101,4 @@ ___
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2286](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2286)
+[packages/websg-types/types/websg.d.ts:2725](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2725)

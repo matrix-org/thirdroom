@@ -4,6 +4,11 @@
 
 [ThirdRoom](../modules/ThirdRoom.md).ActionBarListener
 
+An ActionBarListener is used to listen for actions triggered in the action bar.
+The [.actions()](ThirdRoom.ActionBarListener.md#actions) method should be called
+each frame to drain the action bar's action queue. If you are done with the action queue,
+call [.dispose()](ThirdRoom.ActionBarListener.md#dispose) to dispose the listener.
+
 ## Table of contents
 
 ### Constructors
@@ -27,13 +32,15 @@
 
 ▸ **actions**(): [`ActionBarIterator`](ThirdRoom.ActionBarIterator.md)
 
+Returns an iterator over the actions triggered in the action bar since the last call to this method.
+
 #### Returns
 
 [`ActionBarIterator`](ThirdRoom.ActionBarIterator.md)
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2204](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2204)
+[packages/websg-types/types/websg.d.ts:2609](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2609)
 
 ___
 
@@ -41,10 +48,12 @@ ___
 
 ▸ **dispose**(): `undefined`
 
+Disposes the action bar listener.
+
 #### Returns
 
 `undefined`
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2205](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2205)
+[packages/websg-types/types/websg.d.ts:2614](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2614)

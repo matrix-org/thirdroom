@@ -4,6 +4,8 @@
 
 [WebSG](../modules/WebSG.md).Image
 
+A class representing an image data resource.
+
 ## Table of contents
 
 ### Constructors

@@ -20,7 +20,7 @@
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:403](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L403)
+[src/engine/scripting/websg-api.d.ts:403](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L403)
 
 ___
 
@@ -30,7 +30,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:404](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L404)
+[src/engine/scripting/websg-api.d.ts:404](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L404)
 
 ___
 
@@ -40,4 +40,4 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:405](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L405)
+[src/engine/scripting/websg-api.d.ts:405](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L405)

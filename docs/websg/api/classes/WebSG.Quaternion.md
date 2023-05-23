@@ -44,7 +44,7 @@ The number of components in the quaternion.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:930](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L930)
+[packages/websg-types/types/websg.d.ts:1017](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1017)
 
 ___
 
@@ -56,7 +56,7 @@ The w-component of the quaternion.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:916](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L916)
+[packages/websg-types/types/websg.d.ts:1006](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1006)
 
 ___
 
@@ -68,7 +68,7 @@ The x-component of the quaternion.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:898](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L898)
+[packages/websg-types/types/websg.d.ts:991](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L991)
 
 ___
 
@@ -80,7 +80,7 @@ The y-component of the quaternion.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:904](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L904)
+[packages/websg-types/types/websg.d.ts:996](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L996)
 
 ___
 
@@ -92,13 +92,13 @@ The z-component of the quaternion.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:910](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L910)
+[packages/websg-types/types/websg.d.ts:1001](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1001)
 
 ## Methods
 
 ### set
 
-▸ **set**(`value`): `undefined`
+▸ **set**(`value`): [`Quaternion`](WebSG.Quaternion.md)
 
 Sets the quaternion components to the given values.
 
@@ -110,8 +110,8 @@ Sets the quaternion components to the given values.
 
 #### Returns
 
-`undefined`
+[`Quaternion`](WebSG.Quaternion.md)
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:923](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L923)
+[packages/websg-types/types/websg.d.ts:1012](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1012)

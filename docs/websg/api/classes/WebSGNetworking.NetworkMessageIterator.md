@@ -4,6 +4,8 @@
 
 [WebSGNetworking](../modules/WebSGNetworking.md).NetworkMessageIterator
 
+An iterator for [NetworkMessage ](WebSGNetworking.NetworkMessage.md)s.
+
 ## Table of contents
 
 ### Constructors
@@ -33,13 +35,15 @@
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2172](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2172)
+[packages/websg-types/types/websg.d.ts:2525](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2525)
 
 ___
 
 ### next
 
 ▸ **next**(): `Object`
+
+Returns the next [NetworkMessage](WebSGNetworking.NetworkMessage.md) in the iterator.
 
 #### Returns
 
@@ -52,4 +56,4 @@ ___
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2171](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2171)
+[packages/websg-types/types/websg.d.ts:2524](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2524)

@@ -92,6 +92,12 @@ for more details.
 - [onload](WebSG.World.md#onload)
 - [onupdate](WebSG.World.md#onupdate)
 
+### Accessors
+
+- [componentStoreSize](WebSG.World.md#componentstoresize)
+- [primaryInputSourceDirection](WebSG.World.md#primaryinputsourcedirection)
+- [primaryInputSourceOrigin](WebSG.World.md#primaryinputsourceorigin)
+
 ### Methods
 
 - [createAccessorFrom](WebSG.World.md#createaccessorfrom)
@@ -110,6 +116,7 @@ for more details.
 - [createUnlitMaterial](WebSG.World.md#createunlitmaterial)
 - [findAccessorByName](WebSG.World.md#findaccessorbyname)
 - [findColliderByName](WebSG.World.md#findcolliderbyname)
+- [findComponentStoreByName](WebSG.World.md#findcomponentstorebyname)
 - [findImageByName](WebSG.World.md#findimagebyname)
 - [findLightByName](WebSG.World.md#findlightbyname)
 - [findMaterialByName](WebSG.World.md#findmaterialbyname)
@@ -135,7 +142,7 @@ for more details.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:37](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L37)
+[src/engine/scripting/websg-api.d.ts:37](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L37)
 
 ___
 
@@ -144,14 +151,11 @@ ___
 • **onenter**: ``null`` \| () => `any`
 
 Called when the user enters the world.
-
-**`Method`**
-
-onenter
+The network.local peer has been set and the user has been spawned into the world.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2135](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2135)
+[packages/websg-types/types/websg.d.ts:2484](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2484)
 
 ___
 
@@ -160,14 +164,11 @@ ___
 • **onload**: ``null`` \| () => `any`
 
 Called when the world is loaded.
-
-**`Method`**
-
-onload
+The glTF document has been loaded and all resources are available.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2129](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2129)
+[packages/websg-types/types/websg.d.ts:2478](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2478)
 
 ___
 
@@ -175,11 +176,7 @@ ___
 
 • **onupdate**: ``null`` \| (`dt`: `number`, `time`: `number`) => `any`
 
-Called when the world is updated.
-
-**`Method`**
-
-onupdate
+Called once per frame when the world is updated.
 
 **`Param`**
 
@@ -191,7 +188,79 @@ The total time since the start of the world in seconds.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2143](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2143)
+[packages/websg-types/types/websg.d.ts:2491](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2491)
+
+## Accessors
+
+### componentStoreSize
+
+• `get` **componentStoreSize**(): `number`
+
+Returns the maximum number of components per type that can be stored in the world.
+Defaults to 10000.
+
+#### Returns
+
+`number`
+
+#### Defined in
+
+[packages/websg-types/types/websg.d.ts:2440](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2440)
+
+• `set` **componentStoreSize**(`value`): `void`
+
+Sets the maximum number of components per type that can be stored in the world.
+Defaults to 10000.
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `value` | `number` |
+
+#### Returns
+
+`void`
+
+#### Defined in
+
+[packages/websg-types/types/websg.d.ts:2446](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2446)
+
+___
+
+### primaryInputSourceDirection
+
+• `get` **primaryInputSourceDirection**(): [`Vector3`](WebSG.Vector3.md)
+
+Get the primary input source's direction in world space.
+The primary input source in XR is the user's primary controller otherwise it's the camera.
+ This API is experimental and may change or be removed in a future release.
+
+#### Returns
+
+[`Vector3`](WebSG.Vector3.md)
+
+#### Defined in
+
+[packages/websg-types/types/websg.d.ts:2472](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2472)
+
+___
+
+### primaryInputSourceOrigin
+
+• `get` **primaryInputSourceOrigin**(): [`Vector3`](WebSG.Vector3.md)
+
+Get the primary input source's origin in world space.
+The primary input source in XR is the user's primary controller otherwise it's the camera.
+ This API is experimental and may change or be removed in a future release.
+
+#### Returns
+
+[`Vector3`](WebSG.Vector3.md)
+
+#### Defined in
+
+[packages/websg-types/types/websg.d.ts:2465](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2465)
 
 ## Methods
 
@@ -216,11 +285,11 @@ The newly created accessor.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:126](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L126)
+[src/engine/scripting/websg-api.d.ts:126](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L126)
 
 ▸ **createAccessorFrom**(`buffer`, `props`): [`Accessor`](WebSG.Accessor.md)
 
-Creates an Accessor from the given ArrayBuffer and properties.
+Creates an [Accessor ](WebSG.Accessor.md) from the given ArrayBuffer and properties.
 
 #### Parameters
 
@@ -233,11 +302,9 @@ Creates an Accessor from the given ArrayBuffer and properties.
 
 [`Accessor`](WebSG.Accessor.md)
 
-The created Accessor.
-
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1945](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1945)
+[packages/websg-types/types/websg.d.ts:2289](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2289)
 
 ___
 
@@ -261,11 +328,11 @@ The newly created box mesh.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:77](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L77)
+[src/engine/scripting/websg-api.d.ts:77](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L77)
 
 ▸ **createBoxMesh**(`props`): [`Mesh`](WebSG.Mesh.md)
 
-Creates a Box Mesh with the given properties.
+Creates a Box [Mesh ](WebSG.Mesh.md) with the given properties.
 
 #### Parameters
 
@@ -277,11 +344,9 @@ Creates a Box Mesh with the given properties.
 
 [`Mesh`](WebSG.Mesh.md)
 
-The created Box Mesh.
-
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2015](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2015)
+[packages/websg-types/types/websg.d.ts:2349](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2349)
 
 ___
 
@@ -305,11 +370,11 @@ The newly created collider.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:85](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L85)
+[src/engine/scripting/websg-api.d.ts:85](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L85)
 
 ▸ **createCollider**(`props`): [`Collider`](WebSG.Collider.md)
 
-Creates a Collider with the given properties.
+Creates a [Collider ](WebSG.Collider.md) with the given properties.
 
 #### Parameters
 
@@ -321,11 +386,9 @@ Creates a Collider with the given properties.
 
 [`Collider`](WebSG.Collider.md)
 
-The created Collider.
-
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1959](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1959)
+[packages/websg-types/types/websg.d.ts:2301](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2301)
 
 ___
 
@@ -333,13 +396,16 @@ ___
 
 ▸ **createCollisionListener**(): [`CollisionListener`](WebSG.CollisionListener.md)
 
+Creates a new [CollisionListener ](WebSG.CollisionListener.md) for listening to
+collisions between nodes with colliders set on them.
+
 #### Returns
 
 [`CollisionListener`](WebSG.CollisionListener.md)
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2116](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2116)
+[packages/websg-types/types/websg.d.ts:2434](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2434)
 
 ___
 
@@ -347,7 +413,7 @@ ___
 
 ▸ **createLight**(`props`): [`Light`](WebSG.Light.md)
 
-Creates a Light with the given properties.
+Creates a [Light ](WebSG.Light.md) with the given properties.
 
 #### Parameters
 
@@ -359,11 +425,9 @@ Creates a Light with the given properties.
 
 [`Light`](WebSG.Light.md)
 
-The created Light.
-
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1973](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1973)
+[packages/websg-types/types/websg.d.ts:2313](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2313)
 
 ___
 
@@ -371,7 +435,7 @@ ___
 
 ▸ **createMaterial**(`props`): [`Material`](WebSG.Material.md)
 
-Creates a Material with the given properties.
+Creates a [Material ](WebSG.Material.md) with the given properties.
 
 #### Parameters
 
@@ -383,11 +447,9 @@ Creates a Material with the given properties.
 
 [`Material`](WebSG.Material.md)
 
-The created Material.
-
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1994](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1994)
+[packages/websg-types/types/websg.d.ts:2331](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2331)
 
 ___
 
@@ -411,11 +473,11 @@ The newly created mesh.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:134](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L134)
+[src/engine/scripting/websg-api.d.ts:134](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L134)
 
 ▸ **createMesh**(`props`): [`Mesh`](WebSG.Mesh.md)
 
-Creates a Mesh with the given properties.
+Creates a [Mesh ](WebSG.Mesh.md) with the given properties.
 
 #### Parameters
 
@@ -427,11 +489,9 @@ Creates a Mesh with the given properties.
 
 [`Mesh`](WebSG.Mesh.md)
 
-The created Mesh.
-
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2008](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2008)
+[packages/websg-types/types/websg.d.ts:2343](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2343)
 
 ___
 
@@ -455,31 +515,25 @@ The newly created node.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:69](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L69)
+[src/engine/scripting/websg-api.d.ts:69](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L69)
 
 ▸ **createNode**(`props?`): [`Node`](WebSG.Node.md)
 
-Creates a new node with the given properties.
-
-**`Method`**
-
-createNode
+Creates a new [Node ](WebSG.Node.md) with the given properties.
 
 #### Parameters
 
 | Name | Type | Description |
 | :------ | :------ | :------ |
-| `props?` | [`NodeProps`](../interfaces/WebSG.NodeProps.md) | Optional properties to set for the new node. |
+| `props?` | [`NodeProps`](../interfaces/WebSG.NodeProps.md) | Optional properties to set on the new node. |
 
 #### Returns
 
 [`Node`](WebSG.Node.md)
 
-- The created node.
-
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2031](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2031)
+[packages/websg-types/types/websg.d.ts:2361](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2361)
 
 ___
 
@@ -487,27 +541,21 @@ ___
 
 ▸ **createScene**(`props?`): [`Scene`](WebSG.Scene.md)
 
-Creates a new scene with the given properties.
-
-**`Method`**
-
-createScene
+Creates a new [Scene ](WebSG.Scene.md) with the given properties.
 
 #### Parameters
 
 | Name | Type | Description |
 | :------ | :------ | :------ |
-| `props?` | [`SceneProps`](../interfaces/WebSG.SceneProps.md) | Optional properties to set for the new scene. |
+| `props?` | [`SceneProps`](../interfaces/WebSG.SceneProps.md) | Optional properties to set on the new scene. |
 
 #### Returns
 
 [`Scene`](WebSG.Scene.md)
 
-- The created scene.
-
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2047](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2047)
+[packages/websg-types/types/websg.d.ts:2373](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2373)
 
 ___
 
@@ -531,35 +579,25 @@ The newly created UI button element.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:117](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L117)
+[src/engine/scripting/websg-api.d.ts:117](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L117)
 
 ▸ **createUIButton**(`props?`): [`UIButton`](WebSG.UIButton.md)
 
 Creates a new UIButton with the given properties.
 
-**`Method`**
-
-create
-
-**`Method`**
-
-createUIButton
-
 #### Parameters
 
 | Name | Type | Description |
 | :------ | :------ | :------ |
-| `props?` | [`UIButtonProps`](../interfaces/WebSG.UIButtonProps.md) | Optional properties to set for the new UIButton. |
+| `props?` | [`UIButtonProps`](../interfaces/WebSG.UIButtonProps.md) | Optional properties to set on the new UIButton. |
 
 #### Returns
 
 [`UIButton`](WebSG.UIButton.md)
 
-- The created UIButton.
-
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2106](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2106)
+[packages/websg-types/types/websg.d.ts:2422](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2422)
 
 ___
 
@@ -583,31 +621,25 @@ The newly created UI canvas.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:93](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L93)
+[src/engine/scripting/websg-api.d.ts:93](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L93)
 
 ▸ **createUICanvas**(`props?`): [`UICanvas`](WebSG.UICanvas.md)
 
-Creates a new UICanvas with the given properties.
-
-**`Method`**
-
-createUICanvas
+Creates a new [UICanvas ](WebSG.UICanvas.md) with the given properties.
 
 #### Parameters
 
 | Name | Type | Description |
 | :------ | :------ | :------ |
-| `props?` | [`UICanvasProps`](../interfaces/WebSG.UICanvasProps.md) | Optional properties to set for the new UICanvas. |
+| `props?` | [`UICanvasProps`](../interfaces/WebSG.UICanvasProps.md) | Optional properties to set on the new UICanvas. |
 
 #### Returns
 
 [`UICanvas`](WebSG.UICanvas.md)
 
-- The created UICanvas.
-
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2073](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2073)
+[packages/websg-types/types/websg.d.ts:2397](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2397)
 
 ___
 
@@ -631,31 +663,25 @@ The newly created UI element.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:101](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L101)
+[src/engine/scripting/websg-api.d.ts:101](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L101)
 
 ▸ **createUIElement**(`props?`): [`UIElement`](WebSG.UIElement.md)
 
 Creates a new UIElement with the given properties.
 
-**`Method`**
-
-createUIElement
-
 #### Parameters
 
 | Name | Type | Description |
 | :------ | :------ | :------ |
-| `props?` | [`UIElementProps`](../interfaces/WebSG.UIElementProps.md) | Optional properties to set for the new UIElement. |
+| `props?` | [`UIElementProps`](../interfaces/WebSG.UIElementProps.md) | Optional properties to set on the new UIElement. |
 
 #### Returns
 
 [`UIElement`](WebSG.UIElement.md)
 
-- The created UIElement.
-
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2089](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2089)
+[packages/websg-types/types/websg.d.ts:2409](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2409)
 
 ___
 
@@ -679,7 +705,7 @@ The newly created UI text element.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:109](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L109)
+[src/engine/scripting/websg-api.d.ts:109](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L109)
 
 ▸ **createUIText**(`props?`): [`UIText`](WebSG.UIText.md)
 
@@ -693,17 +719,15 @@ createUIText
 
 | Name | Type | Description |
 | :------ | :------ | :------ |
-| `props?` | [`UITextProps`](../interfaces/WebSG.UITextProps.md) | Optional properties to set for the new UIText. |
+| `props?` | [`UITextProps`](../interfaces/WebSG.UITextProps.md) | Optional properties to set on the new UIText. |
 
 #### Returns
 
 [`UIText`](WebSG.UIText.md)
 
-- The created UIText.
-
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2097](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2097)
+[packages/websg-types/types/websg.d.ts:2416](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2416)
 
 ___
 
@@ -711,7 +735,7 @@ ___
 
 ▸ **createUnlitMaterial**(`props`): [`Material`](WebSG.Material.md)
 
-Creates an unlit Material with the given properties.
+Creates an unlit [Material ](WebSG.Material.md) with the given properties.
 
 #### Parameters
 
@@ -723,11 +747,9 @@ Creates an unlit Material with the given properties.
 
 [`Material`](WebSG.Material.md)
 
-The created unlit Material.
-
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1987](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1987)
+[packages/websg-types/types/websg.d.ts:2325](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2325)
 
 ___
 
@@ -735,7 +757,7 @@ ___
 
 ▸ **findAccessorByName**(`name`): `undefined` \| [`Accessor`](WebSG.Accessor.md)
 
-Finds an Accessor by its name.
+Finds an [Accessor ](WebSG.Accessor.md) by its name. Returns undefined if not found.
 
 #### Parameters
 
@@ -747,11 +769,9 @@ Finds an Accessor by its name.
 
 `undefined` \| [`Accessor`](WebSG.Accessor.md)
 
-The found Accessor or undefined if not found.
-
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1952](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1952)
+[packages/websg-types/types/websg.d.ts:2295](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2295)
 
 ___
 
@@ -759,7 +779,7 @@ ___
 
 ▸ **findColliderByName**(`name`): `undefined` \| [`Collider`](WebSG.Collider.md)
 
-Finds a Collider by its name.
+Finds a [Collider ](WebSG.Collider.md) by its name. Returns undefined if not found.
 
 #### Parameters
 
@@ -771,11 +791,32 @@ Finds a Collider by its name.
 
 `undefined` \| [`Collider`](WebSG.Collider.md)
 
-The found Collider or undefined if not found.
+#### Defined in
+
+[packages/websg-types/types/websg.d.ts:2307](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2307)
+
+___
+
+### findComponentStoreByName
+
+▸ **findComponentStoreByName**(`name`): `undefined` \| [`ComponentStore`](WebSG.ComponentStore.md)
+
+Find the [ComponentStore ](WebSG.ComponentStore.md) for the given component type.
+Returns undefined if not found.
+
+#### Parameters
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `name` | `string` | The name of the component store to find. |
+
+#### Returns
+
+`undefined` \| [`ComponentStore`](WebSG.ComponentStore.md)
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1966](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1966)
+[packages/websg-types/types/websg.d.ts:2453](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2453)
 
 ___
 
@@ -783,11 +824,13 @@ ___
 
 ▸ **findImageByName**(`name`): `undefined` \| [`Image`](WebSG.Image.md)
 
+Finds an [image ](WebSG.Image.md) by its name. Returns undefined if not found.
+
 #### Parameters
 
-| Name | Type |
-| :------ | :------ |
-| `name` | `string` |
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `name` | `string` | The name of the image to find. |
 
 #### Returns
 
@@ -795,7 +838,7 @@ ___
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2065](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2065)
+[packages/websg-types/types/websg.d.ts:2391](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2391)
 
 ___
 
@@ -803,7 +846,7 @@ ___
 
 ▸ **findLightByName**(`name`): `undefined` \| [`Light`](WebSG.Light.md)
 
-Finds a Light by its name.
+Finds a [Light ](WebSG.Light.md) by its name. Returns undefined if not found.
 
 #### Parameters
 
@@ -815,11 +858,9 @@ Finds a Light by its name.
 
 `undefined` \| [`Light`](WebSG.Light.md)
 
-The found Light or undefined if not found.
-
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1980](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1980)
+[packages/websg-types/types/websg.d.ts:2319](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2319)
 
 ___
 
@@ -843,11 +884,11 @@ The found material or undefined if not found.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:61](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L61)
+[src/engine/scripting/websg-api.d.ts:61](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L61)
 
 ▸ **findMaterialByName**(`name`): `undefined` \| [`Material`](WebSG.Material.md)
 
-Finds a Material by its name.
+Finds a [Material ](WebSG.Material.md) by its name. Returns undefined if not found.
 
 #### Parameters
 
@@ -859,11 +900,9 @@ Finds a Material by its name.
 
 `undefined` \| [`Material`](WebSG.Material.md)
 
-The found Material or undefined if not found.
-
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2001](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2001)
+[packages/websg-types/types/websg.d.ts:2337](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2337)
 
 ___
 
@@ -887,15 +926,11 @@ The found mesh or undefined if not found.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:53](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L53)
+[src/engine/scripting/websg-api.d.ts:53](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L53)
 
 ▸ **findMeshByName**(`name`): `undefined` \| [`Mesh`](WebSG.Mesh.md)
 
-Finds a mesh by its name.
-
-**`Method`**
-
-findMeshByName
+Finds a [Mesh ](WebSG.Mesh.md) by its name. Returns undefined if not found.
 
 #### Parameters
 
@@ -907,11 +942,9 @@ findMeshByName
 
 `undefined` \| [`Mesh`](WebSG.Mesh.md)
 
-- The mesh found or undefined if not found.
-
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2023](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2023)
+[packages/websg-types/types/websg.d.ts:2355](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2355)
 
 ___
 
@@ -935,15 +968,11 @@ The found node or undefined if not found.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:45](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L45)
+[src/engine/scripting/websg-api.d.ts:45](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L45)
 
 ▸ **findNodeByName**(`name`): `undefined` \| [`Node`](WebSG.Node.md)
 
-Finds a node by its name.
-
-**`Method`**
-
-findNodeByName
+Finds a [node ](WebSG.Node.md) by its name. Returns undefined if not found.
 
 #### Parameters
 
@@ -955,11 +984,9 @@ findNodeByName
 
 `undefined` \| [`Node`](WebSG.Node.md)
 
-- The node found or undefined if not found.
-
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2039](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2039)
+[packages/websg-types/types/websg.d.ts:2367](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2367)
 
 ___
 
@@ -967,11 +994,7 @@ ___
 
 ▸ **findSceneByName**(`name`): `undefined` \| [`Scene`](WebSG.Scene.md)
 
-Finds a scene by its name.
-
-**`Method`**
-
-findSceneByName
+Finds a [scene ](WebSG.Scene.md) by its name. Returns undefined if not found.
 
 #### Parameters
 
@@ -983,11 +1006,9 @@ findSceneByName
 
 `undefined` \| [`Scene`](WebSG.Scene.md)
 
-- The scene found or undefined if not found.
-
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2055](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2055)
+[packages/websg-types/types/websg.d.ts:2379](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2379)
 
 ___
 
@@ -995,11 +1016,7 @@ ___
 
 ▸ **findTextureByName**(`name`): `undefined` \| [`Texture`](WebSG.Texture.md)
 
-Finds a texture by its name.
-
-**`Method`**
-
-findTextureByName
+Finds a [texture ](WebSG.Texture.md) by its name. Returns undefined if not found.
 
 #### Parameters
 
@@ -1011,11 +1028,9 @@ findTextureByName
 
 `undefined` \| [`Texture`](WebSG.Texture.md)
 
-- The texture found or undefined if not found.
-
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2063](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2063)
+[packages/websg-types/types/websg.d.ts:2385](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2385)
 
 ___
 
@@ -1023,11 +1038,7 @@ ___
 
 ▸ **findUICanvasByName**(`name`): `undefined` \| [`UICanvas`](WebSG.UICanvas.md)
 
-Finds a UICanvas by its name.
-
-**`Method`**
-
-findUICanvasByName
+Finds a UICanvas by its name. Returns undefined if not found.
 
 #### Parameters
 
@@ -1039,11 +1050,9 @@ findUICanvasByName
 
 `undefined` \| [`UICanvas`](WebSG.UICanvas.md)
 
-- The UICanvas found or undefined if not found.
-
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2081](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2081)
+[packages/websg-types/types/websg.d.ts:2403](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2403)
 
 ___
 
@@ -1051,11 +1060,7 @@ ___
 
 ▸ **findUIElementByName**(`name`): `undefined` \| [`UIElement`](WebSG.UIElement.md)
 
-Finds a UIElement by its name.
-
-**`Method`**
-
-findUIElementByName
+Finds a UIElement by its name. Returns undefined if not found.
 
 #### Parameters
 
@@ -1067,11 +1072,9 @@ findUIElementByName
 
 `undefined` \| [`UIElement`](WebSG.UIElement.md)
 
-- The UIElement found or undefined if not found.
-
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2114](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2114)
+[packages/websg-types/types/websg.d.ts:2428](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2428)
 
 ___
 
@@ -1087,15 +1090,11 @@ Stops orbiting
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:139](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L139)
+[src/engine/scripting/websg-api.d.ts:139](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L139)
 
 ▸ **stopOrbit**(): `undefined`
 
 Stops any ongoing orbiting operation.
-
-**`Method`**
-
-stopOrbit
 
 #### Returns
 
@@ -1103,4 +1102,4 @@ stopOrbit
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2123](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2123)
+[packages/websg-types/types/websg.d.ts:2458](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2458)

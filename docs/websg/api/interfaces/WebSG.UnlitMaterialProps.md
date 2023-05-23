@@ -5,7 +5,6 @@
 [WebSG](../modules/WebSG.md).UnlitMaterialProps
 
 UnlitMaterialProps is an interface that defines the properties for creating an unlit Material instance.
- UnlitMaterialProps
 
 ## Table of contents
 
@@ -24,11 +23,11 @@ UnlitMaterialProps is an interface that defines the properties for creating an u
 
 • `Optional` **alphaCutoff**: `number`
 
-The optional alpha cutoff value for the material. Default is 0.5.
+The alpha cutoff value for the material. Default is 0.5.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:310](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L310)
+[packages/websg-types/types/websg.d.ts:336](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L336)
 
 ___
 
@@ -36,11 +35,11 @@ ___
 
 • `Optional` **alphaMode**: [`AlphaMode`](../modules/WebSG.md#alphamode-1)
 
-The optional alpha mode for the material. Default is 'OPAQUE'.
+The alpha mode for the material. Default is 'OPAQUE'.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:311](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L311)
+[packages/websg-types/types/websg.d.ts:340](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L340)
 
 ___
 
@@ -48,11 +47,11 @@ ___
 
 • `Optional` **baseColorFactor**: `ArrayLike`<`number`\>
 
-The optional RGBA base color factor.
+The RGBA base color factor.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:307](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L307)
+[packages/websg-types/types/websg.d.ts:324](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L324)
 
 ___
 
@@ -60,11 +59,11 @@ ___
 
 • `Optional` **baseColorTexture**: [`Texture`](../classes/WebSG.Texture.md)
 
-The optional base color texture.
+The base color texture.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:308](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L308)
+[packages/websg-types/types/websg.d.ts:328](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L328)
 
 ___
 
@@ -76,7 +75,7 @@ Whether the material is visible from both sides. Default is false.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:309](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L309)
+[packages/websg-types/types/websg.d.ts:332](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L332)
 
 ___
 
@@ -84,8 +83,8 @@ ___
 
 • `Optional` **name**: `string`
 
-The optional name of the material.
+The name of the material.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:306](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L306)
+[packages/websg-types/types/websg.d.ts:320](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L320)

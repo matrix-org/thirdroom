@@ -30,6 +30,8 @@ WebSG Documentation
 - [Collision](../classes/WebSG.Collision.md)
 - [CollisionIterator](../classes/WebSG.CollisionIterator.md)
 - [CollisionListener](../classes/WebSG.CollisionListener.md)
+- [Component](../classes/WebSG.Component.md)
+- [ComponentStore](../classes/WebSG.ComponentStore.md)
 - [Image](../classes/WebSG.Image.md)
 - [Interactable](../classes/WebSG.Interactable.md)
 - [Light](../classes/WebSG.Light.md)
@@ -113,9 +115,9 @@ AlphaMode is a union type representing the available alpha modes.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:287](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L287)
+[packages/websg-types/types/websg.d.ts:306](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L306)
 
-[packages/websg-types/types/websg.d.ts:293](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L293)
+[packages/websg-types/types/websg.d.ts:311](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L311)
 
 ___
 
@@ -131,7 +133,7 @@ ___
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:152](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L152)
+[packages/websg-types/types/websg.d.ts:174](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L174)
 
 ___
 
@@ -141,9 +143,9 @@ ___
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:146](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L146)
+[packages/websg-types/types/websg.d.ts:168](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L168)
 
-[packages/websg-types/types/websg.d.ts:147](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L147)
+[packages/websg-types/types/websg.d.ts:169](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L169)
 
 ___
 
@@ -163,7 +165,7 @@ LightType is an object containing the string constants for the available types o
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:210](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L210)
+[packages/websg-types/types/websg.d.ts:223](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L223)
 
 ## Variables
 
@@ -172,10 +174,6 @@ LightType is an object containing the string constants for the available types o
 • **AlphaMode**: `Object`
 
 AlphaMode is an object containing the string constants for the available alpha modes.
-
-**`Const`**
-
-AlphaMode
 
 #### Type declaration
 
@@ -187,9 +185,9 @@ AlphaMode
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:287](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L287)
+[packages/websg-types/types/websg.d.ts:306](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L306)
 
-[packages/websg-types/types/websg.d.ts:293](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L293)
+[packages/websg-types/types/websg.d.ts:311](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L311)
 
 ___
 
@@ -205,7 +203,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:499](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L499)
+[src/engine/scripting/websg-api.d.ts:499](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L499)
 
 ___
 
@@ -222,9 +220,9 @@ ___
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:146](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L146)
+[packages/websg-types/types/websg.d.ts:168](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L168)
 
-[packages/websg-types/types/websg.d.ts:147](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L147)
+[packages/websg-types/types/websg.d.ts:169](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L169)
 
 ___
 
@@ -240,4 +238,4 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:503](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L503)
+[src/engine/scripting/websg-api.d.ts:503](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L503)

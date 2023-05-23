@@ -4,6 +4,8 @@
 
 [ThirdRoom](../modules/ThirdRoom.md).ActionBarIterator
 
+Represents an iterator over the actions triggered in the action bar.
+
 ## Table of contents
 
 ### Constructors
@@ -33,7 +35,7 @@
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2210](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2210)
+[packages/websg-types/types/websg.d.ts:2622](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2622)
 
 ___
 
@@ -52,4 +54,4 @@ ___
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2209](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2209)
+[packages/websg-types/types/websg.d.ts:2621](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2621)

@@ -33,6 +33,7 @@ world.onload = () => {
 
 ### Properties
 
+- [WebSG](WebSGGlobalScope.md#websg)
 - [console](WebSGGlobalScope.md#console)
 - [matrix](WebSGGlobalScope.md#matrix)
 - [network](WebSGGlobalScope.md#network)
@@ -41,16 +42,28 @@ world.onload = () => {
 
 ## Properties
 
+### WebSG
+
+• `Readonly` **WebSG**: typeof [`WebSG`](../modules/WebSG.md)
+
+Returns the [WebSG](../modules/WebSG.md) namespace with associated classes and constants.
+
+#### Defined in
+
+[packages/websg-types/types/websg.d.ts:2861](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2861)
+
+___
+
 ### console
 
-• `Readonly` **console**: [`Console`](Console.md)
+• `Readonly` **console**: `Console`
 
-Returns the [console ](Console.md) associated with the current script.
+Returns the Console | console associated with the current script.
 Used for logging messages to the browser's console.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2393](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2393)
+[packages/websg-types/types/websg.d.ts:2832](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2832)
 
 ___
 
@@ -63,7 +76,7 @@ Used for sending and receiving matrix events to and from the associated matrix r
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2411](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2411)
+[packages/websg-types/types/websg.d.ts:2850](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2850)
 
 ___
 
@@ -76,7 +89,7 @@ Used for sending and receiving network messages to and from other peers in the r
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2417](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2417)
+[packages/websg-types/types/websg.d.ts:2856](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2856)
 
 ___
 
@@ -89,7 +102,7 @@ Used for ThirdRoom-specific properties/methods not available in the WebSG API.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2405](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2405)
+[packages/websg-types/types/websg.d.ts:2844](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2844)
 
 ___
 
@@ -102,4 +115,4 @@ Used for accessing the current world's scene graph and other world properties/me
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2399](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2399)
+[packages/websg-types/types/websg.d.ts:2838](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2838)

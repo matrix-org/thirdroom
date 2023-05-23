@@ -4,6 +4,11 @@
 
 [ThirdRoom](../modules/ThirdRoom.md).ActionBar
 
+Represents the action bar at the bottom of the screen.
+Items can be set via the [setItems](ThirdRoom.ActionBar.md#setitems) method.
+You can listen for triggered actions by creating a new listener via the
+[createListener](ThirdRoom.ActionBar.md#createlistener) method.
+
 ## Table of contents
 
 ### Constructors
@@ -27,13 +32,15 @@
 
 ▸ **createListener**(): [`ActionBarListener`](ThirdRoom.ActionBarListener.md)
 
+Creates a new [ActionBarListener](ThirdRoom.ActionBarListener.md) for the action bar.
+
 #### Returns
 
 [`ActionBarListener`](ThirdRoom.ActionBarListener.md)
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2221](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2221)
+[packages/websg-types/types/websg.d.ts:2660](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2660)
 
 ___
 
@@ -41,11 +48,13 @@ ___
 
 ▸ **setItems**(`items`): `undefined`
 
+Replaces the items in the action bar with the given items.
+
 #### Parameters
 
-| Name | Type |
-| :------ | :------ |
-| `items` | [`ActionBarItem`](../interfaces/ThirdRoom.ActionBarItem.md)[] |
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `items` | [`ActionBarItem`](../interfaces/ThirdRoom.ActionBarItem.md)[] | The [ActionBarItem](../interfaces/ThirdRoom.ActionBarItem.md)s to set. |
 
 #### Returns
 
@@ -53,4 +62,4 @@ ___
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2220](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2220)
+[packages/websg-types/types/websg.d.ts:2656](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2656)

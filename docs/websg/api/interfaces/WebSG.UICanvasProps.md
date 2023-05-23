@@ -31,7 +31,7 @@ The canvas height in pixels.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1142](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1142)
+[packages/websg-types/types/websg.d.ts:1208](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1208)
 
 ___
 
@@ -43,9 +43,9 @@ The root UI element of the canvas.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:413](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L413)
+[src/engine/scripting/websg-api.d.ts:413](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L413)
 
-[packages/websg-types/types/websg.d.ts:1130](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1130)
+[packages/websg-types/types/websg.d.ts:1198](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1198)
 
 ___
 
@@ -57,9 +57,9 @@ The canvas size as an array-like object in meters.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:414](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L414)
+[src/engine/scripting/websg-api.d.ts:414](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L414)
 
-[packages/websg-types/types/websg.d.ts:1148](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1148)
+[packages/websg-types/types/websg.d.ts:1213](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1213)
 
 ___
 
@@ -71,4 +71,4 @@ The canvas width in pixels.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1136](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1136)
+[packages/websg-types/types/websg.d.ts:1203](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1203)

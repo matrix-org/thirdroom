@@ -20,11 +20,13 @@ MeshProps is an interface for defining properties of a mesh.
 
 • `Optional` **name**: `string`
 
+The name of the mesh.
+
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:283](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L283)
+[src/engine/scripting/websg-api.d.ts:283](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L283)
 
-[packages/websg-types/types/websg.d.ts:560](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L560)
+[packages/websg-types/types/websg.d.ts:588](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L588)
 
 ___
 
@@ -32,11 +34,13 @@ ___
 
 • **primitives**: [`MeshPrimitivePropsList`](WebSG.MeshPrimitivePropsList.md)
 
+An array of MeshPrimitiveProps that define the geometry and materials of the mesh.
+
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:285](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L285)
+[src/engine/scripting/websg-api.d.ts:285](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L285)
 
-[packages/websg-types/types/websg.d.ts:561](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L561)
+[packages/websg-types/types/websg.d.ts:592](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L592)
 
 ___
 
@@ -46,4 +50,4 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:284](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L284)
+[src/engine/scripting/websg-api.d.ts:284](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L284)

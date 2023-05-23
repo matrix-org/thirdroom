@@ -16,7 +16,7 @@ The ReadonlyMatrix4 class represents a readonly 4x4 matrix of numbers.
 
 - [constructor](WebSG.ReadonlyMatrix4.md#constructor)
 
-### Accessors
+### Properties
 
 - [length](WebSG.ReadonlyMatrix4.md#length)
 
@@ -26,20 +26,14 @@ The ReadonlyMatrix4 class represents a readonly 4x4 matrix of numbers.
 
 • **new ReadonlyMatrix4**()
 
-## Accessors
+## Properties
 
 ### length
 
-• `get` **length**(): `number`
+• `Readonly` **length**: `number`
 
 Returns the length of the ReadonlyMatrix4 instance.
 
-#### Returns
-
-`number`
-
-- The length of the ReadonlyMatrix4 instance.
-
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:464](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L464)
+[packages/websg-types/types/websg.d.ts:493](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L493)

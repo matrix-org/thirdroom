@@ -43,7 +43,7 @@ The blue component of the color.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:959](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L959)
+[packages/websg-types/types/websg.d.ts:1042](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1042)
 
 ___
 
@@ -55,7 +55,7 @@ The green component of the color.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:953](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L953)
+[packages/websg-types/types/websg.d.ts:1037](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1037)
 
 ___
 
@@ -67,7 +67,7 @@ The number of components in the RGB color.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:973](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L973)
+[packages/websg-types/types/websg.d.ts:1053](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1053)
 
 ___
 
@@ -79,13 +79,13 @@ The red component of the color.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:947](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L947)
+[packages/websg-types/types/websg.d.ts:1032](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1032)
 
 ## Methods
 
 ### set
 
-▸ **set**(`value`): `undefined`
+▸ **set**(`value`): [`RGB`](WebSG.RGB.md)
 
 Sets the RGB color components to the given values.
 
@@ -97,8 +97,8 @@ Sets the RGB color components to the given values.
 
 #### Returns
 
-`undefined`
+[`RGB`](WebSG.RGB.md)
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:966](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L966)
+[packages/websg-types/types/websg.d.ts:1048](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1048)

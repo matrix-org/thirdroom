@@ -4,6 +4,8 @@
 
 [WebSG](../modules/WebSG.md).NodeIterator
 
+An iterator for node objects.
+
 ## Table of contents
 
 ### Constructors
@@ -33,13 +35,15 @@
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:586](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L586)
+[packages/websg-types/types/websg.d.ts:631](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L631)
 
 ___
 
 ### next
 
 ▸ **next**(): `Object`
+
+Returns the next node in the iterator.
 
 #### Returns
 
@@ -52,4 +56,4 @@ ___
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:585](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L585)
+[packages/websg-types/types/websg.d.ts:630](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L630)

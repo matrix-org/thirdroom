@@ -31,7 +31,7 @@
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2166](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2166)
+[packages/websg-types/types/websg.d.ts:2513](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2513)
 
 ___
 
@@ -41,7 +41,7 @@ ___
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2165](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2165)
+[packages/websg-types/types/websg.d.ts:2512](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2512)
 
 ___
 
@@ -51,7 +51,7 @@ ___
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2167](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2167)
+[packages/websg-types/types/websg.d.ts:2514](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2514)
 
 ___
 
@@ -61,4 +61,4 @@ ___
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2164](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2164)
+[packages/websg-types/types/websg.d.ts:2511](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2511)

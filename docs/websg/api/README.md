@@ -16,7 +16,6 @@ WebSG API
 
 ### Interfaces
 
-- [Console](interfaces/Console.md)
 - [MatrixWidgetAPI](interfaces/MatrixWidgetAPI.md)
 - [MatrixWidgetAPIErrorResponse](interfaces/MatrixWidgetAPIErrorResponse.md)
 - [MatrixWidgetAPIRequest](interfaces/MatrixWidgetAPIRequest.md)
@@ -35,4 +34,4 @@ WebSG API
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2308](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2308)
+[packages/websg-types/types/websg.d.ts:2747](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2747)

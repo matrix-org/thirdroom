@@ -4,6 +4,8 @@
 
 [WebSG](../modules/WebSG.md).CollisionIterator
 
+An iterator for collisions.
+
 ## Table of contents
 
 ### Constructors
@@ -33,13 +35,15 @@
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:876](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L876)
+[packages/websg-types/types/websg.d.ts:957](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L957)
 
 ___
 
 ### next
 
 ▸ **next**(): `Object`
+
+Returns the next collision in the iterator.
 
 #### Returns
 
@@ -52,4 +56,4 @@ ___
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:875](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L875)
+[packages/websg-types/types/websg.d.ts:956](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L956)

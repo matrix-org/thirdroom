@@ -22,4 +22,4 @@
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:524](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L524)
+[src/engine/scripting/websg-api.d.ts:524](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L524)

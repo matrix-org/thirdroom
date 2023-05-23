@@ -4,6 +4,8 @@
 
 [WebSG](../modules/WebSG.md).Texture
 
+A class representing a texture resource.
+
 ## Table of contents
 
 ### Constructors

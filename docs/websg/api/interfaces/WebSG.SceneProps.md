@@ -22,4 +22,4 @@ Optional name of the scene.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1031](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1031)
+[packages/websg-types/types/websg.d.ts:1104](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1104)

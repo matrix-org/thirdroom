@@ -4,7 +4,7 @@
 
 [WebSG](../modules/WebSG.md).UICanvas
 
-Class representing a UICanvas.
+A UICanvas is used to render UI elements to a flat plane in the world.
 
 ## Hierarchy
 
@@ -48,7 +48,7 @@ UICanvasBase.constructor
 
 ### size
 
-• `Readonly` **size**: [`Vector2`](WebSG.Vector2.md)
+• **size**: [`Vector2`](WebSG.Vector2.md)
 
 Gets the canvas size as a Vector2 in meters.
 
@@ -58,9 +58,9 @@ Gets the canvas size as a Vector2 in meters.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:418](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L418)
+[src/engine/scripting/websg-api.d.ts:418](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L418)
 
-[packages/websg-types/types/websg.d.ts:1205](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1205)
+[packages/websg-types/types/websg.d.ts:1262](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1262)
 
 ## Accessors
 
@@ -80,19 +80,41 @@ UICanvasProps.height
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1186](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1186)
+[packages/websg-types/types/websg.d.ts:1245](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1245)
+
+• `set` **height**(`value`): `void`
+
+Sets the canvas height in pixels.
+
+#### Parameters
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `value` | `number` | The canvas height in pixels. |
+
+#### Returns
+
+`void`
+
+#### Inherited from
+
+UICanvasProps.height
+
+#### Defined in
+
+[packages/websg-types/types/websg.d.ts:1251](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1251)
 
 ___
 
 ### root
 
-• `get` **root**(): [`UIElement`](WebSG.UIElement.md)
+• `get` **root**(): `undefined` \| [`UIElement`](WebSG.UIElement.md)
 
 Gets the root UIElement of the canvas.
 
 #### Returns
 
-[`UIElement`](WebSG.UIElement.md)
+`undefined` \| [`UIElement`](WebSG.UIElement.md)
 
 #### Inherited from
 
@@ -100,7 +122,29 @@ UICanvasProps.root
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1160](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1160)
+[packages/websg-types/types/websg.d.ts:1223](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1223)
+
+• `set` **root**(`element`): `void`
+
+Sets the root UIElement of the canvas.
+
+#### Parameters
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `element` | [`UIElement`](WebSG.UIElement.md) | The root UIElement of the canvas. |
+
+#### Returns
+
+`void`
+
+#### Inherited from
+
+UICanvasProps.root
+
+#### Defined in
+
+[packages/websg-types/types/websg.d.ts:1229](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1229)
 
 ___
 
@@ -120,7 +164,29 @@ UICanvasProps.width
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1173](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1173)
+[packages/websg-types/types/websg.d.ts:1234](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1234)
+
+• `set` **width**(`value`): `void`
+
+Sets the canvas width in pixels.
+
+#### Parameters
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `value` | `number` | The canvas width in pixels. |
+
+#### Returns
+
+`void`
+
+#### Inherited from
+
+UICanvasProps.width
+
+#### Defined in
+
+[packages/websg-types/types/websg.d.ts:1240](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1240)
 
 ## Methods
 
@@ -129,6 +195,7 @@ UICanvasProps.width
 ▸ **redraw**(): `undefined`
 
 Redraws the canvas.
+This should be called any time the UI elements are changed.
 
 #### Returns
 
@@ -140,4 +207,4 @@ Redraws the canvas.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1198](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1198)
+[packages/websg-types/types/websg.d.ts:1257](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1257)

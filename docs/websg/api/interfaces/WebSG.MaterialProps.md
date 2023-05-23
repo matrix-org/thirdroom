@@ -5,7 +5,6 @@
 [WebSG](../modules/WebSG.md).MaterialProps
 
 MaterialProps is an interface that defines the properties for creating a Material instance.
- MaterialProps
 
 ## Table of contents
 
@@ -33,11 +32,11 @@ MaterialProps is an interface that defines the properties for creating a Materia
 
 • `Optional` **alphaCutoff**: `number`
 
-The optional alpha cutoff value for the material. Default is 0.5.
+The alpha cutoff value for the material. Default is 0.5.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:336](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L336)
+[packages/websg-types/types/websg.d.ts:358](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L358)
 
 ___
 
@@ -45,11 +44,11 @@ ___
 
 • `Optional` **alphaMode**: [`AlphaMode`](../modules/WebSG.md#alphamode-1)
 
-The optional alpha mode for the material. Default is 'OPAQUE'.
+The alpha mode for the material. Default is 'OPAQUE'.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:337](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L337)
+[packages/websg-types/types/websg.d.ts:362](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L362)
 
 ___
 
@@ -57,11 +56,11 @@ ___
 
 • `Optional` **baseColorFactor**: `ArrayLike`<`number`\>
 
-The optional RGBA base color factor.
+The RGBA base color factor.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:338](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L338)
+[packages/websg-types/types/websg.d.ts:366](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L366)
 
 ___
 
@@ -69,11 +68,11 @@ ___
 
 • `Optional` **baseColorTexture**: [`Texture`](../classes/WebSG.Texture.md)
 
-The optional base color texture.
+The base color texture.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:339](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L339)
+[packages/websg-types/types/websg.d.ts:370](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L370)
 
 ___
 
@@ -85,7 +84,7 @@ Whether the material is visible from both sides. Default is false.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:335](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L335)
+[packages/websg-types/types/websg.d.ts:354](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L354)
 
 ___
 
@@ -93,11 +92,11 @@ ___
 
 • `Optional` **emissiveFactor**: `ArrayLike`<`number`\>
 
-The optional RGB emissive factor.
+The RGB emissive factor.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:347](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L347)
+[packages/websg-types/types/websg.d.ts:402](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L402)
 
 ___
 
@@ -105,11 +104,11 @@ ___
 
 • `Optional` **emissiveTexture**: [`Texture`](../classes/WebSG.Texture.md)
 
-The optional emissive texture.
+The emissive texture.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:348](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L348)
+[packages/websg-types/types/websg.d.ts:406](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L406)
 
 ___
 
@@ -117,11 +116,11 @@ ___
 
 • `Optional` **metallicFactor**: `number`
 
-The optional metallic factor. Default is 1.
+The metallic factor. Default is 1.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:340](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L340)
+[packages/websg-types/types/websg.d.ts:374](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L374)
 
 ___
 
@@ -129,11 +128,11 @@ ___
 
 • `Optional` **metallicRoughnessTexture**: [`Texture`](../classes/WebSG.Texture.md)
 
-The optional metallic-roughness texture.
+The metallic-roughness texture.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:342](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L342)
+[packages/websg-types/types/websg.d.ts:382](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L382)
 
 ___
 
@@ -141,11 +140,11 @@ ___
 
 • `Optional` **name**: `string`
 
-The optional name of the material.
+The name of the material.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:334](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L334)
+[packages/websg-types/types/websg.d.ts:350](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L350)
 
 ___
 
@@ -153,11 +152,11 @@ ___
 
 • `Optional` **normalScale**: `number`
 
-The optional scale for the normal texture. Default is 1.
+The scale for the normal texture. Default is 1.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:344](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L344)
+[packages/websg-types/types/websg.d.ts:390](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L390)
 
 ___
 
@@ -165,11 +164,11 @@ ___
 
 • `Optional` **normalTexture**: [`Texture`](../classes/WebSG.Texture.md)
 
-The optional normal texture.
+The normal texture.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:343](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L343)
+[packages/websg-types/types/websg.d.ts:386](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L386)
 
 ___
 
@@ -177,11 +176,11 @@ ___
 
 • `Optional` **occlusionStrength**: `number`
 
-The optional occlusion strength. Default is 1.
+The occlusion strength. Default is 1.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:346](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L346)
+[packages/websg-types/types/websg.d.ts:398](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L398)
 
 ___
 
@@ -189,11 +188,11 @@ ___
 
 • `Optional` **occlusionTexture**: [`Texture`](../classes/WebSG.Texture.md)
 
-The optional occlusion texture.
+The occlusion texture.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:345](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L345)
+[packages/websg-types/types/websg.d.ts:394](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L394)
 
 ___
 
@@ -201,8 +200,8 @@ ___
 
 • `Optional` **roughnessFactor**: `number`
 
-The optional roughness factor. Default is 1.
+The roughness factor. Default is 1.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:341](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L341)
+[packages/websg-types/types/websg.d.ts:378](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L378)

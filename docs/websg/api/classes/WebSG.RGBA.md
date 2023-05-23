@@ -44,7 +44,7 @@ The alpha component of the color.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1008](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1008)
+[packages/websg-types/types/websg.d.ts:1083](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1083)
 
 ___
 
@@ -56,7 +56,7 @@ The blue component of the color.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1002](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1002)
+[packages/websg-types/types/websg.d.ts:1078](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1078)
 
 ___
 
@@ -68,7 +68,7 @@ The green component of the color.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:996](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L996)
+[packages/websg-types/types/websg.d.ts:1073](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1073)
 
 ___
 
@@ -80,7 +80,7 @@ The number of components in the RGBA color.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1022](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1022)
+[packages/websg-types/types/websg.d.ts:1094](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1094)
 
 ___
 
@@ -92,13 +92,13 @@ The red component of the color.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:990](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L990)
+[packages/websg-types/types/websg.d.ts:1068](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1068)
 
 ## Methods
 
 ### set
 
-▸ **set**(`value`): `undefined`
+▸ **set**(`value`): [`RGBA`](WebSG.RGBA.md)
 
 Sets the RGBA color components to the given values.
 
@@ -110,8 +110,8 @@ Sets the RGBA color components to the given values.
 
 #### Returns
 
-`undefined`
+[`RGBA`](WebSG.RGBA.md)
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1015](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L1015)
+[packages/websg-types/types/websg.d.ts:1089](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L1089)

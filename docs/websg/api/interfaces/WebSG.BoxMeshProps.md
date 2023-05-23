@@ -20,11 +20,13 @@ BoxMeshProps is an interface for defining properties of a box mesh.
 
 • `Optional` **material**: [`Material`](../classes/WebSG.Material.md)
 
+The material to use for the mesh.
+
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:291](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L291)
+[src/engine/scripting/websg-api.d.ts:291](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L291)
 
-[packages/websg-types/types/websg.d.ts:570](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L570)
+[packages/websg-types/types/websg.d.ts:610](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L610)
 
 ___
 
@@ -32,11 +34,13 @@ ___
 
 • `Optional` **segments**: [`number`, `number`, `number`]
 
+The number of segments to use in the x,y,z directions.
+
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:290](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L290)
+[src/engine/scripting/websg-api.d.ts:290](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L290)
 
-[packages/websg-types/types/websg.d.ts:569](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L569)
+[packages/websg-types/types/websg.d.ts:606](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L606)
 
 ___
 
@@ -44,8 +48,10 @@ ___
 
 • `Optional` **size**: [`number`, `number`, `number`]
 
+The size of the mesh in meters in the x,y,z directions.
+
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:289](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L289)
+[src/engine/scripting/websg-api.d.ts:289](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L289)
 
-[packages/websg-types/types/websg.d.ts:568](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L568)
+[packages/websg-types/types/websg.d.ts:602](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L602)

@@ -23,9 +23,11 @@ Physics
 
 • `Optional` **height**: `number`
 
+The height of the Collider (required for capsule and cylinder types).
+
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:122](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L122)
+[packages/websg-types/types/websg.d.ts:141](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L141)
 
 ___
 
@@ -33,9 +35,11 @@ ___
 
 • `Optional` **isTrigger**: `boolean`
 
+Determines if the Collider acts as a trigger.
+
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:119](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L119)
+[packages/websg-types/types/websg.d.ts:129](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L129)
 
 ___
 
@@ -43,9 +47,11 @@ ___
 
 • `Optional` **mesh**: [`Mesh`](../classes/WebSG.Mesh.md)
 
+The mesh representing the shape of the Collider (required for hull and trimesh types).
+
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:123](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L123)
+[packages/websg-types/types/websg.d.ts:145](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L145)
 
 ___
 
@@ -53,9 +59,11 @@ ___
 
 • `Optional` **radius**: `number`
 
+The radius of the Collider (required for sphere, capsule, and cylinder types).
+
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:121](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L121)
+[packages/websg-types/types/websg.d.ts:137](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L137)
 
 ___
 
@@ -63,9 +71,11 @@ ___
 
 • `Optional` **size**: `ArrayLike`<`number`\>
 
+The size of the Collider (required for box type).
+
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:120](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L120)
+[packages/websg-types/types/websg.d.ts:133](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L133)
 
 ___
 
@@ -73,6 +83,8 @@ ___
 
 • **type**: `ColliderType`
 
+The type of the Collider.
+
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:118](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L118)
+[packages/websg-types/types/websg.d.ts:125](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L125)

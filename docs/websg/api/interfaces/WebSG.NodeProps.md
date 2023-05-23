@@ -27,7 +27,7 @@ Interface representing the properties you can create a Node object with.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:177](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L177)
+[src/engine/scripting/websg-api.d.ts:177](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L177)
 
 ___
 
@@ -39,9 +39,9 @@ The initial mesh associated with the node.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:179](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L179)
+[src/engine/scripting/websg-api.d.ts:179](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L179)
 
-[packages/websg-types/types/websg.d.ts:603](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L603)
+[packages/websg-types/types/websg.d.ts:646](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L646)
 
 ___
 
@@ -53,7 +53,7 @@ The initial name of the node.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:597](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L597)
+[packages/websg-types/types/websg.d.ts:641](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L641)
 
 ___
 
@@ -65,9 +65,9 @@ The initial rotation of the node.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:175](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L175)
+[src/engine/scripting/websg-api.d.ts:175](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L175)
 
-[packages/websg-types/types/websg.d.ts:621](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L621)
+[packages/websg-types/types/websg.d.ts:661](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L661)
 
 ___
 
@@ -79,9 +79,9 @@ The initial scale of the node.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:176](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L176)
+[src/engine/scripting/websg-api.d.ts:176](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L176)
 
-[packages/websg-types/types/websg.d.ts:627](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L627)
+[packages/websg-types/types/websg.d.ts:666](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L666)
 
 ___
 
@@ -91,7 +91,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:178](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L178)
+[src/engine/scripting/websg-api.d.ts:178](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L178)
 
 ___
 
@@ -103,9 +103,9 @@ The initial translation of the node.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:174](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L174)
+[src/engine/scripting/websg-api.d.ts:174](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L174)
 
-[packages/websg-types/types/websg.d.ts:615](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L615)
+[packages/websg-types/types/websg.d.ts:656](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L656)
 
 ___
 
@@ -117,4 +117,4 @@ The initial UI canvas associated with the node.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:609](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L609)
+[packages/websg-types/types/websg.d.ts:651](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L651)

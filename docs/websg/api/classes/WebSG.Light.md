@@ -36,7 +36,7 @@ Creates a new Light instance.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:245](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L245)
+[packages/websg-types/types/websg.d.ts:271](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L271)
 
 ## Properties
 
@@ -46,7 +46,7 @@ Creates a new Light instance.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:225](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L225)
+[src/engine/scripting/websg-api.d.ts:225](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L225)
 
 ## Accessors
 
@@ -67,8 +67,6 @@ console.log(light.color); // RGB { r: 1, g: 0, b: 0 }
 
 [`RGB`](WebSG.RGB.md)
 
-- The color of the Light object.
-
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:280](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L280)
+[packages/websg-types/types/websg.d.ts:300](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L300)

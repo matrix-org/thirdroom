@@ -16,7 +16,7 @@ The Matrix4 class represents a 4x4 matrix of numbers.
 
 - [constructor](WebSG.Matrix4.md#constructor)
 
-### Accessors
+### Properties
 
 - [length](WebSG.Matrix4.md#length)
 
@@ -30,31 +30,25 @@ The Matrix4 class represents a 4x4 matrix of numbers.
 
 • **new Matrix4**()
 
-## Accessors
+## Properties
 
 ### length
 
-• `get` **length**(): `number`
+• `Readonly` **length**: `number`
 
-Returns the length of the Matrix4 instance.
-
-#### Returns
-
-`number`
-
-- The length of the Matrix4 instance.
+Returns the number of elements of the Matrix.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:442](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L442)
+[packages/websg-types/types/websg.d.ts:478](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L478)
 
 ## Methods
 
 ### set
 
-▸ **set**(`value`): `undefined`
+▸ **set**(`value`): [`Matrix4`](WebSG.Matrix4.md)
 
-Sets the values of the Matrix4 instance.
+Sets the elements of the Matrix.
 
 #### Parameters
 
@@ -64,8 +58,8 @@ Sets the values of the Matrix4 instance.
 
 #### Returns
 
-`undefined`
+[`Matrix4`](WebSG.Matrix4.md)
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:434](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L434)
+[packages/websg-types/types/websg.d.ts:473](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L473)

@@ -27,7 +27,7 @@ Closes the Matrix API message listener.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2324](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2324)
+[packages/websg-types/types/websg.d.ts:2763](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2763)
 
 ___
 
@@ -43,7 +43,7 @@ Starts listening for Matrix API messages.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2318](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2318)
+[packages/websg-types/types/websg.d.ts:2757](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2757)
 
 ___
 
@@ -61,7 +61,7 @@ Receives a Matrix API message. Returns the received message or undefined if no m
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2330](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2330)
+[packages/websg-types/types/websg.d.ts:2769](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2769)
 
 ___
 
@@ -83,4 +83,4 @@ Sends a Matrix API message.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2337](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2337)
+[packages/websg-types/types/websg.d.ts:2776](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2776)

@@ -28,9 +28,11 @@
 
 • **nodeA**: [`Node`](WebSG.Node.md)
 
+The first node involved in the collision.
+
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:869](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L869)
+[packages/websg-types/types/websg.d.ts:938](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L938)
 
 ___
 
@@ -38,9 +40,11 @@ ___
 
 • **nodeB**: [`Node`](WebSG.Node.md)
 
+The second node involved in the collision.
+
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:870](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L870)
+[packages/websg-types/types/websg.d.ts:942](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L942)
 
 ___
 
@@ -48,6 +52,8 @@ ___
 
 • **started**: `boolean`
 
+Whether the collision started or ended this frame.
+
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:871](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L871)
+[packages/websg-types/types/websg.d.ts:946](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L946)

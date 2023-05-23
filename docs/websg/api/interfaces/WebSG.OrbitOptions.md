@@ -25,7 +25,7 @@ Positive values tilt the camera upwards, while negative values tilt it downwards
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:639](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L639)
+[packages/websg-types/types/websg.d.ts:677](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L677)
 
 ___
 
@@ -38,7 +38,7 @@ Positive values rotate the camera to the right, while negative values rotate it 
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:646](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L646)
+[packages/websg-types/types/websg.d.ts:683](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L683)
 
 ___
 
@@ -51,4 +51,4 @@ Positive values move the camera closer to the object, while negative values move
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:653](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L653)
+[packages/websg-types/types/websg.d.ts:689](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L689)

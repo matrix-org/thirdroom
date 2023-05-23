@@ -40,7 +40,7 @@ Returns the [ActionBar](ThirdRoom.ActionBar.md) object.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2270](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2270)
+[packages/websg-types/types/websg.d.ts:2709](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2709)
 
 ## Methods
 
@@ -64,7 +64,7 @@ Enables or disables the use of the custom Matrix-style material on the world.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2233](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2233)
+[packages/websg-types/types/websg.d.ts:2672](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2672)
 
 ___
 
@@ -83,7 +83,7 @@ Similar to the WebAudio [AnalyserNode.frequencyBinCount](https://developer.mozil
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2240](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2240)
+[packages/websg-types/types/websg.d.ts:2679](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2679)
 
 ___
 
@@ -109,7 +109,7 @@ Similar to the WebAudio [AnalyserNode.getByteFrequencyData](https://developer.mo
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2258](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2258)
+[packages/websg-types/types/websg.d.ts:2697](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2697)
 
 ___
 
@@ -135,7 +135,7 @@ Similar to the WebAudio [AnalyserNode.getByteTimeDomainData](https://developer.m
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2249](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2249)
+[packages/websg-types/types/websg.d.ts:2688](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2688)
 
 ___
 
@@ -154,4 +154,4 @@ Checks to see if the local user is in immersive AR mode and if the world support
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2265](https://github.com/thirdroom/thirdroom/blob/fe402010/packages/websg-types/types/websg.d.ts#L2265)
+[packages/websg-types/types/websg.d.ts:2704](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/packages/websg-types/types/websg.d.ts#L2704)

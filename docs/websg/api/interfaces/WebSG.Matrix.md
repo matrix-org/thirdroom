@@ -24,7 +24,7 @@
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:534](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L534)
+[src/engine/scripting/websg-api.d.ts:534](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L534)
 
 ___
 
@@ -38,7 +38,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:537](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L537)
+[src/engine/scripting/websg-api.d.ts:537](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L537)
 
 ___
 
@@ -58,4 +58,4 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:536](https://github.com/thirdroom/thirdroom/blob/fe402010/src/engine/scripting/websg-api.d.ts#L536)
+[src/engine/scripting/websg-api.d.ts:536](https://github.com/thirdroom/thirdroom/blob/c8b57e0e/src/engine/scripting/websg-api.d.ts#L536)
