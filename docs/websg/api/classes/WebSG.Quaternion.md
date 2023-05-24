@@ -44,7 +44,7 @@ The number of components in the quaternion.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1017](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1017)
+[packages/websg-types/types/websg.d.ts:1017](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1017)
 
 ___
 
@@ -56,7 +56,7 @@ The w-component of the quaternion.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1006](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1006)
+[packages/websg-types/types/websg.d.ts:1006](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1006)
 
 ___
 
@@ -68,7 +68,7 @@ The x-component of the quaternion.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:991](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L991)
+[packages/websg-types/types/websg.d.ts:991](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L991)
 
 ___
 
@@ -80,7 +80,7 @@ The y-component of the quaternion.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:996](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L996)
+[packages/websg-types/types/websg.d.ts:996](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L996)
 
 ___
 
@@ -92,7 +92,7 @@ The z-component of the quaternion.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1001](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1001)
+[packages/websg-types/types/websg.d.ts:1001](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1001)
 
 ## Methods
 
@@ -114,4 +114,4 @@ Sets the quaternion components to the given values.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1012](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1012)
+[packages/websg-types/types/websg.d.ts:1012](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1012)

@@ -49,7 +49,7 @@ Constructs a new vector.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1859](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1859)
+[packages/websg-types/types/websg.d.ts:1859](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1859)
 
 • **new Vector2**(`x`, `y`)
 
@@ -64,7 +64,7 @@ Constructs a new vector with the given components.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1865](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1865)
+[packages/websg-types/types/websg.d.ts:1865](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1865)
 
 • **new Vector2**(`array`)
 
@@ -78,7 +78,7 @@ Constructs and sets the initial components of the vector from a numeric array-li
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1869](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1869)
+[packages/websg-types/types/websg.d.ts:1869](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1869)
 
 ## Properties
 
@@ -90,7 +90,7 @@ Returns the number of components in this vector.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1946](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1946)
+[packages/websg-types/types/websg.d.ts:1946](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1946)
 
 ___
 
@@ -102,7 +102,7 @@ The x component of the vector.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1851](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1851)
+[packages/websg-types/types/websg.d.ts:1851](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1851)
 
 ___
 
@@ -114,7 +114,7 @@ The y component of the vector.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1855](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1855)
+[packages/websg-types/types/websg.d.ts:1855](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1855)
 
 ## Methods
 
@@ -136,7 +136,7 @@ Adds the given vector to this vector.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1883](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1883)
+[packages/websg-types/types/websg.d.ts:1883](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1883)
 
 ___
 
@@ -159,7 +159,7 @@ Adds the given vector scaled by the given scalar to this vector.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1893](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1893)
+[packages/websg-types/types/websg.d.ts:1893](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1893)
 
 ___
 
@@ -182,7 +182,7 @@ Adds the given vectors together and stores the result in this vector.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1889](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1889)
+[packages/websg-types/types/websg.d.ts:1889](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1889)
 
 ___
 
@@ -204,7 +204,7 @@ Divides this vector by the given vector.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1931](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1931)
+[packages/websg-types/types/websg.d.ts:1931](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1931)
 
 ___
 
@@ -226,7 +226,7 @@ Divides this vector by the given scalar.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1942](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1942)
+[packages/websg-types/types/websg.d.ts:1942](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1942)
 
 ___
 
@@ -249,7 +249,7 @@ Divides the given vectors and stores the result in this vector.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1937](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1937)
+[packages/websg-types/types/websg.d.ts:1937](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1937)
 
 ___
 
@@ -271,7 +271,7 @@ Multiplies this vector by the given vector.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1915](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1915)
+[packages/websg-types/types/websg.d.ts:1915](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1915)
 
 ___
 
@@ -293,7 +293,7 @@ Multiplies this vector by the given scalar.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1926](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1926)
+[packages/websg-types/types/websg.d.ts:1926](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1926)
 
 ___
 
@@ -316,7 +316,7 @@ Multiplies the given vectors together and stores the result in this vector.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1921](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1921)
+[packages/websg-types/types/websg.d.ts:1921](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1921)
 
 ___
 
@@ -338,7 +338,7 @@ Sets the components of the vector.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1874](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1874)
+[packages/websg-types/types/websg.d.ts:1874](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1874)
 
 ___
 
@@ -360,7 +360,7 @@ Sets the components of the vector to a scalar value.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1878](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1878)
+[packages/websg-types/types/websg.d.ts:1878](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1878)
 
 ___
 
@@ -382,7 +382,7 @@ Subtracts the given vector from this vector.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1898](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1898)
+[packages/websg-types/types/websg.d.ts:1898](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1898)
 
 ___
 
@@ -405,7 +405,7 @@ Subtracts the given vector scaled by the given scalar from this vector.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1910](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1910)
+[packages/websg-types/types/websg.d.ts:1910](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1910)
 
 ___
 
@@ -428,4 +428,4 @@ Subtracts the second vector from the first and stores the result in this vector.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1904](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1904)
+[packages/websg-types/types/websg.d.ts:1904](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1904)

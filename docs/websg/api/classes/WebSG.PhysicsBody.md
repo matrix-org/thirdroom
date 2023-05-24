@@ -43,4 +43,4 @@ Applies an impulse at the center of mass of this physics body.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:931](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L931)
+[packages/websg-types/types/websg.d.ts:931](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L931)

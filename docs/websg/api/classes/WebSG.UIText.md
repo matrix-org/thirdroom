@@ -96,7 +96,7 @@ Readonly RGBA object representing the background color of the UI element.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1711](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1711)
+[packages/websg-types/types/websg.d.ts:1711](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1711)
 
 ___
 
@@ -112,7 +112,7 @@ Readonly RGBA object representing the border color of the UI element.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1716](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1716)
+[packages/websg-types/types/websg.d.ts:1716](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1716)
 
 ___
 
@@ -128,7 +128,7 @@ Readonly Vector4 object representing the border radius of the UI element.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1736](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1736)
+[packages/websg-types/types/websg.d.ts:1736](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1736)
 
 ___
 
@@ -144,7 +144,7 @@ Readonly Vector4 object representing the border width of the UI element.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1731](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1731)
+[packages/websg-types/types/websg.d.ts:1731](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1731)
 
 ___
 
@@ -156,7 +156,7 @@ Readonly property representing the color of the text as an RGBA object.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1840](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1840)
+[packages/websg-types/types/websg.d.ts:1840](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1840)
 
 ___
 
@@ -172,7 +172,7 @@ Readonly Vector4 object representing the margin of the UI element.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1726](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1726)
+[packages/websg-types/types/websg.d.ts:1726](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1726)
 
 ___
 
@@ -188,7 +188,7 @@ Readonly Vector4 object representing the padding of the UI element.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1721](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1721)
+[packages/websg-types/types/websg.d.ts:1721](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1721)
 
 ___
 
@@ -202,7 +202,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:457](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L457)
+[src/engine/scripting/websg-api.d.ts:457](https://github.com/thirdroom/thirdroom/blob/3d97b348/src/engine/scripting/websg-api.d.ts#L457)
 
 ___
 
@@ -216,7 +216,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:458](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L458)
+[src/engine/scripting/websg-api.d.ts:458](https://github.com/thirdroom/thirdroom/blob/3d97b348/src/engine/scripting/websg-api.d.ts#L458)
 
 ## Accessors
 
@@ -232,7 +232,7 @@ Gets the align-content property of the UI element.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1513](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1513)
+[packages/websg-types/types/websg.d.ts:1513](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1513)
 
 • `set` **alignContent**(`value`): `void`
 
@@ -250,7 +250,7 @@ Sets the align-content property of the UI element.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1519](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1519)
+[packages/websg-types/types/websg.d.ts:1519](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1519)
 
 ___
 
@@ -266,7 +266,7 @@ Gets the align-items property of the UI element.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1524](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1524)
+[packages/websg-types/types/websg.d.ts:1524](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1524)
 
 • `set` **alignItems**(`value`): `void`
 
@@ -284,7 +284,7 @@ Sets the align-items property of the UI element.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1530](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1530)
+[packages/websg-types/types/websg.d.ts:1530](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1530)
 
 ___
 
@@ -300,7 +300,7 @@ Gets the align-self property of the UI element.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1535](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1535)
+[packages/websg-types/types/websg.d.ts:1535](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1535)
 
 • `set` **alignSelf**(`value`): `void`
 
@@ -318,7 +318,7 @@ Sets the align-self property of the UI element.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1541](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1541)
+[packages/websg-types/types/websg.d.ts:1541](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1541)
 
 ___
 
@@ -334,7 +334,7 @@ Gets the bottom position of the UI element in pixels.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1491](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1491)
+[packages/websg-types/types/websg.d.ts:1491](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1491)
 
 • `set` **bottom**(`value`): `void`
 
@@ -352,7 +352,7 @@ Sets the bottom position of the UI element in pixels.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1497](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1497)
+[packages/websg-types/types/websg.d.ts:1497](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1497)
 
 ___
 
@@ -368,7 +368,7 @@ Gets the flex basis property of the UI element in pixels.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1568](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1568)
+[packages/websg-types/types/websg.d.ts:1568](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1568)
 
 • `set` **flexBasis**(`value`): `void`
 
@@ -386,7 +386,7 @@ Sets the flex basis property of the UI element in pixels.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1574](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1574)
+[packages/websg-types/types/websg.d.ts:1574](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1574)
 
 ___
 
@@ -402,7 +402,7 @@ Gets the flex-direction property of the UI element.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1546](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1546)
+[packages/websg-types/types/websg.d.ts:1546](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1546)
 
 • `set` **flexDirection**(`value`): `void`
 
@@ -420,7 +420,7 @@ Sets the flex-direction property of the UI element.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1552](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1552)
+[packages/websg-types/types/websg.d.ts:1552](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1552)
 
 ___
 
@@ -436,7 +436,7 @@ Gets the flex grow property of the UI element.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1579](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1579)
+[packages/websg-types/types/websg.d.ts:1579](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1579)
 
 • `set` **flexGrow**(`value`): `void`
 
@@ -454,7 +454,7 @@ Sets the flex grow property of the UI element.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1585](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1585)
+[packages/websg-types/types/websg.d.ts:1585](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1585)
 
 ___
 
@@ -470,7 +470,7 @@ Gets the flex shrink property of the UI element.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1590](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1590)
+[packages/websg-types/types/websg.d.ts:1590](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1590)
 
 • `set` **flexShrink**(`value`): `void`
 
@@ -488,7 +488,7 @@ Sets the flex shrink property of the UI element.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1596](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1596)
+[packages/websg-types/types/websg.d.ts:1596](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1596)
 
 ___
 
@@ -504,7 +504,7 @@ Gets the flex wrap property of the UI element.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1557](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1557)
+[packages/websg-types/types/websg.d.ts:1557](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1557)
 
 • `set` **flexWrap**(`value`): `void`
 
@@ -522,7 +522,7 @@ Sets the flex wrap property of the UI element.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1563](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1563)
+[packages/websg-types/types/websg.d.ts:1563](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1563)
 
 ___
 
@@ -538,7 +538,7 @@ Gets the font family used for the text.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1796](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1796)
+[packages/websg-types/types/websg.d.ts:1796](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1796)
 
 • `set` **fontFamily**(`value`): `void`
 
@@ -556,7 +556,7 @@ Sets the font family used for the text.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1802](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1802)
+[packages/websg-types/types/websg.d.ts:1802](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1802)
 
 ___
 
@@ -572,7 +572,7 @@ Gets the font size of the text in pixels.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1818](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1818)
+[packages/websg-types/types/websg.d.ts:1818](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1818)
 
 • `set` **fontSize**(`value`): `void`
 
@@ -590,7 +590,7 @@ Sets the font size of the text in pixels.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1824](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1824)
+[packages/websg-types/types/websg.d.ts:1824](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1824)
 
 ___
 
@@ -606,7 +606,7 @@ Gets the font style used for the text.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1829](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1829)
+[packages/websg-types/types/websg.d.ts:1829](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1829)
 
 • `set` **fontStyle**(`value`): `void`
 
@@ -624,7 +624,7 @@ Sets the font style used for the text.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1835](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1835)
+[packages/websg-types/types/websg.d.ts:1835](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1835)
 
 ___
 
@@ -640,7 +640,7 @@ Gets the font weight used for the text.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1807](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1807)
+[packages/websg-types/types/websg.d.ts:1807](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1807)
 
 • `set` **fontWeight**(`value`): `void`
 
@@ -658,7 +658,7 @@ Sets the font weight used for the text.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1813](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1813)
+[packages/websg-types/types/websg.d.ts:1813](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1813)
 
 ___
 
@@ -674,7 +674,7 @@ Gets the height of the UI element in pixels.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1623](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1623)
+[packages/websg-types/types/websg.d.ts:1623](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1623)
 
 • `set` **height**(`value`): `void`
 
@@ -692,7 +692,7 @@ Sets the height of the UI element in pixels.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1629](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1629)
+[packages/websg-types/types/websg.d.ts:1629](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1629)
 
 ___
 
@@ -708,7 +708,7 @@ Gets the justify content property of the UI element.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1601](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1601)
+[packages/websg-types/types/websg.d.ts:1601](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1601)
 
 • `set` **justifyContent**(`value`): `void`
 
@@ -726,7 +726,7 @@ Sets the justify content property of the UI element.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1607](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1607)
+[packages/websg-types/types/websg.d.ts:1607](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1607)
 
 ___
 
@@ -742,7 +742,7 @@ Gets the left position of the UI element in pixels.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1502](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1502)
+[packages/websg-types/types/websg.d.ts:1502](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1502)
 
 • `set` **left**(`value`): `void`
 
@@ -760,7 +760,7 @@ Sets the left position of the UI element in pixels.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1508](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1508)
+[packages/websg-types/types/websg.d.ts:1508](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1508)
 
 ___
 
@@ -776,7 +776,7 @@ Gets the maximum height of the UI element in pixels.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1667](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1667)
+[packages/websg-types/types/websg.d.ts:1667](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1667)
 
 • `set` **maxHeight**(`value`): `void`
 
@@ -794,7 +794,7 @@ Sets the maximum height of the UI element in pixels.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1673](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1673)
+[packages/websg-types/types/websg.d.ts:1673](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1673)
 
 ___
 
@@ -810,7 +810,7 @@ Gets the maximum width of the UI element.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1656](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1656)
+[packages/websg-types/types/websg.d.ts:1656](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1656)
 
 • `set` **maxWidth**(`value`): `void`
 
@@ -828,7 +828,7 @@ Sets the maximum width of the UI element in pixels.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1662](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1662)
+[packages/websg-types/types/websg.d.ts:1662](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1662)
 
 ___
 
@@ -844,7 +844,7 @@ Gets the minimum height of the UI element in pixels.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1645](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1645)
+[packages/websg-types/types/websg.d.ts:1645](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1645)
 
 • `set` **minHeight**(`value`): `void`
 
@@ -862,7 +862,7 @@ Sets the minimum height of the UI element.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1651](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1651)
+[packages/websg-types/types/websg.d.ts:1651](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1651)
 
 ___
 
@@ -878,7 +878,7 @@ Gets the minimum width of the UI element in pixels.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1634](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1634)
+[packages/websg-types/types/websg.d.ts:1634](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1634)
 
 • `set` **minWidth**(`value`): `void`
 
@@ -896,7 +896,7 @@ Sets the minimum width of the UI element in pixels.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1640](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1640)
+[packages/websg-types/types/websg.d.ts:1640](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1640)
 
 ___
 
@@ -912,7 +912,7 @@ Gets the position of the UI element.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1458](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1458)
+[packages/websg-types/types/websg.d.ts:1458](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1458)
 
 • `set` **position**(`value`): `void`
 
@@ -930,7 +930,7 @@ Sets the position of the UI element.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1464](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1464)
+[packages/websg-types/types/websg.d.ts:1464](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1464)
 
 ___
 
@@ -946,7 +946,7 @@ Gets the right position of the UI element in pixels.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1480](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1480)
+[packages/websg-types/types/websg.d.ts:1480](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1480)
 
 • `set` **right**(`value`): `void`
 
@@ -964,7 +964,7 @@ Sets the right position of the UI element in pixels.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1486](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1486)
+[packages/websg-types/types/websg.d.ts:1486](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1486)
 
 ___
 
@@ -980,7 +980,7 @@ Gets the top position of the UI element in pixels.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1469](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1469)
+[packages/websg-types/types/websg.d.ts:1469](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1469)
 
 • `set` **top**(`value`): `void`
 
@@ -998,7 +998,7 @@ Sets the top position of the UI element in pixels.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1475](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1475)
+[packages/websg-types/types/websg.d.ts:1475](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1475)
 
 ___
 
@@ -1014,7 +1014,7 @@ Gets the text content of the UIText element.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1785](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1785)
+[packages/websg-types/types/websg.d.ts:1785](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1785)
 
 • `set` **value**(`value`): `void`
 
@@ -1032,7 +1032,7 @@ Sets the text content of the UIText element.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1791](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1791)
+[packages/websg-types/types/websg.d.ts:1791](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1791)
 
 ___
 
@@ -1048,7 +1048,7 @@ Gets the width of the UI element in pixels.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1612](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1612)
+[packages/websg-types/types/websg.d.ts:1612](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1612)
 
 • `set` **width**(`value`): `void`
 
@@ -1066,7 +1066,7 @@ Sets the width of the UI element in pixels.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1618](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1618)
+[packages/websg-types/types/websg.d.ts:1618](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1618)
 
 ## Methods
 
@@ -1092,7 +1092,7 @@ Adds a child UI element to the current element.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1679](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1679)
+[packages/websg-types/types/websg.d.ts:1679](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1679)
 
 ___
 
@@ -1112,7 +1112,7 @@ Returns an iterator for the children of the current UI element.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1696](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1696)
+[packages/websg-types/types/websg.d.ts:1696](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1696)
 
 ___
 
@@ -1138,7 +1138,7 @@ Gets the child UI element at the specified index or undefined if the index is ou
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1691](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1691)
+[packages/websg-types/types/websg.d.ts:1691](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1691)
 
 ___
 
@@ -1164,7 +1164,7 @@ Removes a child UI element from the current element.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:1685](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L1685)
+[packages/websg-types/types/websg.d.ts:1685](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L1685)
 
 ___
 
@@ -1188,7 +1188,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:424](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L424)
+[src/engine/scripting/websg-api.d.ts:424](https://github.com/thirdroom/thirdroom/blob/3d97b348/src/engine/scripting/websg-api.d.ts#L424)
 
 ___
 
@@ -1212,7 +1212,7 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:423](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L423)
+[src/engine/scripting/websg-api.d.ts:423](https://github.com/thirdroom/thirdroom/blob/3d97b348/src/engine/scripting/websg-api.d.ts#L423)
 
 ___
 
@@ -1232,4 +1232,4 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:483](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L483)
+[src/engine/scripting/websg-api.d.ts:483](https://github.com/thirdroom/thirdroom/blob/3d97b348/src/engine/scripting/websg-api.d.ts#L483)

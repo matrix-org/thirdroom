@@ -24,9 +24,9 @@ The name of the mesh.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:283](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L283)
+[src/engine/scripting/websg-api.d.ts:283](https://github.com/thirdroom/thirdroom/blob/3d97b348/src/engine/scripting/websg-api.d.ts#L283)
 
-[packages/websg-types/types/websg.d.ts:588](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L588)
+[packages/websg-types/types/websg.d.ts:588](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L588)
 
 ___
 
@@ -38,9 +38,9 @@ An array of MeshPrimitiveProps that define the geometry and materials of the mes
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:285](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L285)
+[src/engine/scripting/websg-api.d.ts:285](https://github.com/thirdroom/thirdroom/blob/3d97b348/src/engine/scripting/websg-api.d.ts#L285)
 
-[packages/websg-types/types/websg.d.ts:592](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L592)
+[packages/websg-types/types/websg.d.ts:592](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L592)
 
 ___
 
@@ -50,4 +50,4 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:284](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L284)
+[src/engine/scripting/websg-api.d.ts:284](https://github.com/thirdroom/thirdroom/blob/3d97b348/src/engine/scripting/websg-api.d.ts#L284)

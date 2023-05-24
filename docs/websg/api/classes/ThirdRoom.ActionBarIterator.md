@@ -35,7 +35,7 @@ Represents an iterator over the actions triggered in the action bar.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2622](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2622)
+[packages/websg-types/types/websg.d.ts:2623](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L2623)
 
 ___
 
@@ -54,4 +54,4 @@ ___
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2621](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2621)
+[packages/websg-types/types/websg.d.ts:2622](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L2622)

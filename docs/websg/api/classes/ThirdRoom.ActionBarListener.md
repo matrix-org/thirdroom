@@ -40,7 +40,7 @@ Returns an iterator over the actions triggered in the action bar since the last 
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2609](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2609)
+[packages/websg-types/types/websg.d.ts:2610](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L2610)
 
 ___
 
@@ -56,4 +56,4 @@ Disposes the action bar listener.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2614](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2614)
+[packages/websg-types/types/websg.d.ts:2615](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L2615)

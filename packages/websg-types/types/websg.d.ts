@@ -1226,7 +1226,7 @@ declare namespace WebSG {
      * Sets the root UIElement of the canvas.
      * @param element The root UIElement of the canvas.
      */
-    set root(element: UIElement);
+    set root(element: UIElement | undefined);
 
     /**
      * Gets the canvas width in pixels.
@@ -2573,8 +2573,9 @@ declare namespace WebSGNetworking {
      * Broadcasts data to all connected clients.
      * @param data - The data to be broadcasted.
      * @param reliable - Whether or not the data should be sent reliably or unreliably.
+     * Defaults to true.
      */
-    broadcast(message: string | ArrayBuffer, reliable: boolean = true): undefined;
+    broadcast(message: string | ArrayBuffer, reliable?: boolean): undefined;
 
     /**
      * Callback for when a peer enters the world.

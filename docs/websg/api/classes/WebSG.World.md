@@ -142,7 +142,7 @@ for more details.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:37](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L37)
+[src/engine/scripting/websg-api.d.ts:37](https://github.com/thirdroom/thirdroom/blob/3d97b348/src/engine/scripting/websg-api.d.ts#L37)
 
 ___
 
@@ -155,7 +155,7 @@ The network.local peer has been set and the user has been spawned into the world
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2484](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2484)
+[packages/websg-types/types/websg.d.ts:2484](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L2484)
 
 ___
 
@@ -168,7 +168,7 @@ The glTF document has been loaded and all resources are available.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2478](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2478)
+[packages/websg-types/types/websg.d.ts:2478](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L2478)
 
 ___
 
@@ -188,7 +188,7 @@ The total time since the start of the world in seconds.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2491](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2491)
+[packages/websg-types/types/websg.d.ts:2491](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L2491)
 
 ## Accessors
 
@@ -205,7 +205,7 @@ Defaults to 10000.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2440](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2440)
+[packages/websg-types/types/websg.d.ts:2440](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L2440)
 
 • `set` **componentStoreSize**(`value`): `void`
 
@@ -224,7 +224,7 @@ Defaults to 10000.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2446](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2446)
+[packages/websg-types/types/websg.d.ts:2446](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L2446)
 
 ___
 
@@ -242,7 +242,7 @@ The primary input source in XR is the user's primary controller otherwise it's t
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2472](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2472)
+[packages/websg-types/types/websg.d.ts:2472](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L2472)
 
 ___
 
@@ -260,7 +260,7 @@ The primary input source in XR is the user's primary controller otherwise it's t
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2465](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2465)
+[packages/websg-types/types/websg.d.ts:2465](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L2465)
 
 ## Methods
 
@@ -285,7 +285,7 @@ The newly created accessor.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:126](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L126)
+[src/engine/scripting/websg-api.d.ts:126](https://github.com/thirdroom/thirdroom/blob/3d97b348/src/engine/scripting/websg-api.d.ts#L126)
 
 ▸ **createAccessorFrom**(`buffer`, `props`): [`Accessor`](WebSG.Accessor.md)
 
@@ -304,7 +304,7 @@ Creates an [Accessor ](WebSG.Accessor.md) from the given ArrayBuffer and propert
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2289](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2289)
+[packages/websg-types/types/websg.d.ts:2289](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L2289)
 
 ___
 
@@ -328,7 +328,7 @@ The newly created box mesh.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:77](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L77)
+[src/engine/scripting/websg-api.d.ts:77](https://github.com/thirdroom/thirdroom/blob/3d97b348/src/engine/scripting/websg-api.d.ts#L77)
 
 ▸ **createBoxMesh**(`props`): [`Mesh`](WebSG.Mesh.md)
 
@@ -346,7 +346,7 @@ Creates a Box [Mesh ](WebSG.Mesh.md) with the given properties.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2349](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2349)
+[packages/websg-types/types/websg.d.ts:2349](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L2349)
 
 ___
 
@@ -370,7 +370,7 @@ The newly created collider.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:85](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L85)
+[src/engine/scripting/websg-api.d.ts:85](https://github.com/thirdroom/thirdroom/blob/3d97b348/src/engine/scripting/websg-api.d.ts#L85)
 
 ▸ **createCollider**(`props`): [`Collider`](WebSG.Collider.md)
 
@@ -388,7 +388,7 @@ Creates a [Collider ](WebSG.Collider.md) with the given properties.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2301](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2301)
+[packages/websg-types/types/websg.d.ts:2301](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L2301)
 
 ___
 
@@ -405,7 +405,7 @@ collisions between nodes with colliders set on them.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2434](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2434)
+[packages/websg-types/types/websg.d.ts:2434](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L2434)
 
 ___
 
@@ -427,7 +427,7 @@ Creates a [Light ](WebSG.Light.md) with the given properties.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2313](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2313)
+[packages/websg-types/types/websg.d.ts:2313](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L2313)
 
 ___
 
@@ -449,7 +449,7 @@ Creates a [Material ](WebSG.Material.md) with the given properties.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2331](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2331)
+[packages/websg-types/types/websg.d.ts:2331](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L2331)
 
 ___
 
@@ -473,7 +473,7 @@ The newly created mesh.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:134](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L134)
+[src/engine/scripting/websg-api.d.ts:134](https://github.com/thirdroom/thirdroom/blob/3d97b348/src/engine/scripting/websg-api.d.ts#L134)
 
 ▸ **createMesh**(`props`): [`Mesh`](WebSG.Mesh.md)
 
@@ -491,7 +491,7 @@ Creates a [Mesh ](WebSG.Mesh.md) with the given properties.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2343](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2343)
+[packages/websg-types/types/websg.d.ts:2343](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L2343)
 
 ___
 
@@ -515,7 +515,7 @@ The newly created node.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:69](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L69)
+[src/engine/scripting/websg-api.d.ts:69](https://github.com/thirdroom/thirdroom/blob/3d97b348/src/engine/scripting/websg-api.d.ts#L69)
 
 ▸ **createNode**(`props?`): [`Node`](WebSG.Node.md)
 
@@ -533,7 +533,7 @@ Creates a new [Node ](WebSG.Node.md) with the given properties.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2361](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2361)
+[packages/websg-types/types/websg.d.ts:2361](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L2361)
 
 ___
 
@@ -555,7 +555,7 @@ Creates a new [Scene ](WebSG.Scene.md) with the given properties.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2373](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2373)
+[packages/websg-types/types/websg.d.ts:2373](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L2373)
 
 ___
 
@@ -579,7 +579,7 @@ The newly created UI button element.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:117](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L117)
+[src/engine/scripting/websg-api.d.ts:117](https://github.com/thirdroom/thirdroom/blob/3d97b348/src/engine/scripting/websg-api.d.ts#L117)
 
 ▸ **createUIButton**(`props?`): [`UIButton`](WebSG.UIButton.md)
 
@@ -597,7 +597,7 @@ Creates a new UIButton with the given properties.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2422](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2422)
+[packages/websg-types/types/websg.d.ts:2422](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L2422)
 
 ___
 
@@ -621,7 +621,7 @@ The newly created UI canvas.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:93](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L93)
+[src/engine/scripting/websg-api.d.ts:93](https://github.com/thirdroom/thirdroom/blob/3d97b348/src/engine/scripting/websg-api.d.ts#L93)
 
 ▸ **createUICanvas**(`props?`): [`UICanvas`](WebSG.UICanvas.md)
 
@@ -639,7 +639,7 @@ Creates a new [UICanvas ](WebSG.UICanvas.md) with the given properties.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2397](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2397)
+[packages/websg-types/types/websg.d.ts:2397](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L2397)
 
 ___
 
@@ -663,7 +663,7 @@ The newly created UI element.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:101](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L101)
+[src/engine/scripting/websg-api.d.ts:101](https://github.com/thirdroom/thirdroom/blob/3d97b348/src/engine/scripting/websg-api.d.ts#L101)
 
 ▸ **createUIElement**(`props?`): [`UIElement`](WebSG.UIElement.md)
 
@@ -681,7 +681,7 @@ Creates a new UIElement with the given properties.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2409](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2409)
+[packages/websg-types/types/websg.d.ts:2409](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L2409)
 
 ___
 
@@ -705,7 +705,7 @@ The newly created UI text element.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:109](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L109)
+[src/engine/scripting/websg-api.d.ts:109](https://github.com/thirdroom/thirdroom/blob/3d97b348/src/engine/scripting/websg-api.d.ts#L109)
 
 ▸ **createUIText**(`props?`): [`UIText`](WebSG.UIText.md)
 
@@ -727,7 +727,7 @@ createUIText
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2416](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2416)
+[packages/websg-types/types/websg.d.ts:2416](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L2416)
 
 ___
 
@@ -749,7 +749,7 @@ Creates an unlit [Material ](WebSG.Material.md) with the given properties.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2325](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2325)
+[packages/websg-types/types/websg.d.ts:2325](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L2325)
 
 ___
 
@@ -771,7 +771,7 @@ Finds an [Accessor ](WebSG.Accessor.md) by its name. Returns undefined if not fo
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2295](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2295)
+[packages/websg-types/types/websg.d.ts:2295](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L2295)
 
 ___
 
@@ -793,7 +793,7 @@ Finds a [Collider ](WebSG.Collider.md) by its name. Returns undefined if not fou
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2307](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2307)
+[packages/websg-types/types/websg.d.ts:2307](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L2307)
 
 ___
 
@@ -816,7 +816,7 @@ Returns undefined if not found.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2453](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2453)
+[packages/websg-types/types/websg.d.ts:2453](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L2453)
 
 ___
 
@@ -838,7 +838,7 @@ Finds an [image ](WebSG.Image.md) by its name. Returns undefined if not found.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2391](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2391)
+[packages/websg-types/types/websg.d.ts:2391](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L2391)
 
 ___
 
@@ -860,7 +860,7 @@ Finds a [Light ](WebSG.Light.md) by its name. Returns undefined if not found.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2319](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2319)
+[packages/websg-types/types/websg.d.ts:2319](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L2319)
 
 ___
 
@@ -884,7 +884,7 @@ The found material or undefined if not found.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:61](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L61)
+[src/engine/scripting/websg-api.d.ts:61](https://github.com/thirdroom/thirdroom/blob/3d97b348/src/engine/scripting/websg-api.d.ts#L61)
 
 ▸ **findMaterialByName**(`name`): `undefined` \| [`Material`](WebSG.Material.md)
 
@@ -902,7 +902,7 @@ Finds a [Material ](WebSG.Material.md) by its name. Returns undefined if not fou
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2337](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2337)
+[packages/websg-types/types/websg.d.ts:2337](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L2337)
 
 ___
 
@@ -926,7 +926,7 @@ The found mesh or undefined if not found.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:53](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L53)
+[src/engine/scripting/websg-api.d.ts:53](https://github.com/thirdroom/thirdroom/blob/3d97b348/src/engine/scripting/websg-api.d.ts#L53)
 
 ▸ **findMeshByName**(`name`): `undefined` \| [`Mesh`](WebSG.Mesh.md)
 
@@ -944,7 +944,7 @@ Finds a [Mesh ](WebSG.Mesh.md) by its name. Returns undefined if not found.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2355](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2355)
+[packages/websg-types/types/websg.d.ts:2355](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L2355)
 
 ___
 
@@ -968,7 +968,7 @@ The found node or undefined if not found.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:45](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L45)
+[src/engine/scripting/websg-api.d.ts:45](https://github.com/thirdroom/thirdroom/blob/3d97b348/src/engine/scripting/websg-api.d.ts#L45)
 
 ▸ **findNodeByName**(`name`): `undefined` \| [`Node`](WebSG.Node.md)
 
@@ -986,7 +986,7 @@ Finds a [node ](WebSG.Node.md) by its name. Returns undefined if not found.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2367](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2367)
+[packages/websg-types/types/websg.d.ts:2367](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L2367)
 
 ___
 
@@ -1008,7 +1008,7 @@ Finds a [scene ](WebSG.Scene.md) by its name. Returns undefined if not found.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2379](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2379)
+[packages/websg-types/types/websg.d.ts:2379](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L2379)
 
 ___
 
@@ -1030,7 +1030,7 @@ Finds a [texture ](WebSG.Texture.md) by its name. Returns undefined if not found
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2385](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2385)
+[packages/websg-types/types/websg.d.ts:2385](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L2385)
 
 ___
 
@@ -1052,7 +1052,7 @@ Finds a UICanvas by its name. Returns undefined if not found.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2403](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2403)
+[packages/websg-types/types/websg.d.ts:2403](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L2403)
 
 ___
 
@@ -1074,7 +1074,7 @@ Finds a UIElement by its name. Returns undefined if not found.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2428](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2428)
+[packages/websg-types/types/websg.d.ts:2428](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L2428)
 
 ___
 
@@ -1090,7 +1090,7 @@ Stops orbiting
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:139](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L139)
+[src/engine/scripting/websg-api.d.ts:139](https://github.com/thirdroom/thirdroom/blob/3d97b348/src/engine/scripting/websg-api.d.ts#L139)
 
 ▸ **stopOrbit**(): `undefined`
 
@@ -1102,4 +1102,4 @@ Stops any ongoing orbiting operation.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2458](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2458)
+[packages/websg-types/types/websg.d.ts:2458](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L2458)

@@ -41,7 +41,7 @@ Creates a new Material instance.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:417](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L417)
+[packages/websg-types/types/websg.d.ts:417](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L417)
 
 ## Accessors
 
@@ -57,7 +57,7 @@ Returns the base color factor of the Material object as an RGBA instance.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:422](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L422)
+[packages/websg-types/types/websg.d.ts:422](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L422)
 
 ___
 
@@ -73,7 +73,7 @@ Gets the base color texture of the Material object.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:427](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L427)
+[packages/websg-types/types/websg.d.ts:427](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L427)
 
 • `set` **baseColorTexture**(`texture`): `void`
 
@@ -91,7 +91,7 @@ Sets the base color texture of the Material object.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:433](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L433)
+[packages/websg-types/types/websg.d.ts:433](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L433)
 
 ___
 
@@ -107,7 +107,7 @@ Returns the emissive factor of the Material object as an RGB instance.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:460](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L460)
+[packages/websg-types/types/websg.d.ts:460](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L460)
 
 ___
 
@@ -123,7 +123,7 @@ Gets the metallic factor of the Material object.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:438](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L438)
+[packages/websg-types/types/websg.d.ts:438](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L438)
 
 • `set` **metallicFactor**(`value`): `void`
 
@@ -141,7 +141,7 @@ Sets the metallic factor of the Material object.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:444](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L444)
+[packages/websg-types/types/websg.d.ts:444](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L444)
 
 ___
 
@@ -157,7 +157,7 @@ Gets the roughness factor of the Material object.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:449](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L449)
+[packages/websg-types/types/websg.d.ts:449](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L449)
 
 • `set` **roughnessFactor**(`value`): `void`
 
@@ -175,7 +175,7 @@ Sets the roughness factor of the Material object.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:455](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L455)
+[packages/websg-types/types/websg.d.ts:455](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L455)
 
 ## Methods
 
@@ -189,7 +189,7 @@ Sets the roughness factor of the Material object.
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:490](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L490)
+[src/engine/scripting/websg-api.d.ts:490](https://github.com/thirdroom/thirdroom/blob/3d97b348/src/engine/scripting/websg-api.d.ts#L490)
 
 ___
 
@@ -209,4 +209,4 @@ ___
 
 #### Defined in
 
-[src/engine/scripting/websg-api.d.ts:491](https://github.com/thirdroom/thirdroom/blob/972fa72b/src/engine/scripting/websg-api.d.ts#L491)
+[src/engine/scripting/websg-api.d.ts:491](https://github.com/thirdroom/thirdroom/blob/3d97b348/src/engine/scripting/websg-api.d.ts#L491)

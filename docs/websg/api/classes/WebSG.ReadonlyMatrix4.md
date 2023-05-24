@@ -36,4 +36,4 @@ Returns the length of the ReadonlyMatrix4 instance.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:493](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L493)
+[packages/websg-types/types/websg.d.ts:493](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L493)

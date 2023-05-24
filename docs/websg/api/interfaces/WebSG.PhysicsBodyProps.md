@@ -26,7 +26,7 @@ The angular velocity of the physics body as an array of three numbers [x, y, z].
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:913](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L913)
+[packages/websg-types/types/websg.d.ts:913](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L913)
 
 ___
 
@@ -39,7 +39,7 @@ The inertia tensor of the physics body as an array of nine numbers representing 
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:919](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L919)
+[packages/websg-types/types/websg.d.ts:919](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L919)
 
 ___
 
@@ -51,7 +51,7 @@ The linear velocity of the physics body as an array of three numbers [x, y, z].
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:908](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L908)
+[packages/websg-types/types/websg.d.ts:908](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L908)
 
 ___
 
@@ -63,7 +63,7 @@ The mass of the physics body in kilograms.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:903](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L903)
+[packages/websg-types/types/websg.d.ts:903](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L903)
 
 ___
 
@@ -75,4 +75,4 @@ The type of the physics body.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:898](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L898)
+[packages/websg-types/types/websg.d.ts:898](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L898)

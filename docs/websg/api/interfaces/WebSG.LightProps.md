@@ -28,7 +28,7 @@ The optional RGB color of the light. Default is white.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:248](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L248)
+[packages/websg-types/types/websg.d.ts:248](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L248)
 
 ___
 
@@ -40,7 +40,7 @@ The optional inner cone angle of the light, for spot lights.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:256](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L256)
+[packages/websg-types/types/websg.d.ts:256](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L256)
 
 ___
 
@@ -52,7 +52,7 @@ The optional intensity of the light. Default is 1.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:244](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L244)
+[packages/websg-types/types/websg.d.ts:244](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L244)
 
 ___
 
@@ -64,7 +64,7 @@ The optional name of the light.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:240](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L240)
+[packages/websg-types/types/websg.d.ts:240](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L240)
 
 ___
 
@@ -76,7 +76,7 @@ The optional outer cone angle of the light, for spot lights.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:260](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L260)
+[packages/websg-types/types/websg.d.ts:260](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L260)
 
 ___
 
@@ -88,7 +88,7 @@ The optional range of the light, for point and spot lights.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:252](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L252)
+[packages/websg-types/types/websg.d.ts:252](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L252)
 
 ___
 
@@ -100,4 +100,4 @@ The type of the light.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:236](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L236)
+[packages/websg-types/types/websg.d.ts:236](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L236)

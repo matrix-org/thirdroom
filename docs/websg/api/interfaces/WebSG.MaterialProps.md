@@ -36,7 +36,7 @@ The alpha cutoff value for the material. Default is 0.5.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:358](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L358)
+[packages/websg-types/types/websg.d.ts:358](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L358)
 
 ___
 
@@ -48,7 +48,7 @@ The alpha mode for the material. Default is 'OPAQUE'.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:362](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L362)
+[packages/websg-types/types/websg.d.ts:362](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L362)
 
 ___
 
@@ -60,7 +60,7 @@ The RGBA base color factor.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:366](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L366)
+[packages/websg-types/types/websg.d.ts:366](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L366)
 
 ___
 
@@ -72,7 +72,7 @@ The base color texture.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:370](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L370)
+[packages/websg-types/types/websg.d.ts:370](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L370)
 
 ___
 
@@ -84,7 +84,7 @@ Whether the material is visible from both sides. Default is false.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:354](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L354)
+[packages/websg-types/types/websg.d.ts:354](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L354)
 
 ___
 
@@ -96,7 +96,7 @@ The RGB emissive factor.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:402](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L402)
+[packages/websg-types/types/websg.d.ts:402](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L402)
 
 ___
 
@@ -108,7 +108,7 @@ The emissive texture.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:406](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L406)
+[packages/websg-types/types/websg.d.ts:406](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L406)
 
 ___
 
@@ -120,7 +120,7 @@ The metallic factor. Default is 1.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:374](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L374)
+[packages/websg-types/types/websg.d.ts:374](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L374)
 
 ___
 
@@ -132,7 +132,7 @@ The metallic-roughness texture.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:382](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L382)
+[packages/websg-types/types/websg.d.ts:382](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L382)
 
 ___
 
@@ -144,7 +144,7 @@ The name of the material.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:350](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L350)
+[packages/websg-types/types/websg.d.ts:350](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L350)
 
 ___
 
@@ -156,7 +156,7 @@ The scale for the normal texture. Default is 1.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:390](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L390)
+[packages/websg-types/types/websg.d.ts:390](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L390)
 
 ___
 
@@ -168,7 +168,7 @@ The normal texture.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:386](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L386)
+[packages/websg-types/types/websg.d.ts:386](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L386)
 
 ___
 
@@ -180,7 +180,7 @@ The occlusion strength. Default is 1.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:398](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L398)
+[packages/websg-types/types/websg.d.ts:398](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L398)
 
 ___
 
@@ -192,7 +192,7 @@ The occlusion texture.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:394](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L394)
+[packages/websg-types/types/websg.d.ts:394](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L394)
 
 ___
 
@@ -204,4 +204,4 @@ The roughness factor. Default is 1.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:378](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L378)
+[packages/websg-types/types/websg.d.ts:378](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L378)

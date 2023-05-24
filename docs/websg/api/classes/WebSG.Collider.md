@@ -39,4 +39,4 @@ const collider = world.createCollider({
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:165](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L165)
+[packages/websg-types/types/websg.d.ts:165](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L165)

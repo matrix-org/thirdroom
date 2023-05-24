@@ -40,7 +40,7 @@ Creates a new [ActionBarListener](ThirdRoom.ActionBarListener.md) for the action
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2660](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2660)
+[packages/websg-types/types/websg.d.ts:2661](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L2661)
 
 ___
 
@@ -62,4 +62,4 @@ Replaces the items in the action bar with the given items.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2656](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2656)
+[packages/websg-types/types/websg.d.ts:2657](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L2657)

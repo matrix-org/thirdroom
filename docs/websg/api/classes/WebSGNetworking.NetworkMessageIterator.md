@@ -35,7 +35,7 @@ An iterator for [NetworkMessage ](WebSGNetworking.NetworkMessage.md)s.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2525](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2525)
+[packages/websg-types/types/websg.d.ts:2525](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L2525)
 
 ___
 
@@ -56,4 +56,4 @@ Returns the next [NetworkMessage](WebSGNetworking.NetworkMessage.md) in the iter
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2524](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2524)
+[packages/websg-types/types/websg.d.ts:2524](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L2524)

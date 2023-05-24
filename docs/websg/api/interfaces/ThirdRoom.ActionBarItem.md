@@ -24,7 +24,7 @@ Used to identify the action when it is triggered.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2632](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2632)
+[packages/websg-types/types/websg.d.ts:2633](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L2633)
 
 ___
 
@@ -36,7 +36,7 @@ Used to display what the action does when hovering over an action.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2636](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2636)
+[packages/websg-types/types/websg.d.ts:2637](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L2637)
 
 ___
 
@@ -50,4 +50,4 @@ Basis Universal compressed images (e.g. .ktx2) are not supported.
 
 #### Defined in
 
-[packages/websg-types/types/websg.d.ts:2642](https://github.com/thirdroom/thirdroom/blob/972fa72b/packages/websg-types/types/websg.d.ts#L2642)
+[packages/websg-types/types/websg.d.ts:2643](https://github.com/thirdroom/thirdroom/blob/3d97b348/packages/websg-types/types/websg.d.ts#L2643)
