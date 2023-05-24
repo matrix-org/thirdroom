@@ -1,5 +1,6 @@
 import { defineConfig } from "vitepress";
 import { vitepressPluginTypedoc } from "./plugins/vitepress-plugin-typedoc";
+import typedocSidebar from "../websg-js/typedoc-sidebar.json";
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
@@ -7,66 +8,62 @@ export default defineConfig({
   description: "Documentation for Third Room",
   base: "/docs",
   outDir: "../dist/docs",
-  // TODO: remove before merge
-  ignoreDeadLinks: true,
   themeConfig: {
     siteTitle: false,
     logo: { light: "/light-logo-full.svg", dark: "/dark-logo-full.svg", alt: "Third Room" },
     // https://vitepress.dev/reference/default-theme-config
     nav: [
-      { text: "Getting Started", link: "/guides/getting-started" },
-      { text: "Developers", link: "/guides/developers" },
-      { text: "Creators", link: "/guides/creators" },
-    ],
-
-    sidebar: [
+      { text: "Guides", link: "/guides/" },
       {
-        text: "Guides",
+        text: "Reference",
         items: [
-          { text: "Getting Started", link: "/guides/getting-started" },
-          { text: "Creators", link: "/guides/creators" },
-          { text: "Developers", link: "/guides/developers" },
-        ],
-      },
-      {
-        text: "Web Scene Graph",
-        items: [
-          { text: "Overview", link: "/websg/" },
-          {
-            text: "Getting Started Tutorial",
-            link: "/websg/tutorials/basketball-part-1",
-            items: [
-              { text: "Part 1: Interactables", link: "/websg/tutorials/basketball-part-1" },
-              { text: "Part 2: Collisions and UI", link: "/websg/tutorials/basketball-part-2" },
-              { text: "Part 3: Networking", link: "#" },
-            ],
-          },
-          { text: "Lighting", link: "/websg/lighting" },
-          { text: "Networking", link: "/websg/networking" },
-          { text: "API Reference", link: "/websg/api/interfaces/WebSGGlobalScope" },
-        ],
-      },
-      {
-        text: "Unity Exporter",
-        items: [{ text: "Getting Started", link: "/unity/getting-started" }],
-      },
-      {
-        text: "Matrix glTF Extensions",
-        items: [
-          { text: "Overview", link: "/gltf/" },
-          { text: "MX_background", link: "/gltf/MX_background/README" },
-          { text: "MX_character_controller", link: "/gltf/MX_character_controller/README" },
-          { text: "MX_lightmap", link: "/gltf/MX_lightmap/README" },
-          { text: "MX_postprocessing", link: "/gltf/MX_postprocessing/README" },
-          { text: "MX_reflection_probes", link: "/gltf/MX_reflection_probes/README" },
-          { text: "MX_scene_ar", link: "/gltf/MX_scene_ar/README" },
-          { text: "MX_spawn_point", link: "/gltf/MX_spawn_point/README" },
-          { text: "MX_texture_rgbm", link: "/gltf/MX_texture_rgbm/README" },
-          { text: "MX_tiles_renderer", link: "/gltf/MX_tiles_renderer/README" },
+          { text: "WebSG JavaScript API", link: "/websg-js/" },
+          { text: "glTF Extensions", link: "/gltf/" },
         ],
       },
     ],
-
+    sidebar: {
+      "/guides/": [
+        { text: "Getting Started", link: "/guides/" },
+        { text: "Creators", link: "/guides/creators" },
+        { text: "Developers", link: "/guides/developers" },
+        {
+          text: "Web Scene Graph",
+          items: [
+            { text: "Overview", link: "/guides/websg/" },
+            {
+              text: "Getting Started Tutorial",
+              items: [
+                { text: "Part 1: Interactables", link: "/guides/websg/basketball/part-1" },
+                { text: "Part 2: Collisions and UI", link: "/guides/websg/basketball/part-2" },
+                { text: "Part 3: Networking", link: "/guides/websg/basketball/part-3" },
+              ],
+            },
+            { text: "Lighting", link: "/guides/websg/lighting" },
+            { text: "Networking", link: "/guides/websg/networking" },
+          ],
+        },
+        {
+          text: "Unity Exporter",
+          items: [{ text: "Getting Started", link: "/guides/unity/" }],
+        },
+      ],
+      // TODO: rename api -> websg-js when this issue is resolved:
+      // https://github.com/tgreyuk/typedoc-plugin-markdown/issues/438
+      "/websg-js/": typedocSidebar as any,
+      "/gltf/": [
+        { text: "Overview", link: "/gltf/" },
+        { text: "MX_background", link: "/gltf/MX_background/README" },
+        { text: "MX_character_controller", link: "/gltf/MX_character_controller/README" },
+        { text: "MX_lightmap", link: "/gltf/MX_lightmap/README" },
+        { text: "MX_postprocessing", link: "/gltf/MX_postprocessing/README" },
+        { text: "MX_reflection_probes", link: "/gltf/MX_reflection_probes/README" },
+        { text: "MX_scene_ar", link: "/gltf/MX_scene_ar/README" },
+        { text: "MX_spawn_point", link: "/gltf/MX_spawn_point/README" },
+        { text: "MX_texture_rgbm", link: "/gltf/MX_texture_rgbm/README" },
+        { text: "MX_tiles_renderer", link: "/gltf/MX_tiles_renderer/README" },
+      ],
+    },
     socialLinks: [
       {
         icon: {
@@ -79,7 +76,7 @@ export default defineConfig({
       { icon: "twitter", link: "https://twitter.com/thirdroomio" },
     ],
   },
-  vite: {
-    plugins: [vitepressPluginTypedoc()],
-  },
+  // vite: {
+  //   plugins: [vitepressPluginTypedoc()],
+  // },
 });

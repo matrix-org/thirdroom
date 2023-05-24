@@ -1,6 +1,3 @@
-/**
- * @namespace WebSG
- */
 declare namespace WebSG {
   /**
    * @typedef AccessorType
@@ -2492,11 +2489,6 @@ declare namespace WebSG {
   }
 }
 
-/**
- * The global world instance.
- */
-declare const world: WebSG.World;
-
 declare namespace WebSGNetworking {
   class Peer {
     get id(): string;
@@ -2591,11 +2583,6 @@ declare namespace WebSGNetworking {
   }
 }
 
-/**
- * The global network instance.
- */
-declare const network: WebSGNetworking.Network;
-
 declare namespace ThirdRoom {
   /**
    * An ActionBarListener is used to listen for actions triggered in the action bar.
@@ -2660,204 +2647,137 @@ declare namespace ThirdRoom {
      */
     createListener(): ActionBarListener;
   }
+
+  class ThirdRoom {
+    /**
+     * Enables or disables the use of the custom Matrix-style material on the world.
+     *
+     * @experimental Note that this is not a standard function and could be removed or disabled in the future.
+     * @param {boolean} enabled - Whether to enable or disable Matrix materials.
+     * @returns {undefined}
+     */
+    enableMatrixMaterial(enabled: boolean): undefined;
+
+    /**
+     * Gets the size of the local audio input source's audio data buffer.
+     * Similar to the WebAudio [AnalyserNode.frequencyBinCount](https://developer.mozilla.org/en-US/docs/Web/API/AnalyserNode/frequencyBinCount)
+     * @returns {number} - The size of the audio data buffer.
+     */
+    getAudioDataSize(): number;
+
+    /**
+     * Gets the local audio input source's time data and fills the provided Uint8Array.
+     * The data array must be at least the size returned by getAudioDataSize.
+     * Similar to the WebAudio [AnalyserNode.getByteTimeDomainData](https://developer.mozilla.org/en-US/docs/Web/API/AnalyserNode/getByteTimeDomainData)
+     * @param {Uint8Array} data - The array to store the audio time data.
+     * @returns {number} - The number of elements filled in the data array.
+     */
+    getAudioTimeData(data: Float32Array): number;
+
+    /**
+     * Gets the local audio input source's frequency data and fills the provided Uint8Array.
+     * The data array must be at least the size returned by getAudioDataSize.
+     * Similar to the WebAudio [AnalyserNode.getByteFrequencyData](https://developer.mozilla.org/en-US/docs/Web/API/AnalyserNode/getByteFrequencyData)
+     * @param {Uint8Array} data - The array to store the audio frequency data.
+     * @returns {number} - The number of elements filled in the data array.
+     */
+    getAudioFrequencyData(data: Float32Array): number;
+
+    /**
+     * Determines if the local user is currently in an Augmented Reality (AR) environment.
+     * Checks to see if the local user is in immersive AR mode and if the world supports AR.
+     * @returns {boolean} - True if the script is running in an AR environment, false otherwise.
+     */
+    inAR(): boolean;
+
+    /**
+     * Returns the {@link ThirdRoom.ActionBar | ActionBar} object.
+     */
+    get actionBar(): ThirdRoom.ActionBar;
+  }
 }
 
-declare class ThirdRoom {
+declare namespace Matrix {
   /**
-   * Enables or disables the use of the custom Matrix-style material on the world.
-   *
-   * @experimental Note that this is not a standard function and could be removed or disabled in the future.
-   * @param {boolean} enabled - Whether to enable or disable Matrix materials.
-   * @returns {undefined}
+   * MatrixWidgetAPIRequest interface represents a request sent to or from a Matrix widget.
    */
-  enableMatrixMaterial(enabled: boolean): undefined;
-
-  /**
-   * Gets the size of the local audio input source's audio data buffer.
-   * Similar to the WebAudio [AnalyserNode.frequencyBinCount](https://developer.mozilla.org/en-US/docs/Web/API/AnalyserNode/frequencyBinCount)
-   * @returns {number} - The size of the audio data buffer.
-   */
-  getAudioDataSize(): number;
+  interface MatrixWidgetAPIRequest {
+    api: "fromWidget" | "toWidget";
+    requestId: string;
+    action: string;
+    widgetId: string;
+    data: unknown;
+  }
 
   /**
-   * Gets the local audio input source's time data and fills the provided Uint8Array.
-   * The data array must be at least the size returned by {@link ThirdRoom.getAudioDataSize | getAudioDataSize}.
-   * Similar to the WebAudio [AnalyserNode.getByteTimeDomainData](https://developer.mozilla.org/en-US/docs/Web/API/AnalyserNode/getByteTimeDomainData)
-   * @param {Uint8Array} data - The array to store the audio time data.
-   * @returns {number} - The number of elements filled in the data array.
+   * MatrixWidgetAPIResponse interface represents a response to a Matrix widget API request.
    */
-  getAudioTimeData(data: Float32Array): number;
+  interface MatrixWidgetAPIResponse extends MatrixWidgetAPIRequest {
+    response: unknown;
+  }
 
   /**
-   * Gets the local audio input source's frequency data and fills the provided Uint8Array.
-   * The data array must be at least the size returned by {@link ThirdRoom.getAudioDataSize | getAudioDataSize}.
-   * Similar to the WebAudio [AnalyserNode.getByteFrequencyData](https://developer.mozilla.org/en-US/docs/Web/API/AnalyserNode/getByteFrequencyData)
-   * @param {Uint8Array} data - The array to store the audio frequency data.
-   * @returns {number} - The number of elements filled in the data array.
+   * MatrixWidgetAPIErrorResponse interface represents an error response to a Matrix widget API request.
    */
-  getAudioFrequencyData(data: Float32Array): number;
-
-  /**
-   * Determines if the local user is currently in an Augmented Reality (AR) environment.
-   * Checks to see if the local user is in immersive AR mode and if the world supports AR.
-   * @returns {boolean} - True if the script is running in an AR environment, false otherwise.
-   */
-  inAR(): boolean;
-
-  /**
-   * Returns the {@link ThirdRoom.ActionBar | ActionBar} object.
-   */
-  get actionBar(): ThirdRoom.ActionBar;
-}
-
-/**
- * The global ThirdRoom instance.
- * @global {ThirdRoom} thirdroom
- */
-declare const thirdroom: ThirdRoom;
-
-/**
- * MatrixWidgetAPIRequest interface represents a request sent to or from a Matrix widget.
- */
-interface MatrixWidgetAPIRequest {
-  api: "fromWidget" | "toWidget";
-  requestId: string;
-  action: string;
-  widgetId: string;
-  data: unknown;
-}
-
-/**
- * MatrixWidgetAPIResponse interface represents a response to a Matrix widget API request.
- */
-interface MatrixWidgetAPIResponse extends MatrixWidgetAPIRequest {
-  response: unknown;
-}
-
-/**
- * MatrixWidgetAPIErrorResponse interface represents an error response to a Matrix widget API request.
- */
-interface MatrixWidgetAPIErrorResponse extends MatrixWidgetAPIResponse {
-  response: {
-    error: {
-      message: string;
+  interface MatrixWidgetAPIErrorResponse extends MatrixWidgetAPIResponse {
+    response: {
+      error: {
+        message: string;
+      };
     };
-  };
-}
+  }
 
-type MatrixAPIMessage = MatrixWidgetAPIRequest | MatrixWidgetAPIResponse | MatrixWidgetAPIErrorResponse;
+  type MatrixAPIMessage = MatrixWidgetAPIRequest | MatrixWidgetAPIResponse | MatrixWidgetAPIErrorResponse;
+
+  /**
+   * MatrixWidgetAPI interface represents the Matrix widget API methods for sending and receiving messages.
+   */
+  interface MatrixWidgetAPI {
+    /**
+     * Starts listening for Matrix API messages.
+     * @returns {undefined}
+     */
+    listen(): undefined;
+
+    /**
+     * Closes the Matrix API message listener.
+     * @returns {undefined}
+     */
+    close(): undefined;
+
+    /**
+     * Receives a Matrix API message. Returns the received message or undefined if no message is available.
+     * @returns {MatrixAPIMessage | undefined} - The received Matrix API message or undefined if no message is available.
+     */
+    receive(): MatrixAPIMessage | undefined;
+
+    /**
+     * Sends a Matrix API message.
+     * @param {MatrixAPIMessage} event - The Matrix API message to send.
+     * @returns {undefined}
+     */
+    send(event: MatrixAPIMessage): undefined;
+  }
+}
 
 /**
- * MatrixWidgetAPI interface represents the Matrix widget API methods for sending and receiving messages.
+ * The global world instance.
  */
-interface MatrixWidgetAPI {
-  /**
-   * Starts listening for Matrix API messages.
-   * @returns {undefined}
-   */
-  listen(): undefined;
+declare const world: WebSG.World;
 
-  /**
-   * Closes the Matrix API message listener.
-   * @returns {undefined}
-   */
-  close(): undefined;
-
-  /**
-   * Receives a Matrix API message. Returns the received message or undefined if no message is available.
-   * @returns {MatrixAPIMessage | undefined} - The received Matrix API message or undefined if no message is available.
-   */
-  receive(): MatrixAPIMessage | undefined;
-
-  /**
-   * Sends a Matrix API message.
-   * @param {MatrixAPIMessage} event - The Matrix API message to send.
-   * @returns {undefined}
-   */
-  send(event: MatrixAPIMessage): undefined;
-}
+/**
+ * The global network instance.
+ */
+declare const network: WebSGNetworking.Network;
 
 /**
  * The global Matrix widget API instance.
  * @global {MatrixWidgetAPI} matrix
  */
-declare const matrix: MatrixWidgetAPI;
-
-interface Console {
-  /**
-   * Logs the provided data to the browser's console.
-   * @param {...any[]} data - The data to be logged.
-   * @returns {void}
-   */
-  log(...data: any[]): void;
-}
+declare const matrix: Matrix.MatrixWidgetAPI;
 
 /**
- * The global Console instance.
- * @global {Console} console
+ * The global ThirdRoom instance.
+ * @global {ThirdRoom} thirdroom
  */
-declare const console: Console;
-
-/**
- * The global scope of a WebSG script. All scripts have access to these global properties.
- *
- * @example
- * In the following example {@link WebSG.World.findNodeByName | world.findNodeByName } is used to
- * find {@link WebSG.Node | nodes } by their name defined in the associated glTF document.
- *
- * {@link WebSG.World.onload | world.onload } and {@link WebSG.World.onupdate | world.onupdate }
- * are lifecycle methods that are called when the world is loaded and updated on each frame.
- * ```js
- * world.onload = () => {
- *   const lightNode = world.findNodeByName("Light");
- *
- *   const lightSwitch = world.findNodeByName("LightSwitch");
- *   lightSwitch.addInteractable();
- *
- *   let lightOn = true;
- *
- *   world.onupdate = (dt) => {
- *     if (lightSwitch.interactable.pressed) {
- *       lightOn = !lightOn;
- *       lightNode.light.intensity = lightOn ? 20 : 0;
- *     }
- *   };
- * };
- * ```
- */
-declare interface WebSGGlobalScope {
-  /**
-   * Returns the {@link Console | console } associated with the current script.
-   * Used for logging messages to the browser's console.
-   */
-  readonly console: Console;
-
-  /**
-   * Returns the {@link WebSG.World | world } associated with the current script.
-   * Used for accessing the current world's scene graph and other world properties/methods.
-   */
-  readonly world: WebSG.World;
-
-  /**
-   * Returns the {@link ThirdRoom | thirdroom } instance associated with the current script.
-   * Used for ThirdRoom-specific properties/methods not available in the WebSG API.
-   */
-  readonly thirdroom: ThirdRoom;
-
-  /**
-   * Returns the {@link MatrixWidgetAPI | matrix } instance associated with the current script.
-   * Used for sending and receiving matrix events to and from the associated matrix room.
-   */
-  readonly matrix: MatrixWidgetAPI;
-
-  /**
-   * Returns the {@link WebSGNetworking.Network | network } instance associated with the current script.
-   * Used for sending and receiving network messages to and from other peers in the room over WebRTC.
-   */
-  readonly network: WebSGNetworking.Network;
-
-  /**
-   * Returns the {@link WebSG} namespace with associated classes and constants.
-   */
-  readonly WebSG: typeof WebSG;
-}
+declare const thirdroom: ThirdRoom.ThirdRoom;
