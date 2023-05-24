@@ -2,6 +2,8 @@
 
 In this series we'll be creating a simple basketball game using the Web Scene Graph API.
 
+<iframe width="688" height="387" src="https://www.youtube-nocookie.com/embed/VimOoGCPWWw" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+
 It will be split into 3 parts:
 
 1. Spawning custom interactable objects and the Action Bar API
@@ -12,7 +14,7 @@ It will be split into 3 parts:
 
 Create a new world using this scene.
 
-Open the editor using the `\`` key.
+Open the editor using the `` ` `` key.
 
 On the left hand side of the editor you can see the hierarchy panel.
 You can use this to select objects in the scene and inspect their properties on the right
