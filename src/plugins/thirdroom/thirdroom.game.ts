@@ -749,8 +749,14 @@ function updateCharacterController(
     return;
   }
 
-  if (toggleFlyMode.pressed) {
-    if (hasComponent(ctx.world, FlyControls, player.eid)) {
+  const flyControlEnabled = hasComponent(ctx.world, FlyControls, player.eid);
+
+  if (ctx.editorLoaded) {
+    if (!flyControlEnabled) {
+      swapToFlyPlayerRig(ctx, physics, player);
+    }
+  } else if (toggleFlyMode.pressed) {
+    if (flyControlEnabled) {
       swapToPlayerRig(ctx, physics, player);
     } else {
       swapToFlyPlayerRig(ctx, physics, player);

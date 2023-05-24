@@ -139,13 +139,13 @@ export function WorldView({ world }: WorldViewProps) {
     (e) => {
       if (isWorldEntered === false) return;
 
-      if (!camRigModule.orbiting) mainThread.canvas?.requestPointerLock();
+      if (!camRigModule.orbiting && !editorEnabled) mainThread.canvas?.requestPointerLock();
 
       if (worldChatVisible) setWorldChatVisibility(false);
       if (overlayVisible) setOverlayVisibility(false);
     },
     mainThread.canvas,
-    [isWorldEntered, worldChatVisible, setWorldChatVisibility, overlayVisible, setOverlayVisibility]
+    [isWorldEntered, worldChatVisible, setWorldChatVisibility, overlayVisible, setOverlayVisibility, editorEnabled]
   );
 
   useEffect(() => {

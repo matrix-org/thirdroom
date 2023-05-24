@@ -45,6 +45,7 @@ import { RemoteNode } from "../resource/RemoteResources";
  *********/
 
 export interface EditorModuleState {
+  editorLoaded: boolean;
   activeEntity: number;
   activeEntityChanged: boolean;
   editorStateBufferView: ObjectBufferView<typeof editorStateSchema, ArrayBuffer>;
@@ -66,6 +67,7 @@ export const EditorModule = defineModule<GameState, EditorModuleState>({
     });
 
     return {
+      editorLoaded: false,
       activeEntity: NOOP,
       activeEntityChanged: false,
       editorStateBufferView,
@@ -105,6 +107,7 @@ const selectedExitQuery = exitQuery(selectedQuery);
 export function onLoadEditor(ctx: GameState) {
   const editor = getModule(ctx, EditorModule);
 
+  editor.editorLoaded = true;
   ctx.editorLoaded = true;
 
   ctx.sendMessage<EditorLoadedMessage>(Thread.Main, {
@@ -115,6 +118,8 @@ export function onLoadEditor(ctx: GameState) {
 }
 
 export function onDisposeEditor(ctx: GameState) {
+  const editor = getModule(ctx, EditorModule);
+  editor.editorLoaded = true;
   ctx.editorLoaded = false;
 }
 

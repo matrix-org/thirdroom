@@ -12,6 +12,8 @@ import {
 import { createInputRingBuffer, enqueueInputRingBuffer, InputRingBuffer, RING_BUFFER_MAX } from "./RingBuffer";
 import { CameraRigModule } from "../../plugins/camera/CameraRig.main";
 import { createObjectTripleBuffer, getWriteObjectBufferView } from "../allocator/ObjectBufferView";
+import { ndcX, ndcY } from "../utils/cords";
+import { EditorModule } from "../editor/editor.main";
 
 /*********
  * Types *
@@ -57,6 +59,7 @@ export const InputModule = defineModule<IMainThreadContext, MainInputModule>({
     };
   },
   init(ctx) {
+    const editorModule = getModule(ctx, EditorModule);
     const inputModule = getModule(ctx, InputModule);
     const { inputRingBuffer: irb } = inputModule;
     const camRigModule = getModule(ctx, CameraRigModule);
@@ -80,6 +83,14 @@ export const InputModule = defineModule<IMainThreadContext, MainInputModule>({
 
       const orbiting = camRigModule.orbiting;
       const pointerLocked = document.pointerLockElement !== null;
+
+      if (
+        editorModule.editorLoaded &&
+        inputSourceId === InputSourceId.Mouse &&
+        componentId === InputComponentId.MouseButtons
+      ) {
+        enqueueInputRingBuffer(irb, inputSourceId, componentId, button, xAxis, yAxis, zAxis, wAxis, state);
+      }
       if (!pointerLocked && !orbiting) {
         return;
       }
@@ -137,8 +148,8 @@ export const InputModule = defineModule<IMainThreadContext, MainInputModule>({
 
     function onMouseMove({ movementX, movementY, clientX, clientY }: MouseEvent) {
       const writeView = getWriteObjectBufferView(inputModule.screenSpaceMouseCoords);
-      writeView.coords[0] = (clientX / canvas.clientWidth) * 2 - 1;
-      writeView.coords[1] = (clientY / canvas.clientHeight) * 2 - 1;
+      writeView.coords[0] = ndcX(clientX, canvas.clientWidth);
+      writeView.coords[1] = ndcY(clientY, canvas.clientHeight);
       enqueue(InputSourceId.Mouse, InputComponentId.MouseMovement, 0, movementX, movementY, clientX, clientY, 0);
     }
 
