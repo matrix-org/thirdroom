@@ -8,7 +8,7 @@ import {
   removeQuery,
 } from "bitecs";
 import { BoxGeometry } from "three";
-import { vec2, vec4 } from "gl-matrix";
+import { mat4, vec2, vec3, vec4, quat } from "gl-matrix";
 import RAPIER from "@dimforge/rapier3d-compat";
 
 import { Collision, GameState } from "../GameTypes";
@@ -101,6 +101,8 @@ import { addInteractableComponent } from "../../plugins/interaction/interaction.
 import { addUIElementChild, initNodeUICanvas, removeUIElementChild } from "../ui/ui.game";
 import { startOrbit, stopOrbit } from "../../plugins/camera/CameraRig.game";
 import { GLTFComponentPropertyStorageTypeToEnum, setComponentStore } from "../resource/ComponentStore";
+import { getPrimaryInputSourceNode } from "../input/input.game";
+import { getRotationNoAlloc } from "../utils/getRotationNoAlloc";
 
 function getScriptChildCount(wasmCtx: WASMModuleContext, node: RemoteNode | RemoteScene): number {
   const resourceIds = wasmCtx.resourceManager.resourceIds;
@@ -401,7 +403,11 @@ interface MeshPrimitiveProps {
   mode: MeshPrimitiveMode;
 }
 
-const tempVec3 = new RAPIER.Vector3(0, 0, 0);
+const tempRapierVec3 = new RAPIER.Vector3(0, 0, 0);
+
+const tempVec3 = vec3.create();
+const tempDirection = vec3.create();
+const tempQuat = quat.create();
 
 // TODO: ResourceManager should have a resourceMap that corresponds to just its owned resources
 // TODO: ResourceManager should have a resourceByType that corresponds to just its owned resources
@@ -1381,6 +1387,24 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       return 1;
     },
+    node_set_forward_direction(nodeId: number, directionPtr: number) {
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+      if (!node) {
+        return -1;
+      }
+
+      readFloat32ArrayInto(wasmCtx, directionPtr, tempVec3 as Float32Array);
+      vec3.normalize(tempVec3, tempVec3);
+
+      vec3.set(tempDirection, 0, 0, -1);
+      vec3.transformQuat(tempDirection, tempDirection, node.quaternion);
+
+      quat.rotationTo(tempQuat, tempDirection, tempVec3);
+      quat.multiply(node.quaternion, node.quaternion, tempQuat);
+
+      return 0;
+    },
     world_stop_orbit() {
       stopOrbit(ctx);
       return 1;
@@ -2132,9 +2156,9 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       }
 
       moveCursorView(wasmCtx.cursorView, impulsePtr);
-      tempVec3.x = readFloat32(wasmCtx.cursorView);
-      tempVec3.y = readFloat32(wasmCtx.cursorView);
-      tempVec3.z = readFloat32(wasmCtx.cursorView);
+      tempRapierVec3.x = readFloat32(wasmCtx.cursorView);
+      tempRapierVec3.y = readFloat32(wasmCtx.cursorView);
+      tempRapierVec3.z = readFloat32(wasmCtx.cursorView);
 
       const body = RigidBody.store.get(node.eid);
 
@@ -2142,7 +2166,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
         return -1;
       }
 
-      body.applyImpulse(tempVec3, true);
+      body.applyImpulse(tempRapierVec3, true);
 
       return 0;
     },
@@ -3619,6 +3643,18 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       uiElement.text.color[index] = value;
 
       return 0;
+    },
+    get_primary_input_source_origin_element(index: number) {
+      const node = getPrimaryInputSourceNode(ctx);
+      mat4.getTranslation(tempVec3, node.worldMatrix);
+      return tempVec3[index] || 0;
+    },
+    get_primary_input_source_direction_element(index: number) {
+      const node = getPrimaryInputSourceNode(ctx);
+      getRotationNoAlloc(tempQuat, node.worldMatrix);
+      vec3.set(tempVec3, 0, 0, -1);
+      vec3.transformQuat(tempVec3, tempVec3, tempQuat);
+      return tempVec3[index] || 0;
     },
   };
 

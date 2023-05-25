@@ -28,7 +28,9 @@
 #include "./ui-element-iterator.h"
 #include "./ui-text.h"
 #include "./ui-button.h"
+#include "./vector2.h"
 #include "./vector3.h"
+#include "./vector4.h"
 #include "./world.h"
 #include "./component-store.h"
 #include "./component.h"
@@ -63,7 +65,9 @@ void js_define_websg_api(JSContext *ctx) {
   js_websg_define_ui_element_iterator(ctx);
   js_websg_define_ui_text(ctx, websg);
   js_websg_define_ui_button(ctx, websg);
+  js_websg_define_vector2(ctx, websg);
   js_websg_define_vector3(ctx, websg);
+  js_websg_define_vector4(ctx, websg);
   js_websg_define_world(ctx, websg);
   js_websg_define_query(ctx, websg);
   js_websg_define_component(ctx, websg);
