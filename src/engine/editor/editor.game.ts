@@ -7,6 +7,9 @@ import {
   hasComponent,
   removeComponent,
 } from "bitecs";
+import RAPIER from "@dimforge/rapier3d-compat";
+import { vec3 } from "gl-matrix";
+import { Vector3 } from "three";
 
 import { GameState } from "../GameTypes";
 import { traverse } from "../component/transform";
@@ -39,6 +42,12 @@ import { NOOP } from "../config.common";
 import { addLayer, Layer, removeLayer } from "../node/node.common";
 import { getRemoteResource, RemoteResourceTypes, tryGetRemoteResource } from "../resource/resource.game";
 import { RemoteNode } from "../resource/RemoteResources";
+import { disableActionMap, enableActionMap } from "../input/ActionMappingSystem";
+import { ActionMap, ActionType, BindingType, ButtonActionState } from "../input/ActionMap";
+import { InputModule } from "../input/input.game";
+import { flyControlsQuery } from "../../plugins/FlyCharacterController";
+import { getCamera } from "../camera/camera.game";
+import { RigidBody } from "../physics/physics.game";
 
 /*********
  * Types *
@@ -50,7 +59,26 @@ export interface EditorModuleState {
   activeEntityChanged: boolean;
   editorStateBufferView: ObjectBufferView<typeof editorStateSchema, ArrayBuffer>;
   editorStateTripleBuffer: EditorStateTripleBuffer;
+  anchorEntity: number;
 }
+
+const editorActionMap: ActionMap = {
+  id: "editor-action-map",
+  actionDefs: [
+    {
+      id: "anchorCamera",
+      path: "anchorCamera",
+      type: ActionType.Button,
+      bindings: [
+        {
+          type: BindingType.Button,
+          path: "Keyboard/KeyF",
+        },
+      ],
+      networked: true,
+    },
+  ],
+};
 
 /******************
  * Initialization *
@@ -72,10 +100,15 @@ export const EditorModule = defineModule<GameState, EditorModuleState>({
       activeEntityChanged: false,
       editorStateBufferView,
       editorStateTripleBuffer,
+      anchorEntity: NOOP,
     };
   },
   init(ctx) {
-    return createDisposables([
+    const input = getModule(ctx, InputModule);
+
+    enableActionMap(input.activeController, editorActionMap);
+
+    const dispose = createDisposables([
       registerMessageHandler(ctx, EditorMessageType.LoadEditor, onLoadEditor),
       registerMessageHandler(ctx, EditorMessageType.DisposeEditor, onDisposeEditor),
       registerMessageHandler(ctx, EditorMessageType.SetSelectedEntity, onSetSelectedEntity),
@@ -88,6 +121,10 @@ export const EditorModule = defineModule<GameState, EditorModuleState>({
       registerMessageHandler(ctx, EditorMessageType.SetRefProperty, onSetRefProperty),
       registerMessageHandler(ctx, EditorMessageType.SetRefArrayProperty, onSetRefArrayProperty),
     ]);
+    return () => {
+      disableActionMap(input.activeController, editorActionMap);
+      dispose();
+    };
   },
 });
 
@@ -223,11 +260,58 @@ function onSetRefArrayProperty(ctx: GameState, message: SetRefArrayPropertyMessa
  * Systems *
  ***********/
 
+function moveCharacterToAnchor(
+  ctx: GameState,
+  body: RAPIER.RigidBody,
+  anchor: RemoteNode,
+  playerRig: RemoteNode,
+  camera: RemoteNode
+) {
+  const posVec = anchor.position;
+
+  const charPos = vec3.create();
+
+  vec3.set(charPos, posVec[0], posVec[1], posVec[2]);
+
+  vec3.set(playerRig.position, charPos[0], charPos[1], charPos[2]);
+  vec3.set(camera.position, charPos[0], charPos[1], charPos[2]);
+
+  const _p = new Vector3();
+  _p.fromArray(playerRig.position);
+  body.setNextKinematicTranslation(_p);
+}
+
 export function EditorStateSystem(ctx: GameState) {
   const editor = getModule(ctx, EditorModule);
 
   if (!ctx.editorLoaded) {
     return;
+  }
+
+  const { activeController } = getModule(ctx, InputModule);
+  const anchorBtn = activeController.actionStates.get("anchorCamera") as ButtonActionState;
+
+  const anchorCameraToActiveEntity = anchorBtn.pressed;
+  if (anchorCameraToActiveEntity && editor.activeEntity) {
+    editor.anchorEntity = editor.activeEntity;
+
+    const anchorEntity = getRemoteResource<RemoteNode>(ctx, editor.anchorEntity);
+    if (typeof anchorEntity === "object" && "position" in anchorEntity) {
+      const ents = flyControlsQuery(ctx.world);
+
+      for (let i = 0; i < ents.length; i++) {
+        const playerRigEid = ents[i];
+        const playerRig = tryGetRemoteResource<RemoteNode>(ctx, playerRigEid);
+        const camera = getCamera(ctx, playerRig);
+
+        const body = RigidBody.store.get(playerRigEid);
+
+        if (!body) {
+          throw new Error("rigidbody not found on eid " + playerRigEid);
+        }
+        moveCharacterToAnchor(ctx, body, anchorEntity, playerRig, camera);
+      }
+    }
   }
 
   // Update editor state and hierarchy triple buffers

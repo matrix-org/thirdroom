@@ -580,7 +580,7 @@ export function PropertiesPanel({ className, resource }: PropertiesPanelProps) {
       <EditorHeader className="shrink-0 flex items-center gap-xxs" style={{ padding: "0 var(--sp-xs)" }}>
         <Icon color="surface" size="sm" src={CircleIC} />
         <Text className="grow truncate" variant="b2" weight="semi-bold">
-          {resource.name ?? "Unnamed"}
+          {`${resource.name ?? "Unnamed"} - ${resource.eid}`}
         </Text>
         {editorState.activeEntityHistorySize > 0 && (
           <>

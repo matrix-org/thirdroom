@@ -84,13 +84,15 @@ export const InputModule = defineModule<IMainThreadContext, MainInputModule>({
       const orbiting = camRigModule.orbiting;
       const pointerLocked = document.pointerLockElement !== null;
 
+      // Allow editor specific inputs without pointerLocked
       if (
         editorModule.editorLoaded &&
-        inputSourceId === InputSourceId.Mouse &&
-        componentId === InputComponentId.MouseButtons
+        ((inputSourceId === InputSourceId.Mouse && componentId === InputComponentId.MouseButtons) ||
+          state === codeToKeyCode("KeyF"))
       ) {
         enqueueInputRingBuffer(irb, inputSourceId, componentId, button, xAxis, yAxis, zAxis, wAxis, state);
       }
+
       if (!pointerLocked && !orbiting) {
         return;
       }
