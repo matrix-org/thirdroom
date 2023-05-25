@@ -102,6 +102,7 @@ export interface ResourceModuleState {
   disposedResourcesQueue: number[];
   disposeRefCounts: Map<number, number>;
   deferredRemovals: ResourceRingBufferItem[];
+  nextResourceManagerId: number;
 }
 
 interface ResourceInfo {
@@ -170,6 +171,7 @@ export const ResourceModule = defineModule<GameState, ResourceModuleState>({
       disposedResourcesQueue: [],
       disposeRefCounts: new Map(),
       deferredRemovals: [],
+      nextResourceManagerId: 0,
     };
   },
   init(ctx) {
@@ -212,7 +214,7 @@ export const ResourceModule = defineModule<GameState, ResourceModuleState>({
       registerResource(ctx, RemoteWorld),
     ]);
 
-    ctx.resourceManager = createRemoteResourceManager(ctx);
+    ctx.resourceManager = createRemoteResourceManager(ctx, "global");
 
     ctx.worldResource = new RemoteWorld(ctx.resourceManager, {
       persistentScene: new RemoteScene(ctx.resourceManager, {
@@ -224,10 +226,11 @@ export const ResourceModule = defineModule<GameState, ResourceModuleState>({
   },
 });
 
-export function createRemoteResourceManager(ctx: GameState): RemoteResourceManager {
+export function createRemoteResourceManager(ctx: GameState, id: string): RemoteResourceManager {
   const resourceModule = getModule(ctx, ResourceModule);
 
   return {
+    id,
     ctx,
     resourceIds: new Set(),
     gltfCache: new Map(),
@@ -246,7 +249,7 @@ export function createRemoteResourceManager(ctx: GameState): RemoteResourceManag
     nextCollisionListenerId: 1,
     actionBarListeners: [],
     nextActionBarListenerId: 1,
-    replicators: [],
+    replicators: new Map(),
     nextReplicatorId: 1,
     matrixListening: false,
     inboundMatrixWidgetMessages: [],

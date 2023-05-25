@@ -1,3 +1,4 @@
+import { RemoteResourceManager } from "../GameTypes";
 import { GameNetworkState } from "./network.game";
 
 export interface Replication {
@@ -8,22 +9,30 @@ export interface Replication {
 }
 
 export interface Replicator {
+  id: number;
+  prefabName: string;
   spawned: Replication[];
   despawned: Replication[];
   deferredUpdates: { nid: number; position: Float32Array; quaternion: Float32Array }[];
   eidToData: Map<number, ArrayBuffer>;
 }
 
-export const createReplicator = (network: GameNetworkState, prefab: string) => {
-  const spawned: Replication[] = [];
-  const despawned: Replication[] = [];
+export const createReplicator = (network: GameNetworkState, resourceManager: RemoteResourceManager) => {
+  const id = resourceManager.nextReplicatorId++;
+  const prefabName = `replicator-${resourceManager.id}-${id}`;
+
   const replicator: Replicator = {
-    spawned,
-    despawned,
+    id,
+    prefabName,
+    spawned: [],
+    despawned: [],
     eidToData: new Map(),
     deferredUpdates: [],
   };
-  network.prefabToReplicator.set(prefab, replicator);
+
+  network.prefabToReplicator.set(prefabName, replicator);
+  resourceManager.replicators.set(id, replicator);
+
   return replicator;
 };
 

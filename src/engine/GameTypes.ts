@@ -37,6 +37,7 @@ export interface NetworkListener {
 }
 
 export interface RemoteResourceManager {
+  id: string;
   ctx: GameState;
   resourceIds: Set<number>;
   resourceMap: Map<number, string | ArrayBuffer | RemoteResource>;
@@ -55,7 +56,7 @@ export interface RemoteResourceManager {
   nextCollisionListenerId: number;
   actionBarListeners: ActionBarListener[];
   nextActionBarListenerId: number;
-  replicators: Replicator[];
+  replicators: Map<number, Replicator>;
   nextReplicatorId: number;
   matrixListening: boolean;
   inboundMatrixWidgetMessages: Uint8Array[];

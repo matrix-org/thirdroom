@@ -333,12 +333,8 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
       }
     },
     define_replicator: () => {
-      const replicatorId = wasmCtx.resourceManager.nextReplicatorId++;
-      const prefabName = `replicator-${replicatorId}`;
-      const replicator = createReplicator(network, prefabName);
-      network.prefabToReplicator.set(prefabName, replicator);
-      wasmCtx.resourceManager.replicators.push(replicator);
-      return replicatorId;
+      const replicator = createReplicator(network, wasmCtx.resourceManager);
+      return replicator.id;
     },
     node_add_network_component: (nodeId: number, nid: number) => {
       addComponent(ctx.world, Networked, nodeId, true);
@@ -347,14 +343,14 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
       return 0;
     },
     replicator_apply_deferred_updates: (replicatorId: number, nodeId: number, nid: number) => {
-      const prefabName = `replicator-${replicatorId}`;
-      const replicator = network.prefabToReplicator.get(prefabName);
       const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
 
       if (!node) {
         console.error("Undefined node.");
         return -1;
       }
+
+      const replicator = wasmCtx.resourceManager.replicators.get(replicatorId);
 
       if (!replicator) {
         console.error("Undefined replicator.");
@@ -375,8 +371,7 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
       return 0;
     },
     replicator_spawned_count: (replicatorId: number) => {
-      const prefabName = `replicator-${replicatorId}`;
-      const replicator = network.prefabToReplicator.get(prefabName);
+      const replicator = wasmCtx.resourceManager.replicators.get(replicatorId);
 
       if (!replicator) {
         console.error("Undefined replicator.");
@@ -386,8 +381,7 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
       return replicator.spawned.length;
     },
     replicator_despawned_count: (replicatorId: number) => {
-      const prefabName = `replicator-${replicatorId}`;
-      const replicator = network.prefabToReplicator.get(prefabName);
+      const replicator = wasmCtx.resourceManager.replicators.get(replicatorId);
 
       if (!replicator) {
         console.error("Undefined replicator.");
@@ -397,14 +391,14 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
       return replicator.despawned.length;
     },
     replicator_spawn_local: (replicatorId: number, nodeId: number, packetPtr: number, byteLength: number) => {
-      const prefabName = `replicator-${replicatorId}`;
-      const replicator = network.prefabToReplicator.get(prefabName);
+      const replicator = wasmCtx.resourceManager.replicators.get(replicatorId);
+
       if (!replicator) {
         console.error("Undefined replicator.");
         return -1;
       }
 
-      addPrefabComponent(ctx.world, nodeId, prefabName);
+      addPrefabComponent(ctx.world, nodeId, replicator.prefabName);
       addComponent(ctx.world, Networked, nodeId);
       addComponent(ctx.world, Owned, nodeId);
 
@@ -428,8 +422,8 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
       return 0;
     },
     replicator_despawn_local: (replicatorId: number, nodeId: number, packetPtr: number, byteLength: number) => {
-      const prefabName = `replicator-${replicatorId}`;
-      const replicator = network.prefabToReplicator.get(prefabName);
+      const replicator = wasmCtx.resourceManager.replicators.get(replicatorId);
+
       if (!replicator) {
         console.error("Undefined replicator.");
         return -1;
@@ -456,8 +450,7 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
     },
     replicator_get_spawned_message_info: (replicatorId: number, infoPtr: number) => {
       try {
-        const prefabName = `replicator-${replicatorId}`;
-        const replicator = network.prefabToReplicator.get(prefabName);
+        const replicator = wasmCtx.resourceManager.replicators.get(replicatorId);
 
         if (!replicator) {
           moveCursorView(wasmCtx.cursorView, infoPtr);
@@ -502,8 +495,7 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
     },
     replicator_get_despawned_message_info: (replicatorId: number, infoPtr: number) => {
       try {
-        const prefabName = `replicator-${replicatorId}`;
-        const replicator = network.prefabToReplicator.get(prefabName);
+        const replicator = wasmCtx.resourceManager.replicators.get(replicatorId);
 
         if (!replicator) {
           moveCursorView(wasmCtx.cursorView, infoPtr);
@@ -547,8 +539,8 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
       }
     },
     replicator_spawn_shift: (replicatorId: number) => {
-      const prefabName = `replicator-${replicatorId}`;
-      const replicator = network.prefabToReplicator.get(prefabName);
+      const replicator = wasmCtx.resourceManager.replicators.get(replicatorId);
+
       if (!replicator) {
         console.error("Error shifting replicator spawn queue, replicator not found");
         return -1;
@@ -559,8 +551,8 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
       return 0;
     },
     replicator_despawn_shift: (replicatorId: number) => {
-      const prefabName = `replicator-${replicatorId}`;
-      const replicator = network.prefabToReplicator.get(prefabName);
+      const replicator = wasmCtx.resourceManager.replicators.get(replicatorId);
+
       if (!replicator) {
         console.error("Error shifting replicator despawn queue, replicator not found");
         return -1;
@@ -572,8 +564,7 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
     },
     replicator_spawn_receive: (replicatorId: number, packetPtr: number, maxBufLength: number) => {
       try {
-        const prefabName = `replicator-${replicatorId}`;
-        const replicator = network.prefabToReplicator.get(prefabName);
+        const replicator = wasmCtx.resourceManager.replicators.get(replicatorId);
 
         if (!replicator) {
           console.error(`WebSGNetworking: replicator ${replicatorId} does not exist or has been closed.`);
@@ -619,8 +610,7 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
     },
     replicator_despawn_receive: (replicatorId: number, packetPtr: number, maxBufLength: number) => {
       try {
-        const prefabName = `replicator-${replicatorId}`;
-        const replicator = network.prefabToReplicator.get(prefabName);
+        const replicator = wasmCtx.resourceManager.replicators.get(replicatorId);
 
         if (!replicator) {
           console.error(`WebSGNetworking: replicator ${replicatorId} does not exist or has been closed.`);
@@ -667,7 +657,7 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
   const disposeNetworkModule = () => {
     wasmCtx.resourceManager.networkListeners.length = 0;
     wasmCtx.resourceManager.nextNetworkListenerId = 1;
-    wasmCtx.resourceManager.replicators.length = 0;
+    wasmCtx.resourceManager.replicators.clear();
     wasmCtx.resourceManager.nextReplicatorId = 1;
   };
 
