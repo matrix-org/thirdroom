@@ -389,219 +389,223 @@ JSClassID js_websg_define_component_instance(
   JSValue component_instance_proto = JS_NewObject(ctx);
   JSValue component_proto = JS_GetClassProto(ctx, js_websg_component_class_id);
 
-  JSCFunctionListEntry *function_list = js_mallocz(ctx, sizeof(JSCFunctionListEntry) * prop_count);
-
   int32_t byte_offset = 0;
+  uint32_t *prop_byte_offsets_arr = NULL;
 
-  uint32_t *prop_byte_offsets_arr = js_mallocz(ctx, sizeof(uint32_t) * prop_count);
+  if (prop_count > 0) {
+    JSCFunctionListEntry *function_list = js_mallocz(ctx, sizeof(JSCFunctionListEntry) * prop_count);
 
-  for (int32_t i = 0; i < prop_count; i++) {
-    uint32_t prop_name_length = websg_component_definition_get_prop_name_length(component_id, i);
+    prop_byte_offsets_arr = js_mallocz(ctx, sizeof(uint32_t) * prop_count);
 
-    if (prop_name_length == 0) {
-      JS_ThrowInternalError(ctx, "Failed to get prop name length");
-      return 0;
-    }
+    for (int32_t i = 0; i < prop_count; i++) {
+      uint32_t prop_name_length = websg_component_definition_get_prop_name_length(component_id, i);
 
-    const char *prop_name = js_mallocz(ctx, sizeof(char) * prop_name_length);
-
-    if (websg_component_definition_get_prop_name(component_id, i, prop_name, prop_name_length) == -1) {
-      JS_ThrowInternalError(ctx, "Failed to get prop name");
-      return 0;
-    }
-
-    uint32_t prop_type_length = websg_component_definition_get_prop_type_length(component_id, i);
-
-    if (prop_type_length == 0) {
-      JS_ThrowInternalError(ctx, "Failed to get prop type length");
-      return 0;
-    }
-
-    const char *prop_type = js_mallocz(ctx, sizeof(char) * prop_type_length);
-
-    if (websg_component_definition_get_prop_type(component_id, i, prop_type, prop_type_length) == -1) {
-      JS_ThrowInternalError(ctx, "Failed to get prop type");
-      return 0;
-    }
-
-    const char *ref_type;
-
-    if (strcmp(prop_type, "ref") == 0) {
-      uint32_t ref_type_length = websg_component_definition_get_ref_type_length(component_id, i);
-
-      if (ref_type_length == 0) {
-        JS_ThrowInternalError(ctx, "Failed to get ref type length");
+      if (prop_name_length == 0) {
+        JS_ThrowInternalError(ctx, "Failed to get prop name length");
         return 0;
       }
 
-      const char *ref_type = js_mallocz(ctx, sizeof(char) * ref_type_length);
+      const char *prop_name = js_mallocz(ctx, sizeof(char) * prop_name_length);
 
-      if (websg_component_definition_get_ref_type(component_id, i, ref_type, ref_type_length) == -1) {
-        JS_ThrowInternalError(ctx, "Failed to get ref type");
+      if (websg_component_definition_get_prop_name(component_id, i, prop_name, prop_name_length) == -1) {
+        JS_ThrowInternalError(ctx, "Failed to get prop name");
         return 0;
       }
-    } else {
-      ref_type = NULL;
-    }
 
-    ComponentPropStorageType storage_type = websg_component_definition_get_prop_storage_type(component_id, i);
+      uint32_t prop_type_length = websg_component_definition_get_prop_type_length(component_id, i);
 
-    if (storage_type == -1) {
-      JS_ThrowInternalError(ctx, "Failed to get prop storage type");
-      return 0;
-    }
+      if (prop_type_length == 0) {
+        JS_ThrowInternalError(ctx, "Failed to get prop type length");
+        return 0;
+      }
 
-    int32_t prop_size = websg_component_definition_get_prop_size(component_id, i);
+      const char *prop_type = js_mallocz(ctx, sizeof(char) * prop_type_length);
 
-    if (prop_size < 1) {
-      JS_ThrowInternalError(ctx, "Failed to get prop size");
-      return 0;
-    }
+      if (websg_component_definition_get_prop_type(component_id, i, prop_type, prop_type_length) == -1) {
+        JS_ThrowInternalError(ctx, "Failed to get prop type");
+        return 0;
+      }
 
-    // All props are 4 byte aligned
-    int32_t prop_byte_length = 4 * prop_size;
-    int32_t store_byte_length = prop_byte_length * component_store_size;
+      const char *ref_type;
 
-    JSCFunctionListEntry entry;
+      if (strcmp(prop_type, "ref") == 0) {
+        uint32_t ref_type_length = websg_component_definition_get_ref_type_length(component_id, i);
 
-    if (prop_size == 1) {
-      if (strcmp(prop_type, "bool") == 0) {
-        entry = (JSCFunctionListEntry)JS_CGETSET_MAGIC_DEF(
-          prop_name,
-          js_websg_component_get_bool_prop,
-          js_websg_component_set_bool_prop,
-          i
-        );
-      } else if (strcmp(prop_type, "i32") == 0) {
-        entry = (JSCFunctionListEntry)JS_CGETSET_MAGIC_DEF(
-          prop_name,
-          js_websg_component_get_i32_prop,
-          js_websg_component_set_i32_prop,
-          i
-        );
-      } else if (strcmp(prop_type, "f32") == 0) {
-        entry = (JSCFunctionListEntry)JS_CGETSET_MAGIC_DEF(
-          prop_name,
-          js_websg_component_get_f32_prop,
-          js_websg_component_set_f32_prop,
-          i
-        );
-      } else if (strcmp(prop_type, "ref") == 0) {
-        if (strcmp(ref_type, "node") == 0) {
+        if (ref_type_length == 0) {
+          JS_ThrowInternalError(ctx, "Failed to get ref type length");
+          return 0;
+        }
+
+        const char *ref_type = js_mallocz(ctx, sizeof(char) * ref_type_length);
+
+        if (websg_component_definition_get_ref_type(component_id, i, ref_type, ref_type_length) == -1) {
+          JS_ThrowInternalError(ctx, "Failed to get ref type");
+          return 0;
+        }
+      } else {
+        ref_type = NULL;
+      }
+
+      ComponentPropStorageType storage_type = websg_component_definition_get_prop_storage_type(component_id, i);
+
+      if (storage_type == -1) {
+        JS_ThrowInternalError(ctx, "Failed to get prop storage type");
+        return 0;
+      }
+
+      int32_t prop_size = websg_component_definition_get_prop_size(component_id, i);
+
+      if (prop_size < 1) {
+        JS_ThrowInternalError(ctx, "Failed to get prop size");
+        return 0;
+      }
+
+      // All props are 4 byte aligned
+      int32_t prop_byte_length = 4 * prop_size;
+      int32_t store_byte_length = prop_byte_length * component_store_size;
+
+      JSCFunctionListEntry entry;
+
+      if (prop_size == 1) {
+        if (strcmp(prop_type, "bool") == 0) {
           entry = (JSCFunctionListEntry)JS_CGETSET_MAGIC_DEF(
             prop_name,
-            js_websg_component_get_node_ref_prop,
-            js_websg_component_set_node_ref_prop,
+            js_websg_component_get_bool_prop,
+            js_websg_component_set_bool_prop,
+            i
+          );
+        } else if (strcmp(prop_type, "i32") == 0) {
+          entry = (JSCFunctionListEntry)JS_CGETSET_MAGIC_DEF(
+            prop_name,
+            js_websg_component_get_i32_prop,
+            js_websg_component_set_i32_prop,
+            i
+          );
+        } else if (strcmp(prop_type, "f32") == 0) {
+          entry = (JSCFunctionListEntry)JS_CGETSET_MAGIC_DEF(
+            prop_name,
+            js_websg_component_get_f32_prop,
+            js_websg_component_set_f32_prop,
+            i
+          );
+        } else if (strcmp(prop_type, "ref") == 0) {
+          if (strcmp(ref_type, "node") == 0) {
+            entry = (JSCFunctionListEntry)JS_CGETSET_MAGIC_DEF(
+              prop_name,
+              js_websg_component_get_node_ref_prop,
+              js_websg_component_set_node_ref_prop,
+              i
+            );
+          } else {
+            JS_ThrowInternalError(ctx, "Unknown ref type.");
+            return 0;
+          }
+        } else if (storage_type == ComponentPropStorageType_i32) {
+          entry = (JSCFunctionListEntry)JS_CGETSET_MAGIC_DEF(
+            prop_name,
+            js_websg_component_get_i32_prop,
+            js_websg_component_set_i32_prop,
+            i
+          );
+        } else if (storage_type == ComponentPropStorageType_u32) {
+          entry = (JSCFunctionListEntry)JS_CGETSET_MAGIC_DEF(
+            prop_name,
+            js_websg_component_get_u32_prop,
+            js_websg_component_set_u32_prop,
+            i
+          );
+        } else if (storage_type == ComponentPropStorageType_f32) {
+          entry = (JSCFunctionListEntry)JS_CGETSET_MAGIC_DEF(
+            prop_name,
+            js_websg_component_get_f32_prop,
+            js_websg_component_set_f32_prop,
             i
           );
         } else {
-          JS_ThrowInternalError(ctx, "Unknown ref type.");
+          JS_ThrowInternalError(ctx, "Invalid prop storage type");
           return 0;
         }
-      } else if (storage_type == ComponentPropStorageType_i32) {
-        entry = (JSCFunctionListEntry)JS_CGETSET_MAGIC_DEF(
-          prop_name,
-          js_websg_component_get_i32_prop,
-          js_websg_component_set_i32_prop,
-          i
-        );
-      } else if (storage_type == ComponentPropStorageType_u32) {
-        entry = (JSCFunctionListEntry)JS_CGETSET_MAGIC_DEF(
-          prop_name,
-          js_websg_component_get_u32_prop,
-          js_websg_component_set_u32_prop,
-          i
-        );
-      } else if (storage_type == ComponentPropStorageType_f32) {
-        entry = (JSCFunctionListEntry)JS_CGETSET_MAGIC_DEF(
-          prop_name,
-          js_websg_component_get_f32_prop,
-          js_websg_component_set_f32_prop,
-          i
-        );
       } else {
-        JS_ThrowInternalError(ctx, "Invalid prop storage type");
-        return 0;
+        if (strcmp(prop_type, "vec2") == 0) {
+          entry = (JSCFunctionListEntry)JS_CGETSET_MAGIC_DEF(
+            prop_name,
+            js_websg_component_get_vec2_prop,
+            NULL,
+            i
+          );
+        } else if (strcmp(prop_type, "vec3") == 0) {
+          entry = (JSCFunctionListEntry)JS_CGETSET_MAGIC_DEF(
+            prop_name,
+            js_websg_component_get_vec3_prop,
+            NULL,
+            i
+          );
+        } else if (strcmp(prop_type, "vec4") == 0) {
+          entry = (JSCFunctionListEntry)JS_CGETSET_MAGIC_DEF(
+            prop_name,
+            js_websg_component_get_vec4_prop,
+            NULL,
+            i
+          );
+        } else if (strcmp(prop_type, "rgb") == 0) {
+          entry = (JSCFunctionListEntry)JS_CGETSET_MAGIC_DEF(
+            prop_name,
+            js_websg_component_get_rgb_prop,
+            NULL,
+            i
+          );
+        } else if (strcmp(prop_type, "rgba") == 0) {
+          entry = (JSCFunctionListEntry)JS_CGETSET_MAGIC_DEF(
+            prop_name,
+            js_websg_component_get_rgba_prop,
+            NULL,
+            i
+          );
+        // TODO: Figure out how to handle typed arrays with size defined by prop size.
+        // } else if (storage_type == ComponentPropStorageType_i32) {
+        //   js_websg_define_component_i32_array_prop(
+        //     ctx,
+        //     component_instance_proto,
+        //     prop_name,
+        //     byte_offset,
+        //     prop_size
+        //   );
+        // } else if (storage_type == ComponentPropStorageType_u32) {
+        //   js_websg_define_component_u32_array_prop(
+        //     ctx,
+        //     component_instance_proto,
+        //     prop_name,
+        //     byte_offset,
+        //     prop_size
+        //   );
+        // } else if (storage_type == ComponentPropStorageType_f32) {
+        //   js_websg_define_component_f32_array_prop(
+        //     ctx,
+        //     component_instance_proto,
+        //     prop_name,
+        //     byte_offset,
+        //     prop_size
+        //   );
+        } else {
+          JS_ThrowInternalError(ctx, "Invalid prop storage type");
+          return 0;
+        }
       }
-    } else {
-      if (strcmp(prop_type, "vec2") == 0) {
-        entry = (JSCFunctionListEntry)JS_CGETSET_MAGIC_DEF(
-          prop_name,
-          js_websg_component_get_vec2_prop,
-          NULL,
-          i
-        );
-      } else if (strcmp(prop_type, "vec3") == 0) {
-        entry = (JSCFunctionListEntry)JS_CGETSET_MAGIC_DEF(
-          prop_name,
-          js_websg_component_get_vec3_prop,
-          NULL,
-          i
-        );
-      } else if (strcmp(prop_type, "vec4") == 0) {
-        entry = (JSCFunctionListEntry)JS_CGETSET_MAGIC_DEF(
-          prop_name,
-          js_websg_component_get_vec4_prop,
-          NULL,
-          i
-        );
-      } else if (strcmp(prop_type, "rgb") == 0) {
-        entry = (JSCFunctionListEntry)JS_CGETSET_MAGIC_DEF(
-          prop_name,
-          js_websg_component_get_rgb_prop,
-          NULL,
-          i
-        );
-      } else if (strcmp(prop_type, "rgba") == 0) {
-        entry = (JSCFunctionListEntry)JS_CGETSET_MAGIC_DEF(
-          prop_name,
-          js_websg_component_get_rgba_prop,
-          NULL,
-          i
-        );
-      // TODO: Figure out how to handle typed arrays with size defined by prop size.
-      // } else if (storage_type == ComponentPropStorageType_i32) {
-      //   js_websg_define_component_i32_array_prop(
-      //     ctx,
-      //     component_instance_proto,
-      //     prop_name,
-      //     byte_offset,
-      //     prop_size
-      //   );
-      // } else if (storage_type == ComponentPropStorageType_u32) {
-      //   js_websg_define_component_u32_array_prop(
-      //     ctx,
-      //     component_instance_proto,
-      //     prop_name,
-      //     byte_offset,
-      //     prop_size
-      //   );
-      // } else if (storage_type == ComponentPropStorageType_f32) {
-      //   js_websg_define_component_f32_array_prop(
-      //     ctx,
-      //     component_instance_proto,
-      //     prop_name,
-      //     byte_offset,
-      //     prop_size
-      //   );
-      } else {
-        JS_ThrowInternalError(ctx, "Invalid prop storage type");
-        return 0;
-      }
+
+      memcpy(
+        &function_list[i],
+        &entry,
+        sizeof(JSCFunctionListEntry)
+      );
+
+      prop_byte_offsets_arr[i] = byte_offset;
+
+      byte_offset += store_byte_length;
     }
 
-    memcpy(
-      &function_list[i],
-      &entry,
-      sizeof(JSCFunctionListEntry)
-    );
-
-    prop_byte_offsets_arr[i] = byte_offset;
-
-    byte_offset += store_byte_length;
+    JS_SetPropertyFunctionList(ctx, component_instance_proto, function_list, prop_count);
   }
 
-  JS_SetPropertyFunctionList(ctx, component_instance_proto, function_list, prop_count);
   JS_SetPrototype(ctx, component_instance_proto, component_proto);
   JS_SetClassProto(ctx, component_instance_class_id, component_instance_proto);
 

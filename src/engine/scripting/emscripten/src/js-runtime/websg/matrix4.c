@@ -73,7 +73,7 @@ static JSValue js_websg_matrix4_set_array(JSContext *ctx, JSValueConst this_val,
   }
 
   if (matrix_data->set_array == NULL) {
-    return JS_UNDEFINED;
+    return JS_DupValue(ctx, this_val);
   }
 
   if (matrix_data->set_array(matrix_data->resource_id, matrix_data->elements) < 0) {
@@ -81,7 +81,7 @@ static JSValue js_websg_matrix4_set_array(JSContext *ctx, JSValueConst this_val,
     return JS_EXCEPTION;
   }
 
-  return JS_UNDEFINED;
+  return JS_DupValue(ctx, this_val);
 }
 
 static const JSCFunctionListEntry js_websg_matrix4_proto_funcs[] = {
@@ -103,6 +103,7 @@ static const JSCFunctionListEntry js_websg_matrix4_proto_funcs[] = {
   JS_CGETSET_MAGIC_DEF("15", js_websg_matrix4_get, js_websg_matrix4_set, 15),
   JS_CFUNC_DEF("set", 1, js_websg_matrix4_set_array),
   JS_PROP_INT32_DEF("length", 16, JS_PROP_ENUMERABLE),
+  JS_PROP_STRING_DEF("[Symbol.toStringTag]", "Matrix4", JS_PROP_CONFIGURABLE),
 };
 
 static JSValue js_websg_matrix4_constructor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
