@@ -20,7 +20,7 @@ static void js_websg_replication_iterator_finalizer(JSRuntime *rt, JSValue val) 
   }
 }
 
-static JSClassDef js_ref_children_iterator_class = {
+static JSClassDef js_websg_replication_iterator_class = {
   "ReplicationIterator",
   .finalizer = js_websg_replication_iterator_finalizer
 };
@@ -73,49 +73,34 @@ static JSValue js_websg_replication_iterator_next(
   }
 
   *pdone = FALSE;
-  uint8_t *target;
+  uint8_t *target = NULL;
   int32_t read_bytes = 0;
   JSValue data;
 
   if (info->byte_length > 0) {
     target = js_mallocz(ctx, info->byte_length);
-
-    if (spawning) {
-      read_bytes = websg_replicator_spawn_receive(
-        replicator_id,
-        target,
-        info->byte_length
-      );
-    } else if (despawning) {
-      read_bytes = websg_replicator_despawn_receive(
-        replicator_id,
-        target,
-        info->byte_length
-      );
-    } else {
-      JS_ThrowRangeError(ctx, "WebSGNetworking: invalid replicator type.");
-      return JS_EXCEPTION;
-    }
-
-    data = JS_NewArrayBuffer(ctx, target, read_bytes, js_buffer_free, NULL, 0);
   }
 
   if (spawning) {
-    if (websg_replicator_spawn_shift(it->replicator_data->replicator_id) == -1) {
-      JS_ThrowInternalError(ctx, "WebSGNetworking: error shifting replicator queue.");
-      return JS_EXCEPTION;
-    }
+    read_bytes = websg_replicator_spawn_receive(
+      replicator_id,
+      target,
+      info->byte_length
+    );
   } else if (despawning) {
-    if (websg_replicator_despawn_shift(it->replicator_data->replicator_id) == -1) {
-      JS_ThrowInternalError(ctx, "WebSGNetworking: error shifting replicator queue.");
-      return JS_EXCEPTION;
-    }
+    read_bytes = websg_replicator_despawn_receive(
+      replicator_id,
+      target,
+      info->byte_length
+    );
   } else {
     JS_ThrowRangeError(ctx, "WebSGNetworking: invalid replicator type.");
     return JS_EXCEPTION;
   }
 
-  if (read_bytes == -1) {
+  if (read_bytes > 0) {
+    data = JS_NewArrayBuffer(ctx, target, read_bytes, js_buffer_free, NULL, 0);
+  } else if (read_bytes == -1) {
     js_free(ctx, info);
     js_free(ctx, target);
 
@@ -136,15 +121,17 @@ static JSValue js_websg_replication_iterator_next(
     }
 
     WebSGNodeData *node_data = JS_GetOpaque2(ctx, node, js_websg_node_class_id);
-    if (websg_node_add_network_component(node_data->node_id, info->network_id) == -1) {
-      JS_ThrowInternalError(ctx, "WebSGNetworking: unable to assing networkID to nodeID.");
+
+    NetworkSynchronizerProps *synchronizer_props = js_mallocz(ctx, sizeof(NetworkSynchronizerProps));
+    synchronizer_props->network_id = info->network_id;
+
+    if (websg_node_add_network_synchronizer(node_data->node_id, synchronizer_props) == -1) {
+      JS_ThrowInternalError(ctx, "WebSGNetworking: unable to assign networkID to nodeID.");
+      js_free(ctx, synchronizer_props);
       return JS_EXCEPTION;
     }
 
-    if (websg_replicator_apply_deferred_updates(it->replicator_data->replicator_id, node_data->node_id, info->network_id) == -1) {
-      JS_ThrowInternalError(ctx, "WebSGNetworking: error applying replicator's deferred updates to node.");
-      return JS_EXCEPTION;
-    }
+    js_free(ctx, synchronizer_props);
   }
 
   js_free(ctx, target);
@@ -158,7 +145,7 @@ static JSValue js_websg_replication_iterator(JSContext *ctx, JSValueConst this_v
 }
 
 
-static const JSCFunctionListEntry js_children_iterator_proto_funcs[] = {
+static const JSCFunctionListEntry js_websg_replication_iterator_proto_funcs[] = {
   JS_ITERATOR_NEXT_DEF("next", 0, js_websg_replication_iterator_next, 0),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "ReplicationIterator", JS_PROP_CONFIGURABLE),
   JS_CFUNC_DEF("[Symbol.iterator]", 0, js_websg_replication_iterator),
@@ -166,9 +153,14 @@ static const JSCFunctionListEntry js_children_iterator_proto_funcs[] = {
 
 void js_websg_define_replication_iterator(JSContext *ctx) {
   JS_NewClassID(&js_websg_replication_iterator_class_id);
-  JS_NewClass(JS_GetRuntime(ctx), js_websg_replication_iterator_class_id, &js_ref_children_iterator_class);
+  JS_NewClass(JS_GetRuntime(ctx), js_websg_replication_iterator_class_id, &js_websg_replication_iterator_class);
   JSValue proto = JS_NewObject(ctx);
-  JS_SetPropertyFunctionList(ctx, proto, js_children_iterator_proto_funcs, countof(js_children_iterator_proto_funcs));
+  JS_SetPropertyFunctionList(
+    ctx,
+    proto,
+    js_websg_replication_iterator_proto_funcs,
+    countof(js_websg_replication_iterator_proto_funcs)
+  );
   JS_SetClassProto(ctx, js_websg_replication_iterator_class_id, proto);
 }
 

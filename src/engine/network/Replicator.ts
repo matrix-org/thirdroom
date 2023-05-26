@@ -13,7 +13,6 @@ export interface Replicator {
   prefabName: string;
   spawned: Replication[];
   despawned: Replication[];
-  deferredUpdates: { nid: number; position: Float32Array; quaternion: Float32Array }[];
   eidToData: Map<number, ArrayBuffer>;
 }
 
@@ -27,7 +26,6 @@ export const createReplicator = (network: GameNetworkState, resourceManager: Rem
     spawned: [],
     despawned: [],
     eidToData: new Map(),
-    deferredUpdates: [],
   };
 
   network.prefabToReplicator.set(prefabName, replicator);

@@ -165,8 +165,8 @@ export const deserializeTransformSnapshot = (
 
     node.skipLerp = readUint32(v);
   } else {
-    const replicator = network.networkIdToReplicator.get(nid);
-    if (replicator) {
+    const deferredUpdates = network.deferredUpdates.get(nid);
+    if (deferredUpdates !== undefined) {
       const position = new Float32Array(3);
       position[0] = readFloat32(v);
       position[1] = readFloat32(v);
@@ -183,8 +183,7 @@ export const deserializeTransformSnapshot = (
       quaternion[2] = readFloat32(v);
       quaternion[3] = readFloat32(v);
 
-      const deferred = replicator.deferredUpdates;
-      deferred.push({ nid, position, quaternion });
+      deferredUpdates.push({ position, quaternion });
     } else {
       console.warn(`could not deserialize update for non-existent entity for networkID ${nid}`);
       scrollCursorView(v, Float32Array.BYTES_PER_ELEMENT * 10 + Uint32Array.BYTES_PER_ELEMENT);
@@ -410,7 +409,7 @@ export function deserializeCreates(input: NetPipeData) {
         peerIndex: network.peerIdToIndex.get(peerId)!,
         data,
       });
-      network.networkIdToReplicator.set(nid, replicator);
+      network.deferredUpdates.set(nid, []);
     } else {
       createRemoteNetworkedEntity(ctx, network, nid, prefabName);
     }

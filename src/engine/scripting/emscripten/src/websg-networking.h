@@ -69,11 +69,6 @@ typedef struct ReplicationInfo {
 import_websg_networking(replicator_get_spawned_message_info) int32_t websg_replicator_get_spawned_message_info(replicator_id_t replicator_id, ReplicationInfo *info);
 import_websg_networking(replicator_get_despawned_message_info) int32_t websg_replicator_get_despawned_message_info(replicator_id_t replicator_id, ReplicationInfo *info);
 
-// Returns 0 if successful
-// Returns -1 on error
-import_websg_networking(replicator_spawn_shift) uint32_t websg_replicator_spawn_shift(replicator_id_t replicator_id);
-import_websg_networking(replicator_despawn_shift) uint32_t websg_replicator_despawn_shift(replicator_id_t replicator_id);
-
 // Returns a network ID popped from the replicator's (de)spawned queue
 // Returns 0 if queue is empty
 import_websg_networking(replicator_spawn_receive) uint32_t websg_replicator_spawn_receive(
@@ -87,12 +82,14 @@ import_websg_networking(replicator_despawn_receive) uint32_t websg_replicator_de
   uint32_t max_byte_length
 );
 
-// Returns 0 if successful
-// Returns -1 on error
-import_websg_networking(node_add_network_component) int32_t websg_node_add_network_component(node_id_t node_id, uint32_t network_id);
+typedef struct NetworkSynchronizerProps {
+  Extensions extensions;
+  void *extras;
+  network_id_t network_id;
+} NetworkSynchronizerProps;
 
 // Returns 0 if successful
 // Returns -1 on error
-import_websg_networking(replicator_apply_deferred_updates) int32_t websg_replicator_apply_deferred_updates(replicator_id_t replicator_id, node_id_t node_id, network_id_t network_id);
+import_websg_networking(node_add_network_synchronizer) int32_t websg_node_add_network_synchronizer(node_id_t node_id,  NetworkSynchronizerProps *props);
 
 #endif

@@ -17,6 +17,7 @@ import {
   getScriptResourceByNamePtr,
   getScriptResourceRef,
   readEnum,
+  readExtensionsAndExtras,
   readFloat32ArrayInto,
   readFloatList,
   readList,
@@ -234,37 +235,6 @@ function scriptGetUIElementChildAt(wasmCtx: WASMModuleContext, parent: RemoteUIE
   }
 
   return 0;
-}
-
-function readExtensionsAndExtras<T extends { [key: string]: unknown }>(
-  wasmCtx: WASMModuleContext,
-  parseExtension: (name: string) => T | undefined = () => undefined
-) {
-  const itemsPtr = readUint32(wasmCtx.cursorView);
-  const count = readUint32(wasmCtx.cursorView);
-  // TODO: Implement glTF extras in WebSG API
-  skipUint32(wasmCtx.cursorView); // Skip extras pointer
-
-  const extensions = {};
-
-  if (count > 0) {
-    const rewind = rewindCursorView(wasmCtx.cursorView);
-
-    moveCursorView(wasmCtx.cursorView, itemsPtr);
-
-    for (let i = 0; i < count; i++) {
-      const name = readStringFromCursorView(wasmCtx);
-      const extensionPtr = readUint32(wasmCtx.cursorView);
-      const itemRewind = rewindCursorView(wasmCtx.cursorView);
-      moveCursorView(wasmCtx.cursorView, extensionPtr);
-      Object.assign(extensions, parseExtension(name));
-      itemRewind();
-    }
-
-    rewind();
-  }
-
-  return extensions as Partial<T>;
 }
 
 // MaterialTextureInfoProps

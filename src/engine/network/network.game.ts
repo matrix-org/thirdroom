@@ -50,6 +50,11 @@ import { Replicator } from "./Replicator";
  * Types *
  ********/
 
+export interface DeferredUpdate {
+  position: Float32Array;
+  quaternion: Float32Array;
+}
+
 export interface GameNetworkState {
   onExitWorldQueue: any[];
   incomingReliableRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
@@ -75,7 +80,7 @@ export interface GameNetworkState {
   cursorView: CursorView;
   tickRate: number;
   prefabToReplicator: Map<string, Replicator>;
-  networkIdToReplicator: Map<number, Replicator>;
+  deferredUpdates: Map<number, DeferredUpdate[]>;
   // feature flags
   interpolate: boolean;
   clientSidePrediction: boolean;
@@ -123,7 +128,7 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
       messageHandlers: {},
       cursorView: createCursorView(),
       prefabToReplicator: new Map(),
-      networkIdToReplicator: new Map(),
+      deferredUpdates: new Map(),
       tickRate: 10,
       interpolate: false,
       clientSidePrediction: true,

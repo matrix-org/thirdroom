@@ -1,4 +1,4 @@
-import { addComponent } from "bitecs";
+import { addComponent, hasComponent } from "bitecs";
 
 import {
   createCursorView,
@@ -18,6 +18,7 @@ import { writeUint32, readUint32 } from "../allocator/CursorView";
 import { registerInboundMessageHandler } from "./inbound.game";
 import {
   getScriptResource,
+  readExtensionsAndExtras,
   readUint8Array,
   WASMModuleContext,
   writeArrayBuffer,
@@ -336,40 +337,6 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
       const replicator = createReplicator(network, wasmCtx.resourceManager);
       return replicator.id;
     },
-    node_add_network_component: (nodeId: number, nid: number) => {
-      addComponent(ctx.world, Networked, nodeId, true);
-      Networked.networkId[nodeId] = nid;
-      network.networkIdToEntityId.set(nid, nodeId);
-      return 0;
-    },
-    replicator_apply_deferred_updates: (replicatorId: number, nodeId: number, nid: number) => {
-      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
-
-      if (!node) {
-        console.error("Undefined node.");
-        return -1;
-      }
-
-      const replicator = wasmCtx.resourceManager.replicators.get(replicatorId);
-
-      if (!replicator) {
-        console.error("Undefined replicator.");
-        return -1;
-      }
-
-      for (let i = replicator.deferredUpdates.length - 1; i >= 0; i--) {
-        const update = replicator.deferredUpdates[i];
-        if (update.nid == nid) {
-          const { position, quaternion } = update;
-          // set the networked component state for networked objects
-          Networked.position[node.eid].set(position);
-          Networked.quaternion[node.eid].set(quaternion);
-          replicator.deferredUpdates.splice(i, 1);
-        }
-      }
-
-      return 0;
-    },
     replicator_spawned_count: (replicatorId: number) => {
       const replicator = wasmCtx.resourceManager.replicators.get(replicatorId);
 
@@ -406,12 +373,6 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
       const data = byteLength > 0 ? buffer : undefined;
       const peerId = network.peerId;
       const peerIndex = network.peerIdToIndex.get(peerId)!;
-
-      console.log("replicator_spawn_local");
-      console.log("buffer", buffer);
-      console.log("data", data);
-      console.log("peerId", peerId);
-      console.log("peerIndex", peerIndex);
 
       if (data) {
         replicator.eidToData.set(nodeId, data);
@@ -538,30 +499,6 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
         return -1;
       }
     },
-    replicator_spawn_shift: (replicatorId: number) => {
-      const replicator = wasmCtx.resourceManager.replicators.get(replicatorId);
-
-      if (!replicator) {
-        console.error("Error shifting replicator spawn queue, replicator not found");
-        return -1;
-      }
-
-      replicator.spawned.shift();
-
-      return 0;
-    },
-    replicator_despawn_shift: (replicatorId: number) => {
-      const replicator = wasmCtx.resourceManager.replicators.get(replicatorId);
-
-      if (!replicator) {
-        console.error("Error shifting replicator despawn queue, replicator not found");
-        return -1;
-      }
-
-      replicator.despawned.shift();
-
-      return 0;
-    },
     replicator_spawn_receive: (replicatorId: number, packetPtr: number, maxBufLength: number) => {
       try {
         const replicator = wasmCtx.resourceManager.replicators.get(replicatorId);
@@ -593,7 +530,7 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
           return 0;
         }
 
-        if (!replication.data) {
+        if (!replication.data || replication.data.byteLength === 0) {
           return 0;
         }
 
@@ -635,7 +572,7 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
           }
         }
 
-        if (!replication) {
+        if (!replication || !replication.data || replication.data.byteLength === 0) {
           return 0;
         }
 
@@ -649,6 +586,46 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
         return writeArrayBuffer(wasmCtx, packetPtr, replication.data || new ArrayBuffer(0));
       } catch (e) {
         console.error("Error writing packet to write buffer:", e);
+        return -1;
+      }
+    },
+    node_add_network_synchronizer: (nodeId: number, propsPtr: number) => {
+      try {
+        const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+        if (!node) {
+          return -1;
+        }
+
+        if (hasComponent(ctx.world, Networked, nodeId)) {
+          console.error("WebSGNetworking: node already has network synchronizer.");
+          return -1;
+        }
+
+        moveCursorView(wasmCtx.cursorView, propsPtr);
+        readExtensionsAndExtras(wasmCtx);
+        const networkId = readUint32(wasmCtx.cursorView);
+
+        addComponent(ctx.world, Networked, nodeId, true);
+        Networked.networkId[nodeId] = networkId;
+        network.networkIdToEntityId.set(networkId, nodeId);
+
+        const deferredUpdates = network.deferredUpdates.get(networkId);
+
+        if (deferredUpdates) {
+          for (let i = 0; i < deferredUpdates.length; i++) {
+            const { position, quaternion } = deferredUpdates[i];
+            // set the networked component state for networked objects
+            Networked.position[node.eid].set(position);
+            Networked.quaternion[node.eid].set(quaternion);
+          }
+
+          network.deferredUpdates.delete(networkId);
+        }
+
+        return 0;
+      } catch (error) {
+        console.error(`WebSG: error adding interactable:`, error);
         return -1;
       }
     },
