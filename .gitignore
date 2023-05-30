@@ -8,3 +8,5 @@ lerna-debug.log
 .yarn-error.log
 coverage
 src/scripting/build/scripting-runtime.wat
+docs/.vitepress/cache
+docs/websg-js

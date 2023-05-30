@@ -9,7 +9,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "tsc && vite build && npm run docs:build",
     "build:scripting-runtime": "./src/engine/scripting/emscripten/build.sh",
     "build:examples": "./examples/build.sh",
     "typecheck": "tsc --noEmit",
@@ -19,7 +19,11 @@
     "prepare": "husky install",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "coverage": "vitest run --coverage"
+    "coverage": "vitest run --coverage",
+    "docs:dev": "npm run docs:build-api && vitepress dev docs",
+    "docs:build": "npm run docs:build-api && vitepress build docs",
+    "docs:preview": "vitepress preview docs",
+    "docs:build-api": "typedoc"
   },
   "dependencies": {
     "3d-tiles-renderer": "https://github.com/matrix-org/3DTilesRendererJS.git#v0.3.9-patch",
@@ -120,11 +124,14 @@
     "stylelint-config-prettier": "^9.0.3",
     "stylelint-config-standard": "^30.0.1",
     "ts-node": "^10.7.0",
+    "typedoc": "^0.24.7",
+    "typedoc-plugin-markdown": "^3.15.3",
     "typescript": "^4.9.2-rc",
     "vite": "4.1.4",
     "vite-node": "^0.29.2",
     "vite-plugin-cross-origin-isolation": "^0.1.6",
     "vite-plugin-static-copy": "^0.13.0",
+    "vitepress": "^1.0.0-beta.1",
     "vitest": "^0.29.2"
   }
 }
