@@ -26,7 +26,7 @@ static void js_websg_replicator_finalizer(JSRuntime *rt, JSValue val) {
 }
 
 static JSClassDef js_websg_replicator_class = {
-  "replicator",
+  "Replicator",
   .finalizer = js_websg_replicator_finalizer
 };
 
