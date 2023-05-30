@@ -1,7 +1,7 @@
 # Diving Deeper Into the Web Scene Graph API
 
 In the last tutorial we learned how to spawn custom interactable objects using the Action Bar API and physics. If you haven't
-completed the last tutorial, you can find it [here](../basketball-part-1.md).
+completed the last tutorial, you can find it [here](./part-1.md).
 
 In this tutorial we will learn how to track when physics objects collide with one another, how to use the WebSG
 Entity Component System API to add components to nodes, and how to use the WebSG UI API to create a scoreboard.

@@ -50,7 +50,7 @@ standardize the API with the help of the community over time.
 
 ## The World
 
-In WebSG, all resources are created and accessed through the global [world](../api/classes/WebSG.World) object.
+In WebSG, all resources are created and accessed through the global [world](../../../websg-js/namespaces/namespace.WebSG/classes/class.World) object.
 
 The world also has callbacks that can be set to be called for certain lifecycle events.
 
@@ -106,7 +106,7 @@ world.onload = () => {
 
 Save and run the script. You should see the action bar change to show a basketball icon.
 
-We can now listen for the `basketball` action to be activated by creating an [ActionBarListener]().
+We can now listen for the `basketball` action to be activated by creating an [ActionBarListener](../../../websg-js/namespaces/namespace.ThirdRoom/classes/class.ActionBar).
 
 ```js
 world.onload = () => {

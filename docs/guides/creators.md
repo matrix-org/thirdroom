@@ -1,6 +1,6 @@
 # Third Room for Creators
 
-![Screenshot of the ThirdRoom Unity Exporter](/docs/images/UnityExporter.jpg)
+![Screenshot of the ThirdRoom Unity Exporter](/images/UnityExporter.jpg)
 
 This guide is designed to help you understand how to create, export, and upload your 3D content for use in Third Room worlds. With Third Room, you have the opportunity to bring your artistic vision to life in a virtual environment that promotes collaboration and communication.
 

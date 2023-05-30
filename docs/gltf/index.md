@@ -22,15 +22,15 @@ Below is a list of the currently supported glTF extensions in Third Room and the
 
 - [OMI_collider](https://github.com/omigroup/gltf-extensions/blob/15e397a24c93bff3448d797eecacb9fde6b0177d/extensions/2.0/OMI_collider/README.md) ** Note: This extension is still under development and may undergo some additional changes. We do not currently support the Hull / Compound colliders or the isTrigger property **
 - [OMI_link](https://github.com/omigroup/gltf-extensions/tree/main/extensions/2.0/OMI_link)
-- [MOZ_hubs_components](./MOZ_hubs_components/) ** Note: Limited support. See docs. **
+- [MOZ_hubs_components](./MOZ_hubs_components/README) ** Note: Limited support. See docs. **
 
 ## MX (Matrix) Extensions
 
-- [MX_background](./MX_background/)
-- [MX_character_controller](./MX_character_controller/)
-- [MX_lightmap](./MX_lightmap/)
-- [MX_portal](./MX_portal/) ** DEPRECATED: Please use OMI_link instead **
-- [MX_postprocessing](./MX_postprocessing/)
-- [MX_reflection_probes](./MX_reflection_probes/)
-- [MX_spawn_point](./MX_spawn_point/)
-- [MX_tiles_renderer](./MX_tiles_renderer/)
+- [MX_background](./MX_background/README)
+- [MX_character_controller](./MX_character_controller/README)
+- [MX_lightmap](./MX_lightmap/README)
+- [MX_portal](./MX_portal/README) ** DEPRECATED: Please use OMI_link instead **
+- [MX_postprocessing](./MX_postprocessing/README)
+- [MX_reflection_probes](./MX_reflection_probes/README)
+- [MX_spawn_point](./MX_spawn_point/README)
+- [MX_tiles_renderer](./MX_tiles_renderer/README)

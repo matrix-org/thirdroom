@@ -1,6 +1,6 @@
 # Getting Started
 
-![Image of two avatars in a sci-fi world](/docs/images/ThirdRoomIntro.jpg)
+![Image of two avatars in a sci-fi world](/images/ThirdRoomIntro.jpg)
 
 Welcome to Third Room, an open-source social platform built on the Matrix protocol, designed to provide a user-friendly, secure, and decentralized communication experience in fully immersive 3D worlds with support for desktop and XR. This documentation will guide you through the basics of Third Room, helping you get started and familiarize yourself with the platform.
 
@@ -20,7 +20,7 @@ Third Room is a social platform that leverages the Matrix protocol, a decentrali
 
 ### 1. Sign up
 
-![Screenshot of the ThirdRoom signup page](/docs/images/SignUp.png)
+![Screenshot of the ThirdRoom signup page](/images/SignUp.png)
 
 To start using Third Room, you can use a guest account to try things out, or you can create an account. Visit the Third Room website, click on the "Login" button and follow the steps from there.
 
@@ -28,19 +28,19 @@ When signing up, you'll be prompted to choose a homeserver. This is the server w
 
 ### 2. Join or create worlds
 
-![Screenshot of the ThirdRoom room list with create world menu open](/docs/images/CreateWorld.png)
+![Screenshot of the ThirdRoom room list with create world menu open](/images/CreateWorld.png)
 
 Once you've signed in, you can start exploring Third Room by joining existing worlds or creating new ones. To join a world, click on any of the worlds listed in the panel on the left. To create a new world: click the plus sign on the top of the left navgation panel and click "Create World".
 
 ### 3. Invite users and manage world settings
 
-![Screenshot of the ThirdRoom invitation modal](/docs/images/InviteUsers.png)
+![Screenshot of the ThirdRoom invitation modal](/images/InviteUsers.png)
 
 After creating a world, you can invite other users to join by sending them an invitation or sharing the world's unique link. As the world creator, you have the ability to manage the world's settings, such as changing the world's name, description, or privacy settings. You can also assign roles and permissions to other users in the world, allowing them to help with moderation or other tasks.
 
 ### 4. Customize your profile
 
-![Screenshot of the ThirdRoom room list with the profile menu open](/docs/images/ViewProfile.png)
+![Screenshot of the ThirdRoom room list with the profile menu open](/images/ViewProfile.png)
 
 Personalize your Third Room experience by customizing your profile. Click on your profile picture in the bottom left corner and select "View Profile" to add a display name and profile picture.
 

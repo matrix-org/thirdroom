@@ -95,12 +95,9 @@ export function load(app) {
       supportsPackages = false;
       read(container) {
         Object.entries({
-          anchorFormat: "slug",
-          entryFileName: "index.md",
-          skipIndexPage: true,
           hideBreadcrumbs: true,
-          hidePageHeader: true,
           out: "./docs/websg-js",
+          entryDocument: "index.md",
         }).forEach(([key, value]) => {
           container.setValue(key, value);
         });

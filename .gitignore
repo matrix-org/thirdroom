@@ -9,3 +9,4 @@ lerna-debug.log
 coverage
 src/scripting/build/scripting-runtime.wat
 docs/.vitepress/cache
+docs/websg-js
