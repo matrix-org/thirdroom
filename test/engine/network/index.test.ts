@@ -18,6 +18,7 @@ import {
   readString,
   readUint16,
   readUint32,
+  skipUint32,
 } from "../../../src/engine/allocator/CursorView";
 import { mockGameState } from "../mocks";
 import { getModule } from "../../../src/engine/module/module.common";
@@ -492,6 +493,7 @@ describe("Network Tests", () => {
       ents.forEach(({ eid }) => {
         strictEqual(readUint32(reader), eid);
         strictEqual(readString(reader), "test-prefab");
+        skipUint32(reader); // Data length
       });
     });
     it("should #deserializeCreates()", () => {

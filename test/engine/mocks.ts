@@ -69,6 +69,7 @@ export const mockRenderState = () => ({
 
 export const mockNetworkState = () => ({
   networkIdToEntityId: new Map(),
+  prefabToReplicator: new Map(),
 });
 
 export const mockResourceModule = () => ({
