@@ -9,7 +9,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build && yarn docs:build",
+    "build": "tsc && vite build && npm run docs:build",
     "build:scripting-runtime": "./src/engine/scripting/emscripten/build.sh",
     "build:examples": "./examples/build.sh",
     "typecheck": "tsc --noEmit",
