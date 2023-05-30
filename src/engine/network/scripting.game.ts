@@ -605,10 +605,19 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
         moveCursorView(wasmCtx.cursorView, propsPtr);
         readExtensionsAndExtras(wasmCtx);
         const networkId = readUint32(wasmCtx.cursorView);
+        const replicatorId = readUint32(wasmCtx.cursorView);
+
+        const replicator = wasmCtx.resourceManager.replicators.get(replicatorId);
+
+        if (!replicator) {
+          console.error(`WebSGNetworking: replicator ${replicatorId} does not exist or has been closed.`);
+          return -1;
+        }
 
         addComponent(ctx.world, Networked, nodeId, true);
         Networked.networkId[nodeId] = networkId;
         network.networkIdToEntityId.set(networkId, nodeId);
+        addPrefabComponent(ctx.world, nodeId, replicator.prefabName);
 
         const deferredUpdates = network.deferredUpdates.get(networkId);
 

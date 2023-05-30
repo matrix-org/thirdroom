@@ -124,6 +124,7 @@ static JSValue js_websg_replication_iterator_next(
 
     NetworkSynchronizerProps *synchronizer_props = js_mallocz(ctx, sizeof(NetworkSynchronizerProps));
     synchronizer_props->network_id = info->network_id;
+    synchronizer_props->replicator_id = replicator_id;
 
     if (websg_node_add_network_synchronizer(node_data->node_id, synchronizer_props) == -1) {
       JS_ThrowInternalError(ctx, "WebSGNetworking: unable to assign networkID to nodeID.");

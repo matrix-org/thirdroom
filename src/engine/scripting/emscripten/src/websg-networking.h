@@ -86,6 +86,7 @@ typedef struct NetworkSynchronizerProps {
   Extensions extensions;
   void *extras;
   network_id_t network_id;
+  replicator_id_t replicator_id;
 } NetworkSynchronizerProps;
 
 // Returns 0 if successful
