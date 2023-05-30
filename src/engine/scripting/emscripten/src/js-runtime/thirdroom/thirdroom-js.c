@@ -86,6 +86,14 @@ static JSValue js_thirdroom_constructor(JSContext *ctx, JSValueConst this_val, i
 void js_define_thirdroom_api(JSContext *ctx) {
   JSValue global = JS_GetGlobalObject(ctx);
 
+  JSValue thirdroom_namespace = JS_NewObject(ctx);
+  JS_SetPropertyStr(
+    ctx,
+    global,
+    "ThirdRoom",
+    thirdroom_namespace
+  );
+
   JS_NewClassID(&js_thirdroom_class_id);
   JS_NewClass(JS_GetRuntime(ctx), js_thirdroom_class_id, &js_thirdroom_class);
   JSValue thirdroom_class = JS_NewObject(ctx);
@@ -103,15 +111,15 @@ void js_define_thirdroom_api(JSContext *ctx) {
   JS_SetConstructor(ctx, constructor, thirdroom_class);
   JS_SetPropertyStr(
     ctx,
-    global,
+    thirdroom_namespace,
     "ThirdRoom",
     constructor
   );
 
   JSValue thirdroom = JS_NewObjectClass(ctx, js_thirdroom_class_id);
 
-  js_thirdroom_define_action_bar(ctx, thirdroom_class);
-  js_thirdroom_define_action_bar_listener(ctx, thirdroom_class);
+  js_thirdroom_define_action_bar(ctx, thirdroom_namespace);
+  js_thirdroom_define_action_bar_listener(ctx, thirdroom_namespace);
   js_thirdroom_define_action_bar_iterator(ctx);
 
   JS_SetPropertyStr(ctx, thirdroom, "actionBar", js_thirdroom_new_action_bar(ctx));
