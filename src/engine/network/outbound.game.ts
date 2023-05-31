@@ -16,7 +16,7 @@ import {
   GameNetworkState,
 } from "./network.game";
 import { Networked } from "./NetworkComponents";
-import { enqueueNetworkRingBuffer } from "./RingBuffer";
+import { enqueueNetworkRingBuffer } from "./NetworkRingBuffer";
 import {
   NetPipeData,
   createNewPeerSnapshotMessage,

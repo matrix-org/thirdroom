@@ -34,7 +34,7 @@ import {
 } from "./serialization.game";
 import { NetworkAction } from "./NetworkAction";
 import { registerInboundMessageHandler } from "./inbound.game";
-import { dequeueNetworkRingBuffer, NetworkRingBuffer } from "./RingBuffer";
+import { dequeueNetworkRingBuffer, NetworkRingBuffer } from "./NetworkRingBuffer";
 import { deserializeCommands } from "./commands.game";
 import { InputModule } from "../input/input.game";
 import { PhysicsModule } from "../physics/physics.game";

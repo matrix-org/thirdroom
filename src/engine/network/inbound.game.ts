@@ -8,7 +8,7 @@ import { trimHistory } from "../utils/Historian";
 import { isHost } from "./network.common";
 import { GameNetworkState, NetworkModule, ownedPlayerQuery } from "./network.game";
 import { NetworkAction } from "./NetworkAction";
-import { dequeueNetworkRingBuffer } from "./RingBuffer";
+import { dequeueNetworkRingBuffer } from "./NetworkRingBuffer";
 import { NetPipeData, readMetadata } from "./serialization.game";
 
 const processNetworkMessage = (ctx: GameState, peerId: string, msg: ArrayBuffer) => {

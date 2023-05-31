@@ -1,7 +1,7 @@
 import { Message } from "../module/module.common";
 import { GameNetworkState } from "./network.game";
 import { MainNetworkState } from "./network.main";
-import { NetworkRingBuffer } from "./RingBuffer";
+import { NetworkRingBuffer } from "./NetworkRingBuffer";
 
 export enum NetworkMessageType {
   // Main -> Game
