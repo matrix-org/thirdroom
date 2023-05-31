@@ -17,10 +17,9 @@
   status = 200
 
 [[redirects]]
-  from = "staging.thirdroom.io/*"
+  from = "https://staging.thirdroom.io/*"
   to = "https://staging--thirdroom.netlify.app/:splat"
-  status = 200
-
+  status = 301
 
 [[headers]]
 for = "/*"
