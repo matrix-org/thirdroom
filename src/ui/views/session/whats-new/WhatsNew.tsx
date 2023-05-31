@@ -30,7 +30,7 @@ const SCRIPTING_WORLD: CreateWorldOptions = {
 };
 
 export function WhatsNew() {
-  const { whatsNew /*finishWhatsNew*/ } = useWhatsNew();
+  const { whatsNew, finishWhatsNew } = useWhatsNew();
   const [whatsNewDialog, setWhatsNewDialog] = useAtom(whatsNewDialogAtom);
   const [webSGTutDialog, setWebSGTutDialog] = useAtom(webSGTutDialogAtom);
   const { session } = useHydrogen(true);
@@ -41,12 +41,14 @@ export function WhatsNew() {
   const webSGRoom = useRoom(session, webSGRoomId);
 
   useEffect(() => {
+    // Open whats new dialog initially
     if (whatsNewDialog === undefined && whatsNew && !worldId) {
       setWhatsNewDialog(true);
     }
   }, [whatsNewDialog, whatsNew, setWhatsNewDialog, worldId]);
 
   useEffect(() => {
+    // Show WebSG tutorial dialog when user enter webSG room
     if (whatsNew && worldId === webSGRoomId && entered) {
       setWebSGTutDialog(true);
     }
@@ -83,9 +85,9 @@ export function WhatsNew() {
       <WebSceneGraphDialog
         open={webSGTutDialog}
         requestClose={() => {
-          // TODO: open webSG tutorial in new window
+          window.open("./docs/guides/websg/basketball/part-1.html", "__blank");
           setWebSGTutDialog(false);
-          // TODO: Call finishWhatsNew() here before merging PR
+          finishWhatsNew();
         }}
       />
     </>

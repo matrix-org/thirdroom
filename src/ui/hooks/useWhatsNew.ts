@@ -1,12 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useAtom } from "jotai";
 
 import { useHydrogen } from "./useHydrogen";
+import { whatsNewAtom } from "../state/whatsNew";
 
 const WHATS_NEW_KEY = "io.thirdroom.whats_new";
 
 export function useWhatsNew() {
   const { session, platform } = useHydrogen(true);
-  const [whatsNew, setWhatsNew] = useState(false);
+  const [whatsNew, setWhatsNew] = useAtom(whatsNewAtom);
 
   useEffect(() => {
     async function run() {
@@ -20,7 +22,7 @@ export function useWhatsNew() {
     }
 
     run().catch(console.error);
-  }, [session, platform.config]);
+  }, [session, platform.config, setWhatsNew]);
 
   const finishWhatsNew = () => {
     setWhatsNew(false);

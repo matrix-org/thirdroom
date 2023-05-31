@@ -7,7 +7,7 @@ import { IconButton } from "../../../atoms/button/IconButton";
 import { Text } from "../../../atoms/text/Text";
 
 export function WhatsNewNotification() {
-  const { whatsNew /*finishWhatsNew*/ } = useWhatsNew();
+  const { whatsNew, finishWhatsNew } = useWhatsNew();
 
   const [whatsNewDialog, setWhatsNewDialog] = useAtom(whatsNewDialogAtom);
   const webSGTutDialog = useAtomValue(webSGTutDialogAtom);
@@ -31,7 +31,7 @@ export function WhatsNewNotification() {
           iconSrc={CrossIC}
           label="Close"
           onClick={() => {
-            // TODO: call finishWhatsNew with alert
+            if (window.confirm("This action is permanent. Are you sure?")) finishWhatsNew();
           }}
         />
       </div>
