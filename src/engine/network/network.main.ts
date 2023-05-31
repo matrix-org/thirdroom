@@ -22,10 +22,10 @@ export interface MainNetworkState {
   unreliableChannels: Map<string, RTCDataChannel>;
   ws?: WebSocket;
   incomingMessageHandlers: Map<string, ({ data }: { data: ArrayBuffer }) => void>;
-  incomingReliableRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
-  incomingUnreliableRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
-  outgoingReliableRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
-  outgoingUnreliableRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
+  incomingReliableRingBuffer: NetworkRingBuffer;
+  incomingUnreliableRingBuffer: NetworkRingBuffer;
+  outgoingReliableRingBuffer: NetworkRingBuffer;
+  outgoingUnreliableRingBuffer: NetworkRingBuffer;
   peerId?: string;
   hostId?: string;
 }
@@ -37,10 +37,10 @@ export interface MainNetworkState {
 export const NetworkModule = defineModule<IMainThreadContext, MainNetworkState>({
   name: "network",
   async create(ctx, { sendMessage }) {
-    const incomingReliableRingBuffer = createNetworkRingBuffer(Uint8Array);
-    const incomingUnreliableRingBuffer = createNetworkRingBuffer(Uint8Array);
-    const outgoingReliableRingBuffer = createNetworkRingBuffer(Uint8Array);
-    const outgoingUnreliableRingBuffer = createNetworkRingBuffer(Uint8Array);
+    const incomingReliableRingBuffer = createNetworkRingBuffer();
+    const incomingUnreliableRingBuffer = createNetworkRingBuffer();
+    const outgoingReliableRingBuffer = createNetworkRingBuffer();
+    const outgoingUnreliableRingBuffer = createNetworkRingBuffer();
 
     const authoritative = localStorage.getItem("authoritativeNetworking") === "true";
 

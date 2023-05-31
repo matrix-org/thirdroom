@@ -56,10 +56,10 @@ export interface DeferredUpdate {
 
 export interface GameNetworkState {
   onExitWorldQueue: any[];
-  incomingReliableRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
-  incomingUnreliableRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
-  outgoingReliableRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
-  outgoingUnreliableRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
+  incomingReliableRingBuffer: NetworkRingBuffer;
+  incomingUnreliableRingBuffer: NetworkRingBuffer;
+  outgoingReliableRingBuffer: NetworkRingBuffer;
+  outgoingUnreliableRingBuffer: NetworkRingBuffer;
   commands: [number, number, ArrayBuffer][];
   hostId: string;
   peerId: string;

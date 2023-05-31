@@ -20,9 +20,8 @@ import {
   writeUint32,
   writeUint8,
 } from "../allocator/CursorView";
-import { TypedArrayConstructor } from "../utils/typedarray";
 
-export interface NetworkRingBuffer<T extends TypedArrayConstructor> extends RingBuffer<T> {
+export interface NetworkRingBuffer extends RingBuffer<Uint8ArrayConstructor> {
   buffer: ArrayBuffer;
   array: Uint8Array;
   view: CursorView;
@@ -31,11 +30,8 @@ export interface NetworkRingBuffer<T extends TypedArrayConstructor> extends Ring
 // 16KB allowed per packet * 1000 slots in the ring buffer = 16MB total preallocated
 const MAX_PACKET_SIZE = 16000;
 
-export function createNetworkRingBuffer<T extends TypedArrayConstructor>(
-  type: T,
-  capacity = 1000
-): NetworkRingBuffer<T> {
-  const ringBuffer = createRingBuffer(type, capacity * MAX_PACKET_SIZE);
+export function createNetworkRingBuffer(capacity = 1000): NetworkRingBuffer {
+  const ringBuffer = createRingBuffer(Uint8Array, capacity * MAX_PACKET_SIZE);
   const buffer = new ArrayBuffer(MAX_PACKET_SIZE);
   const array = new Uint8Array(buffer);
   const view = createCursorView(buffer);
@@ -58,8 +54,8 @@ const writePeerId = (v: CursorView, peerId: string) => {
   return v;
 };
 
-export function enqueueNetworkRingBuffer<T extends TypedArrayConstructor>(
-  rb: NetworkRingBuffer<T>,
+export function enqueueNetworkRingBuffer(
+  rb: NetworkRingBuffer,
   peerId: string,
   packet: ArrayBuffer,
   broadcast = false
@@ -83,8 +79,8 @@ export function enqueueNetworkRingBuffer<T extends TypedArrayConstructor>(
   return pushRingBuffer(rb, rb.array) === MAX_PACKET_SIZE;
 }
 
-export function dequeueNetworkRingBuffer<T extends TypedArrayConstructor>(
-  rb: NetworkRingBuffer<T>,
+export function dequeueNetworkRingBuffer(
+  rb: NetworkRingBuffer,
   out: { packet: ArrayBuffer; peerId: string; broadcast: boolean }
 ) {
   if (isRingBufferEmpty(rb)) {
