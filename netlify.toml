@@ -20,6 +20,7 @@
   from = "https://staging.thirdroom.io/*"
   to = "https://staging--thirdroom.netlify.app/:splat"
   status = 301
+  force = true
 
 [[headers]]
 for = "/*"
