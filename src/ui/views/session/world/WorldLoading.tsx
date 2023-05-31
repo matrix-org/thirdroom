@@ -73,7 +73,10 @@ export function WorldLoading({ world, loading, error }: { world: Room; loading: 
             title={world.name ?? world.canonicalAlias ?? "Unknown World"}
             desc={error.message}
             options={
-              <>
+              <div className="flex gap-xxs">
+                <Button onClick={navigateExitWorld} fill="outline">
+                  Exit
+                </Button>
                 <Button
                   onClick={() => {
                     navigateEnterWorld(world, { reload: true });
@@ -81,8 +84,7 @@ export function WorldLoading({ world, loading, error }: { world: Room; loading: 
                 >
                   Reload
                 </Button>
-                <Button onClick={navigateExitWorld}>Exit</Button>
-              </>
+              </div>
             }
           />
         </div>

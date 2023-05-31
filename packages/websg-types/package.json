@@ -1,7 +1,8 @@
 {
   "name": "websg-types",
-  "version": "0.1.2",
+  "version": "0.1.5",
   "description": "Typescript types for the Web Scene Graph API",
+  "type": "module",
   "author": {
     "name": "The Matrix.org Foundation",
     "url": "https://matrix.org"

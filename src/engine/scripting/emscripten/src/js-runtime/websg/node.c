@@ -14,6 +14,7 @@
 #include "./quaternion.h"
 #include "./matrix4.h"
 #include "./ui-canvas.h"
+#include "./component-store.h"
 #include "../utils/array.h"
 
 JSClassID js_websg_node_class_id;
@@ -319,6 +320,96 @@ static JSValue js_websg_node_start_orbit(JSContext *ctx, JSValueConst this_val, 
   return JS_UNDEFINED;
 }
 
+static JSValue js_websg_node_add_component(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  WebSGNodeData *node_data = JS_GetOpaque(this_val, js_websg_node_class_id);
+
+  WebSGComponentStoreData *component_store_data = JS_GetOpaque2(ctx, argv[0], js_websg_component_store_class_id);
+
+  if (component_store_data == NULL) {
+    return JS_EXCEPTION;
+  }
+
+  if (websg_node_add_component(node_data->node_id, component_store_data->component_id) == -1) {
+    JS_ThrowInternalError(ctx, "WebSG: Couldn't add component.");
+    return JS_EXCEPTION;
+  }
+
+  return JS_UNDEFINED;
+}
+
+static JSValue js_websg_node_remove_component(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  WebSGNodeData *node_data = JS_GetOpaque(this_val, js_websg_node_class_id);
+
+  WebSGComponentStoreData *component_store_data = JS_GetOpaque2(ctx, argv[0], js_websg_component_store_class_id);
+
+  if (component_store_data == NULL) {
+    return JS_EXCEPTION;
+  }
+
+  if (websg_node_remove_component(node_data->node_id, component_store_data->component_id) == -1) {
+    JS_ThrowInternalError(ctx, "WebSG: Couldn't remove component.");
+    return JS_EXCEPTION;
+  }
+
+  return JS_UNDEFINED;
+}
+
+static JSValue js_websg_node_has_component(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  WebSGNodeData *node_data = JS_GetOpaque(this_val, js_websg_node_class_id);
+
+  WebSGComponentStoreData *component_store_data = JS_GetOpaque2(ctx, argv[0], js_websg_component_store_class_id);
+
+  if (component_store_data == NULL) {
+    return JS_EXCEPTION;
+  }
+
+  int32_t has_component = websg_node_has_component(node_data->node_id, component_store_data->component_id);
+
+  return JS_NewBool(ctx, has_component);
+}
+
+static JSValue js_websg_node_get_component(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  WebSGNodeData *node_data = JS_GetOpaque(this_val, js_websg_node_class_id);
+
+  WebSGComponentStoreData *component_store_data = JS_GetOpaque2(ctx, argv[0], js_websg_component_store_class_id);
+
+  if (component_store_data == NULL) {
+    return JS_EXCEPTION;
+  }
+
+  int32_t has_component = websg_node_has_component(node_data->node_id, component_store_data->component_id);
+
+  if (has_component == 0) {
+    return JS_UNDEFINED;
+  } else if (has_component == -1) {
+    JS_ThrowInternalError(ctx, "WebSG: Couldn't get component.");
+    return JS_EXCEPTION;
+  }
+
+  return js_websg_component_store_get_instance(ctx, component_store_data, node_data->component_store_index);
+}
+
+static JSValue js_websg_node_set_forward_direction(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  WebSGNodeData *node_data = JS_GetOpaque(this_val, js_websg_node_class_id);
+
+  float_t *direction = js_mallocz(ctx, sizeof(float_t) * 3);
+
+  if (js_get_float_array_like(ctx, argv[0], direction, 3) < 0) {
+    js_free(ctx, direction);
+    return JS_EXCEPTION;
+  }
+
+  if (websg_node_set_forward_direction(node_data->node_id, direction) == -1) {
+    js_free(ctx, direction);
+    JS_ThrowInternalError(ctx, "WebSG: Couldn't set forward direction.");
+    return JS_EXCEPTION;
+  }
+
+  js_free(ctx, direction);
+
+  return JS_UNDEFINED;
+}
+
 // Implement the addChild and removeChild methods
 static const JSCFunctionListEntry js_websg_node_proto_funcs[] = {
   JS_CFUNC_DEF("addChild", 1, js_websg_node_add_child),
@@ -339,6 +430,11 @@ static const JSCFunctionListEntry js_websg_node_proto_funcs[] = {
   JS_CFUNC_DEF("addPhysicsBody", 1, js_websg_node_add_physics_body),
   JS_CFUNC_DEF("removePhysicsBody", 0, js_websg_node_remove_physics_body),
   JS_CFUNC_DEF("startOrbit", 1, js_websg_node_start_orbit),
+  JS_CFUNC_DEF("addComponent", 1, js_websg_node_add_component),
+  JS_CFUNC_DEF("removeComponent", 1, js_websg_node_remove_component),
+  JS_CFUNC_DEF("hasComponent", 1, js_websg_node_has_component),
+  JS_CFUNC_DEF("getComponent", 1, js_websg_node_get_component),
+  JS_CFUNC_DEF("setForwardDirection", 1, js_websg_node_set_forward_direction),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "Node", JS_PROP_CONFIGURABLE),
 };
 
@@ -428,6 +524,7 @@ JSValue js_websg_new_node_instance(JSContext *ctx, WebSGWorldData *world_data, n
   WebSGNodeData *node_data = js_mallocz(ctx, sizeof(WebSGNodeData));
   node_data->world_data = world_data;
   node_data->node_id = node_id;
+  node_data->component_store_index = websg_node_get_component_store_index(node_id);
   node_data->interactable = js_websg_init_node_interactable(ctx, node_id);
   node_data->physics_body = js_websg_init_node_physics_body(ctx, node_id);
   JS_SetOpaque(node, node_data);

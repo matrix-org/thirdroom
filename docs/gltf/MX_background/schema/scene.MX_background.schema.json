@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema",
+  "title": "MX_background extension",
+  "type": "object",
+  "allOf": [{ "$ref": "glTFProperty.schema.json" }],
+  "properties": {
+    "backgroundTexture": {
+      "allOf": [{ "$ref": "textureInfo.schema.json" }],
+      "description": "The background texture."
+    },
+    "extensions": {},
+    "extras": {}
+  },
+  "required": ["backgroundTexture"]
+}

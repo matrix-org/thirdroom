@@ -9,8 +9,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:testnet": "VITE_USE_TESTNET=true yarn dev",
-    "build": "tsc && vite build",
+    "build": "tsc && vite build && npm run docs:build",
     "build:scripting-runtime": "./src/engine/scripting/emscripten/build.sh",
     "build:examples": "./examples/build.sh",
     "typecheck": "tsc --noEmit",
@@ -20,7 +19,11 @@
     "prepare": "husky install",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "coverage": "vitest run --coverage"
+    "coverage": "vitest run --coverage",
+    "docs:dev": "npm run docs:build-api && vitepress dev docs",
+    "docs:build": "npm run docs:build-api && vitepress build docs",
+    "docs:preview": "vitepress preview docs",
+    "docs:build-api": "typedoc"
   },
   "dependencies": {
     "3d-tiles-renderer": "https://github.com/matrix-org/3DTilesRendererJS.git#v0.3.9-patch",
@@ -31,6 +34,7 @@
     "@gltf-transform/core": "^2.4.3",
     "@gltf-transform/extensions": "^2.4.3",
     "@gltf-transform/functions": "^2.4.3",
+    "@matrix-org/olm": "https://gitlab.matrix.org/api/v4/projects/27/packages/npm/@matrix-org/olm/-/@matrix-org/olm-3.2.14.tgz",
     "@monaco-editor/react": "^4.4.6",
     "@radix-ui/react-checkbox": "^1.0.1",
     "@radix-ui/react-dialog": "^0.1.7",
@@ -44,7 +48,7 @@
     "@sentry/react": "^7.13.0",
     "@sentry/tracing": "^7.13.0",
     "@thi.ng/malloc": "^6.1.19",
-    "@thirdroom/hydrogen-view-sdk": "0.0.29",
+    "@thirdroom/hydrogen-view-sdk": "0.1.2",
     "@thirdroom/manifold-editor-components": "^0.0.5",
     "@thirdroom/ringbuffer": "^0.0.1",
     "@webxr-input-profiles/assets": "^1.0.13",
@@ -120,12 +124,14 @@
     "stylelint-config-prettier": "^9.0.3",
     "stylelint-config-standard": "^30.0.1",
     "ts-node": "^10.7.0",
+    "typedoc": "^0.24.7",
+    "typedoc-plugin-markdown": "^3.15.3",
     "typescript": "^4.9.2-rc",
     "vite": "4.1.4",
     "vite-node": "^0.29.2",
     "vite-plugin-cross-origin-isolation": "^0.1.6",
     "vite-plugin-static-copy": "^0.13.0",
-    "vitest": "^0.29.2",
-    "ws": "^8.5.0"
+    "vitepress": "^1.0.0-beta.1",
+    "vitest": "^0.29.2"
   }
 }

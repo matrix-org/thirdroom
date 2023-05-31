@@ -1,0 +1,10 @@
+{
+  "name": "WebSG JavaScript API",
+  "entryPoints": ["packages/websg-types/types/websg.d.ts"],
+  "readme": "none",
+  "plugin": ["typedoc-plugin-markdown", "./docs/.typedoc/plugin.mjs"],
+  "out": "docs/websg-js",
+  "githubPages": false,
+  "cleanOutputDir": true,
+  "excludeExternals": true
+}

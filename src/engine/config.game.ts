@@ -19,7 +19,7 @@ import {
 } from "./editor/editor.game";
 import { GameState } from "./GameTypes";
 import { RendererModule } from "./renderer/renderer.game";
-import { SpawnablesModule, SpawnableSystem } from "../plugins/spawnables/spawnables.game";
+import { SpawnablesModule } from "../plugins/spawnables/spawnables.game";
 import {
   RecycleResourcesSystem,
   ResourceDisposalSystem,
@@ -54,6 +54,7 @@ import { MatrixModule } from "./matrix/matrix.game";
 import { WebSGNetworkModule } from "./network/scripting.game";
 import { WebSGUIModule } from "./ui/ui.game";
 import { CameraRigModule, CameraRigSystem, NetworkedCameraSystem } from "../plugins/camera/CameraRig.game";
+import { ActionBarSystem } from "../plugins/thirdroom/action-bar.game";
 
 export default defineConfig<GameState>({
   modules: [
@@ -94,7 +95,7 @@ export default defineConfig<GameState>({
     SetWebXRReferenceSpaceSystem,
     InteractionSystem,
     XRInteractionSystem,
-    SpawnableSystem,
+    ActionBarSystem,
     ThirdroomSystem,
 
     // update client position

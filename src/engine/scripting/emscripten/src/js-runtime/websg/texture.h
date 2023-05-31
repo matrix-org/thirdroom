@@ -15,6 +15,6 @@ void js_websg_define_texture(JSContext *ctx, JSValue websg);
 
 JSValue js_websg_get_texture_by_id(JSContext *ctx, WebSGWorldData *world_data, texture_id_t texture_id);
 
-JSValue js_websg_find_texture_by_name(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
+JSValue js_websg_world_find_texture_by_name(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 
 #endif

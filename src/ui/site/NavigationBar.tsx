@@ -26,6 +26,11 @@ export function NavigationBar() {
         <Logo />
       </div>
       <div className="flex items-center gap-lg">
+        <a href="/docs">
+          <Text variant="b2" weight="medium">
+            Docs
+          </Text>
+        </a>
         <a href="https://matrix.to/#/#thirdroom-dev:matrix.org" target="_blank">
           <Text variant="b2" weight="medium">
             Chat

@@ -15,6 +15,7 @@ import { useHydrogen } from "../../../hooks/useHydrogen";
 import "./UserMenu.css";
 import { OverlayWindow, overlayWindowAtom } from "../../../state/overlayWindow";
 import { userProfileAtom } from "../../../state/userProfile";
+import { RageshakeDialog } from "../rageshake/RageshakeDialog";
 
 export function UserMenu() {
   const { session, platform, logout } = useHydrogen(true);
@@ -22,6 +23,7 @@ export function UserMenu() {
   const { userId, displayName, avatarUrl } = useAtomValue(userProfileAtom);
   const setOverlayWindow = useSetAtom(overlayWindowAtom);
   const [copied, setCopied] = useState(false);
+  const [bugReport, setBugReport] = useState(false);
   const navigate = useNavigate();
 
   const handleCopy = () => {
@@ -32,54 +34,58 @@ export function UserMenu() {
   };
 
   return (
-    <DropdownMenu
-      content={
-        <div className="UserMenu flex flex-column gap-xs">
-          <div className="UserMenu__header">
-            <Text weight="medium">{displayName}</Text>
-            <div className="flex items-center gap-xxs">
-              <Text className="truncate" variant="b3" color="surface-low">
-                {userId}
-              </Text>
-              <Tooltip open={copied} content={copied ? "Copied" : "Copy"} side="top">
-                <IconButton
-                  onClick={handleCopy}
-                  className="shrink-0"
-                  size="sm"
-                  iconSrc={CopyIC}
-                  variant="primary"
-                  label="Copy user id"
-                />
-              </Tooltip>
+    <>
+      <RageshakeDialog open={bugReport} requestClose={() => setBugReport(false)} />
+      <DropdownMenu
+        content={
+          <div className="UserMenu flex flex-column gap-xs">
+            <div className="UserMenu__header">
+              <Text weight="medium">{displayName}</Text>
+              <div className="flex items-center gap-xxs">
+                <Text className="truncate" variant="b3" color="surface-low">
+                  {userId}
+                </Text>
+                <Tooltip open={copied} content={copied ? "Copied" : "Copy"} side="top">
+                  <IconButton
+                    onClick={handleCopy}
+                    className="shrink-0"
+                    size="sm"
+                    iconSrc={CopyIC}
+                    variant="primary"
+                    label="Copy user id"
+                  />
+                </Tooltip>
+              </div>
+            </div>
+            <div>
+              <DropdownMenuItem onSelect={() => setOverlayWindow({ type: OverlayWindow.UserProfile })}>
+                View Profile
+              </DropdownMenuItem>
+              {accountManagementUrl && (
+                <DropdownMenuItem onSelect={() => window.open(accountManagementUrl)}>Manage Account</DropdownMenuItem>
+              )}
+              <DropdownMenuItem onSelect={() => navigate("/preview")}>Tech Preview</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setBugReport(true)}>Report Bug</DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => {
+                  if (confirm("Are you sure?")) logout();
+                }}
+                variant="danger"
+              >
+                Logout
+              </DropdownMenuItem>
             </div>
           </div>
-          <div>
-            <DropdownMenuItem onSelect={() => setOverlayWindow({ type: OverlayWindow.UserProfile })}>
-              View Profile
-            </DropdownMenuItem>
-            {accountManagementUrl && (
-              <DropdownMenuItem onSelect={() => window.open(accountManagementUrl)}>Manage Account</DropdownMenuItem>
-            )}
-            <DropdownMenuItem onSelect={() => navigate("/preview")}>Tech Preview</DropdownMenuItem>
-            <DropdownMenuItem
-              onSelect={() => {
-                if (confirm("Are you sure?")) logout();
-              }}
-              variant="danger"
-            >
-              Logout
-            </DropdownMenuItem>
-          </div>
-        </div>
-      }
-    >
-      <Avatar
-        onClick={() => false /* used for keyboard focus */}
-        shape="circle"
-        name={displayName}
-        bgColor={`var(--usercolor${getIdentifierColorNumber(userId)})`}
-        imageSrc={avatarUrl ? getAvatarHttpUrl(avatarUrl, 40, platform, session.mediaRepository) : undefined}
-      />
-    </DropdownMenu>
+        }
+      >
+        <Avatar
+          onClick={() => false /* used for keyboard focus */}
+          shape="circle"
+          name={displayName}
+          bgColor={`var(--usercolor${getIdentifierColorNumber(userId)})`}
+          imageSrc={avatarUrl ? getAvatarHttpUrl(avatarUrl, 40, platform, session.mediaRepository) : undefined}
+        />
+      </DropdownMenu>
+    </>
   );
 }

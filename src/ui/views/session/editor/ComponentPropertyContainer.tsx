@@ -10,7 +10,7 @@ export function ComponentPropertyContainer({ id, name, type }: ComponentProperty
     return (
       <div className="flex flex-column gap-xxs">
         <Label className="shrink-0">{name}:</Label>
-        <VectorInput type="vec3" value={value} onChange={onChange} />
+        <VectorInput type="vec3" value={value as Float32Array} onChange={onChange} />
       </div>
     );
   } else {

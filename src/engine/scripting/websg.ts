@@ -1,19 +1,35 @@
-import { hasComponent } from "bitecs";
-import RAPIER from "@dimforge/rapier3d-compat";
-import { BoxGeometry } from "three";
-import { vec2, vec4 } from "gl-matrix";
-
-import { GameState } from "../GameTypes";
-import { IRemoteResourceClass, RemoteResourceConstructor } from "../resource/RemoteResourceClass";
-import { getRemoteResources } from "../resource/resource.game";
 import {
+  defineQuery,
+  hasComponent,
+  IComponent,
+  QueryModifier as IQueryModifier,
+  Not,
+  IWorld,
+  removeQuery,
+} from "bitecs";
+import { BoxGeometry } from "three";
+import { mat4, vec2, vec3, vec4, quat } from "gl-matrix";
+import RAPIER from "@dimforge/rapier3d-compat";
+
+import { Collision, GameState } from "../GameTypes";
+import {
+  getScriptResource,
+  getScriptResourceByNamePtr,
+  getScriptResourceRef,
+  readEnum,
   readFloat32ArrayInto,
+  readFloatList,
+  readList,
+  readRefMap,
+  readResourceRef,
   readSharedArrayBuffer,
   readString,
   readStringFromCursorView,
+  readStringLen,
   readUint8Array,
   WASMModuleContext,
   writeFloat32Array,
+  writeNumberArray,
   writeString,
 } from "./WASMModuleContext";
 import {
@@ -22,12 +38,14 @@ import {
   RemoteBufferView,
   RemoteCamera,
   RemoteCollider,
+  RemoteImage,
   RemoteInteractable,
   RemoteLight,
   RemoteMaterial,
   RemoteMesh,
   RemoteMeshPrimitive,
   RemoteNode,
+  RemotePhysicsBody,
   RemoteScene,
   RemoteSkin,
   RemoteTexture,
@@ -54,6 +72,7 @@ import {
   FlexDirection,
   FlexWrap,
   FlexJustify,
+  QueryModifier,
 } from "../resource/schema";
 import {
   moveCursorView,
@@ -61,14 +80,17 @@ import {
   readFloat32Array,
   readUint32,
   readUint32Array,
+  readUint32List,
   rewindCursorView,
   skipUint32,
+  writeInt32,
+  writeUint32,
 } from "../allocator/CursorView";
 import { AccessorComponentTypeToTypedArray, AccessorTypeToElementSize } from "../accessor/accessor.common";
 import {
-  addRigidBody,
-  createNodeColliderDesc,
+  addNodePhysicsBody,
   PhysicsModule,
+  registerCollisionHandler,
   removeRigidBody,
   RigidBody,
 } from "../physics/physics.game";
@@ -77,85 +99,9 @@ import { createMesh } from "../mesh/mesh.game";
 import { addInteractableComponent } from "../../plugins/interaction/interaction.game";
 import { addUIElementChild, initNodeUICanvas, removeUIElementChild } from "../ui/ui.game";
 import { startOrbit, stopOrbit } from "../../plugins/camera/CameraRig.game";
-
-export function getScriptResource<T extends RemoteResourceConstructor>(
-  wasmCtx: WASMModuleContext,
-  resourceConstructor: T,
-  resourceId: number
-): InstanceType<T> | undefined {
-  const { resourceIds, resourceMap } = wasmCtx.resourceManager;
-  const { name, resourceType } = resourceConstructor.resourceDef;
-
-  if (!resourceIds.has(resourceId)) {
-    console.error(`WebSG: missing or unpermitted use of ${name}: ${resourceId}`);
-    return undefined;
-  }
-
-  const resource = resourceMap.get(resourceId) as InstanceType<T> | undefined;
-
-  if (!resource) {
-    console.error(`WebSG: missing ${name}: ${resourceId}`);
-    return undefined;
-  }
-
-  if (resource.resourceType !== resourceType) {
-    console.error(`WebSG: id does not point to a ${name}: ${resourceId}`);
-    return undefined;
-  }
-
-  return resource;
-}
-
-function getScriptResourceByName<T extends RemoteResourceConstructor>(
-  ctx: GameState,
-  wasmCtx: WASMModuleContext,
-  resourceConstructor: T,
-  name: string
-): InstanceType<T> | undefined {
-  const resources = getRemoteResources(ctx, resourceConstructor as IRemoteResourceClass<T["resourceDef"]>);
-
-  const resourceIds = wasmCtx.resourceManager.resourceIds;
-
-  for (let i = 0; i < resources.length; i++) {
-    const resource = resources[i];
-
-    if (resource.name === name && resourceIds.has(resource.eid)) {
-      return resource as InstanceType<T>;
-    }
-  }
-
-  return undefined;
-}
-
-function getScriptResourceByNamePtr<T extends RemoteResourceConstructor>(
-  ctx: GameState,
-  wasmCtx: WASMModuleContext,
-  resourceConstructor: T,
-  namePtr: number,
-  byteLength: number
-): InstanceType<T> | undefined {
-  const name = readString(wasmCtx, namePtr, byteLength);
-  return getScriptResourceByName(ctx, wasmCtx, resourceConstructor, name);
-}
-
-function getScriptResourceRef<T extends RemoteResourceConstructor>(
-  wasmCtx: WASMModuleContext,
-  resourceConstructor: T,
-  refResource: InstanceType<T> | undefined
-): number {
-  if (!refResource) {
-    return 0;
-  }
-
-  const resourceId = refResource.eid;
-
-  if (!wasmCtx.resourceManager.resourceIds.has(resourceId)) {
-    console.error(`WebSG: missing or unpermitted use of ${resourceConstructor.name}: ${resourceId}`);
-    return 0;
-  }
-
-  return resourceId;
-}
+import { GLTFComponentPropertyStorageTypeToEnum, setComponentStore } from "../resource/ComponentStore";
+import { getPrimaryInputSourceNode } from "../input/input.game";
+import { getRotationNoAlloc } from "../utils/getRotationNoAlloc";
 
 function getScriptChildCount(wasmCtx: WASMModuleContext, node: RemoteNode | RemoteScene): number {
   const resourceIds = wasmCtx.resourceManager.resourceIds;
@@ -320,92 +266,6 @@ function readExtensionsAndExtras<T extends { [key: string]: unknown }>(
   return extensions as Partial<T>;
 }
 
-function readFloatList(wasmCtx: WASMModuleContext): Float32Array | undefined {
-  const itemsPtr = readUint32(wasmCtx.cursorView);
-  const count = readUint32(wasmCtx.cursorView);
-
-  if (count === 0) {
-    return undefined;
-  }
-
-  const rewind = rewindCursorView(wasmCtx.cursorView);
-  moveCursorView(wasmCtx.cursorView, itemsPtr);
-  const arr = readFloat32Array(wasmCtx.cursorView, count);
-  rewind();
-  return arr;
-}
-
-function readStringLen(wasmCtx: WASMModuleContext): string {
-  const strPtr = readUint32(wasmCtx.cursorView);
-  const byteLength = readUint32(wasmCtx.cursorView);
-  const rewind = rewindCursorView(wasmCtx.cursorView);
-  const value = readString(wasmCtx, strPtr, byteLength);
-  rewind();
-  return value;
-}
-
-function readList<T>(wasmCtx: WASMModuleContext, readItem: (wasmCtx: WASMModuleContext, index: number) => T): T[] {
-  const items: T[] = [];
-
-  const itemsPtr = readUint32(wasmCtx.cursorView);
-  const count = readUint32(wasmCtx.cursorView);
-  const rewind = rewindCursorView(wasmCtx.cursorView);
-  moveCursorView(wasmCtx.cursorView, itemsPtr);
-
-  for (let i = 0; i < count; i++) {
-    items.push(readItem(wasmCtx, i));
-  }
-
-  rewind();
-
-  return items;
-}
-
-function readEnum<T extends {}>(wasmCtx: WASMModuleContext, enumType: T, enumName: string): number {
-  const enumValue = readUint32(wasmCtx.cursorView);
-
-  if (enumValue in enumType) {
-    return enumValue;
-  }
-
-  throw new Error(`WebSG: ${enumValue} is not a valid ${enumName} `);
-}
-
-function readResourceRef<T extends RemoteResourceConstructor>(
-  wasmCtx: WASMModuleContext,
-  resourceConstructor: T
-): InstanceType<T> | undefined {
-  const resourceId = readUint32(wasmCtx.cursorView);
-  return resourceId ? getScriptResource(wasmCtx, resourceConstructor, resourceId) : undefined;
-}
-
-function readRefMap<T extends RemoteResourceConstructor>(
-  wasmCtx: WASMModuleContext,
-  resourceConstructor: T
-): { [key: string]: InstanceType<T> } {
-  const map: { [key: number]: InstanceType<T> } = {};
-
-  const itemsPtr = readUint32(wasmCtx.cursorView);
-  const count = readUint32(wasmCtx.cursorView);
-  const rewind = rewindCursorView(wasmCtx.cursorView);
-  moveCursorView(wasmCtx.cursorView, itemsPtr);
-
-  for (let i = 0; i < count; i++) {
-    const key = readEnum(wasmCtx, MeshPrimitiveAttributeIndex, "MeshPrimitiveAttributeIndex");
-    const value = readResourceRef(wasmCtx, resourceConstructor);
-
-    if (!value) {
-      throw new Error(`Failed to read resource ref for key ${key}`);
-    }
-
-    map[key] = value;
-  }
-
-  rewind();
-
-  return map;
-}
-
 // MaterialTextureInfoProps
 function readBaseTextureInfo(
   wasmCtx: WASMModuleContext
@@ -542,6 +402,12 @@ interface MeshPrimitiveProps {
   mode: MeshPrimitiveMode;
 }
 
+const tempRapierVec3 = new RAPIER.Vector3(0, 0, 0);
+
+const tempVec3 = vec3.create();
+const tempDirection = vec3.create();
+const tempQuat = quat.create();
+
 // TODO: ResourceManager should have a resourceMap that corresponds to just its owned resources
 // TODO: ResourceManager should have a resourceByType that corresponds to just its owned resources
 // TODO: Force disposal of all entities belonging to the wasmCtx when environment unloads
@@ -551,7 +417,29 @@ interface MeshPrimitiveProps {
 export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
   const physics = getModule(ctx, PhysicsModule);
 
-  return {
+  const disposeCollisionHandler = registerCollisionHandler(
+    ctx,
+    (nodeA: number, nodeB: number, _handleA: number, _handleB: number, started: boolean) => {
+      const resourceManager = wasmCtx.resourceManager;
+      const resourceIds = resourceManager.resourceIds;
+      const collisionListeners = resourceManager.collisionListeners;
+
+      if (resourceIds.has(nodeA) && resourceIds.has(nodeB)) {
+        const collision: Collision = {
+          nodeA,
+          nodeB,
+          started,
+        };
+
+        for (let i = 0; i < collisionListeners.length; i++) {
+          const listener = collisionListeners[i];
+          listener.collisions.push(collision);
+        }
+      }
+    }
+  );
+
+  const websgWASMModule = {
     world_get_environment() {
       return ctx.worldResource.environment?.publicScene.eid || 0;
     },
@@ -569,6 +457,365 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       } else {
         return -1;
       }
+    },
+    world_create_query(queryPtr: number) {
+      try {
+        const resourceManager = wasmCtx.resourceManager;
+        const components: (IComponent | IQueryModifier<IWorld>)[] = [];
+        moveCursorView(wasmCtx.cursorView, queryPtr);
+        readList(wasmCtx, () => {
+          const componentIds = readUint32List(wasmCtx.cursorView);
+          const modifier = readEnum(wasmCtx, QueryModifier, "QueryModifier");
+
+          for (let i = 0; i < componentIds.length; i++) {
+            const componentId = componentIds[i];
+            const component = resourceManager.componentStores.get(componentId);
+            if (component) {
+              if (modifier == QueryModifier.All) {
+                components.push(component);
+              } else if (modifier == QueryModifier.None) {
+                components.push(Not(component));
+              } else if (modifier == QueryModifier.Any) {
+                throw new Error(`WebSG: QueryModifier.Any not supported`);
+              }
+            } else {
+              console.error(`WebSG: component not registered`);
+            }
+          }
+        });
+        const query = defineQuery(components);
+        const queryId = resourceManager.nextQueryId++;
+        resourceManager.registeredQueries.set(queryId, query);
+        return queryId;
+      } catch (e) {
+        console.error(e);
+        return -1;
+      }
+    },
+    query_get_results_count(queryId: number) {
+      const query = wasmCtx.resourceManager.registeredQueries.get(queryId);
+
+      if (query) {
+        return query(ctx.world).length;
+      } else {
+        console.error(`WebSG: query not registered`);
+        return -1;
+      }
+    },
+    query_get_results(queryId: number, resultsPtr: number, maxCount: number) {
+      const query = wasmCtx.resourceManager.registeredQueries.get(queryId);
+
+      if (query) {
+        const results = query(ctx.world);
+
+        if (results.length > maxCount) {
+          console.error(`WebSG: query results array larger than maxCount`);
+          return -1;
+        }
+
+        writeNumberArray(wasmCtx, resultsPtr, results);
+
+        return results.length;
+      } else {
+        console.error(`WebSG: query not registered`);
+        return -1;
+      }
+    },
+    world_find_component_definition_by_name(namePtr: number, byteLength: number) {
+      const name = readString(wasmCtx, namePtr, byteLength);
+      const componentId = wasmCtx.resourceManager.componentIdsByName.get(name);
+
+      if (componentId) {
+        return componentId;
+      } else {
+        console.error(`WebSG: component ${name} not registered`);
+        return 0;
+      }
+    },
+    component_definition_get_name_length(componentId: number) {
+      const component = wasmCtx.resourceManager.componentDefinitions.get(componentId);
+
+      if (component) {
+        return component.name.length;
+      } else {
+        console.error(`WebSG: component not registered`);
+        return -1;
+      }
+    },
+    component_definition_get_name(componentId: number, namePtr: number, maxByteLength: number) {
+      const component = wasmCtx.resourceManager.componentDefinitions.get(componentId);
+
+      if (component) {
+        return writeString(wasmCtx, namePtr, component.name, maxByteLength);
+      } else {
+        console.error(`WebSG: component not registered`);
+        return -1;
+      }
+    },
+    component_definition_get_prop_count(componentId: number) {
+      const component = wasmCtx.resourceManager.componentDefinitions.get(componentId);
+
+      if (component) {
+        return component.props?.length || 0;
+      } else {
+        console.error(`WebSG: component not registered`);
+        return -1;
+      }
+    },
+    component_definition_get_prop_name_length(componentId: number, propIdx: number) {
+      const component = wasmCtx.resourceManager.componentDefinitions.get(componentId);
+
+      if (component) {
+        const prop = component.props ? component.props[propIdx] : undefined;
+
+        if (!prop) {
+          console.error(`WebSG: invalid prop index`);
+          return -1;
+        }
+
+        return prop.name.length;
+      } else {
+        console.error(`WebSG: component not registered`);
+        return -1;
+      }
+    },
+    component_definition_get_prop_name(
+      componentId: number,
+      propIdx: number,
+      propTypePtr: number,
+      maxByteLength: number
+    ) {
+      const component = wasmCtx.resourceManager.componentDefinitions.get(componentId);
+
+      if (component) {
+        const prop = component.props ? component.props[propIdx] : undefined;
+
+        if (!prop) {
+          console.error(`WebSG: invalid prop index`);
+          return -1;
+        }
+
+        return writeString(wasmCtx, propTypePtr, prop.name, maxByteLength);
+      } else {
+        console.error(`WebSG: component not registered`);
+        return -1;
+      }
+    },
+    component_definition_get_prop_type_length(componentId: number, propIdx: number) {
+      const component = wasmCtx.resourceManager.componentDefinitions.get(componentId);
+
+      if (component) {
+        const prop = component.props ? component.props[propIdx] : undefined;
+
+        if (!prop) {
+          console.error(`WebSG: invalid prop index`);
+          return -1;
+        }
+
+        return prop.type.length;
+      } else {
+        console.error(`WebSG: component not registered`);
+        return -1;
+      }
+    },
+    component_definition_get_prop_type(
+      componentId: number,
+      propIdx: number,
+      propTypePtr: number,
+      maxByteLength: number
+    ) {
+      const component = wasmCtx.resourceManager.componentDefinitions.get(componentId);
+
+      if (component) {
+        const prop = component.props ? component.props[propIdx] : undefined;
+
+        if (!prop) {
+          console.error(`WebSG: invalid prop index`);
+          return -1;
+        }
+
+        return writeString(wasmCtx, propTypePtr, prop.type, maxByteLength);
+      } else {
+        console.error(`WebSG: component not registered`);
+        return -1;
+      }
+    },
+    component_definition_get_ref_type_length(componentId: number, propIdx: number) {
+      const component = wasmCtx.resourceManager.componentDefinitions.get(componentId);
+
+      if (component) {
+        const prop = component.props ? component.props[propIdx] : undefined;
+
+        if (!prop) {
+          console.error(`WebSG: invalid prop index`);
+          return -1;
+        }
+
+        return prop.refType ? prop.refType.length : 0;
+      } else {
+        console.error(`WebSG: component not registered`);
+        return -1;
+      }
+    },
+    component_definition_get_ref_type(componentId: number, propIdx: number, refTypePtr: number, maxByteLength: number) {
+      const component = wasmCtx.resourceManager.componentDefinitions.get(componentId);
+
+      if (component) {
+        const prop = component.props ? component.props[propIdx] : undefined;
+
+        if (!prop) {
+          console.error(`WebSG: invalid prop index`);
+          return -1;
+        }
+
+        if (prop.refType) {
+          return writeString(wasmCtx, refTypePtr, prop.refType, maxByteLength);
+        } else {
+          return 0;
+        }
+      } else {
+        console.error(`WebSG: component not registered`);
+        return -1;
+      }
+    },
+    component_definition_get_prop_storage_type(componentId: number, propIdx: number) {
+      const component = wasmCtx.resourceManager.componentDefinitions.get(componentId);
+
+      if (component) {
+        const prop = component.props ? component.props[propIdx] : undefined;
+
+        if (!prop) {
+          console.error(`WebSG: invalid prop index`);
+          return -1;
+        }
+
+        const storageType = GLTFComponentPropertyStorageTypeToEnum[prop.storageType];
+
+        if (storageType === undefined) {
+          console.error(`WebSG: invalid storage type`);
+          return -1;
+        }
+
+        return storageType;
+      } else {
+        console.error(`WebSG: component not registered`);
+        return -1;
+      }
+    },
+    component_definition_get_prop_size(componentId: number, propIdx: number) {
+      const component = wasmCtx.resourceManager.componentDefinitions.get(componentId);
+
+      if (component) {
+        const prop = component.props ? component.props[propIdx] : undefined;
+
+        if (!prop) {
+          console.error(`WebSG: invalid prop index`);
+          return -1;
+        }
+
+        return prop.size;
+      } else {
+        console.error(`WebSG: component not registered`);
+        return -1;
+      }
+    },
+    world_get_component_store_size() {
+      return wasmCtx.resourceManager.componentStoreSize;
+    },
+    world_set_component_store_size(size: number) {
+      if (size > wasmCtx.resourceManager.maxEntities) {
+        console.error("WebSG: component store size larger than maxEntities");
+        return -1;
+      }
+
+      wasmCtx.resourceManager.componentStoreSize = size;
+
+      return 0;
+    },
+    world_set_component_store(componentId: number, storePtr: number) {
+      try {
+        setComponentStore(wasmCtx.resourceManager, componentId, wasmCtx.memory.buffer, storePtr);
+      } catch (error) {
+        console.error(error);
+        return -1;
+      }
+
+      return 0;
+    },
+    world_get_component_store(componentId: number) {
+      const componentStore = wasmCtx.resourceManager.componentStores.get(componentId);
+
+      if (!componentStore) {
+        console.error(`WebSG: component store not set`);
+        return -1;
+      }
+
+      return componentStore.byteOffset;
+    },
+    node_add_component(nodeId: number, componentId: number) {
+      const componentStore = wasmCtx.resourceManager.componentStores.get(componentId);
+
+      if (!componentStore) {
+        console.error(`WebSG: component not registered`);
+        return -1;
+      }
+
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+      if (!node) {
+        return -1;
+      }
+
+      try {
+        componentStore.add(node.eid);
+        return 0;
+      } catch (error) {
+        console.error(`WebSG: Error adding component: ${error}`);
+        return -1;
+      }
+    },
+    node_remove_component(nodeId: number, componentId: number) {
+      const componentStore = wasmCtx.resourceManager.componentStores.get(componentId);
+
+      if (!componentStore) {
+        console.error(`WebSG: component not registered`);
+        return -1;
+      }
+
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+      if (!node) {
+        return -1;
+      }
+
+      componentStore.remove(node.eid);
+
+      return 0;
+    },
+    node_has_component(nodeId: number, componentId: number) {
+      const componentStore = wasmCtx.resourceManager.componentStores.get(componentId);
+
+      if (!componentStore) {
+        console.error(`WebSG: component not registered`);
+        return -1;
+      }
+
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+      if (!node) {
+        return -1;
+      }
+
+      return componentStore.has(node.eid) ? 1 : 0;
+    },
+    node_get_component_store_index(nodeId: number) {
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+      if (!node) {
+        return -1;
+      }
+
+      return wasmCtx.resourceManager.nodeIdToComponentStoreIndex.get(node.eid) || 0;
     },
     world_create_scene(propsPtr: number) {
       try {
@@ -1127,6 +1374,24 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       return 1;
     },
+    node_set_forward_direction(nodeId: number, directionPtr: number) {
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+      if (!node) {
+        return -1;
+      }
+
+      readFloat32ArrayInto(wasmCtx, directionPtr, tempVec3 as Float32Array);
+      vec3.normalize(tempVec3, tempVec3);
+
+      vec3.set(tempDirection, 0, 0, -1);
+      vec3.transformQuat(tempDirection, tempDirection, node.quaternion);
+
+      quat.rotationTo(tempQuat, tempDirection, tempVec3);
+      quat.multiply(node.quaternion, node.quaternion, tempQuat);
+
+      return 0;
+    },
     world_stop_orbit() {
       stopOrbit(ctx);
       return 1;
@@ -1140,11 +1405,16 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
         const primitiveProps: MeshPrimitiveProps[] = readList(wasmCtx, () => {
           readExtensionsAndExtras(wasmCtx);
-          const attributes = readRefMap(wasmCtx, RemoteAccessor);
+          const attributes = readRefMap(
+            wasmCtx,
+            MeshPrimitiveAttributeIndex,
+            "MeshPrimitiveAttributeIndex",
+            RemoteAccessor
+          );
           const indices = readResourceRef(wasmCtx, RemoteAccessor);
           const material = readResourceRef(wasmCtx, RemoteMaterial);
           const mode = readUint32(wasmCtx.cursorView);
-          readRefMap(wasmCtx, RemoteAccessor); // targets (currently unused)
+          readRefMap(wasmCtx, MeshPrimitiveAttributeIndex, "MeshPrimitiveAttributeIndex", RemoteAccessor); // targets (currently unused)
 
           if (MeshPrimitiveMode[mode] === undefined) {
             throw new Error(`WebSG: invalid mesh primitive mode: ${mode}`);
@@ -1586,6 +1856,10 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       const texture = getScriptResourceByNamePtr(ctx, wasmCtx, RemoteTexture, namePtr, byteLength);
       return texture ? texture.eid : 0;
     },
+    world_find_image_by_name(namePtr: number, byteLength: number) {
+      const texture = getScriptResourceByNamePtr(ctx, wasmCtx, RemoteImage, namePtr, byteLength);
+      return texture ? texture.eid : 0;
+    },
     world_create_light(propsPtr: number) {
       try {
         moveCursorView(wasmCtx.cursorView, propsPtr);
@@ -1693,12 +1967,15 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
         readExtensionsAndExtras(wasmCtx);
         const type = readEnum(wasmCtx, InteractableType, "InteractableType");
 
-        if (type !== InteractableType.Interactable) {
+        const validTypes = [InteractableType.Interactable, InteractableType.Grabbable];
+
+        if (!validTypes.includes(type)) {
           console.error("WebSG: Invalid interactable type.");
           return -1;
         }
 
         node.interactable = new RemoteInteractable(wasmCtx.resourceManager, { type });
+        addInteractableComponent(ctx, physics, node, type);
 
         return 0;
       } catch (error) {
@@ -1821,54 +2098,20 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
         moveCursorView(wasmCtx.cursorView, propsPtr);
         readExtensionsAndExtras(wasmCtx);
         const type = readEnum(wasmCtx, PhysicsBodyType, "PhysicsBodyType");
+        const mass = readFloat32(wasmCtx.cursorView);
+        const linearVelocity = readFloat32Array(wasmCtx.cursorView, 3);
+        const angularVelocity = readFloat32Array(wasmCtx.cursorView, 3);
+        const inertiaTensor = readFloat32Array(wasmCtx.cursorView, 9);
 
-        let rigidBodyDesc: RAPIER.RigidBodyDesc;
-        let meshResource: RemoteMesh | undefined;
-        let primitiveResource: RemoteMeshPrimitive | undefined;
+        node.physicsBody = new RemotePhysicsBody(wasmCtx.resourceManager, {
+          type,
+          mass,
+          linearVelocity,
+          angularVelocity,
+          inertiaTensor,
+        });
 
-        if (type === PhysicsBodyType.Rigid) {
-          rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic();
-        } else if (type === PhysicsBodyType.Kinematic) {
-          rigidBodyDesc = RAPIER.RigidBodyDesc.kinematicPositionBased();
-        } else {
-          rigidBodyDesc = RAPIER.RigidBodyDesc.fixed();
-        }
-
-        rigidBodyDesc.linvel.x = readFloat32(wasmCtx.cursorView);
-        rigidBodyDesc.linvel.y = readFloat32(wasmCtx.cursorView);
-        rigidBodyDesc.linvel.z = readFloat32(wasmCtx.cursorView);
-
-        rigidBodyDesc.angvel.x = readFloat32(wasmCtx.cursorView);
-        rigidBodyDesc.angvel.y = readFloat32(wasmCtx.cursorView);
-        rigidBodyDesc.angvel.z = readFloat32(wasmCtx.cursorView);
-
-        readFloat32Array(wasmCtx.cursorView, 9); // Inertia tensor (currently unused)
-
-        const { physicsWorld } = getModule(ctx, PhysicsModule);
-
-        const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
-
-        const nodeColliderDesc = createNodeColliderDesc(node);
-
-        if (nodeColliderDesc) {
-          physicsWorld.createCollider(nodeColliderDesc, rigidBody);
-        }
-
-        let curChild = node.firstChild;
-
-        while (curChild) {
-          if (!hasComponent(ctx.world, RigidBody, curChild.eid)) {
-            const childColliderDesc = createNodeColliderDesc(curChild);
-
-            if (childColliderDesc) {
-              physicsWorld.createCollider(childColliderDesc, rigidBody);
-            }
-          }
-
-          curChild = curChild.nextSibling;
-        }
-
-        addRigidBody(ctx, node, rigidBody, meshResource, primitiveResource);
+        addNodePhysicsBody(ctx, node);
 
         return 0;
       } catch (error) {
@@ -1883,6 +2126,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
         return -1;
       }
 
+      node.physicsBody = undefined;
       removeRigidBody(ctx.world, node.eid);
 
       return 0;
@@ -1890,6 +2134,87 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
     node_has_physics_body(nodeId: number) {
       const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
       return node && hasComponent(ctx.world, RigidBody, node.eid) ? 1 : 0;
+    },
+    physics_body_apply_impulse(nodeId: number, impulsePtr: number) {
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+      if (!node) {
+        return -1;
+      }
+
+      moveCursorView(wasmCtx.cursorView, impulsePtr);
+      tempRapierVec3.x = readFloat32(wasmCtx.cursorView);
+      tempRapierVec3.y = readFloat32(wasmCtx.cursorView);
+      tempRapierVec3.z = readFloat32(wasmCtx.cursorView);
+
+      const body = RigidBody.store.get(node.eid);
+
+      if (!body) {
+        return -1;
+      }
+
+      body.applyImpulse(tempRapierVec3, true);
+
+      return 0;
+    },
+    world_create_collision_listener() {
+      const resourceManager = wasmCtx.resourceManager;
+      const id = resourceManager.nextCollisionListenerId++;
+      resourceManager.collisionListeners.push({
+        id,
+        collisions: [],
+      });
+      return id;
+    },
+    collision_listener_dispose(listenerId: number) {
+      const resourceManager = wasmCtx.resourceManager;
+      const index = resourceManager.collisionListeners.findIndex((l) => l.id === listenerId);
+      if (index === -1) {
+        console.error(`WebSG: collision listener ${listenerId} not found.`);
+        return -1;
+      }
+      resourceManager.collisionListeners.splice(index, 1);
+      return 0;
+    },
+    collisions_listener_get_collision_count(listenerId: number) {
+      const resourceManager = wasmCtx.resourceManager;
+      const listener = resourceManager.collisionListeners.find((l) => l.id === listenerId);
+      if (!listener) {
+        console.error(`WebSG: collision listener ${listenerId} not found.`);
+        return -1;
+      }
+      return listener.collisions.length;
+    },
+    collisions_listener_get_collisions(listenerId: number, collisionsPtr: number, maxCollisions: number) {
+      const resourceManager = wasmCtx.resourceManager;
+      const listener = resourceManager.collisionListeners.find((l) => l.id === listenerId);
+
+      if (!listener) {
+        console.error(`WebSG: collision listener ${listenerId} not found.`);
+        return -1;
+      }
+
+      const collisions = listener.collisions;
+
+      if (collisions.length > maxCollisions) {
+        console.error(`WebSG: collision listener ${listenerId} has more collisions than maxCollisions.`);
+        return -1;
+      }
+
+      moveCursorView(wasmCtx.cursorView, collisionsPtr);
+
+      for (let i = 0; i < collisions.length; i++) {
+        const collision = collisions[i];
+        writeUint32(wasmCtx.cursorView, collision.nodeA);
+        writeUint32(wasmCtx.cursorView, collision.nodeB);
+        writeInt32(wasmCtx.cursorView, collision.started ? 1 : 0);
+      }
+
+      const count = collisions.length;
+
+      collisions.length = 0;
+
+      return count;
     },
     // UI Canvas
     world_create_ui_canvas(propsPtr: number) {
@@ -2964,13 +3289,7 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
         return -1;
       }
 
-      const label = readString(wasmCtx, labelPtr, length);
-
-      if (!label) {
-        return -1;
-      }
-
-      el.button.label = label;
+      el.button.label = readString(wasmCtx, labelPtr, length);
 
       return 0;
     },
@@ -3066,20 +3385,16 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
       const el = getScriptResource(wasmCtx, RemoteUIElement, uiElementId);
 
       if (!el) {
+        console.error(`WebSG ui_text_set_value: ui element not found ${uiElementId}`);
         return -1;
       }
 
       if (!el.text) {
+        console.error(`WebSG ui_text_set_value: ui element is not a text element ${uiElementId}`);
         return -1;
       }
 
-      const value = readString(wasmCtx, valuePtr, length);
-
-      if (!value) {
-        return -1;
-      }
-
-      el.text.value = value;
+      el.text.value = readString(wasmCtx, valuePtr, length);
 
       return 0;
     },
@@ -3316,5 +3631,27 @@ export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
 
       return 0;
     },
+    get_primary_input_source_origin_element(index: number) {
+      const node = getPrimaryInputSourceNode(ctx);
+      mat4.getTranslation(tempVec3, node.worldMatrix);
+      return tempVec3[index] || 0;
+    },
+    get_primary_input_source_direction_element(index: number) {
+      const node = getPrimaryInputSourceNode(ctx);
+      getRotationNoAlloc(tempQuat, node.worldMatrix);
+      vec3.set(tempVec3, 0, 0, -1);
+      vec3.transformQuat(tempVec3, tempVec3, tempQuat);
+      return tempVec3[index] || 0;
+    },
   };
+
+  const disposeWebSGWASMModule = () => {
+    for (const query of wasmCtx.resourceManager.registeredQueries.values()) {
+      removeQuery(ctx.world, query);
+    }
+
+    disposeCollisionHandler();
+  };
+
+  return [websgWASMModule, disposeWebSGWASMModule] as const;
 }

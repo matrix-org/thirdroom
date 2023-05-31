@@ -6,6 +6,9 @@
 
 JSClassID js_websg_interactable_class_id;
 
+JSAtom interactable_type_interactable;
+JSAtom interactable_type_grabbable;
+
 /**
  * Class Definition
  **/
@@ -100,6 +103,14 @@ void js_websg_define_interactable(JSContext *ctx, JSValue websg) {
     "Interactable",
     constructor
   );
+
+  interactable_type_interactable = JS_NewAtomUInt32(ctx, InteractableType_Interactable);
+  interactable_type_grabbable = JS_NewAtomUInt32(ctx, InteractableType_Grabbable);
+
+  JSValue interactable_type = JS_NewObject(ctx);
+  JS_SetPropertyStr(ctx, interactable_type, "Interactable", JS_AtomToValue(ctx, interactable_type_interactable));
+  JS_SetPropertyStr(ctx, interactable_type, "Grabbable", JS_AtomToValue(ctx, interactable_type_grabbable));
+  JS_SetPropertyStr(ctx, websg, "InteractableType", interactable_type);
 }
 
 /**
@@ -130,7 +141,19 @@ JSValue js_websg_node_add_interactable(JSContext *ctx, JSValueConst this_val, in
   InteractableProps *props = js_mallocz(ctx, sizeof(InteractableProps));
   props->type = InteractableType_Interactable;
 
-  // TODO: Add more types of interactables and make the interactable type optional with this as the default
+  if (!JS_IsUndefined(argv[0])) {
+    JSValue type_val = JS_GetPropertyStr(ctx, argv[0], "type");
+    if (!JS_IsUndefined(type_val)) { 
+      uint32_t type;
+
+      if (JS_ToUint32(ctx, &type, type_val) == -1) {
+        return JS_EXCEPTION;
+      }
+
+      props->type = type;
+    }
+  }
+
   int32_t result = websg_node_add_interactable(node_data->node_id, props);
 
   js_free(ctx, props);
