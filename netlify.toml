@@ -16,6 +16,11 @@
   to = "/index.html"
   status = 200
 
+[[redirects]]
+  from = "staging.thirdroom.io/*"
+  to = "https://staging--thirdroom.netlify.app/:splat"
+  status = 200
+
 
 [[headers]]
 for = "/*"
