@@ -1,3 +1,9 @@
+[[redirects]]
+  from = "https://staging.thirdroom.io/*"
+  to = "https://staging--thirdroom.netlify.app/:splat"
+  status = 301
+  force = true
+
 [build]
   publish = "dist/"
 
@@ -15,12 +21,6 @@
   from = "/*"
   to = "/index.html"
   status = 200
-
-[[redirects]]
-  from = "https://staging.thirdroom.io/*"
-  to = "https://staging--thirdroom.netlify.app/:splat"
-  status = 301
-  force = true
 
 [[headers]]
 for = "/*"
