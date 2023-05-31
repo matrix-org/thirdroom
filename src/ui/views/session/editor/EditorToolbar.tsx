@@ -29,6 +29,7 @@ import { Label } from "../../../atoms/text/Label";
 import { Tooltip } from "../../../atoms/tooltip/Tooltip";
 import { SettingTile } from "../../components/setting-tile/SettingTile";
 import { NumericInput } from "../../../atoms/input/NumericInput";
+import { useLocalStorage } from "../../../hooks/useLocalStorage";
 
 export enum TransformMode {
   Grab = "grab",
@@ -52,15 +53,24 @@ interface IMenuItem<T extends string> {
   id: T;
   title: string;
   icon: string;
+  disabled?: boolean;
 }
 
-const useEditorModeMenu = (): IMenuItem<EditorMode>[] =>
-  useMemo(
+const useEditorModeMenu = (): IMenuItem<EditorMode>[] => {
+  const [sceneEditor] = useLocalStorage("feature_sceneEditor", false);
+
+  return useMemo(
     () => [
+      {
+        id: EditorMode.SceneInspector,
+        title: "Scene Inspector",
+        icon: Box3dIC,
+      },
       {
         id: EditorMode.SceneEditor,
         title: "Scene Editor",
         icon: Box3dIC,
+        disabled: !sceneEditor,
       },
       {
         id: EditorMode.ScriptEditor,
@@ -68,8 +78,9 @@ const useEditorModeMenu = (): IMenuItem<EditorMode>[] =>
         icon: CurlyBracketIC,
       },
     ],
-    []
+    [sceneEditor]
   );
+};
 
 const useTransformModeMenu = (): IMenuItem<TransformMode>[] =>
   useMemo(
@@ -158,6 +169,7 @@ export function SwitcherMenu<T extends string>({ selected, onSelect, menu, child
               variant={menuItem.id === selected ? "primary" : "surface"}
               onSelect={() => onSelect(menuItem.id)}
               before={<Icon color={menuItem.id === selected ? "primary" : "surface"} src={menuItem.icon} />}
+              disabled={menuItem.disabled}
             >
               {menuItem.title}
             </DropdownMenuItem>

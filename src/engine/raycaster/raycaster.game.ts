@@ -47,6 +47,5 @@ export function RaycasterSystem(ctx: GameState) {
     const node = getRemoteResource<RemoteNode>(ctx, readView.intersectionNodeId[0]);
 
     selectEditorEntity(ctx, node?.eid || 0);
-    console.log(node);
   }
 }

@@ -260,7 +260,7 @@ function onSetRefArrayProperty(ctx: GameState, message: SetRefArrayPropertyMessa
  * Systems *
  ***********/
 
-function moveCharacterToAnchor(
+export function moveCharacterToAnchor(
   ctx: GameState,
   body: RAPIER.RigidBody,
   anchor: RemoteNode,
@@ -302,14 +302,15 @@ export function EditorStateSystem(ctx: GameState) {
       for (let i = 0; i < ents.length; i++) {
         const playerRigEid = ents[i];
         const playerRig = tryGetRemoteResource<RemoteNode>(ctx, playerRigEid);
-        const camera = getCamera(ctx, playerRig);
+        getCamera(ctx, playerRig);
 
         const body = RigidBody.store.get(playerRigEid);
 
         if (!body) {
           throw new Error("rigidbody not found on eid " + playerRigEid);
         }
-        moveCharacterToAnchor(ctx, body, anchorEntity, playerRig, camera);
+        // TODO: Place camera near active entity on `F` key press.
+        // moveCharacterToAnchor(ctx, body, anchorEntity, playerRig, camera);
       }
     }
   }
