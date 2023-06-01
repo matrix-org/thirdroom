@@ -14,6 +14,7 @@ export const createCursorView = (buffer = new ArrayBuffer(100000), littleEndian 
   view.cursor = 0;
   view.shadowMap = new Map();
   view.littleEndian = littleEndian;
+  view.byteView = new Uint8Array(buffer);
   return view;
 };
 
@@ -50,7 +51,7 @@ export const resize = (ta: TypedArray, byteLength: number) => {
 };
 
 export const writeArrayBuffer = (v: CursorView, buffer: ArrayBuffer) => {
-  new Uint8Array(v.buffer).set(new Uint8Array(buffer), v.cursor);
+  v.byteView.set(new Uint8Array(buffer), v.cursor);
   v.cursor += buffer.byteLength;
   return v;
 };
@@ -171,6 +172,12 @@ export const writeUint8 = (v: CursorView, value: number) => {
   v.cursor += Uint8Array.BYTES_PER_ELEMENT;
   return v;
 };
+
+export function writeUint8Array(v: CursorView, array: Uint8Array) {
+  v.byteView.set(array, v.cursor);
+  v.cursor += array.byteLength;
+  return v;
+}
 
 export const writeInt8 = (v: CursorView, value: number) => {
   v.setInt8(v.cursor, value);

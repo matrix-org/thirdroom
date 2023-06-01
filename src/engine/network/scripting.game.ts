@@ -1,21 +1,20 @@
 import { addComponent, hasComponent } from "bitecs";
 
 import {
-  createCursorView,
+  CursorView,
   moveCursorView,
   readArrayBuffer,
+  readUint8,
   sliceCursorView,
-  writeArrayBuffer as cursorWriteArrayBuffer,
   writeInt32,
+  writeUint8,
+  writeUint8Array,
 } from "../allocator/CursorView";
-import { GameState } from "../GameTypes";
-import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
+import { GameState, NetworkMessageItem } from "../GameTypes";
+import { defineModule, getModule } from "../module/module.common";
 import { GameNetworkState, NetworkModule } from "./network.game";
 import { NetworkAction } from "./NetworkAction";
-import { broadcastReliable, sendReliable, sendUnreliable } from "./outbound.game";
-import { NetPipeData, writeMetadata } from "./serialization.game";
 import { writeUint32, readUint32 } from "../allocator/CursorView";
-import { registerInboundMessageHandler } from "./inbound.game";
 import {
   getScriptResource,
   readExtensionsAndExtras,
@@ -23,16 +22,14 @@ import {
   WASMModuleContext,
   writeArrayBuffer,
   writeFloat32Array,
-  writeString,
 } from "../scripting/WASMModuleContext";
 import { RemoteNode } from "../resource/RemoteResources";
 import { getRemoteResource } from "../resource/resource.game";
-import { createDisposables } from "../utils/createDisposables";
-import { NetworkMessageType, PeerEnteredMessage, PeerExitedMessage } from "./network.common";
 import { ScriptComponent, scriptQuery } from "../scripting/scripting.game";
-import { Replication, createReplicator } from "./Replicator";
-import { Networked, Owned } from "./NetworkComponents";
+import { defineReplicator } from "./NetworkReplicator";
+import { Networked } from "./NetworkComponents";
 import { addPrefabComponent } from "../prefab/prefab.game";
+import { BROADCAST_PEER_ID, enqueueNetworkMessage } from "./NetworkRingBuffer";
 
 export const WebSGNetworkModule = defineModule<GameState, {}>({
   name: "WebSGNetwork",
@@ -41,73 +38,30 @@ export const WebSGNetworkModule = defineModule<GameState, {}>({
   },
   init(ctx: GameState) {
     const network = getModule(ctx, NetworkModule);
-    registerInboundMessageHandler(network, NetworkAction.BinaryScriptMessage, (data) =>
-      deserializeScriptMessage(data, true)
-    );
-    registerInboundMessageHandler(network, NetworkAction.StringScriptMessage, (data) =>
-      deserializeScriptMessage(data, false)
-    );
-
-    return createDisposables([
-      registerMessageHandler(ctx, NetworkMessageType.PeerEntered, onPeerEntered),
-      registerMessageHandler(ctx, NetworkMessageType.PeerExited, onPeerExited),
-    ]);
+    network.messageHandlers.set(NetworkAction.ScriptMessage, onScriptMessage);
   },
 });
-
-function onPeerEntered(ctx: GameState, msg: PeerEnteredMessage) {
-  const entities = scriptQuery(ctx.world);
-
-  for (const eid of entities) {
-    const script = ScriptComponent.get(eid);
-    script?.peerEntered(msg.peerIndex);
-  }
-}
-
-function onPeerExited(ctx: GameState, msg: PeerExitedMessage) {
-  const entities = scriptQuery(ctx.world);
-
-  for (const eid of entities) {
-    const script = ScriptComponent.get(eid);
-    script?.peerExited(msg.peerIndex);
-  }
-}
 
 export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleContext) {
   const network = getModule(ctx, NetworkModule);
 
   const networkWASMModule = {
-    network_get_host_peer_index() {
-      const peerIndex = network.peerIdToIndex.get(network.hostId);
-
-      if (peerIndex === undefined) {
-        return 0;
-      }
-
-      return peerIndex;
+    network_get_host_peer_id() {
+      return network.hostPeerId;
     },
-    network_get_local_peer_index() {
-      const peerIndex = network.peerIdToIndex.get(network.peerId);
-
-      if (peerIndex === undefined) {
-        return 0;
-      }
-
-      return peerIndex;
+    network_get_local_peer_id() {
+      return network.localPeerId;
     },
     network_broadcast: (packetPtr: number, byteLength: number, binary: number, reliable: number) => {
       try {
-        const scriptPacket = readUint8Array(wasmCtx, packetPtr, byteLength);
-
-        const msg = createScriptMessage(ctx, scriptPacket, !!binary);
-
-        if (reliable) {
-          broadcastReliable(ctx, network, msg);
-          return 0;
-        } else {
-          console.error("WebSGNetworking: Unreliable broadcast currently not supported.");
-          return -1;
-        }
+        const cursorView = network.outgoingRingBuffer.cursorView;
+        moveCursorView(cursorView, 0);
+        writeUint8(cursorView, binary !== 0 ? 1 : 0);
+        writeUint32(cursorView, byteLength);
+        writeUint8Array(cursorView, readUint8Array(wasmCtx, packetPtr, byteLength));
+        const message = sliceCursorView(cursorView);
+        enqueueNetworkMessage(network.outgoingRingBuffer, reliable !== 0, BROADCAST_PEER_ID, message);
+        return 0;
       } catch (error) {
         console.error("WebSGNetworking: Error broadcasting packet:", error);
         return -1;
@@ -148,15 +102,14 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
         return -1;
       }
 
-      let message: [string, ArrayBuffer, boolean] | undefined;
-      let peerIndex: number | undefined;
+      let message: NetworkMessageItem | undefined;
+      let peerId: number | undefined;
 
       while (listener.inbound.length > 0) {
         message = listener.inbound[0];
-        const peerId = message[0];
-        peerIndex = network.peerIdToIndex.get(peerId);
+        peerId = message[0];
 
-        if (peerIndex === undefined) {
+        if (!network.connectedPeers.includes(peerId)) {
           // This message is from a peer that no longer exists.
           console.warn("Discarded message from peer that no longer exists");
           listener.inbound.shift();
@@ -167,7 +120,7 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
       }
 
       moveCursorView(wasmCtx.cursorView, infoPtr);
-      writeUint32(wasmCtx.cursorView, peerIndex || 0);
+      writeUint32(wasmCtx.cursorView, peerId || 0);
       writeUint32(wasmCtx.cursorView, message ? message[1].byteLength : 0);
       writeInt32(wasmCtx.cursorView, message ? (message[2] ? 1 : 0) : 0);
 
@@ -182,7 +135,7 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
           return -1;
         }
 
-        let message: [string, ArrayBuffer, boolean] | undefined;
+        let message: NetworkMessageItem | undefined;
 
         while (listener.inbound.length > 0) {
           message = listener.inbound.shift();
@@ -192,9 +145,8 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
           }
 
           const peerId = message[0];
-          const peerIndex = network.peerIdToIndex.get(peerId);
 
-          if (peerIndex === undefined) {
+          if (!network.connectedPeers.includes(peerId)) {
             console.warn("Discarded message from peer that no longer exists");
             // This message is from a peer that no longer exists.
             message = undefined;
@@ -217,31 +169,6 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
         return writeArrayBuffer(wasmCtx, packetPtr, buffer);
       } catch (e) {
         console.error("Error writing packet to write buffer:", e);
-        return -1;
-      }
-    },
-    peer_get_id_length(peerIndex: number) {
-      const peerId = network.indexToPeerId.get(peerIndex);
-
-      if (!peerId) {
-        console.error(`WebSGNetworking: Peer ${peerIndex} does not exist.`);
-        return -1;
-      }
-
-      return peerId.length;
-    },
-    peer_get_id(peerIndex: number, idPtr: number, maxBufLength: number) {
-      const peerId = network.indexToPeerId.get(peerIndex);
-
-      if (!peerId) {
-        console.error(`WebSGNetworking: Peer ${peerIndex} does not exist.`);
-        return -1;
-      }
-
-      try {
-        return writeString(wasmCtx, idPtr, peerId, maxBufLength);
-      } catch (error) {
-        console.error(error);
         return -1;
       }
     },
@@ -277,11 +204,11 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
 
       return node.quaternion[index];
     },
-    peer_get_rotation(peerIndex: number, rotationPtr: number) {
-      const node = getPeerNode(ctx, network, peerIndex);
+    peer_get_rotation(peerId: number, rotationPtr: number) {
+      const node = getPeerNode(ctx, network, peerId);
 
       if (!node) {
-        console.error(`WebSGNetworking: Peer ${peerIndex} does not exist.`);
+        console.error(`WebSGNetworking: Peer ${peerId} does not exist.`);
         return -1;
       }
 
@@ -289,52 +216,33 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
 
       return 0;
     },
-    peer_is_host(peerIndex: number) {
-      const peerId = network.indexToPeerId.get(peerIndex);
-
-      if (!peerId) {
-        console.error(`WebSGNetworking: Peer index ${peerIndex} does not exist.`);
-        return -1;
-      }
-
-      return network.hostId === peerId ? 1 : 0;
+    peer_is_host(peerId: number) {
+      return network.hostPeerId === peerId ? 1 : 0;
     },
-    peer_is_local(peerIndex: number) {
-      const peerId = network.indexToPeerId.get(peerIndex);
-
-      if (!peerId) {
-        console.error(`WebSGNetworking: Peer index ${peerIndex} does not exist.`);
-        return -1;
-      }
-
-      return network.peerId === peerId ? 1 : 0;
+    peer_is_local(peerId: number) {
+      return network.localPeerId === peerId ? 1 : 0;
     },
-    peer_send: (peerIndex: number, packetPtr: number, byteLength: number, binary: number, reliable: number) => {
+    peer_send: (peerId: number, packetPtr: number, byteLength: number, binary: number, reliable: number) => {
       try {
-        const peerId = network.indexToPeerId.get(peerIndex);
-
-        if (!peerId) {
-          console.error(`WebSGNetworking: Peer ${peerIndex} does not exist.`);
+        if (!network.connectedPeers.includes(peerId)) {
+          console.error(`WebSGNetworking: Peer ${peerId} does not exist.`);
           return -1;
         }
 
-        const scriptPacket = readUint8Array(wasmCtx, packetPtr, byteLength);
-
-        const msg = createScriptMessage(ctx, scriptPacket, !!binary);
-
-        if (reliable) {
-          sendReliable(ctx, network, peerId, msg);
-          return 0;
-        } else {
-          sendUnreliable(ctx, network, peerId, msg);
-        }
+        const cursorView = network.outgoingRingBuffer.cursorView;
+        moveCursorView(cursorView, 0);
+        writeUint8(cursorView, binary !== 0 ? 1 : 0);
+        writeUint32(cursorView, byteLength);
+        writeUint8Array(cursorView, readUint8Array(wasmCtx, packetPtr, byteLength));
+        const message = sliceCursorView(cursorView);
+        enqueueNetworkMessage(network.outgoingRingBuffer, reliable !== 0, peerId, message);
       } catch (error) {
         console.error("WebSGNetworking: Error broadcasting packet:", error);
         return -1;
       }
     },
     define_replicator: () => {
-      const replicator = createReplicator(network, wasmCtx.resourceManager);
+      const replicator = defineReplicator(ctx);
       return replicator.id;
     },
     replicator_spawned_count: (replicatorId: number) => {
@@ -365,24 +273,21 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
         return -1;
       }
 
-      addPrefabComponent(ctx.world, nodeId, replicator.prefabName);
-      addComponent(ctx.world, Networked, nodeId);
-      addComponent(ctx.world, Owned, nodeId);
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+      if (!node) {
+        console.error("Undefined node.");
+        return -1;
+      }
 
       const buffer = new Uint8Array([...readUint8Array(wasmCtx, packetPtr, byteLength)]);
       const data = byteLength > 0 ? buffer : undefined;
-      const peerId = network.peerId;
-      const peerIndex = network.peerIdToIndex.get(peerId)!;
 
-      if (data) {
-        replicator.eidToData.set(nodeId, data);
-      }
-
-      replicator.spawned.push({ nodeId, peerIndex, data });
+      replicator.spawnExisting(node, data);
 
       return 0;
     },
-    replicator_despawn_local: (replicatorId: number, nodeId: number, packetPtr: number, byteLength: number) => {
+    replicator_despawn_local: (replicatorId: number, nodeId: number) => {
       const replicator = wasmCtx.resourceManager.replicators.get(replicatorId);
 
       if (!replicator) {
@@ -396,16 +301,7 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
         return -1;
       }
 
-      const buffer = new Uint8Array([...readUint8Array(wasmCtx, packetPtr, byteLength)]);
-      const data = byteLength > 0 ? buffer : undefined;
-      const peerId = network.peerId;
-      const peerIndex = network.peerIdToIndex.get(peerId)!;
-
-      if (data) {
-        replicator.eidToData.set(nodeId, data);
-      }
-
-      replicator.despawned.push({ nodeId, peerIndex, data });
+      replicator.despawn(nodeId);
 
       return 0;
     },
@@ -423,79 +319,23 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
           return -1;
         }
 
-        let replication: Replication | undefined;
-
-        while (replicator.spawned.length > 0) {
-          replication = replicator.spawned[0];
-
-          if (replication.peerIndex === undefined) {
-            console.warn("Discarded replication from peer that no longer exists");
-            replicator.spawned.shift();
-            replication = undefined;
-          } else {
-            break;
-          }
+        if (replicator.spawned.length === 0) {
+          return 0;
         }
 
+        const replication = replicator.spawned[0];
         const nodeId = replication?.nodeId || 0;
         const networkId = replication?.networkId || 0;
-        const peerIndex = replication?.peerIndex || 0;
         const byteLength = replication?.data?.byteLength || 0;
 
         moveCursorView(wasmCtx.cursorView, infoPtr);
         writeUint32(wasmCtx.cursorView, nodeId);
         writeUint32(wasmCtx.cursorView, networkId);
-        writeUint32(wasmCtx.cursorView, peerIndex);
         writeUint32(wasmCtx.cursorView, byteLength);
 
         return replicator.spawned.length;
       } catch (e) {
         console.error("Error getting replicator spawned message info:", e);
-        return -1;
-      }
-    },
-    replicator_get_despawned_message_info: (replicatorId: number, infoPtr: number) => {
-      try {
-        const replicator = wasmCtx.resourceManager.replicators.get(replicatorId);
-
-        if (!replicator) {
-          moveCursorView(wasmCtx.cursorView, infoPtr);
-          writeUint32(wasmCtx.cursorView, 0);
-          writeUint32(wasmCtx.cursorView, 0);
-          writeUint32(wasmCtx.cursorView, 0);
-          writeUint32(wasmCtx.cursorView, 0);
-          console.error("Undefined replicator.");
-          return -1;
-        }
-
-        let replication: Replication | undefined;
-
-        while (replicator.despawned.length > 0) {
-          replication = replicator.despawned[0];
-
-          if (replication.peerIndex === undefined) {
-            console.warn("Discarded replication from peer that no longer exists");
-            replicator.despawned.shift();
-            replication = undefined;
-          } else {
-            break;
-          }
-        }
-
-        const nodeId = replication?.nodeId || 0;
-        const networkId = replication?.networkId || 0;
-        const peerIndex = replication?.peerIndex || 0;
-        const byteLength = replication?.data?.byteLength || 0;
-
-        moveCursorView(wasmCtx.cursorView, infoPtr);
-        writeUint32(wasmCtx.cursorView, nodeId);
-        writeUint32(wasmCtx.cursorView, networkId);
-        writeUint32(wasmCtx.cursorView, peerIndex);
-        writeUint32(wasmCtx.cursorView, byteLength);
-
-        return replicator.despawned.length;
-      } catch (e) {
-        console.error("Error getting replicator despawned message info:", e);
         return -1;
       }
     },
@@ -508,23 +348,7 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
           return -1;
         }
 
-        let replication: Replication | undefined;
-
-        while (replicator.spawned.length > 0) {
-          replication = replicator.spawned.shift();
-
-          if (!replication) {
-            break;
-          }
-
-          if (replication.peerIndex === undefined) {
-            console.warn("Discarded replication from peer that no longer exists");
-            // This message is from a peer that no longer exists.
-            replication = undefined;
-          } else {
-            break;
-          }
-        }
+        const replication = replicator.spawned.shift();
 
         if (!replication) {
           return 0;
@@ -546,48 +370,16 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
       }
     },
     replicator_despawn_receive: (replicatorId: number, packetPtr: number, maxBufLength: number) => {
-      try {
-        const replicator = wasmCtx.resourceManager.replicators.get(replicatorId);
+      const replicator = wasmCtx.resourceManager.replicators.get(replicatorId);
 
-        if (!replicator) {
-          console.error(`WebSGNetworking: replicator ${replicatorId} does not exist or has been closed.`);
-          return -1;
-        }
-
-        let replication: Replication | undefined;
-
-        while (replicator.despawned.length > 0) {
-          replication = replicator.despawned.shift();
-
-          if (!replication) {
-            break;
-          }
-
-          if (replication.peerIndex === undefined) {
-            console.warn("Discarded replication from peer that no longer exists");
-            // This message is from a peer that no longer exists.
-            replication = undefined;
-          } else {
-            break;
-          }
-        }
-
-        if (!replication || !replication.data || replication.data.byteLength === 0) {
-          return 0;
-        }
-
-        const byteLength = replication.data?.byteLength || 0;
-
-        if (byteLength > maxBufLength) {
-          console.error("Failed to receive replication, length exceeded buffer length");
-          return -1;
-        }
-
-        return writeArrayBuffer(wasmCtx, packetPtr, replication.data || new ArrayBuffer(0));
-      } catch (e) {
-        console.error("Error writing packet to write buffer:", e);
+      if (!replicator) {
+        console.error(`WebSGNetworking: replicator ${replicatorId} does not exist or has been closed.`);
         return -1;
       }
+
+      const nodeId = replicator.despawned.shift();
+
+      return nodeId || 0;
     },
     node_add_network_synchronizer: (nodeId: number, propsPtr: number) => {
       try {
@@ -650,29 +442,12 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
   return [networkWASMModule, disposeNetworkModule] as const;
 }
 
-const messageView = createCursorView(new ArrayBuffer(10000));
+function onScriptMessage(ctx: GameState, from: number, cursorView: CursorView) {
+  const binary = readUint8(cursorView) === 1;
+  const byteLength = readUint32(cursorView);
+  const data = readArrayBuffer(cursorView, byteLength);
 
-function createScriptMessage(ctx: GameState, packet: ArrayBuffer, binary: boolean) {
-  const data: NetPipeData = [ctx, messageView, ""];
-  writeMetadata(binary ? NetworkAction.BinaryScriptMessage : NetworkAction.StringScriptMessage)(data);
-  serializeScriptMessage(data, packet);
-  return sliceCursorView(messageView);
-}
-
-function serializeScriptMessage(data: NetPipeData, packet: ArrayBuffer) {
-  const [, v] = data;
-  writeUint32(v, packet.byteLength);
-  cursorWriteArrayBuffer(v, packet);
-  return data;
-}
-
-function deserializeScriptMessage(data: NetPipeData, binary: boolean) {
-  const [ctx, v, peerId] = data;
-
-  const len = readUint32(v);
-  const packet = readArrayBuffer(v, len);
-
-  const message: [string, ArrayBuffer, boolean] = [peerId, packet, binary];
+  const message: [number, ArrayBuffer, boolean] = [from, data, binary];
 
   const scripts = scriptQuery(ctx.world);
 

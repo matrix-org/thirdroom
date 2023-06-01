@@ -649,6 +649,7 @@ export const ColliderResource = defineResource("collider", ResourceType.Collider
   radius: PropType.f32({ mutable: false }),
   height: PropType.f32({ mutable: false }),
   mesh: PropType.ref(MeshResource, { mutable: false }),
+  collisionGroups: PropType.bitmask(),
 });
 
 export enum PhysicsBodyType {

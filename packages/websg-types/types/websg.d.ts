@@ -2547,10 +2547,6 @@ declare namespace WebSGNetworking {
      */
     node: WebSG.Node;
     /**
-     * The peer that spawned or despawned the node.
-     */
-    peer: WebSGNetworking.Peer;
-    /**
      * The data that was sent with the spawn or despawn message.
      */
     data: ArrayBuffer;

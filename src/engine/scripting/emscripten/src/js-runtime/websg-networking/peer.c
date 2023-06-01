@@ -28,30 +28,18 @@ static JSClassDef js_websg_peer_class = {
 
 static JSValue js_websg_peer_get_id(JSContext *ctx, JSValueConst this_val) {
   WebSGPeerData *peer_data = JS_GetOpaque(this_val, js_websg_peer_class_id);
-
-  int32_t length = websg_peer_get_id_length(peer_data->peer_index);
-
-  const char *str = js_mallocz(ctx, sizeof(char) * length);
-
-  int32_t result = websg_peer_get_id(peer_data->peer_index, str, length);
-
-  if (result == -1) {
-    JS_ThrowInternalError(ctx, "WebSG: Error getting peer id.");
-    return JS_EXCEPTION;
-  }
-
-  return JS_NewStringLen(ctx, str, length);
+  return JS_NewUint32(ctx, peer_data->peer_id);
 }
 
 static JSValue js_websg_peer_get_is_host(JSContext *ctx, JSValueConst this_val) {
   WebSGPeerData *peer_data = JS_GetOpaque(this_val, js_websg_peer_class_id);
-  int32_t result = websg_peer_is_host(peer_data->peer_index);
+  int32_t result = websg_peer_is_host(peer_data->peer_id);
   return JS_NewBool(ctx, result);
 }
 
 static JSValue js_websg_peer_get_is_local(JSContext *ctx, JSValueConst this_val) {
   WebSGPeerData *peer_data = JS_GetOpaque(this_val, js_websg_peer_class_id);
-  int32_t result = websg_peer_is_local(peer_data->peer_index);
+  int32_t result = websg_peer_is_local(peer_data->peer_id);
   return JS_NewBool(ctx, result);
 }
 
@@ -83,7 +71,7 @@ static JSValue js_websg_peer_send(JSContext *ctx, JSValueConst this_val, int arg
     }
   }
 
-  if (websg_peer_send(peer_data->peer_index, buffer, byte_length, binary, reliable) == 0) {
+  if (websg_peer_send(peer_data->peer_id, buffer, byte_length, binary, reliable) == 0) {
     return JS_UNDEFINED;
   }
 
@@ -137,7 +125,7 @@ void js_websg_define_peer(JSContext *ctx, JSValue network) {
  * Public Methods
  **/
 
-JSValue js_websg_create_peer(JSContext *ctx, WebSGNetworkData *network_data, uint32_t peer_index) {
+JSValue js_websg_create_peer(JSContext *ctx, WebSGNetworkData *network_data, peer_id_t peer_id) {
   JSValue peer = JS_NewObjectClass(ctx, js_websg_peer_class_id);
 
   if (JS_IsException(peer)) {
@@ -146,14 +134,14 @@ JSValue js_websg_create_peer(JSContext *ctx, WebSGNetworkData *network_data, uin
 
   WebSGPeerData *peer_data = js_mallocz(ctx, sizeof(WebSGPeerData));
   peer_data->network_data = network_data;
-  peer_data->peer_index = peer_index;
+  peer_data->peer_id = peer_id;
   JS_SetOpaque(peer, peer_data);
 
   js_websg_define_vector3_prop_read_only(
     ctx,
     peer,
     "translation",
-    peer_index,
+    peer_id,
     &websg_peer_get_translation_element
   );
 
@@ -161,26 +149,26 @@ JSValue js_websg_create_peer(JSContext *ctx, WebSGNetworkData *network_data, uin
     ctx,
     peer,
     "rotation",
-    peer_index,
+    peer_id,
     &websg_peer_get_rotation_element
   );
 
   return JS_DupValue(ctx, peer);
 }
 
-JSValue js_websg_get_peer(JSContext *ctx, WebSGNetworkData *network_data, uint32_t peer_index) {
-  return JS_GetPropertyUint32(ctx, network_data->peers, peer_index);
+JSValue js_websg_get_peer(JSContext *ctx, WebSGNetworkData *network_data, peer_id_t peer_id) {
+  return JS_GetPropertyUint32(ctx, network_data->peers, peer_id);
 }
 
-JSValue js_websg_remove_peer(JSContext *ctx, WebSGNetworkData *network_data, uint32_t peer_index) {
-  JSValue peer = JS_GetPropertyUint32(ctx, network_data->peers, peer_index);
+JSValue js_websg_remove_peer(JSContext *ctx, WebSGNetworkData *network_data, peer_id_t peer_id) {
+  JSValue peer = JS_GetPropertyUint32(ctx, network_data->peers, peer_id);
 
   if (JS_IsUndefined(peer)) {
     JS_ThrowInternalError(ctx, "WebSG: Error removing peer by index.");
     return JS_EXCEPTION;
   }
 
-  JS_SetPropertyUint32(ctx, network_data->peers, peer_index, JS_UNDEFINED);
+  JS_SetPropertyUint32(ctx, network_data->peers, peer_id, JS_UNDEFINED);
 
   return peer;
 }

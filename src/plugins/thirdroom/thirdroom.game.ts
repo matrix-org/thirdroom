@@ -103,9 +103,12 @@ import { RemoteResource } from "../../engine/resource/RemoteResourceClass";
 import { addCameraRig, CameraRigModule, CameraRigType } from "../camera/CameraRig.game";
 import { actionBarMap, setDefaultActionBarItems } from "./action-bar.game";
 import { createDisposables } from "../../engine/utils/createDisposables";
+import { getPeerMediaStreamUri } from "../../engine/audio/audio.game";
+import { NetworkReplicator } from "../../engine/network/NetworkReplicator";
 
 export interface ThirdRoomModuleState {
   actionBarItems: ActionBarItem[];
+  playerReplicator: NetworkReplicator;
 }
 
 const addAvatarController = (ctx: GameState, input: GameInputModule, eid: number) => {
@@ -637,7 +640,7 @@ function loadRemotePlayerRig(
   physics: PhysicsModuleState,
   input: GameInputModule,
   network: GameNetworkState,
-  peerId: string
+  peerId: number
 ) {
   console.log("loadRemotePlayerRig for peerId", peerId);
   const rig = createPrefabEntity(ctx, "avatar");
@@ -668,7 +671,7 @@ function loadRemotePlayerRig(
         audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-04.ogg" }),
       }),
       new RemoteAudioSource(ctx.resourceManager, {
-        audio: new RemoteAudioData(ctx.resourceManager, { uri: `mediastream:${peerId}` }),
+        audio: new RemoteAudioData(ctx.resourceManager, { uri: getPeerMediaStreamUri(peerId) }),
       }),
     ],
   });

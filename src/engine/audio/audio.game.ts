@@ -55,6 +55,10 @@ function enqueueAudioPlaybackItem(
   }
 }
 
+export function getPeerMediaStreamUri(peerId: number) {
+  return `mediastream:peer-${peerId}`;
+}
+
 export function playAudio(ctx: GameState, audioSource: RemoteAudioSource, time?: number) {
   enqueueAudioPlaybackItem(ctx, AudioAction.Play, audioSource, 1, 1, time || 0);
 }

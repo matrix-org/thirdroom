@@ -7,7 +7,7 @@ import {
   getWriteObjectBufferView,
 } from "../allocator/ObjectBufferView";
 import { removeAllEntityComponents } from "../ecs/removeAllEntityComponents";
-import { GameState, RemoteResourceManager } from "../GameTypes";
+import { GameState, RemoteResourceManager, ResourceManagerId } from "../GameTypes";
 import { defineModule, getModule, Thread } from "../module/module.common";
 import { createDisposables } from "../utils/createDisposables";
 import { createMessageQueueProducer } from "./MessageQueue";
@@ -214,7 +214,7 @@ export const ResourceModule = defineModule<GameState, ResourceModuleState>({
       registerResource(ctx, RemoteWorld),
     ]);
 
-    ctx.resourceManager = createRemoteResourceManager(ctx, "global");
+    ctx.resourceManager = createRemoteResourceManager(ctx, ResourceManagerId.Global);
 
     ctx.worldResource = new RemoteWorld(ctx.resourceManager, {
       persistentScene: new RemoteScene(ctx.resourceManager, {
@@ -226,10 +226,10 @@ export const ResourceModule = defineModule<GameState, ResourceModuleState>({
   },
 });
 
-export function createRemoteResourceManager(ctx: GameState, id: string): RemoteResourceManager {
+export function createRemoteResourceManager(ctx: GameState, id: ResourceManagerId): RemoteResourceManager {
   const resourceModule = getModule(ctx, ResourceModule);
 
-  return {
+  const resourceManager: RemoteResourceManager = {
     id,
     ctx,
     resourceIds: new Set(),
@@ -256,6 +256,8 @@ export function createRemoteResourceManager(ctx: GameState, id: string): RemoteR
     nextNetworkListenerId: 1,
     networkListeners: [],
   };
+
+  return resourceManager;
 }
 
 function registerResource<Def extends ResourceDefinition>(

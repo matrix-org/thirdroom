@@ -771,13 +771,19 @@ export function updateNodeAudioEmitter(ctx: IMainThreadContext, audioModule: Mai
 
 const isChrome = /Chrome/.test(navigator.userAgent);
 
+export function getPeerStreamId(peerId: number) {
+  return `peer-${peerId}`;
+}
+
 export const setPeerMediaStream = (
   audioState: MainAudioModule,
-  peerId: string,
+  peerId: number,
   mediaStream: MediaStream | undefined
 ) => {
+  const streamId = getPeerStreamId(peerId);
+
   if (!mediaStream) {
-    audioState.mediaStreams.delete(peerId);
+    audioState.mediaStreams.delete(streamId);
     return;
   }
 
@@ -789,7 +795,7 @@ export const setPeerMediaStream = (
     audioEl.muted = true;
   }
   console.log("adding mediastream for peer", peerId);
-  audioState.mediaStreams.set(peerId, mediaStream);
+  audioState.mediaStreams.set(streamId, mediaStream);
 };
 
 export function setLocalMediaStream(ctx: IMainThreadContext, mediaStream: MediaStream | undefined) {

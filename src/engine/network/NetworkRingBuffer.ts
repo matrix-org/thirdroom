@@ -11,20 +11,15 @@ import {
   createCursorView,
   CursorView,
   moveCursorView,
-  readArrayBuffer,
-  readString,
-  readUint32,
-  readUint8,
+  sliceCursorView,
   writeArrayBuffer,
-  writeString,
   writeUint32,
   writeUint8,
 } from "../allocator/CursorView";
 
 export interface NetworkRingBuffer extends RingBuffer<Uint8ArrayConstructor> {
-  buffer: ArrayBuffer;
-  array: Uint8Array;
-  view: CursorView;
+  cursorView: CursorView;
+  overflowQueue: Uint8Array[]; // If the ring buffer is full, we'll push the packet here
 }
 
 // 16KB allowed per packet * 1000 slots in the ring buffer = 16MB total preallocated
@@ -32,71 +27,71 @@ const MAX_PACKET_SIZE = 16000;
 
 export function createNetworkRingBuffer(capacity = 1000): NetworkRingBuffer {
   const ringBuffer = createRingBuffer(Uint8Array, capacity * MAX_PACKET_SIZE);
-  const buffer = new ArrayBuffer(MAX_PACKET_SIZE);
-  const array = new Uint8Array(buffer);
-  const view = createCursorView(buffer);
+
   return Object.assign(ringBuffer, {
-    buffer,
-    array,
-    view,
+    cursorView: createCursorView(new ArrayBuffer(MAX_PACKET_SIZE)),
+    overflowQueue: [],
   });
 }
 
-const writePeerIdCache = new Map();
-const writePeerId = (v: CursorView, peerId: string) => {
-  const encoded = writePeerIdCache.get(peerId);
-  if (encoded) {
-    writeUint8(v, encoded.byteLength);
-    writeArrayBuffer(v, encoded);
-  } else {
-    writeString(v, peerId);
+export const BROADCAST_PEER_ID = 0;
+
+export function enqueueNetworkMessage(rb: NetworkRingBuffer, reliable: boolean, to: number, data: ArrayBuffer) {
+  const cursorView = rb.cursorView;
+
+  // Drain any overflow queue messages that fit into the ring buffer before we queue our own
+  while (rb.overflowQueue.length > 0 && rb.overflowQueue[0].byteLength <= availableWrite(rb)) {
+    const message = rb.overflowQueue.shift();
+
+    if (message) {
+      moveCursorView(cursorView, 0);
+      writeArrayBuffer(cursorView, message);
+      pushRingBuffer(rb, rb.cursorView.byteView);
+    }
   }
-  return v;
-};
 
-export function enqueueNetworkRingBuffer(
-  rb: NetworkRingBuffer,
-  peerId: string,
-  packet: ArrayBuffer,
-  broadcast = false
-) {
-  const { view } = rb;
-
-  moveCursorView(view, 0);
-
-  // TODO: write peerIndex instead
-  writePeerId(view, peerId);
-
-  writeUint8(view, broadcast ? 1 : 0);
-
-  writeUint32(view, packet.byteLength);
-  writeArrayBuffer(view, packet);
+  moveCursorView(cursorView, 0);
+  writeUint8(cursorView, reliable ? 1 : 0);
+  writeUint32(cursorView, to);
+  writeUint32(cursorView, data.byteLength);
+  writeArrayBuffer(cursorView, data);
 
   if (availableWrite(rb) < MAX_PACKET_SIZE) {
+    // Only store the piece of the current view that we've written to save memory
+    const message = new Uint8Array(sliceCursorView(cursorView));
+    rb.overflowQueue.push(message);
     return false;
   }
 
-  return pushRingBuffer(rb, rb.array) === MAX_PACKET_SIZE;
+  pushRingBuffer(rb, rb.cursorView.byteView);
+  return true;
 }
 
-export function dequeueNetworkRingBuffer(
-  rb: NetworkRingBuffer,
-  out: { packet: ArrayBuffer; peerId: string; broadcast: boolean }
-) {
+export function enqueueReliableBroadcastMessage(rb: NetworkRingBuffer, data: ArrayBuffer) {
+  return enqueueNetworkMessage(rb, true, BROADCAST_PEER_ID, data);
+}
+
+export function enqueueReliableDirectMessage(rb: NetworkRingBuffer, to: number, data: ArrayBuffer) {
+  return enqueueNetworkMessage(rb, true, to, data);
+}
+
+export function enqueueUnreliableBroadcastMessage(rb: NetworkRingBuffer, data: ArrayBuffer) {
+  return enqueueNetworkMessage(rb, false, BROADCAST_PEER_ID, data);
+}
+
+export function dequeueNetworkRingBuffer(rb: NetworkRingBuffer) {
   if (isRingBufferEmpty(rb)) {
     return false;
   }
-  const rv = popRingBuffer(rb, rb.array);
 
-  const { view } = rb;
-  moveCursorView(view, 0);
+  const cursorView = rb.cursorView;
+  popRingBuffer(rb, cursorView.byteView);
+  moveCursorView(cursorView, 0);
+  return true;
+}
 
-  out.peerId = readString(view);
-
-  out.broadcast = readUint8(view) ? true : false;
-
-  const packetByteLength = readUint32(view);
-  out.packet = readArrayBuffer(view, packetByteLength);
-
-  return rv === rb.array.length;
+export function disposeNetworkRingBuffer(rb: NetworkRingBuffer) {
+  while (!isRingBufferEmpty(rb)) {
+    popRingBuffer(rb, rb.cursorView.byteView);
+  }
 }

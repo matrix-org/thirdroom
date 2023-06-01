@@ -4,7 +4,6 @@
 #include "../quickjs/quickjs.h"
 #include "../../websg.h"
 #include "../websg/node.h"
-#include "./peer.h"
 #include "./network.h"
 #include "./replicator.h"
 #include "./replication.h"
@@ -43,102 +42,81 @@ static JSValue js_websg_replication_iterator_next(
     *pdone = FALSE;
     return JS_EXCEPTION;
   }
-  
-  bool spawning = it->type == WebSGReplicatorIteratorType_Spawned;
-  bool despawning = it->type == WebSGReplicatorIteratorType_Despawned;
 
   uint32_t replicator_id = it->replicator_data->replicator_id;
-
-  ReplicationInfo *info = js_mallocz(ctx, sizeof(ReplicationInfo));
-
-  int result;
-  
-  if (spawning) {
-    result = websg_replicator_get_spawned_message_info(replicator_id, info);
-  } else if (despawning) {
-    result = websg_replicator_get_despawned_message_info(replicator_id, info);
-  } else {
-    JS_ThrowRangeError(ctx, "WebSGNetworking: invalid replicator type.");
-    return JS_EXCEPTION;
-  }
-
-  if (result == -1) {
-    js_free(ctx, info);
-    JS_ThrowInternalError(ctx, "WebSGNetworking: error getting replication info.");
-    return JS_EXCEPTION;
-  } else if (result == 0) {
-    js_free(ctx, info);
-    *pdone = TRUE;
-    return JS_UNDEFINED;
-  }
-
-  *pdone = FALSE;
+  JSValue data = JS_UNDEFINED;
   uint8_t *target = NULL;
-  int32_t read_bytes = 0;
-  JSValue data;
+  node_id_t node_id;
+  
+  if (it->type == WebSGReplicatorIteratorType_Spawned) {
+    ReplicationInfo *info = js_mallocz(ctx, sizeof(ReplicationInfo));
 
-  if (info->byte_length > 0) {
-    target = js_mallocz(ctx, info->byte_length);
-  }
+    int result = websg_replicator_get_spawned_message_info(replicator_id, info);
 
-  if (spawning) {
+    if (result == -1) {
+      js_free(ctx, info);
+      JS_ThrowInternalError(ctx, "WebSGNetworking: error getting replication info.");
+      return JS_EXCEPTION;
+    } else if (result == 0) {
+      js_free(ctx, info);
+      *pdone = TRUE;
+      return JS_UNDEFINED;
+    }
+
+    *pdone = FALSE;
+    
+    int32_t read_bytes = 0;
+
+    if (info->byte_length > 0) {
+      target = js_mallocz(ctx, info->byte_length);
+    }
+
     read_bytes = websg_replicator_spawn_receive(
       replicator_id,
       target,
       info->byte_length
     );
-  } else if (despawning) {
-    read_bytes = websg_replicator_despawn_receive(
-      replicator_id,
-      target,
-      info->byte_length
-    );
-  } else {
-    JS_ThrowRangeError(ctx, "WebSGNetworking: invalid replicator type.");
-    return JS_EXCEPTION;
-  }
 
-  if (read_bytes > 0) {
-    data = JS_NewArrayBuffer(ctx, target, read_bytes, js_buffer_free, NULL, 0);
-  } else if (read_bytes == -1) {
+    if (read_bytes > 0) {
+      data = JS_NewArrayBuffer(ctx, target, read_bytes, js_buffer_free, NULL, 0);
+    } else if (read_bytes == -1) {
+      js_free(ctx, info);
+      js_free(ctx, target);
+
+      JS_ThrowInternalError(ctx, "WebSGNetworking: error receiving message.");
+      return JS_EXCEPTION;
+    }
+
+    node_id = info->node_id;
+
     js_free(ctx, info);
-    js_free(ctx, target);
 
-    JS_ThrowInternalError(ctx, "WebSGNetworking: error receiving message.");
+  } else if (it->type == WebSGReplicatorIteratorType_Despawned) {
+    node_id_t node_id = websg_replicator_despawn_receive(replicator_id);
+
+    if (node_id == 0) {
+      *pdone = TRUE;
+      return JS_UNDEFINED;
+    }
+  } else {
+     JS_ThrowRangeError(ctx, "WebSGNetworking: invalid replicator type.");
     return JS_EXCEPTION;
   }
-
-  JSValue peer = js_websg_get_peer(ctx, it->network_data, info->peer_index);
 
   JSValue node;
-  if (info->node_id > 0) {
-    node = js_websg_get_node_by_id(ctx, it->world_data, info->node_id);
+  if (node_id > 0) {
+    node = js_websg_get_node_by_id(ctx, it->world_data, node_id);
   } else {
     node = JS_Call(ctx, it->replicator_data->factory_function, JS_UNDEFINED, 0, NULL);
     if (JS_IsUndefined(node)) {
       JS_ThrowInternalError(ctx, "WebSGNetworking: replicator factory function did not return a node.");
       return JS_EXCEPTION;
     }
-
-    WebSGNodeData *node_data = JS_GetOpaque2(ctx, node, js_websg_node_class_id);
-
-    NetworkSynchronizerProps *synchronizer_props = js_mallocz(ctx, sizeof(NetworkSynchronizerProps));
-    synchronizer_props->network_id = info->network_id;
-    synchronizer_props->replicator_id = replicator_id;
-
-    if (websg_node_add_network_synchronizer(node_data->node_id, synchronizer_props) == -1) {
-      JS_ThrowInternalError(ctx, "WebSGNetworking: unable to assign networkID to nodeID.");
-      js_free(ctx, synchronizer_props);
-      return JS_EXCEPTION;
-    }
-
-    js_free(ctx, synchronizer_props);
   }
+  
+  // TODO: Add network synchronizer
 
-  js_free(ctx, target);
-  js_free(ctx, info);
-
-  return js_websg_new_replication_instance(ctx, node, peer, data);
+  return js_websg_new_replication_instance(ctx, node, data);
 }
 
 static JSValue js_websg_replication_iterator(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {

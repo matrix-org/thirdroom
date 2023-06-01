@@ -45,12 +45,7 @@ void js_websg_define_replication(JSContext *ctx, JSValue websg) {
   );
 }
 
-JSValue js_websg_new_replication_instance(
-  JSContext *ctx,
-  JSValue node,
-  JSValue peer,
-  JSValue data
-) {
+JSValue js_websg_new_replication_instance(JSContext *ctx, JSValue node, JSValue data) {
   JSValue replication = JS_NewObjectClass(ctx, js_websg_replication_class_id);
 
   if (JS_IsException(replication)) {
@@ -58,7 +53,6 @@ JSValue js_websg_new_replication_instance(
   }
 
   JS_SetPropertyStr(ctx, replication, "node", node);
-  JS_SetPropertyStr(ctx, replication, "peer", peer);
 
   if (JS_IsUndefined(data)) {
     JS_SetPropertyStr(ctx, replication, "data", JS_UNDEFINED);

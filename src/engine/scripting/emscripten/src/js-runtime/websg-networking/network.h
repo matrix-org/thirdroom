@@ -18,8 +18,8 @@ void js_websg_network(JSContext *ctx, JSValue websg_networking);
 
 int32_t js_websg_network_local_peer_entered(JSContext *ctx, JSValue network);
 
-int32_t js_websg_network_peer_entered(JSContext *ctx, JSValue network, uint32_t peer_index);
+int32_t js_websg_network_peer_entered(JSContext *ctx, JSValue network, peer_id_t peer_id);
 
-int32_t js_websg_network_peer_exited(JSContext *ctx, JSValue network, uint32_t peer_index);
+int32_t js_websg_network_peer_exited(JSContext *ctx, JSValue network, peer_id_t peer_id);
 
 #endif

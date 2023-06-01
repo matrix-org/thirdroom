@@ -6,7 +6,7 @@ import { BaseThreadContext } from "./module/module.common";
 import { ComponentStore } from "./resource/ComponentStore";
 import { RemoteResource } from "./resource/RemoteResourceClass";
 import { RemoteWorld } from "./resource/RemoteResources";
-import { Replicator } from "./network/Replicator";
+import { NetworkReplicator } from "./network/NetworkReplicator";
 
 export type World = IWorld;
 
@@ -31,13 +31,15 @@ export interface ActionBarListener {
   actions: string[];
 }
 
+export type NetworkMessageItem = [number, ArrayBuffer, boolean];
+
 export interface NetworkListener {
   id: number;
-  inbound: [string, ArrayBuffer, boolean][];
+  inbound: NetworkMessageItem[];
 }
 
 export interface RemoteResourceManager {
-  id: string;
+  id: ResourceManagerId;
   ctx: GameState;
   resourceIds: Set<number>;
   resourceMap: Map<number, string | ArrayBuffer | RemoteResource>;
@@ -56,12 +58,18 @@ export interface RemoteResourceManager {
   nextCollisionListenerId: number;
   actionBarListeners: ActionBarListener[];
   nextActionBarListenerId: number;
-  replicators: Map<number, Replicator>;
+  replicators: Map<number, NetworkReplicator>;
   nextReplicatorId: number;
   matrixListening: boolean;
   inboundMatrixWidgetMessages: Uint8Array[];
   networkListeners: NetworkListener[];
   nextNetworkListenerId: number;
+}
+
+export enum ResourceManagerId {
+  Global,
+  Environment,
+  // TODO: add ranges for avatars and objects
 }
 
 export interface GameState extends BaseThreadContext {
@@ -74,5 +82,6 @@ export interface GameState extends BaseThreadContext {
   world: World;
   worldResource: RemoteWorld;
   resourceManager: RemoteResourceManager;
+  resourceManagers: Map<ResourceManagerId, RemoteResourceManager>;
   editorLoaded: boolean;
 }

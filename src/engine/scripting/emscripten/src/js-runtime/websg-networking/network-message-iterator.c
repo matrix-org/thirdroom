@@ -109,7 +109,7 @@ static JSValue js_websg_network_message_iterator_next(
     data = JS_NewStringLen(ctx, (const char *)target, read_bytes);
   }
 
-  JSValue peer = js_websg_get_peer(ctx, it->listener_data->network_data, info->peer_index);
+  JSValue peer = js_websg_get_peer(ctx, it->listener_data->network_data, info->peer_id);
 
   int is_binary = info->binary;
 

@@ -9,6 +9,6 @@ extern JSClassID js_websg_replication_class_id;
 
 void js_websg_define_replication(JSContext *ctx, JSValue network);
 
-JSValue js_websg_new_replication_instance(JSContext *ctx, JSValue node, JSValue peer, JSValue data);
+JSValue js_websg_new_replication_instance(JSContext *ctx, JSValue node, JSValue data);
 
 #endif

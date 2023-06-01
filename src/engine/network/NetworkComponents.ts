@@ -1,22 +1,38 @@
-import { defineComponent, Types } from "bitecs";
+import { defineComponent, defineQuery, enterQuery, exitQuery, Not, Types } from "bitecs";
 
+import { Player } from "../component/Player";
 import { maxEntities } from "../config.common";
 
 /* Components */
 
 export const Networked = defineComponent(
   {
-    // networkId contains both peerIdIndex (owner) and localNetworkId
     networkId: Types.ui32,
-    // TODO: split net ID into 2 32bit ints
-    // ownerId: Types.ui32,
-    // localId: Types.ui32,
-    parent: Types.ui32,
-    position: [Types.f32, 3],
-    quaternion: [Types.f32, 4],
-    velocity: [Types.f32, 3],
+    ownerId: Types.ui32,
+    replicatorId: Types.ui32,
+    synchronizerId: Types.ui32,
+    lastSyncTime: Types.ui32,
   },
   maxEntities
 );
 
 export const Owned = defineComponent();
+
+/* Queries */
+
+export const networkedQuery = defineQuery([Networked]);
+export const exitedNetworkedQuery = exitQuery(networkedQuery);
+
+export const ownedNetworkedQuery = defineQuery([Networked, Owned]);
+export const spawnedNetworkedQuery = enterQuery(ownedNetworkedQuery);
+export const despawnedNetworkedQuery = exitQuery(ownedNetworkedQuery);
+
+export const remoteNetworkedQuery = defineQuery([Networked, Not(Owned)]);
+
+export const ownedPlayerQuery = defineQuery([Player, Owned]);
+export const enteredOwnedPlayerQuery = enterQuery(ownedPlayerQuery);
+export const exitedOwnedPlayerQuery = exitQuery(ownedPlayerQuery);
+
+export const remotePlayerQuery = defineQuery([Player, Not(Owned)]);
+export const enteredRemotePlayerQuery = enterQuery(remotePlayerQuery);
+export const exitedRemotePlayerQuery = exitQuery(remotePlayerQuery);

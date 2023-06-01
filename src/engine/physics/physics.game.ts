@@ -321,6 +321,7 @@ export function createNodeColliderDescriptions(node: RemoteNode): RAPIER.Collide
           throw new Error("Failed to construct convex hull");
         }
 
+        hullDesc.setCollisionGroups(collider.collisionGroups);
         hullDesc.setSensor(collider.isTrigger);
 
         descriptions.push(hullDesc);
@@ -341,6 +342,7 @@ export function createNodeColliderDescriptions(node: RemoteNode): RAPIER.Collide
         // TODO: Figure out if we still need to apply the world matrix to the trimesh vertices
         const meshDesc = RAPIER.ColliderDesc.trimesh(positions, indices);
 
+        meshDesc.setCollisionGroups(collider.collisionGroups);
         meshDesc.setSensor(collider.isTrigger);
 
         descriptions.push(meshDesc);
@@ -362,6 +364,7 @@ export function createNodeColliderDescriptions(node: RemoteNode): RAPIER.Collide
       throw new Error(`Unimplemented collider type ${type}`);
     }
 
+    desc.setCollisionGroups(collider.collisionGroups);
     desc.setSensor(collider.isTrigger);
 
     descriptions.push(desc);

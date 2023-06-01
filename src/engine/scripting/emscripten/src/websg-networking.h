@@ -12,26 +12,25 @@ typedef uint32_t network_listener_id_t;
 typedef uint32_t replicator_id_t;
 typedef uint32_t replication_id_t;
 typedef uint32_t network_id_t;
+typedef uint32_t peer_id_t;
 
-import_websg_networking(peer_get_id_length) int32_t websg_peer_get_id_length(uint32_t peer_index);
-import_websg_networking(peer_get_id) int32_t websg_peer_get_id(uint32_t peer_index, const char *peer_id, size_t length);
-import_websg_networking(peer_get_translation_element) float_t websg_peer_get_translation_element(uint32_t peer_index, uint32_t index);
-import_websg_networking(peer_get_translation) int32_t websg_peer_get_translation(uint32_t peer_index, float_t *translation);
-import_websg_networking(peer_get_rotation_element) float_t websg_peer_get_rotation_element(uint32_t peer_index, uint32_t index);
-import_websg_networking(peer_get_rotation) int32_t websg_peer_get_rotation(uint32_t peer_index, float_t *rotation);
-import_websg_networking(peer_is_host) int32_t websg_peer_is_host(uint32_t peer_index);
-import_websg_networking(peer_is_local) int32_t websg_peer_is_local(uint32_t peer_index);
-import_websg_networking(peer_send) int32_t websg_peer_send(uint32_t peer_index, uint8_t *packet, uint32_t byte_length, uint32_t binary, uint32_t reliable);
+import_websg_networking(peer_get_translation_element) float_t websg_peer_get_translation_element(peer_id_t peer_id, uint32_t index);
+import_websg_networking(peer_get_translation) int32_t websg_peer_get_translation(peer_id_t peer_id, float_t *translation);
+import_websg_networking(peer_get_rotation_element) float_t websg_peer_get_rotation_element(peer_id_t peer_id, uint32_t index);
+import_websg_networking(peer_get_rotation) int32_t websg_peer_get_rotation(peer_id_t peer_id, float_t *rotation);
+import_websg_networking(peer_is_host) int32_t websg_peer_is_host(peer_id_t peer_id);
+import_websg_networking(peer_is_local) int32_t websg_peer_is_local(peer_id_t peer_id);
+import_websg_networking(peer_send) int32_t websg_peer_send(peer_id_t peer_id, uint8_t *packet, uint32_t byte_length, uint32_t binary, uint32_t reliable);
 
-import_websg_networking(network_get_host_peer_index) uint32_t websg_network_get_host_peer_index();
-import_websg_networking(network_get_local_peer_index) uint32_t websg_network_get_local_peer_index();
+import_websg_networking(network_get_host_peer_id) uint32_t websg_network_get_host_peer_id();
+import_websg_networking(network_get_local_peer_id) uint32_t websg_network_get_local_peer_id();
 import_websg_networking(network_broadcast) int32_t websg_network_broadcast(uint8_t *packet, uint32_t byte_length, uint32_t binary, uint32_t reliable);
 
 import_websg_networking(network_listen) network_listener_id_t websg_network_listen();
 import_websg_networking(network_listener_close) int32_t websg_network_listener_close(network_listener_id_t listener_id);
 
 typedef struct NetworkMessageInfo {
-  uint32_t peer_index;
+  peer_id_t peer_id;
   uint32_t byte_length;
   int32_t binary;
 } NetworkMessageInfo;
@@ -62,25 +61,19 @@ import_websg_networking(replicator_despawned_count) int32_t websg_network_replic
 typedef struct ReplicationInfo {
   node_id_t node_id; // Can be null when remote. Call factory if null.
   network_id_t network_id; // Can be null with local.
-  uint32_t peer_index;
   uint32_t byte_length;
 } ReplicationInfo;
 
 import_websg_networking(replicator_get_spawned_message_info) int32_t websg_replicator_get_spawned_message_info(replicator_id_t replicator_id, ReplicationInfo *info);
-import_websg_networking(replicator_get_despawned_message_info) int32_t websg_replicator_get_despawned_message_info(replicator_id_t replicator_id, ReplicationInfo *info);
 
-// Returns a network ID popped from the replicator's (de)spawned queue
+// Returns a network ID popped from the replicator's spawned queue
 // Returns 0 if queue is empty
 import_websg_networking(replicator_spawn_receive) uint32_t websg_replicator_spawn_receive(
   replicator_id_t replicator_id,
   unsigned char *buffer,
   uint32_t max_byte_length
 );
-import_websg_networking(replicator_despawn_receive) uint32_t websg_replicator_despawn_receive(
-  replicator_id_t replicator_id,
-  unsigned char *buffer,
-  uint32_t max_byte_length
-);
+import_websg_networking(replicator_despawn_receive) node_id_t websg_replicator_despawn_receive(replicator_id_t replicator_id);
 
 typedef struct NetworkSynchronizerProps {
   Extensions extensions;
