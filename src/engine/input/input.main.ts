@@ -3,7 +3,7 @@ import { defineModule, getModule, Thread } from "../module/module.common";
 import { codeToKeyCode } from "./KeyCodes";
 import { InitializeInputStateMessage, InputComponentId, InputMessageType, InputSourceId } from "./input.common";
 import { createInputRingBuffer, enqueueInputRingBuffer, InputRingBuffer, RING_BUFFER_MAX } from "./InputRingBuffer";
-import { CameraRigModule } from "../player/CameraRig.main";
+import { PlayerModule } from "../player/Player.main";
 
 /*********
  * Types *
@@ -42,7 +42,7 @@ export const InputModule = defineModule<IMainThreadContext, MainInputModule>({
   init(ctx) {
     const inputModule = getModule(ctx, InputModule);
     const { inputRingBuffer: irb } = inputModule;
-    const camRigModule = getModule(ctx, CameraRigModule);
+    const camRigModule = getModule(ctx, PlayerModule);
     const { canvas } = ctx;
 
     const lastKeyMap: { [key: string]: boolean } = {};

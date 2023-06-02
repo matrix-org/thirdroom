@@ -100,7 +100,7 @@ import { getModule } from "../module/module.common";
 import { createMesh } from "../mesh/mesh.game";
 import { addInteractableComponent } from "../../plugins/interaction/interaction.game";
 import { addUIElementChild, initNodeUICanvas, removeUIElementChild } from "../ui/ui.game";
-import { startOrbit, stopOrbit } from "../player/CameraRig.game";
+import { startOrbit, stopOrbit } from "../player/CameraRig";
 import { GLTFComponentPropertyStorageTypeToEnum, setComponentStore } from "../resource/ComponentStore";
 import { getPrimaryInputSourceNode } from "../input/input.game";
 import { getRotationNoAlloc } from "../utils/getRotationNoAlloc";

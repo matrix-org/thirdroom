@@ -14,7 +14,7 @@ import { Dialog } from "../../../atoms/dialog/Dialog";
 import { EntityTooltip } from "../entity-tooltip/EntityTooltip";
 import { MemberListDialog } from "../dialogs/MemberListDialog";
 import { getModule } from "../../../../engine/module/module.common";
-import { CameraRigModule } from "../../../../engine/player/CameraRig.main";
+import { PlayerModule } from "../../../../engine/player/Player.main";
 import { Reticle } from "../reticle/Reticle";
 import { useWorldNavigator } from "../../../hooks/useWorldNavigator";
 import { useWorldLoader } from "../../../hooks/useWorldLoader";
@@ -32,7 +32,7 @@ interface WorldInteractionProps {
 
 export function WorldInteraction({ session, world, activeCall }: WorldInteractionProps) {
   const mainThread = useMainThreadContext();
-  const camRigModule = getModule(mainThread, CameraRigModule);
+  const camRigModule = getModule(mainThread, PlayerModule);
 
   const [activeEntity, setActiveEntity] = useMemoizedState<InteractionState | undefined>();
   const [portalProcess, setPortalProcess] = useMemoizedState<IPortalProcess>({});

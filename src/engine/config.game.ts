@@ -51,9 +51,10 @@ import { XRInteractionSystem } from "../plugins/interaction/XRInteractionSystem"
 import { MatrixModule } from "./matrix/matrix.game";
 import { WebSGNetworkModule } from "./network/scripting.game";
 import { WebSGUIModule } from "./ui/ui.game";
-import { CameraRigModule, CameraRigSystem } from "./player/CameraRig.game";
+import { PlayerModule } from "./player/Player.game";
 import { ActionBarSystem } from "../plugins/thirdroom/action-bar.game";
 import { EnableCharacterControllerSystem } from "./player/CharacterController";
+import { CameraRigSystem } from "./player/CameraRig";
 
 export default defineConfig<GameState>({
   modules: [
@@ -68,7 +69,7 @@ export default defineConfig<GameState>({
     RendererModule,
     ThirdRoomModule,
     MatrixModule,
-    CameraRigModule,
+    PlayerModule,
     KinematicCharacterControllerModule,
     FlyCharacterControllerModule,
     InteractionModule,

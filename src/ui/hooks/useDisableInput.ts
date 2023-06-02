@@ -2,7 +2,7 @@ import { useEffect } from "react";
 
 import { InputModule } from "../../engine/input/input.main";
 import { getModule } from "../../engine/module/module.common";
-import { CameraRigModule } from "../../engine/player/CameraRig.main";
+import { PlayerModule } from "../../engine/player/Player.main";
 import { useMainThreadContext } from "./useMainThread";
 
 export function useDisableInput(state = true) {
@@ -14,7 +14,7 @@ export function useDisableInput(state = true) {
     }
 
     const inputModule = getModule(mainThread, InputModule);
-    const cameraRigModule = getModule(mainThread, CameraRigModule);
+    const cameraRigModule = getModule(mainThread, PlayerModule);
 
     if (
       inputModule.disableInputStack.length === 0 &&

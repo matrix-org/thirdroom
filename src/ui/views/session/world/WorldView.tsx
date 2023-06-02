@@ -25,7 +25,7 @@ import { useWebXRSession } from "../../../hooks/useWebXRSession";
 import { worldChatVisibilityAtom } from "../../../state/worldChatVisibility";
 import { overlayVisibilityAtom } from "../../../state/overlayVisibility";
 import { worldAtom } from "../../../state/world";
-import { CameraRigModule } from "../../../../engine/player/CameraRig.main";
+import { PlayerModule } from "../../../../engine/player/Player.main";
 import { HotbarControls, WorldControls } from "./WorldControls";
 import { WorldOnboarding } from "./WorldOnboarding";
 import { useLocalStorage } from "../../../hooks/useLocalStorage";
@@ -65,7 +65,7 @@ export function WorldView({ world }: WorldViewProps) {
 
   const { toastShown, toastContent, showToast } = useToast();
 
-  const camRigModule = getModule(mainThread, CameraRigModule);
+  const camRigModule = getModule(mainThread, PlayerModule);
   const [showNames, setShowNames] = useLocalStorage(SHOW_NAMES_STORE, true);
   const { isWebXRSupported, enterXR, isPresenting } = useWebXRSession();
 

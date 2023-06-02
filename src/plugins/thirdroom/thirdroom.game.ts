@@ -27,7 +27,6 @@ import {
 } from "./thirdroom.common";
 import { loadDefaultGLTFScene, loadGLTF } from "../../engine/gltf/gltf.game";
 import { createRemotePerspectiveCamera } from "../../engine/camera/camera.game";
-import { PrefabType, registerPrefab } from "../../engine/prefab/prefab.game";
 import { addRigidBody, PhysicsModule, registerCollisionHandler } from "../../engine/physics/physics.game";
 import { waitForCurrentSceneToRender } from "../../engine/renderer/renderer.game";
 import { boundsCheckCollisionGroups } from "../../engine/physics/CollisionGroups";
@@ -56,18 +55,10 @@ import {
 } from "../../engine/resource/RemoteResources";
 import { waitUntil } from "../../engine/utils/waitUntil";
 import { findResourceRetainerRoots, findResourceRetainers } from "../../engine/resource/findResourceRetainers";
-import { ActionType, BindingType } from "../../engine/input/ActionMap";
 import { RemoteResource } from "../../engine/resource/RemoteResourceClass";
 import { actionBarMap, setDefaultActionBarItems } from "./action-bar.game";
 import { createDisposables } from "../../engine/utils/createDisposables";
-import {
-  createAvatarRig,
-  createXRHandLeft,
-  createXRHandRight,
-  createXRHead,
-  createXRRay,
-  loadPlayerRig,
-} from "../../engine/player/PlayerRig";
+import { registerPlayerPrefabs, loadPlayerRig } from "../../engine/player/PlayerRig";
 
 export interface ThirdRoomModuleState {
   actionBarItems: ActionBarItem[];
@@ -99,9 +90,6 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
     };
   },
   async init(ctx) {
-    const input = getModule(ctx, InputModule);
-    const physics = getModule(ctx, PhysicsModule);
-
     const dispose = createDisposables([
       registerMessageHandler(ctx, ThirdRoomMessageType.LoadWorld, onLoadWorld),
       registerMessageHandler(ctx, ThirdRoomMessageType.EnterWorld, onEnterWorld),
@@ -116,35 +104,7 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
       console.error("Error loading avatar:", error);
     });
 
-    registerPrefab(ctx, {
-      name: "avatar",
-      type: PrefabType.Avatar,
-      create: createAvatarRig(input, physics),
-    });
-
-    registerPrefab(ctx, {
-      name: "xr-head",
-      type: PrefabType.Avatar,
-      create: createXRHead(input, physics),
-    });
-
-    registerPrefab(ctx, {
-      name: "xr-hand-left",
-      type: PrefabType.Avatar,
-      create: createXRHandLeft(input, physics),
-    });
-
-    registerPrefab(ctx, {
-      name: "xr-hand-right",
-      type: PrefabType.Avatar,
-      create: createXRHandRight(input, physics),
-    });
-
-    registerPrefab(ctx, {
-      name: "xr-ray",
-      type: PrefabType.Avatar,
-      create: createXRRay,
-    });
+    registerPlayerPrefabs(ctx);
 
     // create out of bounds floor check
     const { physicsWorld } = getModule(ctx, PhysicsModule);
@@ -177,35 +137,6 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
       } else {
         removeObjectFromWorld(ctx, node);
       }
-    });
-
-    enableActionMap(ctx, {
-      id: "thirdroom-action-map",
-      actionDefs: [
-        {
-          id: "toggleFlyMode",
-          path: "toggleFlyMode",
-          type: ActionType.Button,
-          bindings: [
-            {
-              type: BindingType.Button,
-              path: "Keyboard/KeyB",
-            },
-          ],
-          networked: true,
-        },
-        {
-          id: "toggleThirdPerson",
-          path: "toggleThirdPerson",
-          type: ActionType.Button,
-          bindings: [
-            {
-              type: BindingType.Button,
-              path: "Keyboard/KeyV",
-            },
-          ],
-        },
-      ],
     });
 
     enableActionMap(ctx, actionBarMap);

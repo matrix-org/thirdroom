@@ -1,15 +1,15 @@
 import { IMainThreadContext } from "../MainThread";
 import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
 import { createDisposables } from "../utils/createDisposables";
-import { CameraRigMessage } from "./CameraRig.common";
+import { CameraRigMessage } from "./Player.common";
 
-export const CameraRigModule = defineModule<IMainThreadContext, { orbiting: boolean }>({
-  name: "camera-rig-module",
+export const PlayerModule = defineModule<IMainThreadContext, { orbiting: boolean }>({
+  name: "player",
   create() {
     return { orbiting: false };
   },
   init(ctx) {
-    const module = getModule(ctx, CameraRigModule);
+    const module = getModule(ctx, PlayerModule);
 
     return createDisposables([
       registerMessageHandler(ctx, CameraRigMessage.StartOrbit, () => {

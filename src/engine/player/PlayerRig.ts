@@ -9,11 +9,12 @@ import { GameState } from "../GameTypes";
 import { createNodeFromGLTFURI } from "../gltf/gltf.game";
 import { GameInputModule } from "../input/input.game";
 import { createLineMesh } from "../mesh/mesh.game";
-import { GameNetworkState, associatePeerWithEntity } from "../network/network.game";
+import { getModule } from "../module/module.common";
+import { GameNetworkState, associatePeerWithEntity, NetworkModule } from "../network/network.game";
 import { Owned, Networked } from "../network/NetworkComponents";
 import { playerCollisionGroups } from "../physics/CollisionGroups";
-import { addRigidBody, Kinematic, PhysicsModuleState } from "../physics/physics.game";
-import { createPrefabEntity } from "../prefab/prefab.game";
+import { addRigidBody, Kinematic, PhysicsModule, PhysicsModuleState } from "../physics/physics.game";
+import { createPrefabEntity, PrefabType, registerPrefab } from "../prefab/prefab.game";
 import {
   RemoteNode,
   RemoteMaterial,
@@ -22,126 +23,184 @@ import {
   RemoteAudioEmitter,
   RemoteAudioSource,
 } from "../resource/RemoteResources";
+import { getRemoteResource } from "../resource/resource.game";
 import { InteractableType, MaterialType, MaterialAlphaMode, AudioEmitterType } from "../resource/schema";
 import { ScriptComponent } from "../scripting/scripting.game";
 import { spawnEntity } from "../utils/spawnEntity";
 import { teleportEntity } from "../utils/teleportEntity";
-import { addCameraRig, CameraRigType } from "./CameraRig.game";
+import { addCameraRig, CameraRigType } from "./CameraRig";
 import { SceneCharacterControllerComponent, CharacterControllerType } from "./CharacterController";
-import {
-  AvatarOptions,
-  AVATAR_HEIGHT,
-  AVATAR_CAMERA_OFFSET,
-  AVATAR_CAPSULE_HEIGHT,
-  AVATAR_CAPSULE_RADIUS,
-} from "./common";
 import { AvatarRef } from "./components";
 import { embodyAvatar } from "./embodyAvatar";
 import { addFlyControls } from "./FlyCharacterController";
 import { addKinematicControls } from "./KinematicCharacterController";
+import { addNametag } from "./nametags.game";
 import { Player, OurPlayer } from "./Player";
 
-export const createAvatarRig =
-  (input: GameInputModule, physics: PhysicsModuleState) => (ctx: GameState, options: AvatarOptions) => {
-    const spawnPoints = spawnPointQuery(ctx.world);
+const AVATAR_CAPSULE_HEIGHT = 1;
+const AVATAR_CAPSULE_RADIUS = 0.35;
+const AVATAR_HEIGHT = AVATAR_CAPSULE_HEIGHT + AVATAR_CAPSULE_RADIUS * 2;
+const AVATAR_CAMERA_OFFSET = 0.06;
 
-    const container = new RemoteNode(ctx.resourceManager);
-    const rig = createNodeFromGLTFURI(ctx, "/gltf/full-animation-rig.glb");
+export function registerPlayerPrefabs(ctx: GameState) {
+  registerPrefab(ctx, {
+    name: "avatar",
+    type: PrefabType.Avatar,
+    create: (ctx: GameState) => {
+      const physics = getModule(ctx, PhysicsModule);
+      const spawnPoints = spawnPointQuery(ctx.world);
 
-    addChild(container, rig);
+      const container = new RemoteNode(ctx.resourceManager);
+      const rig = createNodeFromGLTFURI(ctx, "/gltf/full-animation-rig.glb");
 
-    quat.fromEuler(rig.quaternion, 0, 180, 0);
+      addChild(container, rig);
 
-    // on container
-    const characterControllerType = SceneCharacterControllerComponent.get(
-      ctx.worldResource.environment!.publicScene!.eid
-    )?.type;
-    if (characterControllerType === CharacterControllerType.Fly || spawnPoints.length === 0) {
-      addFlyControls(ctx, container.eid);
-    } else {
-      addKinematicControls(ctx, container.eid);
-    }
+      quat.fromEuler(rig.quaternion, 0, 180, 0);
 
-    addCameraRig(ctx, container, CameraRigType.PointerLock, [0, AVATAR_HEIGHT - AVATAR_CAMERA_OFFSET, 0]);
+      // on container
+      const characterControllerType = SceneCharacterControllerComponent.get(
+        ctx.worldResource.environment!.publicScene!.eid
+      )?.type;
+      if (characterControllerType === CharacterControllerType.Fly || spawnPoints.length === 0) {
+        addFlyControls(ctx, container.eid);
+      } else {
+        addKinematicControls(ctx, container.eid);
+      }
 
-    const rigidBodyDesc = RAPIER.RigidBodyDesc.kinematicPositionBased();
+      addCameraRig(ctx, container, CameraRigType.PointerLock, [0, AVATAR_HEIGHT - AVATAR_CAMERA_OFFSET, 0]);
 
-    addComponent(ctx.world, Kinematic, container.eid);
+      const rigidBodyDesc = RAPIER.RigidBodyDesc.kinematicPositionBased();
 
-    const rigidBody = physics.physicsWorld.createRigidBody(rigidBodyDesc);
+      addComponent(ctx.world, Kinematic, container.eid);
 
-    const colliderDesc = RAPIER.ColliderDesc.capsule(AVATAR_CAPSULE_HEIGHT / 2, AVATAR_CAPSULE_RADIUS)
-      .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS)
-      .setCollisionGroups(playerCollisionGroups)
-      .setTranslation(0, AVATAR_CAPSULE_HEIGHT - 0.1, 0);
+      const rigidBody = physics.physicsWorld.createRigidBody(rigidBodyDesc);
 
-    physics.physicsWorld.createCollider(colliderDesc, rigidBody);
+      const colliderDesc = RAPIER.ColliderDesc.capsule(AVATAR_CAPSULE_HEIGHT / 2, AVATAR_CAPSULE_RADIUS)
+        .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS)
+        .setCollisionGroups(playerCollisionGroups)
+        .setTranslation(0, AVATAR_CAPSULE_HEIGHT - 0.1, 0);
 
-    addRigidBody(ctx, container, rigidBody);
+      physics.physicsWorld.createCollider(colliderDesc, rigidBody);
 
-    addInteractableComponent(ctx, physics, container, InteractableType.Player);
+      addRigidBody(ctx, container, rigidBody);
 
-    addComponent(ctx.world, AvatarRef, container.eid);
-    AvatarRef.eid[container.eid] = rig.eid;
+      addInteractableComponent(ctx, physics, container, InteractableType.Player);
 
-    return container;
-  };
+      addComponent(ctx.world, AvatarRef, container.eid);
+      AvatarRef.eid[container.eid] = rig.eid;
+
+      return container;
+    },
+  });
+
+  registerPrefab(ctx, {
+    name: "xr-head",
+    type: PrefabType.Avatar,
+    create: (ctx: GameState, options?: any) => {
+      const node = createNodeFromGLTFURI(ctx, `/gltf/headset.glb`);
+      node.scale.set([0.75, 0.75, 0.75]);
+      node.position.set([0, 0, 0.1]);
+
+      addComponent(ctx.world, XRHeadComponent, node.eid);
+
+      return node;
+    },
+  });
+
+  registerPrefab(ctx, {
+    name: "xr-hand-left",
+    type: PrefabType.Avatar,
+    create: (ctx: GameState, options?: any) => {
+      const node = createNodeFromGLTFURI(ctx, `/gltf/controller-left.glb`);
+
+      addComponent(ctx.world, XRControllerComponent, node.eid);
+
+      return node;
+    },
+  });
+
+  registerPrefab(ctx, {
+    name: "xr-hand-right",
+    type: PrefabType.Avatar,
+    create: (ctx: GameState, options?: any) => {
+      const node = createNodeFromGLTFURI(ctx, `/gltf/controller-right.glb`);
+
+      addComponent(ctx.world, XRControllerComponent, node.eid);
+
+      return node;
+    },
+  });
+
+  registerPrefab(ctx, {
+    name: "xr-ray",
+    type: PrefabType.Avatar,
+    create: (ctx: GameState, options: any) => {
+      const color = options.color || [0, 0.3, 1, 0.3];
+      const length = options.length || GRAB_DISTANCE;
+      const rayMaterial = new RemoteMaterial(ctx.resourceManager, {
+        name: "Ray Material",
+        type: MaterialType.Standard,
+        baseColorFactor: color,
+        emissiveFactor: [0.7, 0.7, 0.7],
+        metallicFactor: 0,
+        roughnessFactor: 0,
+        alphaMode: MaterialAlphaMode.BLEND,
+      });
+      const mesh = createLineMesh(ctx, length, 0.004, rayMaterial);
+      const node = new RemoteNode(ctx.resourceManager, {
+        mesh,
+      });
+      node.position[2] = 0.1;
+
+      addComponent(ctx.world, XRRayComponent, node.eid);
+
+      return node;
+    },
+  });
+}
 
 export const XRControllerComponent = defineComponent();
 export const XRHeadComponent = defineComponent();
 export const XRRayComponent = defineComponent();
 
-export const createXRHead =
-  (input: GameInputModule, physics: PhysicsModuleState) => (ctx: GameState, options?: any) => {
-    const node = createNodeFromGLTFURI(ctx, `/gltf/headset.glb`);
-    node.scale.set([0.75, 0.75, 0.75]);
-    node.position.set([0, 0, 0.1]);
+export function addPlayerFromPeer(ctx: GameState, eid: number, peerId: string) {
+  const network = getModule(ctx, NetworkModule);
 
-    addComponent(ctx.world, XRHeadComponent, node.eid);
+  addComponent(ctx.world, Player, eid);
 
-    return node;
-  };
+  const peerNode = getRemoteResource<RemoteNode>(ctx, eid)!;
 
-export function createXRRay(ctx: GameState, options: any) {
-  const color = options.color || [0, 0.3, 1, 0.3];
-  const length = options.length || GRAB_DISTANCE;
-  const rayMaterial = new RemoteMaterial(ctx.resourceManager, {
-    name: "Ray Material",
-    type: MaterialType.Standard,
-    baseColorFactor: color,
-    emissiveFactor: [0.7, 0.7, 0.7],
-    metallicFactor: 0,
-    roughnessFactor: 0,
-    alphaMode: MaterialAlphaMode.BLEND,
+  peerNode.audioEmitter = new RemoteAudioEmitter(ctx.resourceManager, {
+    type: AudioEmitterType.Positional,
+    sources: [
+      new RemoteAudioSource(ctx.resourceManager, {
+        audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-01.ogg" }),
+      }),
+      new RemoteAudioSource(ctx.resourceManager, {
+        audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-02.ogg" }),
+      }),
+      new RemoteAudioSource(ctx.resourceManager, {
+        audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-03.ogg" }),
+      }),
+      new RemoteAudioSource(ctx.resourceManager, {
+        audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-04.ogg" }),
+      }),
+      new RemoteAudioSource(ctx.resourceManager, {
+        audio: new RemoteAudioData(ctx.resourceManager, {
+          uri: `mediastream:${peerId}`,
+        }),
+        autoPlay: true,
+      }),
+    ],
   });
-  const mesh = createLineMesh(ctx, length, 0.004, rayMaterial);
-  const node = new RemoteNode(ctx.resourceManager, {
-    mesh,
-  });
-  node.position[2] = 0.1;
 
-  addComponent(ctx.world, XRRayComponent, node.eid);
+  peerNode.name = peerId;
 
-  return node;
+  // if not our own avatar, add nametag
+  if (peerId !== network.peerId) {
+    addNametag(ctx, AVATAR_HEIGHT + AVATAR_HEIGHT / 3, peerNode, peerId);
+  }
 }
-
-export const createXRHandLeft =
-  (input: GameInputModule, physics: PhysicsModuleState) => (ctx: GameState, options?: any) => {
-    const node = createNodeFromGLTFURI(ctx, `/gltf/controller-left.glb`);
-
-    addComponent(ctx.world, XRControllerComponent, node.eid);
-
-    return node;
-  };
-
-export const createXRHandRight =
-  (input: GameInputModule, physics: PhysicsModuleState) => (ctx: GameState, options?: any) => {
-    const node = createNodeFromGLTFURI(ctx, `/gltf/controller-right.glb`);
-
-    addComponent(ctx.world, XRControllerComponent, node.eid);
-
-    return node;
-  };
 
 export function loadPlayerRig(
   ctx: GameState,

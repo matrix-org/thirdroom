@@ -1,9 +1,9 @@
 import { removeComponent, addComponent, defineComponent, hasComponent } from "bitecs";
 
-import { CameraRigModule } from "./CameraRig.game";
+import { PlayerModule } from "./Player.game";
 import { ourPlayerQuery } from "./Player";
 import { GameState } from "../GameTypes";
-import { ButtonActionState } from "../input/ActionMap";
+import { ActionMap, ActionType, BindingType, ButtonActionState } from "../input/ActionMap";
 import { InputModule } from "../input/input.game";
 import { getModule } from "../module/module.common";
 import { PhysicsModuleState, PhysicsModule } from "../physics/physics.game";
@@ -18,6 +18,40 @@ export enum CharacterControllerType {
   FirstPerson = "first-person",
   Fly = "fly",
 }
+
+export const CharacterControllerAction = {
+  ToggleFlyMode: "toggleFlyMode",
+  ToggleThirdPerson: "toggleThirdPerson",
+};
+
+export const CharacterControllerActionMap: ActionMap = {
+  id: "character-controller",
+  actionDefs: [
+    {
+      id: "toggleFlyMode",
+      path: CharacterControllerAction.ToggleFlyMode,
+      type: ActionType.Button,
+      bindings: [
+        {
+          type: BindingType.Button,
+          path: "Keyboard/KeyB",
+        },
+      ],
+      networked: true,
+    },
+    {
+      id: "toggleThirdPerson",
+      path: CharacterControllerAction.ToggleThirdPerson,
+      type: ActionType.Button,
+      bindings: [
+        {
+          type: BindingType.Button,
+          path: "Keyboard/KeyV",
+        },
+      ],
+    },
+  ],
+};
 
 export interface ISceneCharacterControllerComponent {
   type: CharacterControllerType;
@@ -65,9 +99,9 @@ export function EnableCharacterControllerSystem(ctx: GameState) {
 
   if (eid) {
     const player = tryGetRemoteResource<RemoteNode>(ctx, eid);
-    const toggleFlyMode = input.actionStates.get("toggleFlyMode") as ButtonActionState;
+    const toggleFlyMode = input.actionStates.get(CharacterControllerAction.ToggleFlyMode) as ButtonActionState;
 
-    const camRigModule = getModule(ctx, CameraRigModule);
+    const camRigModule = getModule(ctx, PlayerModule);
 
     if (camRigModule.orbiting) {
       return;
@@ -81,7 +115,7 @@ export function EnableCharacterControllerSystem(ctx: GameState) {
       }
     }
 
-    const toggleCameraMode = input.actionStates.get("toggleThirdPerson") as ButtonActionState;
+    const toggleCameraMode = input.actionStates.get(CharacterControllerAction.ToggleThirdPerson) as ButtonActionState;
     if (toggleCameraMode.pressed) {
       if (hasComponent(ctx.world, ThirdPersonComponent, player.eid)) {
         swapToFirstPerson(ctx, player);

@@ -53,7 +53,8 @@ import { ActionMap, ActionType, BindingType, ButtonActionState } from "../../eng
 import { XRAvatarRig } from "../../engine/input/WebXRAvatarRigSystem";
 import { UICanvasFocusMessage, UICanvasPressMessage, WebSGUIMessage } from "../../engine/ui/ui.common";
 import { getRotationNoAlloc } from "../../engine/utils/getRotationNoAlloc";
-import { CameraRigModule, ZoomComponent, orbitAnchorQuery, OrbitAnchor } from "../../engine/player/CameraRig.game";
+import { PlayerModule } from "../../engine/player/Player.game";
+import { ZoomComponent, orbitAnchorQuery, OrbitAnchor } from "../../engine/player/CameraRig";
 import { GameRendererModuleState, RendererModule } from "../../engine/renderer/renderer.game";
 import { getCamera } from "../../engine/player/getCamera";
 
@@ -328,7 +329,7 @@ export function InteractionSystem(ctx: GameState) {
   const physics = getModule(ctx, PhysicsModule);
   const input = getModule(ctx, InputModule);
   const interaction = getModule(ctx, InteractionModule);
-  const camRigModule = getModule(ctx, CameraRigModule);
+  const camRigModule = getModule(ctx, PlayerModule);
   const renderer = getModule(ctx, RendererModule);
 
   // TODO: refactor & make orbit handle multiple controllers

@@ -1,45 +1,27 @@
-import { addComponent, defineQuery, exitQuery, hasComponent, Query } from "bitecs";
-import { vec2, glMatrix as glm, quat, vec3, mat4 } from "gl-matrix";
+import { defineQuery, exitQuery, addComponent, hasComponent, Query } from "bitecs";
+import { vec3, quat, vec2, mat4, glMatrix as glm } from "gl-matrix";
 
-import { Axes, clamp } from "../component/math";
-import { GameState, World } from "../GameTypes";
-import { enableActionMap } from "../input/ActionMappingSystem";
-import { ActionMap, ActionType, BindingType, ButtonActionState } from "../input/ActionMap";
-import { GameInputModule, InputModule } from "../input/input.game";
-import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
-import { getRemoteResource, tryGetRemoteResource } from "../resource/resource.game";
-import { addObjectToWorld, RemoteNode, removeObjectFromWorld } from "../resource/RemoteResources";
-import { addChild } from "../component/transform";
-import { createRemotePerspectiveCamera } from "../camera/camera.game";
-import { ThirdPersonComponent } from "../player/CharacterController";
-import { CameraRigMessage } from "./CameraRig.common";
-import { ourPlayerQuery } from "./Player";
-import { PhysicsModule } from "../physics/physics.game";
-import { createDisposables } from "../utils/createDisposables";
-import { ThirdRoomMessageType } from "../../plugins/thirdroom/thirdroom.common";
-import { sendInteractionMessage } from "../../plugins/interaction/interaction.game";
 import { InteractableAction } from "../../plugins/interaction/interaction.common";
-import { getXRMode } from "../renderer/renderer.game";
+import { sendInteractionMessage } from "../../plugins/interaction/interaction.game";
+import { createRemotePerspectiveCamera } from "../camera/camera.game";
+import { Axes } from "../component/math";
+import { addChild } from "../component/transform";
+import { GameState, World } from "../GameTypes";
+import { ActionMap, ActionType, BindingType, ButtonActionState } from "../input/ActionMap";
+import { InputModule, GameInputModule } from "../input/input.game";
+import { getModule, Thread } from "../module/module.common";
+import { PhysicsModule } from "../physics/physics.game";
 import { XRMode } from "../renderer/renderer.common";
-import { CameraRef } from "../player/getCamera";
+import { getXRMode } from "../renderer/renderer.game";
+import { RemoteNode, addObjectToWorld, removeObjectFromWorld } from "../resource/RemoteResources";
+import { tryGetRemoteResource, getRemoteResource } from "../resource/resource.game";
+import { clamp } from "../utils/interpolation";
+import { CameraRigMessage } from "./Player.common";
+import { PlayerModule } from "./Player.game";
+import { ThirdPersonComponent } from "./CharacterController";
 import { embodyAvatar } from "./embodyAvatar";
-
-export const CameraRigModule = defineModule<GameState, { orbiting: boolean }>({
-  name: "camera-rig-module",
-  create() {
-    return { orbiting: false };
-  },
-  init(ctx) {
-    enableActionMap(ctx, CameraRigActionMap);
-
-    const module = getModule(ctx, CameraRigModule);
-    return createDisposables([
-      registerMessageHandler(ctx, ThirdRoomMessageType.ExitWorld, () => {
-        module.orbiting = false;
-      }),
-    ]);
-  },
-});
+import { CameraRef } from "./getCamera";
+import { ourPlayerQuery } from "./Player";
 
 export const CameraRigAction = {
   LookMovement: "CameraRig/LookMovement",
@@ -194,7 +176,7 @@ export function startOrbit(ctx: GameState, nodeToOrbit: RemoteNode, options?: Ca
     return;
   }
 
-  const camRigModule = getModule(ctx, CameraRigModule);
+  const camRigModule = getModule(ctx, PlayerModule);
 
   if (camRigModule.orbiting) {
     return;
@@ -239,7 +221,7 @@ export function stopOrbit(ctx: GameState) {
 
   const input = getModule(ctx, InputModule);
   const physics = getModule(ctx, PhysicsModule);
-  const camRigModule = getModule(ctx, CameraRigModule);
+  const camRigModule = getModule(ctx, PlayerModule);
 
   camRigModule.orbiting = false;
 
@@ -415,7 +397,7 @@ function applyZoom(ctx: GameState, input: GameInputModule, rigZoom: ZoomComponen
 const _v = vec3.create();
 export function CameraRigSystem(ctx: GameState) {
   const input = getModule(ctx, InputModule);
-  const camRigModule = getModule(ctx, CameraRigModule);
+  const camRigModule = getModule(ctx, PlayerModule);
 
   // sync orbit anchor with their target's position
   const orbitAnchors = orbitAnchorQuery(ctx.world);
