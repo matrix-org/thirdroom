@@ -4,8 +4,8 @@ import { vec3, mat4, quat, vec2 } from "gl-matrix";
 import { Quaternion, Vector3, Vector4 } from "three";
 
 import { playOneShotAudio } from "../../engine/audio/audio.game";
-import { getCamera, unproject } from "../../engine/camera/camera.game";
-import { OurPlayer, ourPlayerQuery } from "../../engine/component/Player";
+import { unproject } from "../../engine/camera/camera.game";
+import { OurPlayer, ourPlayerQuery } from "../../engine/player/Player";
 import { maxEntities, MAX_OBJECT_CAP, NOOP } from "../../engine/config.common";
 import { GameState } from "../../engine/GameTypes";
 import { enableActionMap } from "../../engine/input/ActionMappingSystem";
@@ -53,8 +53,9 @@ import { ActionMap, ActionType, BindingType, ButtonActionState } from "../../eng
 import { XRAvatarRig } from "../../engine/input/WebXRAvatarRigSystem";
 import { UICanvasFocusMessage, UICanvasPressMessage, WebSGUIMessage } from "../../engine/ui/ui.common";
 import { getRotationNoAlloc } from "../../engine/utils/getRotationNoAlloc";
-import { CameraRigModule, ZoomComponent, orbitAnchorQuery, OrbitAnchor } from "../camera/CameraRig.game";
+import { CameraRigModule, ZoomComponent, orbitAnchorQuery, OrbitAnchor } from "../../engine/player/CameraRig.game";
 import { GameRendererModuleState, RendererModule } from "../../engine/renderer/renderer.game";
+import { getCamera } from "../../engine/player/getCamera";
 
 // TODO: importing from spawnables.game in this file induces a runtime error
 // import { SpawnablesModule } from "../spawnables/spawnables.game";

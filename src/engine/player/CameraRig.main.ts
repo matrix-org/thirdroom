@@ -1,6 +1,6 @@
-import { IMainThreadContext } from "../../engine/MainThread";
-import { defineModule, getModule, registerMessageHandler } from "../../engine/module/module.common";
-import { createDisposables } from "../../engine/utils/createDisposables";
+import { IMainThreadContext } from "../MainThread";
+import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
+import { createDisposables } from "../utils/createDisposables";
 import { CameraRigMessage } from "./CameraRig.common";
 
 export const CameraRigModule = defineModule<IMainThreadContext, { orbiting: boolean }>({

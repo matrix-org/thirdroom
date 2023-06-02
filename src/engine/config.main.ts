@@ -13,7 +13,7 @@ import {
   OutgoingMainThreadTripleBufferSystem,
 } from "./MainThreadTripleBufferSystems";
 import { MatrixModule } from "./matrix/matrix.main";
-import { CameraRigModule } from "../plugins/camera/CameraRig.main";
+import { CameraRigModule } from "./player/CameraRig.main";
 
 export default defineConfig<IMainThreadContext>({
   modules: [

@@ -1,7 +1,7 @@
-import { getCamera } from "../camera/camera.game";
-import { ourPlayerQuery } from "../component/Player";
+import { ourPlayerQuery } from "../player/Player";
 import { GameState } from "../GameTypes";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
+import { getCamera } from "../player/getCamera";
 import { XRMode } from "../renderer/renderer.common";
 import { getXRMode } from "../renderer/renderer.game";
 import { RemoteNode, removeObjectFromWorld } from "../resource/RemoteResources";

@@ -3,17 +3,17 @@ import { quat, vec3 } from "gl-matrix";
 import RAPIER from "@dimforge/rapier3d-compat";
 import { Quaternion, Vector3 } from "three";
 
-import { getCamera } from "../engine/camera/camera.game";
-import { updateMatrixWorld } from "../engine/component/transform";
-import { GameState } from "../engine/GameTypes";
-import { enableActionMap } from "../engine/input/ActionMappingSystem";
-import { ActionMap, ActionType, BindingType, ButtonActionState } from "../engine/input/ActionMap";
-import { GameInputModule, InputModule } from "../engine/input/input.game";
-import { defineModule, getModule } from "../engine/module/module.common";
-import { tryGetRemoteResource } from "../engine/resource/resource.game";
-import { RemoteNode } from "../engine/resource/RemoteResources";
-import { RigidBody } from "../engine/physics/physics.game";
-import { getRotationNoAlloc } from "../engine/utils/getRotationNoAlloc";
+import { getCamera } from "./getCamera";
+import { updateMatrixWorld } from "../component/transform";
+import { GameState } from "../GameTypes";
+import { enableActionMap } from "../input/ActionMappingSystem";
+import { ActionMap, ActionType, BindingType, ButtonActionState } from "../input/ActionMap";
+import { GameInputModule, InputModule } from "../input/input.game";
+import { defineModule, getModule } from "../module/module.common";
+import { tryGetRemoteResource } from "../resource/resource.game";
+import { RemoteNode } from "../resource/RemoteResources";
+import { RigidBody } from "../physics/physics.game";
+import { getRotationNoAlloc } from "../utils/getRotationNoAlloc";
 
 type FlyCharacterControllerModuleState = {};
 

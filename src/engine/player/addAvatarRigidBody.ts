@@ -1,10 +1,10 @@
 import RAPIER from "@dimforge/rapier3d-compat";
 import { addComponent } from "bitecs";
 
-import { GameState } from "../../engine/GameTypes";
-import { playerCollisionGroups } from "../../engine/physics/CollisionGroups";
-import { PhysicsModuleState, addRigidBody, Kinematic } from "../../engine/physics/physics.game";
-import { RemoteNode } from "../../engine/resource/RemoteResources";
+import { GameState } from "../GameTypes";
+import { playerCollisionGroups } from "../physics/CollisionGroups";
+import { PhysicsModuleState, addRigidBody, Kinematic } from "../physics/physics.game";
+import { RemoteNode } from "../resource/RemoteResources";
 import { AvatarOptions, AVATAR_CAPSULE_RADIUS, AVATAR_CAPSULE_HEIGHT } from "./common";
 
 export function addAvatarRigidBody(

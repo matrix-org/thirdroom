@@ -25,7 +25,7 @@ import { useWebXRSession } from "../../../hooks/useWebXRSession";
 import { worldChatVisibilityAtom } from "../../../state/worldChatVisibility";
 import { overlayVisibilityAtom } from "../../../state/overlayVisibility";
 import { worldAtom } from "../../../state/world";
-import { CameraRigModule } from "../../../../plugins/camera/CameraRig.main";
+import { CameraRigModule } from "../../../../engine/player/CameraRig.main";
 import { HotbarControls, WorldControls } from "./WorldControls";
 import { WorldOnboarding } from "./WorldOnboarding";
 import { useLocalStorage } from "../../../hooks/useLocalStorage";

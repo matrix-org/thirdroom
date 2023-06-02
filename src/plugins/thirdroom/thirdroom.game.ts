@@ -1,18 +1,12 @@
-import { addComponent, defineComponent, defineQuery, hasComponent, removeComponent } from "bitecs";
-import { quat, vec3 } from "gl-matrix";
+import { defineQuery, hasComponent } from "bitecs";
+import { vec3 } from "gl-matrix";
 import RAPIER from "@dimforge/rapier3d-compat";
 
 import { SpawnPoint } from "../../engine/component/SpawnPoint";
 import { addChild } from "../../engine/component/transform";
 import { GameState } from "../../engine/GameTypes";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
-import {
-  associatePeerWithEntity,
-  GameNetworkState,
-  NetworkModule,
-  setLocalPeerId,
-} from "../../engine/network/network.game";
-import { Networked, Owned } from "../../engine/network/NetworkComponents";
+import { NetworkModule, setLocalPeerId } from "../../engine/network/network.game";
 import {
   EnterWorldMessage,
   WorldLoadedMessage,
@@ -31,35 +25,18 @@ import {
   FindResourceRetainersMessage,
   ActionBarItem,
 } from "./thirdroom.common";
-import { createNodeFromGLTFURI, loadDefaultGLTFScene, loadGLTF } from "../../engine/gltf/gltf.game";
-import { createRemotePerspectiveCamera, getCamera } from "../../engine/camera/camera.game";
-import { createPrefabEntity, PrefabType, registerPrefab } from "../../engine/prefab/prefab.game";
-import { addFlyControls, FlyControls } from "../FlyCharacterController";
-import {
-  addRigidBody,
-  PhysicsModule,
-  PhysicsModuleState,
-  registerCollisionHandler,
-} from "../../engine/physics/physics.game";
+import { loadDefaultGLTFScene, loadGLTF } from "../../engine/gltf/gltf.game";
+import { createRemotePerspectiveCamera } from "../../engine/camera/camera.game";
+import { PrefabType, registerPrefab } from "../../engine/prefab/prefab.game";
+import { addRigidBody, PhysicsModule, registerCollisionHandler } from "../../engine/physics/physics.game";
 import { waitForCurrentSceneToRender } from "../../engine/renderer/renderer.game";
 import { boundsCheckCollisionGroups } from "../../engine/physics/CollisionGroups";
-import { OurPlayer, ourPlayerQuery, Player } from "../../engine/component/Player";
+import { ourPlayerQuery, Player } from "../../engine/player/Player";
 import { enableActionMap } from "../../engine/input/ActionMappingSystem";
-import { GameInputModule, InputModule } from "../../engine/input/input.game";
+import { InputModule } from "../../engine/input/input.game";
 import { spawnEntity } from "../../engine/utils/spawnEntity";
-import { addInteractableComponent, GRAB_DISTANCE } from "../interaction/interaction.game";
-import { embodyAvatar } from "../../engine/network/serialization.game";
-import { addScriptComponent, loadScript, Script, ScriptComponent } from "../../engine/scripting/scripting.game";
-import {
-  InteractableType,
-  SamplerMapping,
-  AudioEmitterType,
-  MaterialType,
-  MaterialAlphaMode,
-} from "../../engine/resource/schema";
-import { addAvatarRigidBody } from "../avatars/addAvatarRigidBody";
-import { AvatarOptions, AVATAR_CAMERA_OFFSET, AVATAR_HEIGHT } from "../avatars/common";
-import { addKinematicControls, KinematicControls } from "../KinematicCharacterController";
+import { addScriptComponent, loadScript, Script } from "../../engine/scripting/scripting.game";
+import { SamplerMapping } from "../../engine/resource/schema";
 import {
   ResourceModule,
   getRemoteResource,
@@ -67,9 +44,6 @@ import {
   createRemoteResourceManager,
 } from "../../engine/resource/resource.game";
 import {
-  RemoteAudioData,
-  RemoteAudioEmitter,
-  RemoteAudioSource,
   RemoteEnvironment,
   RemoteImage,
   RemoteNode,
@@ -78,114 +52,30 @@ import {
   RemoteScene,
   RemoteTexture,
   RemoteWorld,
-  addObjectToWorld,
   removeObjectFromWorld,
-  RemoteMaterial,
 } from "../../engine/resource/RemoteResources";
-import { CharacterControllerType, SceneCharacterControllerComponent } from "../CharacterController";
-import { AvatarRef } from "../avatars/components";
 import { waitUntil } from "../../engine/utils/waitUntil";
 import { findResourceRetainerRoots, findResourceRetainers } from "../../engine/resource/findResourceRetainers";
-import { teleportEntity } from "../../engine/utils/teleportEntity";
-import { getAvatar } from "../avatars/getAvatar";
-import { ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
-import { createLineMesh } from "../../engine/mesh/mesh.game";
+import { ActionType, BindingType } from "../../engine/input/ActionMap";
 import { RemoteResource } from "../../engine/resource/RemoteResourceClass";
-import { addCameraRig, CameraRigModule, CameraRigType } from "../camera/CameraRig.game";
 import { actionBarMap, setDefaultActionBarItems } from "./action-bar.game";
 import { createDisposables } from "../../engine/utils/createDisposables";
+import {
+  createAvatarRig,
+  createXRHandLeft,
+  createXRHandRight,
+  createXRHead,
+  createXRRay,
+  loadPlayerRig,
+} from "../../engine/player/PlayerRig";
 
 export interface ThirdRoomModuleState {
   actionBarItems: ActionBarItem[];
 }
 
-const createAvatarRig =
-  (input: GameInputModule, physics: PhysicsModuleState) => (ctx: GameState, options: AvatarOptions) => {
-    const spawnPoints = spawnPointQuery(ctx.world);
-
-    const container = new RemoteNode(ctx.resourceManager);
-    const rig = createNodeFromGLTFURI(ctx, "/gltf/full-animation-rig.glb");
-
-    addChild(container, rig);
-
-    quat.fromEuler(rig.quaternion, 0, 180, 0);
-
-    // on container
-    const characterControllerType = SceneCharacterControllerComponent.get(
-      ctx.worldResource.environment!.publicScene!.eid
-    )?.type;
-    if (characterControllerType === CharacterControllerType.Fly || spawnPoints.length === 0) {
-      addFlyControls(ctx, container.eid);
-    } else {
-      addKinematicControls(ctx, container.eid);
-    }
-
-    addCameraRig(ctx, container, CameraRigType.PointerLock, [0, AVATAR_HEIGHT - AVATAR_CAMERA_OFFSET, 0]);
-    addAvatarRigidBody(ctx, physics, container);
-    addInteractableComponent(ctx, physics, container, InteractableType.Player);
-
-    addComponent(ctx.world, AvatarRef, container.eid);
-    AvatarRef.eid[container.eid] = rig.eid;
-
-    return container;
-  };
-
-export const XRControllerComponent = defineComponent();
-export const XRHeadComponent = defineComponent();
-export const XRRayComponent = defineComponent();
-
-const createXRHead = (input: GameInputModule, physics: PhysicsModuleState) => (ctx: GameState, options?: any) => {
-  const node = createNodeFromGLTFURI(ctx, `/gltf/headset.glb`);
-  node.scale.set([0.75, 0.75, 0.75]);
-  node.position.set([0, 0, 0.1]);
-
-  addComponent(ctx.world, XRHeadComponent, node.eid);
-
-  return node;
-};
-
-export function createXRRay(ctx: GameState, options: any) {
-  const color = options.color || [0, 0.3, 1, 0.3];
-  const length = options.length || GRAB_DISTANCE;
-  const rayMaterial = new RemoteMaterial(ctx.resourceManager, {
-    name: "Ray Material",
-    type: MaterialType.Standard,
-    baseColorFactor: color,
-    emissiveFactor: [0.7, 0.7, 0.7],
-    metallicFactor: 0,
-    roughnessFactor: 0,
-    alphaMode: MaterialAlphaMode.BLEND,
-  });
-  const mesh = createLineMesh(ctx, length, 0.004, rayMaterial);
-  const node = new RemoteNode(ctx.resourceManager, {
-    mesh,
-  });
-  node.position[2] = 0.1;
-
-  addComponent(ctx.world, XRRayComponent, node.eid);
-
-  return node;
-}
-
-const createXRHandLeft = (input: GameInputModule, physics: PhysicsModuleState) => (ctx: GameState, options?: any) => {
-  const node = createNodeFromGLTFURI(ctx, `/gltf/controller-left.glb`);
-
-  addComponent(ctx.world, XRControllerComponent, node.eid);
-
-  return node;
-};
-
-const createXRHandRight = (input: GameInputModule, physics: PhysicsModuleState) => (ctx: GameState, options?: any) => {
-  const node = createNodeFromGLTFURI(ctx, `/gltf/controller-right.glb`);
-
-  addComponent(ctx.world, XRControllerComponent, node.eid);
-
-  return node;
-};
-
 const tempSpawnPoints: RemoteNode[] = [];
 
-function getSpawnPoints(ctx: GameState): RemoteNode[] {
+export function getSpawnPoints(ctx: GameState): RemoteNode[] {
   const spawnPoints = spawnPointQuery(ctx.world);
   tempSpawnPoints.length = 0;
 
@@ -535,135 +425,3 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
 }
 
 export const spawnPointQuery = defineQuery([SpawnPoint]);
-
-function loadPlayerRig(ctx: GameState, physics: PhysicsModuleState, input: GameInputModule, network: GameNetworkState) {
-  ctx.worldResource.activeCameraNode = undefined;
-
-  const rig = createPrefabEntity(ctx, "avatar");
-  const eid = rig.eid;
-
-  // addNametag(ctx, AVATAR_HEIGHT + AVATAR_OFFSET, rig, network.peerId);
-
-  associatePeerWithEntity(network, network.peerId, eid);
-
-  rig.name = network.peerId;
-
-  // setup positional audio emitter for footsteps
-  rig.audioEmitter = new RemoteAudioEmitter(ctx.resourceManager, {
-    type: AudioEmitterType.Positional,
-    sources: [
-      new RemoteAudioSource(ctx.resourceManager, {
-        audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-01.ogg" }),
-      }),
-      new RemoteAudioSource(ctx.resourceManager, {
-        audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-02.ogg" }),
-      }),
-      new RemoteAudioSource(ctx.resourceManager, {
-        audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-03.ogg" }),
-      }),
-      new RemoteAudioSource(ctx.resourceManager, {
-        audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-04.ogg" }),
-      }),
-    ],
-  });
-
-  // caveat: if owned added after player, this local player entity is added to enteredRemotePlayerQuery
-  // TODO: add Authoring component for authoritatively controlled entities as a host,
-  //       use Owned to distinguish actual ownership on all clients
-  addComponent(ctx.world, Owned, eid);
-  addComponent(ctx.world, Player, eid);
-  addComponent(ctx.world, OurPlayer, eid);
-  // Networked component isn't reset when removed so reset on add
-  addComponent(ctx.world, Networked, eid, true);
-
-  addObjectToWorld(ctx, rig);
-
-  const spawnPoints = getSpawnPoints(ctx);
-
-  if (spawnPoints.length > 0) {
-    spawnEntity(spawnPoints, rig);
-  } else {
-    teleportEntity(rig, vec3.fromValues(0, 0, 0), quat.create());
-  }
-
-  embodyAvatar(ctx, physics, input, rig);
-
-  const gltfScene = ctx.worldResource.environment?.publicScene;
-
-  if (gltfScene && hasComponent(ctx.world, ScriptComponent, gltfScene.eid)) {
-    const script = ScriptComponent.get(gltfScene.eid);
-
-    if (script) {
-      script.entered();
-    }
-  }
-
-  return eid;
-}
-
-function swapToFlyPlayerRig(ctx: GameState, physics: PhysicsModuleState, node: RemoteNode) {
-  removeComponent(ctx.world, KinematicControls, node.eid);
-  addFlyControls(ctx, node.eid);
-}
-
-function swapToPlayerRig(ctx: GameState, physics: PhysicsModuleState, node: RemoteNode) {
-  removeComponent(ctx.world, FlyControls, node.eid);
-  addComponent(ctx.world, KinematicControls, node.eid);
-}
-
-export const ThirdPersonComponent = defineComponent();
-
-function swapToThirdPerson(ctx: GameState, node: RemoteNode) {
-  addComponent(ctx.world, ThirdPersonComponent, node.eid);
-  const camera = getCamera(ctx, node);
-  camera.position[2] = 2;
-  camera.parent!.position[0] = 0.4;
-
-  const avatar = getAvatar(ctx, node);
-  avatar.visible = true;
-}
-
-function swapToFirstPerson(ctx: GameState, node: RemoteNode) {
-  removeComponent(ctx.world, ThirdPersonComponent, node.eid);
-  const camera = getCamera(ctx, node);
-  camera.position[2] = 0;
-  camera.parent!.position[0] = 0;
-
-  const avatar = getAvatar(ctx, node);
-  avatar.visible = false;
-}
-
-export function EnableCharacterControllerSystem(ctx: GameState) {
-  const input = getModule(ctx, InputModule);
-  const physics = getModule(ctx, PhysicsModule);
-
-  const eid = ourPlayerQuery(ctx.world)[0];
-
-  if (eid) {
-    const player = tryGetRemoteResource<RemoteNode>(ctx, eid);
-    const toggleFlyMode = input.actionStates.get("toggleFlyMode") as ButtonActionState;
-
-    const camRigModule = getModule(ctx, CameraRigModule);
-
-    if (camRigModule.orbiting) {
-      return;
-    }
-
-    if (toggleFlyMode.pressed) {
-      if (hasComponent(ctx.world, FlyControls, player.eid)) {
-        swapToPlayerRig(ctx, physics, player);
-      } else {
-        swapToFlyPlayerRig(ctx, physics, player);
-      }
-    }
-
-    const toggleCameraMode = input.actionStates.get("toggleThirdPerson") as ButtonActionState;
-    if (toggleCameraMode.pressed) {
-      if (hasComponent(ctx.world, ThirdPersonComponent, player.eid)) {
-        swapToFirstPerson(ctx, player);
-      } else {
-        swapToThirdPerson(ctx, player);
-      }
-    }
-  }
-}

@@ -8,7 +8,7 @@ import { ActionMappingSystem } from "./input/ActionMappingSystem";
 import {
   KinematicCharacterControllerModule,
   KinematicCharacterControllerSystem,
-} from "../plugins/KinematicCharacterController";
+} from "./player/KinematicCharacterController";
 import { GameWorkerStatsSystem, StatsModule } from "./stats/stats.game";
 import {
   EditorModule,
@@ -25,9 +25,9 @@ import {
   ResourceModule,
   ResourceTickSystem,
 } from "./resource/resource.game";
-import { ThirdRoomModule, EnableCharacterControllerSystem } from "../plugins/thirdroom/thirdroom.game";
+import { ThirdRoomModule } from "../plugins/thirdroom/thirdroom.game";
 import { UpdateMatrixWorldSystem } from "./component/transform";
-import { FlyCharacterControllerModule, FlyControllerSystem } from "../plugins/FlyCharacterController";
+import { FlyCharacterControllerModule, FlyControllerSystem } from "./player/FlyCharacterController";
 import { NetworkInterpolationSystem } from "./network/NetworkInterpolationSystem";
 import { PrefabDisposalSystem, PrefabModule } from "./prefab/prefab.game";
 import { AnimationSystem } from "./animation/animation.game";
@@ -36,7 +36,7 @@ import {
   InteractionSystem,
   ResetInteractablesSystem,
 } from "../plugins/interaction/interaction.game";
-import { NametagModule, NametagSystem } from "../plugins/nametags/nametags.game";
+import { NametagModule, NametagSystem } from "./player/nametags.game";
 import { ScriptingSystem } from "./scripting/scripting.game";
 import { GameResourceSystem } from "./resource/GameResourceSystem";
 import { RemoteCameraSystem } from "./camera/camera.game";
@@ -51,8 +51,9 @@ import { XRInteractionSystem } from "../plugins/interaction/XRInteractionSystem"
 import { MatrixModule } from "./matrix/matrix.game";
 import { WebSGNetworkModule } from "./network/scripting.game";
 import { WebSGUIModule } from "./ui/ui.game";
-import { CameraRigModule, CameraRigSystem } from "../plugins/camera/CameraRig.game";
+import { CameraRigModule, CameraRigSystem } from "./player/CameraRig.game";
 import { ActionBarSystem } from "../plugins/thirdroom/action-bar.game";
+import { EnableCharacterControllerSystem } from "./player/CharacterController";
 
 export default defineConfig<GameState>({
   modules: [

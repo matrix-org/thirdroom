@@ -29,7 +29,7 @@ import {
   writeUint32,
   writeUint8,
 } from "../allocator/CursorView";
-import { OurPlayer, Player } from "../component/Player";
+import { OurPlayer, Player } from "../player/Player";
 import { NOOP } from "../config.common";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
@@ -47,8 +47,8 @@ import { Networked } from "./NetworkComponents";
 import { NetworkModule } from "./network.game";
 import { NetworkAction } from "./NetworkAction";
 import { GameInputModule } from "../input/input.game";
-import { getCamera } from "../camera/camera.game";
-import { addNametag, getNametag, NametagAnchor } from "../../plugins/nametags/nametags.game";
+import { getCamera } from "../player/getCamera";
+import { addNametag, getNametag, NametagAnchor } from "../player/nametags.game";
 import { removeInteractableComponent } from "../../plugins/interaction/interaction.game";
 import { waitUntil } from "../utils/waitUntil";
 import { AudioEmitterType } from "../resource/schema";
@@ -61,9 +61,9 @@ import {
   RemoteNode,
   removeObjectFromWorld,
 } from "../resource/RemoteResources";
-import { AVATAR_HEIGHT } from "../../plugins/avatars/common";
+import { AVATAR_HEIGHT } from "../player/common";
 import { XRMode } from "../renderer/renderer.common";
-import { AvatarRef } from "../../plugins/avatars/components";
+import { AvatarRef } from "../player/components";
 import { addXRAvatarRig } from "../input/WebXRAvatarRigSystem";
 import { getReplicator } from "./Replicator";
 

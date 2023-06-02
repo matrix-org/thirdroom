@@ -3,7 +3,7 @@ import { addComponent, defineQuery, removeComponent } from "bitecs";
 import { mat4, quat, vec3 } from "gl-matrix";
 
 import { getReadObjectBufferView } from "../../engine/allocator/ObjectBufferView";
-import { ourPlayerQuery } from "../../engine/component/Player";
+import { ourPlayerQuery } from "../../engine/player/Player";
 import { setFromLocalMatrix } from "../../engine/component/transform";
 import { GameState } from "../../engine/GameTypes";
 import { InputModule } from "../../engine/input/input.game";

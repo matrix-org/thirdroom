@@ -4,7 +4,7 @@ import { useRegisterActions } from "kbar";
 import { useCallback, useState } from "react";
 
 import { Thread } from "../../../../engine/module/module.common";
-import { NametagsEnableMessage, NametagsEnableMessageType } from "../../../../plugins/nametags/nametags.common";
+import { NametagsEnableMessage, NametagsEnableMessageType } from "../../../../engine/player/nametags.common";
 import { IconButton } from "../../../atoms/button/IconButton";
 import { Dialog } from "../../../atoms/dialog/Dialog";
 import { Header } from "../../../atoms/header/Header";

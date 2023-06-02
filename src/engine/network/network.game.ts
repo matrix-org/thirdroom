@@ -4,7 +4,7 @@ import { availableRead } from "@thirdroom/ringbuffer";
 
 import { createCursorView, CursorView } from "../allocator/CursorView";
 import { GameState } from "../GameTypes";
-import { Player } from "../component/Player";
+import { Player } from "../player/Player";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import {
   AddPeerIdMessage,

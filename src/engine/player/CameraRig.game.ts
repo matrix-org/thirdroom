@@ -1,27 +1,28 @@
 import { addComponent, defineQuery, exitQuery, hasComponent, Query } from "bitecs";
 import { vec2, glMatrix as glm, quat, vec3, mat4 } from "gl-matrix";
 
-import { Axes, clamp } from "../../engine/component/math";
-import { GameState, World } from "../../engine/GameTypes";
-import { enableActionMap } from "../../engine/input/ActionMappingSystem";
-import { ActionMap, ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
-import { GameInputModule, InputModule } from "../../engine/input/input.game";
-import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
-import { getRemoteResource, tryGetRemoteResource } from "../../engine/resource/resource.game";
-import { addObjectToWorld, RemoteNode, removeObjectFromWorld } from "../../engine/resource/RemoteResources";
-import { addChild } from "../../engine/component/transform";
-import { CameraRef, createRemotePerspectiveCamera } from "../../engine/camera/camera.game";
-import { ThirdPersonComponent } from "./../thirdroom/thirdroom.game";
+import { Axes, clamp } from "../component/math";
+import { GameState, World } from "../GameTypes";
+import { enableActionMap } from "../input/ActionMappingSystem";
+import { ActionMap, ActionType, BindingType, ButtonActionState } from "../input/ActionMap";
+import { GameInputModule, InputModule } from "../input/input.game";
+import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
+import { getRemoteResource, tryGetRemoteResource } from "../resource/resource.game";
+import { addObjectToWorld, RemoteNode, removeObjectFromWorld } from "../resource/RemoteResources";
+import { addChild } from "../component/transform";
+import { createRemotePerspectiveCamera } from "../camera/camera.game";
+import { ThirdPersonComponent } from "../player/CharacterController";
 import { CameraRigMessage } from "./CameraRig.common";
-import { ourPlayerQuery } from "../../engine/component/Player";
-import { embodyAvatar } from "../../engine/network/serialization.game";
-import { PhysicsModule } from "../../engine/physics/physics.game";
-import { createDisposables } from "../../engine/utils/createDisposables";
-import { ThirdRoomMessageType } from "../thirdroom/thirdroom.common";
-import { sendInteractionMessage } from "../interaction/interaction.game";
-import { InteractableAction } from "../interaction/interaction.common";
-import { getXRMode } from "../../engine/renderer/renderer.game";
-import { XRMode } from "../../engine/renderer/renderer.common";
+import { ourPlayerQuery } from "./Player";
+import { embodyAvatar } from "../network/serialization.game";
+import { PhysicsModule } from "../physics/physics.game";
+import { createDisposables } from "../utils/createDisposables";
+import { ThirdRoomMessageType } from "../../plugins/thirdroom/thirdroom.common";
+import { sendInteractionMessage } from "../../plugins/interaction/interaction.game";
+import { InteractableAction } from "../../plugins/interaction/interaction.common";
+import { getXRMode } from "../renderer/renderer.game";
+import { XRMode } from "../renderer/renderer.common";
+import { CameraRef } from "../player/getCamera";
 
 export const CameraRigModule = defineModule<GameState, { orbiting: boolean }>({
   name: "camera-rig-module",

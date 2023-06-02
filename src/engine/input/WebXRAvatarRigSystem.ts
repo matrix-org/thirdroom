@@ -1,9 +1,9 @@
 import { addComponent, defineQuery, exitQuery, hasComponent, Not, removeComponent } from "bitecs";
 import { mat4, quat, vec3 } from "gl-matrix";
 
-import { FlyControls } from "../../plugins/FlyCharacterController";
+import { FlyControls } from "../player/FlyCharacterController";
 import { addXRRaycaster } from "../../plugins/interaction/XRInteractionSystem";
-import { KinematicControls } from "../../plugins/KinematicCharacterController";
+import { KinematicControls } from "../player/KinematicCharacterController";
 import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 import { addChild, removeChild, setFromLocalMatrix, updateMatrixWorld } from "../component/transform";
 import { GameState, World } from "../GameTypes";
@@ -23,8 +23,8 @@ import { Networked, Owned } from "../network/NetworkComponents";
 import { broadcastReliable } from "../network/outbound.game";
 import { createInformXRMode } from "../network/serialization.game";
 import { NetworkModule } from "../network/network.game";
-import { XRHeadComponent, XRControllerComponent } from "../../plugins/thirdroom/thirdroom.game";
-import { AvatarRef } from "../../plugins/avatars/components";
+import { XRHeadComponent, XRControllerComponent } from "../player/PlayerRig";
+import { AvatarRef } from "../player/components";
 
 export interface XRAvatarRig {
   prevLeftAssetPath?: string;

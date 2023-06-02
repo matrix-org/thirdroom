@@ -2,16 +2,16 @@ import RAPIER from "@dimforge/rapier3d-compat";
 import { addComponent, defineComponent, defineQuery, enterQuery } from "bitecs";
 import { Object3D, Quaternion, Vector3 } from "three";
 
-import { GameState } from "../engine/GameTypes";
-import { enableActionMap } from "../engine/input/ActionMappingSystem";
-import { ActionMap, ActionType, BindingType, ButtonActionState } from "../engine/input/ActionMap";
-import { InputModule } from "../engine/input/input.game";
-import { defineModule, getModule } from "../engine/module/module.common";
-import { playerShapeCastCollisionGroups } from "../engine/physics/CollisionGroups";
-import { PhysicsModule, RigidBody } from "../engine/physics/physics.game";
-import { tryGetRemoteResource } from "../engine/resource/resource.game";
-import { RemoteNode } from "../engine/resource/RemoteResources";
-import { ourPlayerQuery } from "../engine/component/Player";
+import { GameState } from "../GameTypes";
+import { enableActionMap } from "../input/ActionMappingSystem";
+import { ActionMap, ActionType, BindingType, ButtonActionState } from "../input/ActionMap";
+import { InputModule } from "../input/input.game";
+import { defineModule, getModule } from "../module/module.common";
+import { playerShapeCastCollisionGroups } from "../physics/CollisionGroups";
+import { PhysicsModule, RigidBody } from "../physics/physics.game";
+import { tryGetRemoteResource } from "../resource/resource.game";
+import { RemoteNode } from "../resource/RemoteResources";
+import { ourPlayerQuery } from "./Player";
 
 function physicsCharacterControllerAction(key: string) {
   return "PhysicsCharacterController/" + key;

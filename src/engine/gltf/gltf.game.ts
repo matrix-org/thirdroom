@@ -82,7 +82,7 @@ import { getModule } from "../module/module.common";
 import { addNodePhysicsBody, addRigidBody, PhysicsModule } from "../physics/physics.game";
 import { getAccessorArrayView, vec3ArrayTransformMat4 } from "../accessor/accessor.common";
 import { staticRigidBodyCollisionGroups } from "../physics/CollisionGroups";
-import { CharacterControllerType, SceneCharacterControllerComponent } from "../../plugins/CharacterController";
+import { CharacterControllerType, SceneCharacterControllerComponent } from "../player/CharacterController";
 import { loadGLTFAnimationClip } from "./animation.three";
 import { AnimationComponent, BoneComponent } from "../animation/animation.game";
 import { RemoteResource } from "../resource/RemoteResourceClass";

@@ -19,7 +19,7 @@ import { addEntityHistory, syncWithHistorian } from "./InterpolationBuffer";
 import { clamp } from "../utils/interpolation";
 import { getRemoteResource } from "../resource/resource.game";
 import { RemoteNode } from "../resource/RemoteResources";
-import { OurPlayer } from "../component/Player";
+import { OurPlayer } from "../player/Player";
 
 export const remoteEntityQuery = defineQuery([Networked, Not(Owned), Not(OurPlayer)]);
 

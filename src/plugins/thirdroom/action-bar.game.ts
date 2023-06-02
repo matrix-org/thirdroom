@@ -1,10 +1,10 @@
-import { getCamera } from "../../engine/camera/camera.game";
-import { ourPlayerQuery } from "../../engine/component/Player";
+import { ourPlayerQuery } from "../../engine/player/Player";
 import { GameState } from "../../engine/GameTypes";
 import { ActionMap, ActionDefinition, ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
 import { GameInputModule, InputModule } from "../../engine/input/input.game";
 import { XRAvatarRig } from "../../engine/input/WebXRAvatarRigSystem";
 import { getModule, Thread } from "../../engine/module/module.common";
+import { getCamera } from "../../engine/player/getCamera";
 import { RemoteNode } from "../../engine/resource/RemoteResources";
 import { tryGetRemoteResource } from "../../engine/resource/resource.game";
 import { ScriptComponent, scriptQuery } from "../../engine/scripting/scripting.game";

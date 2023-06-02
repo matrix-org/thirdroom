@@ -3,7 +3,7 @@ import { defineModule, getModule, Thread } from "../module/module.common";
 import { codeToKeyCode } from "./KeyCodes";
 import { InitializeInputStateMessage, InputComponentId, InputMessageType, InputSourceId } from "./input.common";
 import { createInputRingBuffer, enqueueInputRingBuffer, InputRingBuffer, RING_BUFFER_MAX } from "./InputRingBuffer";
-import { CameraRigModule } from "../../plugins/camera/CameraRig.main";
+import { CameraRigModule } from "../player/CameraRig.main";
 
 /*********
  * Types *

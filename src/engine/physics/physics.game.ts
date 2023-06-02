@@ -21,7 +21,7 @@ import { maxEntities } from "../config.common";
 import { ColliderType, MeshPrimitiveAttributeIndex, PhysicsBodyType } from "../resource/schema";
 import { getAccessorArrayView, scaleVec3Array } from "../accessor/accessor.common";
 import { updateMatrixWorld } from "../component/transform";
-import { Player } from "../component/Player";
+import { Player } from "../player/Player";
 import {
   PhysicsDebugRenderTripleBuffer,
   PhysicsDisableDebugRenderMessage,

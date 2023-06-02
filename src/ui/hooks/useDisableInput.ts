@@ -2,7 +2,7 @@ import { useEffect } from "react";
 
 import { InputModule } from "../../engine/input/input.main";
 import { getModule } from "../../engine/module/module.common";
-import { CameraRigModule } from "../../plugins/camera/CameraRig.main";
+import { CameraRigModule } from "../../engine/player/CameraRig.main";
 import { useMainThreadContext } from "./useMainThread";
 
 export function useDisableInput(state = true) {

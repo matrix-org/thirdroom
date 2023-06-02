@@ -1,8 +1,7 @@
 import { mat4, vec3, glMatrix } from "gl-matrix";
-import { defineComponent, Types } from "bitecs";
 
 import { GameState, RemoteResourceManager } from "../GameTypes";
-import { getRemoteResources, tryGetRemoteResource } from "../resource/resource.game";
+import { getRemoteResources } from "../resource/resource.game";
 import { GameRendererModuleState } from "../renderer/renderer.game";
 import { RemoteCamera, RemoteNode } from "../resource/RemoteResources";
 import { CameraType } from "../resource/schema";
@@ -110,16 +109,4 @@ function makePerspective(
   m[15] = 0;
 
   return m;
-}
-
-export const CameraRef = defineComponent({ eid: Types.eid });
-
-/**
- * Obtains the last added camera on the provided entity if one exists, throws if not
- */
-export function getCamera(ctx: GameState, root: RemoteNode): RemoteNode {
-  const cameraEid = CameraRef.eid[root.eid];
-  if (!cameraEid) throw new Error(`CameraRef not found on node "${root.name}"`);
-  const camera = tryGetRemoteResource<RemoteNode>(ctx, cameraEid);
-  return camera;
 }
