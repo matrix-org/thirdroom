@@ -47,13 +47,7 @@ import { OurPlayer, ourPlayerQuery, Player } from "../../engine/component/Player
 import { enableActionMap } from "../../engine/input/ActionMappingSystem";
 import { GameInputModule, InputModule } from "../../engine/input/input.game";
 import { spawnEntity } from "../../engine/utils/spawnEntity";
-import {
-  addInputController,
-  createInputController,
-  tryGetInputController,
-  InputController,
-  inputControllerQuery,
-} from "../../engine/input/InputController";
+import { InputController } from "../../engine/input/InputController";
 import { addInteractableComponent, GRAB_DISTANCE } from "../interaction/interaction.game";
 import { embodyAvatar } from "../../engine/network/serialization.game";
 import { addScriptComponent, loadScript, Script, ScriptComponent } from "../../engine/scripting/scripting.game";
@@ -106,15 +100,6 @@ export interface ThirdRoomModuleState {
   actionBarItems: ActionBarItem[];
 }
 
-const addAvatarController = (ctx: GameState, input: GameInputModule, eid: number) => {
-  const defaultController = input.defaultController;
-  const controller = createInputController({
-    actionMaps: defaultController.actionMaps,
-  });
-  addInputController(ctx.world, input, controller, eid);
-  return controller;
-};
-
 const createAvatarRig =
   (input: GameInputModule, physics: PhysicsModuleState) => (ctx: GameState, options: AvatarOptions) => {
     const spawnPoints = spawnPointQuery(ctx.world);
@@ -137,8 +122,6 @@ const createAvatarRig =
     }
 
     addCameraRig(ctx, container, CameraRigType.PointerLock, [0, AVATAR_HEIGHT - AVATAR_CAMERA_OFFSET, 0]);
-
-    addAvatarController(ctx, input, container.eid);
     addAvatarRigidBody(ctx, physics, container);
     addInteractableComponent(ctx, physics, container, InteractableType.Player);
 
@@ -307,7 +290,7 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
       }
     });
 
-    enableActionMap(input.defaultController, {
+    enableActionMap(input.activeController, {
       id: "thirdroom-action-map",
       actionDefs: [
         {
@@ -336,7 +319,7 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
       ],
     });
 
-    enableActionMap(input.defaultController, actionBarMap);
+    enableActionMap(input.activeController, actionBarMap);
 
     return () => {
       dispose();
@@ -655,13 +638,11 @@ export function ThirdroomSystem(ctx: GameState) {
   const input = getModule(ctx, InputModule);
   const physics = getModule(ctx, PhysicsModule);
 
-  const rigs = inputControllerQuery(ctx.world);
+  const eid = ourPlayerQuery(ctx.world)[0];
 
-  for (let i = 0; i < rigs.length; i++) {
-    const eid = rigs[i];
+  if (eid) {
     const playerNode = tryGetRemoteResource<RemoteNode>(ctx, eid);
-    const controller = tryGetInputController(input, eid);
-    updateCharacterController(ctx, physics, controller, playerNode);
+    updateCharacterController(ctx, physics, input.activeController, playerNode);
   }
 }
 

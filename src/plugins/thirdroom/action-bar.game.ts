@@ -1,8 +1,9 @@
 import { getCamera } from "../../engine/camera/camera.game";
+import { ourPlayerQuery } from "../../engine/component/Player";
 import { GameState } from "../../engine/GameTypes";
 import { ActionMap, ActionDefinition, ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
 import { InputModule } from "../../engine/input/input.game";
-import { InputController, inputControllerQuery, tryGetInputController } from "../../engine/input/InputController";
+import { InputController } from "../../engine/input/InputController";
 import { XRAvatarRig } from "../../engine/input/WebXRAvatarRigSystem";
 import { getModule, Thread } from "../../engine/module/module.common";
 import { RemoteNode } from "../../engine/resource/RemoteResources";
@@ -114,16 +115,13 @@ export function ActionBarSystem(ctx: GameState) {
     }
   });
 
-  const inputControllers = inputControllerQuery(ctx.world);
+  const eid = ourPlayerQuery(ctx.world)[0];
 
-  for (let i = 0; i < inputControllers.length; i++) {
-    const eid = inputControllers[i];
-
+  if (eid) {
     const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
-    const controller = tryGetInputController(input, eid);
     const xr = XRAvatarRig.get(eid);
 
-    processPressedActionBarActions(actionBarItems, controller, (actionBarItem) => {
+    processPressedActionBarActions(actionBarItems, input.activeController, (actionBarItem) => {
       if (actionBarItem.spawnable !== true) {
         return;
       }

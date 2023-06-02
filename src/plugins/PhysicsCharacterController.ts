@@ -6,12 +6,13 @@ import { GameState } from "../engine/GameTypes";
 import { enableActionMap } from "../engine/input/ActionMappingSystem";
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "../engine/input/ActionMap";
 import { InputModule } from "../engine/input/input.game";
-import { tryGetInputController, InputController, inputControllerQuery } from "../engine/input/InputController";
+import { InputController } from "../engine/input/InputController";
 import { defineModule, getModule } from "../engine/module/module.common";
 import { playerShapeCastCollisionGroups } from "../engine/physics/CollisionGroups";
 import { PhysicsModule, PhysicsModuleState, RigidBody } from "../engine/physics/physics.game";
 import { tryGetRemoteResource } from "../engine/resource/resource.game";
 import { RemoteNode } from "../engine/resource/RemoteResources";
+import { ourPlayerQuery } from "../engine/component/Player";
 
 function physicsCharacterControllerAction(key: string) {
   return "PhysicsCharacterController/" + key;
@@ -90,8 +91,7 @@ export const PhysicsCharacterControllerModule = defineModule<GameState, PhysicsC
   },
   init(ctx) {
     const input = getModule(ctx, InputModule);
-    const controller = input.defaultController;
-    enableActionMap(controller, PhysicsCharacterControllerActionMap);
+    enableActionMap(input.activeController, PhysicsCharacterControllerActionMap);
   },
 });
 
@@ -233,12 +233,10 @@ function updatePhysicsControls(
 export const PhysicsCharacterControllerSystem = (ctx: GameState) => {
   const physics = getModule(ctx, PhysicsModule);
   const input = getModule(ctx, InputModule);
+  const eid = ourPlayerQuery(ctx.world)[0];
 
-  const rigs = inputControllerQuery(ctx.world);
-  for (let i = 0; i < rigs.length; i++) {
-    const eid = rigs[i];
+  if (eid) {
     const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
-    const controller = tryGetInputController(input, eid);
-    updatePhysicsControls(ctx, physics, controller, node);
+    updatePhysicsControls(ctx, physics, input.activeController, node);
   }
 };

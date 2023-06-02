@@ -47,7 +47,6 @@ import { Networked } from "./NetworkComponents";
 import { NetworkModule } from "./network.game";
 import { NetworkAction } from "./NetworkAction";
 import { GameInputModule } from "../input/input.game";
-import { setActiveInputController } from "../input/InputController";
 import { getCamera } from "../camera/camera.game";
 import { addNametag, getNametag, NametagAnchor } from "../../plugins/nametags/nametags.game";
 import { removeInteractableComponent } from "../../plugins/interaction/interaction.game";
@@ -694,7 +693,6 @@ export function embodyAvatar(ctx: GameState, physics: PhysicsModuleState, input:
   ctx.worldResource.activeAvatarNode = node;
 
   addXRAvatarRig(ctx.world, node.eid);
-  setActiveInputController(input, node.eid);
 }
 
 /* Message Factories */

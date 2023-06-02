@@ -126,29 +126,37 @@ function updateActionMaps(ctx: GameState, network: GameNetworkState, controller:
 export function ActionMappingSystem(ctx: GameState) {
   const network = getModule(ctx, NetworkModule);
   const input = getModule(ctx, InputModule);
-  for (const controller of input.controllers.values()) {
-    updateActionMaps(ctx, network, controller);
-  }
+  updateActionMaps(ctx, network, input.activeController);
 }
 
-export function initializeActionMap(controller: InputController, actionDef: ActionDefinition) {
-  controller.actionStates.set(actionDef.path, ActionTypesToBindings[actionDef.type].create());
-  // set ID maps for serialization
-  controller.pathToId.set(actionDef.path, controller.actionStates.size);
-  controller.pathToDef.set(actionDef.path, actionDef);
-  controller.idToPath.set(controller.actionStates.size, actionDef.path);
-}
+export function initializeActionMap(controller: InputController, actionDef: ActionDefinition) {}
 
 export function enableActionMap(controller: InputController, actionMap: ActionMap) {
   const index = controller.actionMaps.indexOf(actionMap);
   if (index === -1) {
     controller.actionMaps.push(actionMap);
+
+    for (const actionDef of actionMap.actionDefs) {
+      controller.actionStates.set(actionDef.path, ActionTypesToBindings[actionDef.type].create());
+      // set ID maps for serialization
+      controller.pathToId.set(actionDef.path, controller.actionStates.size);
+      controller.pathToDef.set(actionDef.path, actionDef);
+      controller.idToPath.set(controller.actionStates.size, actionDef.path);
+    }
   }
 }
 
 export function disableActionMap(controller: InputController, actionMap: ActionMap) {
   const index = controller.actionMaps.indexOf(actionMap);
   if (index !== -1) {
+    for (const actionDef of actionMap.actionDefs) {
+      controller.actionStates.delete(actionDef.path);
+      const id = controller.pathToId.get(actionDef.path) as number;
+      controller.pathToId.delete(actionDef.path);
+      controller.pathToDef.delete(actionDef.path);
+      controller.idToPath.delete(id);
+    }
+
     controller.actionMaps.splice(index, 1);
   }
 }

@@ -15,7 +15,6 @@ import {
   UpdateXRInputSourcesMessage,
 } from "./input.common";
 import { InputController, createInputController } from "./InputController";
-import { InputControllerComponent } from "./InputControllerComponent";
 import { ARActionMap, XRAvatarRig } from "./WebXRAvatarRigSystem";
 
 /*********
@@ -23,8 +22,6 @@ import { ARActionMap, XRAvatarRig } from "./WebXRAvatarRigSystem";
  ********/
 
 export interface GameInputModule {
-  controllers: Map<number, InputController>;
-  defaultController: InputController;
   activeController: InputController;
   xrInputSources: Map<number, SharedXRInputSource>;
   xrInputSourcesByHand: Map<XRHandedness, SharedXRInputSource>;
@@ -47,8 +44,6 @@ export const InputModule = defineModule<GameState, GameInputModule>({
     const controller = createInputController({ inputRingBuffer });
 
     return {
-      controllers: InputControllerComponent,
-      defaultController: controller,
       activeController: controller,
       xrInputSources: new Map(),
       xrPrimaryHand: "right",
@@ -59,8 +54,7 @@ export const InputModule = defineModule<GameState, GameInputModule>({
   init(ctx) {
     // TODO: we should enable / disable this depending on whether or not you're in XR
     const input = getModule(ctx, InputModule);
-    const controller = input.defaultController;
-    enableActionMap(controller, ARActionMap);
+    enableActionMap(input.activeController, ARActionMap);
 
     return createDisposables([
       registerMessageHandler(ctx, InputMessageType.UpdateXRInputSources, onUpdateXRInputSources),
@@ -116,12 +110,10 @@ function onUpdateXRInputSources(ctx: GameState, { added, removed }: UpdateXRInpu
 
 export function ResetInputSystem(ctx: GameState) {
   const input = getModule(ctx, InputModule);
-  for (const controller of input.controllers.values()) {
-    const { raw } = controller;
-    raw["Mouse/movementX"] = 0;
-    raw["Mouse/movementY"] = 0;
-    raw["Mouse/Scroll"] = 0;
-  }
+  const { raw } = input.activeController;
+  raw["Mouse/movementX"] = 0;
+  raw["Mouse/movementY"] = 0;
+  raw["Mouse/Scroll"] = 0;
 }
 
 export function getPrimaryInputSourceNode(ctx: GameState) {

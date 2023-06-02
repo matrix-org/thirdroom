@@ -3,7 +3,6 @@ import { availableRead } from "@thirdroom/ringbuffer";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import { InputComponentId, InputComponentState, SharedXRInputSource, XRInputComponentIdToName } from "./input.common";
-import { exitedInputControllerQuery, removeInputController } from "./InputController";
 import { dequeueInputRingBuffer } from "./RingBuffer";
 import { InputModule } from "./input.game";
 import { checkBitflag } from "../utils/checkBitflag";
@@ -68,12 +67,6 @@ export function ApplyInputSystem(ctx: GameState) {
         applyXRThumbstick(raw, out, xrInputSources, xrPrimaryHand);
         break;
     }
-  }
-
-  const exited = exitedInputControllerQuery(ctx.world);
-  for (let i = 0; i < exited.length; i++) {
-    const eid = exited[i];
-    removeInputController(ctx.world, input, eid);
   }
 }
 

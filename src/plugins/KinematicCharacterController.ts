@@ -7,7 +7,6 @@ import { GameState } from "../engine/GameTypes";
 import { enableActionMap } from "../engine/input/ActionMappingSystem";
 import { ActionMap, ActionState, ActionType, BindingType, ButtonActionState } from "../engine/input/ActionMap";
 import { InputModule } from "../engine/input/input.game";
-import { tryGetInputController } from "../engine/input/InputController";
 import { defineModule, getModule } from "../engine/module/module.common";
 import { Owned } from "../engine/network/NetworkComponents";
 import { PhysicsModule, PhysicsModuleState, RigidBody } from "../engine/physics/physics.game";
@@ -106,8 +105,7 @@ export const KinematicCharacterControllerModule = defineModule<GameState, Kinema
   },
   init(ctx) {
     const input = getModule(ctx, InputModule);
-    const controller = input.defaultController;
-    enableActionMap(controller, KinematicCharacterControllerActionMap);
+    enableActionMap(input.activeController, KinematicCharacterControllerActionMap);
   },
 });
 
@@ -313,7 +311,6 @@ export const KinematicCharacterControllerSystem = (ctx: GameState) => {
   for (let i = 0; i < rigs.length; i++) {
     const eid = rigs[i];
     const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
-    const controller = tryGetInputController(input, eid);
     const body = RigidBody.store.get(eid);
 
     if (!body) {
@@ -321,6 +318,6 @@ export const KinematicCharacterControllerSystem = (ctx: GameState) => {
       continue;
     }
 
-    updateKinematicControls(ctx, physics, controller.actionStates, node, body);
+    updateKinematicControls(ctx, physics, input.activeController.actionStates, node, body);
   }
 };

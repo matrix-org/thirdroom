@@ -5,17 +5,12 @@ import { Quaternion, Vector3, Vector4 } from "three";
 
 import { playOneShotAudio } from "../../engine/audio/audio.game";
 import { getCamera, unproject } from "../../engine/camera/camera.game";
-import { OurPlayer } from "../../engine/component/Player";
+import { OurPlayer, ourPlayerQuery } from "../../engine/component/Player";
 import { maxEntities, MAX_OBJECT_CAP, NOOP } from "../../engine/config.common";
 import { GameState } from "../../engine/GameTypes";
 import { enableActionMap } from "../../engine/input/ActionMappingSystem";
 import { GameInputModule, InputModule } from "../../engine/input/input.game";
-import {
-  tryGetInputController,
-  InputController,
-  inputControllerQuery,
-  getInputController,
-} from "../../engine/input/InputController";
+import { InputController } from "../../engine/input/InputController";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
 import {
   GameNetworkState,
@@ -117,8 +112,7 @@ export const InteractionModule = defineModule<GameState, InteractionModuleState>
     addResourceRef(ctx, module.clickEmitter.eid);
 
     const input = getModule(ctx, InputModule);
-    const controller = input.defaultController;
-    enableActionMap(controller, InteractionActionMap);
+    enableActionMap(input.activeController, InteractionActionMap);
 
     ctx.worldResource.persistentScene.audioEmitters = [
       ...ctx.worldResource.persistentScene.audioEmitters,
@@ -344,12 +338,10 @@ export function InteractionSystem(ctx: GameState) {
     return;
   }
 
-  const rigs = inputControllerQuery(ctx.world);
+  const eid = ourPlayerQuery(ctx.world)[0];
 
-  for (let i = 0; i < rigs.length; i++) {
-    const eid = rigs[i];
+  if (eid) {
     const rig = tryGetRemoteResource<RemoteNode>(ctx, eid);
-    const controller = tryGetInputController(input, eid);
     const xr = XRAvatarRig.get(eid);
 
     if (xr && xr.leftRayEid && xr.rightRayEid) {
@@ -357,15 +349,15 @@ export function InteractionSystem(ctx: GameState) {
       const rightRay = tryGetRemoteResource<RemoteNode>(ctx, xr.rightRayEid);
 
       // TODO: deletion
-      // updateDeletion(ctx, interaction, controller, eid);
-      updateGrabThrowXR(ctx, interaction, physics, network, controller, rig, leftRay, "left");
-      updateGrabThrowXR(ctx, interaction, physics, network, controller, rig, rightRay, "right");
+      // updateDeletion(ctx, interaction, input.activeController, eid);
+      updateGrabThrowXR(ctx, interaction, physics, network, input.activeController, rig, leftRay, "left");
+      updateGrabThrowXR(ctx, interaction, physics, network, input.activeController, rig, rightRay, "right");
     } else {
       const grabbingNode = getCamera(ctx, rig).parent!;
 
       updateFocus(ctx, physics, rig, grabbingNode);
-      updateDeletion(ctx, interaction, controller, eid);
-      updateGrabThrow(ctx, interaction, physics, network, controller, rig, grabbingNode);
+      updateDeletion(ctx, interaction, input.activeController, eid);
+      updateGrabThrow(ctx, interaction, physics, network, input.activeController, rig, grabbingNode);
     }
   }
 }
@@ -384,12 +376,6 @@ function updateOrbitInteraction(
 
   const orbitAnchorEid = orbitAnchorQuery(ctx.world)[0];
   const orbitAnchor = OrbitAnchor.get(orbitAnchorEid);
-  const controller = getInputController(input, orbitAnchorEid);
-
-  if (!controller) {
-    console.warn("Controller not found for eid", orbitAnchorEid);
-    return;
-  }
 
   // TODO: CameraRef
   const zoom = ZoomComponent.get(orbitAnchorEid)!;
@@ -404,7 +390,7 @@ function updateOrbitInteraction(
   mat4.getTranslation(_source, camera.worldMatrix);
 
   // set target at mouse screenspace, unproject, subtract source, then normalize
-  const screenPosition = controller.actionStates.get("ScreenPosition") as vec2;
+  const screenPosition = input.activeController.actionStates.get("ScreenPosition") as vec2;
   const x = (screenPosition[0] / renderer.canvasWidth) * 2 - 1;
   const y = -(screenPosition[1] / renderer.canvasHeight) * 2 + 1;
   vec3.set(_target, x, y, 0.5);
@@ -451,7 +437,7 @@ function updateOrbitInteraction(
    * Interaction
    */
 
-  const grabBtn = controller.actionStates.get("Grab") as ButtonActionState;
+  const grabBtn = input.activeController.actionStates.get("Grab") as ButtonActionState;
 
   if (!grabBtn.pressed) {
     return;

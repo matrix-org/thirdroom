@@ -9,7 +9,7 @@ import { GameState } from "../engine/GameTypes";
 import { enableActionMap } from "../engine/input/ActionMappingSystem";
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "../engine/input/ActionMap";
 import { InputModule } from "../engine/input/input.game";
-import { tryGetInputController, InputController } from "../engine/input/InputController";
+import { InputController } from "../engine/input/InputController";
 import { defineModule, getModule } from "../engine/module/module.common";
 import { tryGetRemoteResource } from "../engine/resource/resource.game";
 import { RemoteNode } from "../engine/resource/RemoteResources";
@@ -63,8 +63,7 @@ export const FlyCharacterControllerModule = defineModule<GameState, FlyCharacter
   },
   init(ctx) {
     const input = getModule(ctx, InputModule);
-    const controller = input.defaultController;
-    enableActionMap(controller, FlyCharacterControllerActionMap);
+    enableActionMap(input.activeController, FlyCharacterControllerActionMap);
   },
 });
 
@@ -127,14 +126,12 @@ export function FlyControllerSystem(ctx: GameState) {
     const playerRigEid = ents[i];
     const playerRig = tryGetRemoteResource<RemoteNode>(ctx, playerRigEid);
     const camera = getCamera(ctx, playerRig);
-    const controller = tryGetInputController(input, playerRigEid);
-
     const body = RigidBody.store.get(playerRigEid);
 
     if (!body) {
       throw new Error("rigidbody not found on eid " + playerRigEid);
     }
 
-    applyFlyControls(ctx, body, controller, playerRig, camera);
+    applyFlyControls(ctx, body, input.activeController, playerRig, camera);
   }
 }
