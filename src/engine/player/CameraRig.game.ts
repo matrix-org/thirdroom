@@ -14,7 +14,6 @@ import { createRemotePerspectiveCamera } from "../camera/camera.game";
 import { ThirdPersonComponent } from "../player/CharacterController";
 import { CameraRigMessage } from "./CameraRig.common";
 import { ourPlayerQuery } from "./Player";
-import { embodyAvatar } from "../network/serialization.game";
 import { PhysicsModule } from "../physics/physics.game";
 import { createDisposables } from "../utils/createDisposables";
 import { ThirdRoomMessageType } from "../../plugins/thirdroom/thirdroom.common";
@@ -23,6 +22,7 @@ import { InteractableAction } from "../../plugins/interaction/interaction.common
 import { getXRMode } from "../renderer/renderer.game";
 import { XRMode } from "../renderer/renderer.common";
 import { CameraRef } from "../player/getCamera";
+import { embodyAvatar } from "./embodyAvatar";
 
 export const CameraRigModule = defineModule<GameState, { orbiting: boolean }>({
   name: "camera-rig-module",

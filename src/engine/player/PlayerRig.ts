@@ -10,7 +10,6 @@ import { GameInputModule } from "../input/input.game";
 import { createLineMesh } from "../mesh/mesh.game";
 import { GameNetworkState, associatePeerWithEntity } from "../network/network.game";
 import { Owned, Networked } from "../network/NetworkComponents";
-import { embodyAvatar } from "../network/serialization.game";
 import { PhysicsModuleState } from "../physics/physics.game";
 import { createPrefabEntity } from "../prefab/prefab.game";
 import {
@@ -30,6 +29,7 @@ import { addCameraRig, CameraRigType } from "./CameraRig.game";
 import { SceneCharacterControllerComponent, CharacterControllerType } from "./CharacterController";
 import { AvatarOptions, AVATAR_HEIGHT, AVATAR_CAMERA_OFFSET } from "./common";
 import { AvatarRef } from "./components";
+import { embodyAvatar } from "./embodyAvatar";
 import { addFlyControls } from "./FlyCharacterController";
 import { addKinematicControls } from "./KinematicCharacterController";
 import { Player, OurPlayer } from "./Player";

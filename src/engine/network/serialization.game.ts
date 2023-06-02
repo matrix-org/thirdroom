@@ -1,5 +1,4 @@
-import { Quaternion, Vector3 } from "three";
-import { addComponent, pipe, removeComponent } from "bitecs";
+import { addComponent, pipe } from "bitecs";
 
 import {
   createCursorView,
@@ -29,11 +28,10 @@ import {
   writeUint32,
   writeUint8,
 } from "../allocator/CursorView";
-import { OurPlayer, Player } from "../player/Player";
 import { NOOP } from "../config.common";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
-import { PhysicsModuleState, RigidBody } from "../physics/physics.game";
+import { RigidBody } from "../physics/physics.game";
 import { Prefab, createPrefabEntity } from "../prefab/prefab.game";
 import { checkBitflag } from "../utils/checkBitflag";
 import {
@@ -46,26 +44,12 @@ import {
 import { Networked } from "./NetworkComponents";
 import { NetworkModule } from "./network.game";
 import { NetworkAction } from "./NetworkAction";
-import { GameInputModule } from "../input/input.game";
-import { getCamera } from "../player/getCamera";
-import { addNametag, getNametag, NametagAnchor } from "../player/nametags.game";
-import { removeInteractableComponent } from "../../plugins/interaction/interaction.game";
 import { waitUntil } from "../utils/waitUntil";
-import { AudioEmitterType } from "../resource/schema";
 import { getRemoteResource, tryGetRemoteResource } from "../resource/resource.game";
-import {
-  addObjectToWorld,
-  RemoteAudioData,
-  RemoteAudioEmitter,
-  RemoteAudioSource,
-  RemoteNode,
-  removeObjectFromWorld,
-} from "../resource/RemoteResources";
-import { AVATAR_HEIGHT } from "../player/common";
+import { addObjectToWorld, RemoteNode, removeObjectFromWorld } from "../resource/RemoteResources";
 import { XRMode } from "../renderer/renderer.common";
-import { AvatarRef } from "../player/components";
-import { addXRAvatarRig } from "../input/WebXRAvatarRigSystem";
 import { getReplicator } from "./Replicator";
+import { addPlayerFromPeer } from "./addPlayerFromPeer";
 
 export type NetPipeData = [GameState, CursorView, string];
 
@@ -594,40 +578,7 @@ export async function deserializeInformPlayerNetworkId(data: NetPipeData) {
   const peid = await waitUntil<number>(() => network.networkIdToEntityId.get(peerNid));
 
   associatePeerWithEntity(network, peerId, peid);
-  addComponent(ctx.world, Player, peid);
-
-  const peerNode = getRemoteResource<RemoteNode>(ctx, peid)!;
-
-  peerNode.audioEmitter = new RemoteAudioEmitter(ctx.resourceManager, {
-    type: AudioEmitterType.Positional,
-    sources: [
-      new RemoteAudioSource(ctx.resourceManager, {
-        audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-01.ogg" }),
-      }),
-      new RemoteAudioSource(ctx.resourceManager, {
-        audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-02.ogg" }),
-      }),
-      new RemoteAudioSource(ctx.resourceManager, {
-        audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-03.ogg" }),
-      }),
-      new RemoteAudioSource(ctx.resourceManager, {
-        audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-04.ogg" }),
-      }),
-      new RemoteAudioSource(ctx.resourceManager, {
-        audio: new RemoteAudioData(ctx.resourceManager, {
-          uri: `mediastream:${peerId}`,
-        }),
-        autoPlay: true,
-      }),
-    ],
-  });
-
-  peerNode.name = peerId;
-
-  // if not our own avatar, add nametag
-  if (peerId !== network.peerId) {
-    addNametag(ctx, AVATAR_HEIGHT + AVATAR_HEIGHT / 3, peerNode, peerId);
-  }
+  addPlayerFromPeer(ctx, peid, peerId);
 
   return data;
 }
@@ -665,34 +616,6 @@ export function createInformPlayerNetworkIdMessage(ctx: GameState, peerId: strin
   writeMetadata(NetworkAction.InformPlayerNetworkId)(input);
   serializeInformPlayerNetworkId(peerId)(input);
   return sliceCursorView(messageView);
-}
-
-// TODO: move this to a plugin (along with InformPlayerNetworkId OR register another hook into InformPlayerNetworkId)
-export function embodyAvatar(ctx: GameState, physics: PhysicsModuleState, input: GameInputModule, node: RemoteNode) {
-  // remove the nametag
-  try {
-    const nametag = getNametag(ctx, node);
-    removeComponent(ctx.world, NametagAnchor, nametag.eid);
-  } catch {}
-
-  // hide our avatar
-  try {
-    const avatarEid = AvatarRef.eid[node.eid];
-    const avatar = tryGetRemoteResource<RemoteNode>(ctx, avatarEid);
-    avatar.visible = false;
-  } catch {}
-
-  // mark entity as our player entity
-  addComponent(ctx.world, OurPlayer, node.eid);
-
-  // disable the collision group so we are unable to focus our own rigidbody
-  removeInteractableComponent(ctx, physics, node);
-
-  // set the active camera & input controller to this entity's
-  ctx.worldResource.activeCameraNode = getCamera(ctx, node);
-  ctx.worldResource.activeAvatarNode = node;
-
-  addXRAvatarRig(ctx.world, node.eid);
 }
 
 /* Message Factories */
@@ -783,77 +706,3 @@ export const createUpdateSnapshotMessage: (input: NetPipeData) => ArrayBuffer = 
     return sliceCursorView(v);
   }
 );
-
-export function createClientPositionMessage(ctx: GameState, eid: number) {
-  const data: NetPipeData = [ctx, messageView, ""];
-
-  const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
-  const camera = getCamera(ctx, node).parent!;
-
-  writeMetadata(NetworkAction.ClientPosition)(data);
-
-  writeUint32(messageView, Networked.networkId[node.eid]);
-
-  // transform
-  writeFloat32(messageView, node.position[0]);
-  writeFloat32(messageView, node.position[1]);
-  writeFloat32(messageView, node.position[2]);
-
-  writeFloat32(messageView, node.quaternion[0]);
-  writeFloat32(messageView, node.quaternion[1]);
-  writeFloat32(messageView, node.quaternion[2]);
-  writeFloat32(messageView, node.quaternion[3]);
-
-  // physics
-  writeFloat32(messageView, RigidBody.velocity[eid][0]);
-  writeFloat32(messageView, RigidBody.velocity[eid][1]);
-  writeFloat32(messageView, RigidBody.velocity[eid][2]);
-
-  // camera
-  writeFloat32(messageView, camera.quaternion[0]);
-  writeFloat32(messageView, camera.quaternion[1]);
-  writeFloat32(messageView, camera.quaternion[2]);
-  writeFloat32(messageView, camera.quaternion[3]);
-
-  return sliceCursorView(messageView);
-}
-
-const _p = new Vector3();
-const _v = new Vector3();
-const _q = new Quaternion();
-export function deserializeClientPosition(data: NetPipeData) {
-  const [ctx, view] = data;
-
-  const network = getModule(ctx, NetworkModule);
-
-  const nid = readUint32(view);
-  const player = network.networkIdToEntityId.get(nid)!;
-  const node = tryGetRemoteResource<RemoteNode>(ctx, player);
-  const camera = getCamera(ctx, node).parent!;
-
-  const body = RigidBody.store.get(node.eid);
-
-  _p.x = readFloat32(view);
-  _p.y = readFloat32(view);
-  _p.z = readFloat32(view);
-
-  _q.x = readFloat32(view);
-  _q.y = readFloat32(view);
-  _q.z = readFloat32(view);
-  _q.w = readFloat32(view);
-
-  _v.x = readFloat32(view);
-  _v.y = readFloat32(view);
-  _v.z = readFloat32(view);
-
-  camera.quaternion[0] = readFloat32(view);
-  camera.quaternion[1] = readFloat32(view);
-  camera.quaternion[2] = readFloat32(view);
-  camera.quaternion[3] = readFloat32(view);
-
-  body?.setTranslation(_p, true);
-  body?.setLinvel(_v, true);
-  body?.setRotation(_q, true);
-
-  return data;
-}

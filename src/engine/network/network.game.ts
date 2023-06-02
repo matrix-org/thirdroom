@@ -18,7 +18,6 @@ import {
 import { deserializeRemoveOwnership } from "./ownership.game";
 import { createHistorian, Historian } from "./Historian";
 import {
-  deserializeClientPosition,
   deserializeCreates,
   deserializeDeletes,
   deserializeFullChangedUpdate,
@@ -137,7 +136,6 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
     registerInboundMessageHandler(network, NetworkAction.InformPlayerNetworkId, deserializeInformPlayerNetworkId);
     registerInboundMessageHandler(network, NetworkAction.NewPeerSnapshot, deserializeNewPeerSnapshot);
     registerInboundMessageHandler(network, NetworkAction.RemoveOwnershipMessage, deserializeRemoveOwnership);
-    registerInboundMessageHandler(network, NetworkAction.ClientPosition, deserializeClientPosition);
     registerInboundMessageHandler(network, NetworkAction.InformXRMode, deserializeInformXRMode);
 
     const disposables = [
