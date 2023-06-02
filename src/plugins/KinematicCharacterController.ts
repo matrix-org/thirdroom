@@ -1,8 +1,7 @@
-import { addComponent, defineComponent, defineQuery, enterQuery, Not } from "bitecs";
+import { addComponent, defineComponent, defineQuery, enterQuery } from "bitecs";
 import RAPIER from "@dimforge/rapier3d-compat";
 import { RawCharacterCollision } from "@dimforge/rapier3d-compat/raw";
 import { Quaternion, Vector3 } from "three";
-import { vec3 } from "gl-matrix";
 
 import { GameState } from "../engine/GameTypes";
 import { enableActionMap } from "../engine/input/ActionMappingSystem";
@@ -10,17 +9,12 @@ import { ActionMap, ActionState, ActionType, BindingType, ButtonActionState } fr
 import { InputModule } from "../engine/input/input.game";
 import { tryGetInputController } from "../engine/input/InputController";
 import { defineModule, getModule } from "../engine/module/module.common";
-import { isHost } from "../engine/network/network.common";
-import { NetworkModule } from "../engine/network/network.game";
-import { Networked, Owned } from "../engine/network/NetworkComponents";
+import { Owned } from "../engine/network/NetworkComponents";
 import { PhysicsModule, PhysicsModuleState, RigidBody } from "../engine/physics/physics.game";
 import { tryGetRemoteResource } from "../engine/resource/resource.game";
 import { RemoteNode } from "../engine/resource/RemoteResources";
 import { playOneShotAudio } from "../engine/audio/audio.game";
 import randomRange from "../engine/utils/randomRange";
-import { OurPlayer } from "../engine/component/Player";
-import { createClientPositionMessage } from "../engine/network/serialization.game";
-import { sendReliable } from "../engine/network/outbound.game";
 
 function kinematicCharacterControllerAction(key: string) {
   return "KinematicCharacterController/" + key;
@@ -307,11 +301,6 @@ function createCharacterController(physics: PhysicsModuleState, eid: number) {
 export const KinematicCharacterControllerSystem = (ctx: GameState) => {
   const physics = getModule(ctx, PhysicsModule);
   const input = getModule(ctx, InputModule);
-  const network = getModule(ctx, NetworkModule);
-
-  if (network.authoritative && !isHost(network)) {
-    return;
-  }
 
   const entered = enteredKinematicControlsQuery(ctx.world);
   for (let i = 0; i < entered.length; i++) {
@@ -335,263 +324,3 @@ export const KinematicCharacterControllerSystem = (ctx: GameState) => {
     updateKinematicControls(ctx, physics, controller.actionStates, node, body);
   }
 };
-
-// client-side prediction
-const cspQuery = defineQuery([Networked, KinematicControls, OurPlayer, Not(Owned)]);
-
-// function updateKinematicControlsCsp(
-//   ctx: GameState,
-//   { physicsWorld, collisionHandlers, handleToEid, characterCollision, eidTocharacterController }: PhysicsModuleState,
-//   actionStates: Map<string, ActionState>,
-//   rig: RemoteNode,
-//   body: RAPIER.RigidBody,
-//   entityState: { position: vec3; velocity: vec3 },
-//   divisor: number
-// ) {
-//   const characterController = eidTocharacterController.get(rig.eid)!;
-
-//   // Handle Input
-//   const moveVec = actionStates.get(KinematicCharacterControllerActions.Move) as Float32Array;
-//   const jump = actionStates.get(KinematicCharacterControllerActions.Jump) as ButtonActionState;
-//   const crouch = actionStates.get(KinematicCharacterControllerActions.Crouch) as ButtonActionState;
-//   const sprint = actionStates.get(KinematicCharacterControllerActions.Sprint) as ButtonActionState;
-
-//   _linearVelocity.copy(body.linvel() as Vector3);
-//   // _linearVelocity.fromArray(entityState.velocity);
-
-//   const isGrounded = characterController.computedGrounded();
-//   const isSprinting = isGrounded && sprint.held && !isSliding;
-
-//   const speed = Math.sqrt(_linearVelocity.x * _linearVelocity.x + _linearVelocity.z * _linearVelocity.z);
-
-//   _acceleration.set(moveVec[0], 0, -moveVec[1]).normalize().applyQuaternion(_q).multiplyScalar(walkAccel);
-
-//   if (!isGrounded) {
-//     _acceleration.multiplyScalar(inAirModifier);
-//   } else {
-//     if (crouch.held && !isSliding) {
-//       _acceleration.multiplyScalar(crouchModifier);
-//     } else if (sprint.held && !isSliding) {
-//       _acceleration.multiplyScalar(sprintModifier);
-//     }
-//   }
-
-//   if (isSprinting) {
-//     _acceleration.clampLength(0, maxSprintSpeed);
-//   } else {
-//     _acceleration.clampLength(0, maxWalkSpeed);
-//   }
-
-//   if (isGrounded) {
-//     _acceleration.y = 0;
-//   } else {
-//     _acceleration.y = physicsWorld.gravity.y * 1.5;
-//   }
-
-//   // TODO: Check to see if velocity matches orientation before sliding
-//   if (crouch.pressed && speed > minSlideSpeed && isGrounded && !isSliding && ctx.dt > lastSlideTime + slideCooldown) {
-//     _slideForce.set(0, 0, (speed + 1) * -slideModifier).applyQuaternion(_q);
-//     _acceleration.add(_slideForce);
-//     isSliding = true;
-//     lastSlideTime = ctx.elapsed;
-//   } else if (crouch.released || ctx.dt > lastSlideTime + slideCooldown) {
-//     isSliding = false;
-//   }
-
-//   if (jump.pressed && isGrounded) {
-//     const jumpModifier = crouch.held ? crouchJumpModifier : 1;
-//     _linearVelocity.y += jumpForce * jumpModifier;
-//   }
-
-//   if (speed !== 0) {
-//     let dragMultiplier = drag;
-
-//     if (isSliding) {
-//       dragMultiplier = slideDrag;
-//     } else if (!isGrounded) {
-//       dragMultiplier = sprint.held ? inAirDrag / 1.5 : inAirDrag;
-//     }
-
-//     _dragForce.copy(_linearVelocity).negate().multiplyScalar(dragMultiplier);
-
-//     _dragForce.y = 0;
-
-//     _acceleration.add(_dragForce);
-//   }
-
-//   cameraHeadBob(ctx, rig, speed, isGrounded, isSprinting);
-
-//   _acceleration.multiplyScalar(ctx.dt);
-
-//   _linearVelocity.add(_acceleration).multiplyScalar(ctx.dt);
-
-//   _linearVelocity.divideScalar(divisor);
-
-//   const translation = body.nextTranslation();
-
-//   const collider = body.collider(0);
-
-//   characterController.computeColliderMovement(collider, _linearVelocity);
-
-//   const corrected = characterController.computedMovement();
-
-//   // console.log("_linearVelocity", _linearVelocity);
-//   // console.log("corrected", corrected);
-
-//   translation.x += corrected.x;
-//   translation.y += corrected.y;
-//   translation.z += corrected.z;
-
-//   body.setNextKinematicTranslation(translation);
-// }
-
-export function ClientSidePredictionSystem(ctx: GameState) {
-  const network = getModule(ctx, NetworkModule);
-
-  const haveConnectedPeers = network.peers.length > 0;
-  const authNet = network.authoritative;
-  const hosting = authNet && isHost(network);
-  const cspEnabled = network.clientSidePrediction;
-
-  if (!haveConnectedPeers) return;
-  if (!authNet) return;
-  if (!cspEnabled) return;
-  if (hosting) return;
-
-  const physics = getModule(ctx, PhysicsModule);
-  const input = getModule(ctx, InputModule);
-
-  const eid = cspQuery(ctx.world)[0];
-  if (!eid) return;
-
-  // TODO: enter cspQuery
-  let characterController = physics.eidTocharacterController.get(eid);
-  if (!characterController) {
-    characterController = createCharacterController(physics, eid);
-  }
-
-  const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
-
-  const body = RigidBody.store.get(eid);
-  if (!body) {
-    console.warn("skipping CSP - rigidbody not found on eid " + eid);
-    return;
-  }
-
-  // set our own rotation
-  // _q.fromArray(node.quaternion);
-  // body.setNextKinematicRotation(_q);
-
-  const controller = tryGetInputController(input, eid);
-
-  updateKinematicControls(ctx, physics, controller.actionStates, node, body);
-
-  const k = 0;
-  if ((controller as any).needsUpdate && controller.outbound.history[k]) {
-    (controller as any).needsUpdate = false;
-
-    const serverPosition = Networked.position[eid];
-    const serverVelocity = Networked.velocity[eid];
-
-    const [, pastState] = controller.outbound.history[k];
-    const threshold = 0.0005;
-
-    // compare auth position to tick-equivalent position from the history
-    const dist = vec3.dist(serverPosition, pastState.position);
-    if (dist > threshold) {
-      // debugger;
-      console.warn("PREDICTION ERROR!", dist);
-
-      // console.log(controller.historian.timestamps.map((t) => t));
-      // console.log(controller.historian.history.map(([, h]) => [...h.position]));
-
-      console.log(serverPosition, pastState.position);
-
-      // reset to auth position
-      // body.setNextKinematicTranslation(new Vector3().fromArray(serverPosition));
-      body.setTranslation(new Vector3().fromArray(serverPosition), true);
-      body.setLinvel(new Vector3().fromArray(serverVelocity), true);
-
-      for (let i = 0; i < controller.outbound.history.length; i++) {
-        // roll forward using input history
-        const [actionStates] = controller.outbound.history[i];
-        updateKinematicControls(ctx, physics, actionStates, node, body);
-
-        // updateKinematicControlsCsp(
-        //   ctx,
-        //   physics,
-        //   actionStates,
-        //   node,
-        //   body,
-        //   pastState,
-        //   // 1
-        //   Math.max(1, controller.historian.history.length - 1)
-        // );
-      }
-    }
-  }
-}
-
-export function UpdateClientPosition(ctx: GameState) {
-  const network = getModule(ctx, NetworkModule);
-
-  const haveConnectedPeers = network.peers.length > 0;
-  const authNet = network.authoritative;
-  const hosting = authNet && isHost(network);
-  const cspEnabled = network.clientSidePrediction;
-
-  if (!haveConnectedPeers) return;
-  if (!authNet) return;
-  if (!cspEnabled) return;
-  if (hosting) return;
-
-  const physics = getModule(ctx, PhysicsModule);
-  const input = getModule(ctx, InputModule);
-
-  const eid = cspQuery(ctx.world)[0];
-  if (!eid) return;
-
-  // TODO: enter cspQuery
-  let characterController = physics.eidTocharacterController.get(eid);
-  if (!characterController) {
-    characterController = createCharacterController(physics, eid);
-  }
-
-  const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
-
-  const body = RigidBody.store.get(eid);
-  if (!body) {
-    console.warn("rigidbody not found on eid " + eid);
-    return;
-  }
-
-  const controller = tryGetInputController(input, eid);
-
-  // _q.fromArray(node.quaternion);
-  // body.setNextKinematicRotation(_q);
-
-  updateKinematicControls(ctx, physics, controller.actionStates, node, body);
-
-  const msg = createClientPositionMessage(ctx, eid);
-  sendReliable(ctx, network, network.hostId, msg);
-}
-
-export function SendClientPosition(ctx: GameState) {
-  const network = getModule(ctx, NetworkModule);
-
-  const haveConnectedPeers = network.peers.length > 0;
-  const authNet = network.authoritative;
-  const hosting = authNet && isHost(network);
-  const cspEnabled = network.clientSidePrediction;
-
-  if (!haveConnectedPeers) return;
-  if (!authNet) return;
-  if (!cspEnabled) return;
-  if (hosting) return;
-
-  const eid = cspQuery(ctx.world)[0];
-  if (!eid) return;
-
-  const msg = createClientPositionMessage(ctx, eid);
-  sendReliable(ctx, network, network.hostId, msg);
-}

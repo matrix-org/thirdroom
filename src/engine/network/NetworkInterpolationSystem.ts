@@ -17,7 +17,6 @@ import {
 } from "./Historian";
 import { addEntityHistory, syncWithHistorian } from "./InterpolationBuffer";
 import { clamp } from "../utils/interpolation";
-import { isHost } from "./network.common";
 import { getRemoteResource } from "../resource/resource.game";
 import { RemoteNode } from "../resource/RemoteResources";
 import { OurPlayer } from "../component/Player";
@@ -147,16 +146,6 @@ export function NetworkInterpolationSystem(ctx: GameState) {
       vec3.lerp(_v3, vFrom, vTo, historian.fractionOfTimePassed);
       if (body && body.isDynamic()) body.setLinvel(_vec.fromArray(_v3), true);
       else vec3.copy(velocity, _v3);
-    }
-
-    // if CSP is enabled, skip applying rotation data from the host for our locally controlled entity
-    if (
-      network.authoritative &&
-      !isHost(network) &&
-      network.clientSidePrediction &&
-      eid === network.peerIdToEntityId.get(network.peerId)
-    ) {
-      continue;
     }
 
     const qFrom = history.quaternion.at(from);

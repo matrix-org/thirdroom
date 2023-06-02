@@ -9,8 +9,6 @@ export enum NetworkAction {
   InformPlayerNetworkId,
   NewPeerSnapshot,
   RemoveOwnershipMessage,
-  Command,
-  UpdateCamera,
   UpdateNetworkId,
   ClientPosition,
   BinaryScriptMessage,
@@ -21,6 +19,5 @@ export enum NetworkAction {
 export const UnreliableNetworkActions = [
   NetworkAction.UpdateChanged,
   NetworkAction.UpdateSnapshot,
-  NetworkAction.UpdateCamera,
   NetworkAction.ClientPosition,
 ];

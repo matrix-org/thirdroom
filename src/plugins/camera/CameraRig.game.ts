@@ -18,26 +18,12 @@ import { defineModule, getModule, registerMessageHandler, Thread } from "../../e
 import { getRemoteResource, tryGetRemoteResource } from "../../engine/resource/resource.game";
 import { addObjectToWorld, RemoteNode, removeObjectFromWorld } from "../../engine/resource/RemoteResources";
 import { addChild } from "../../engine/component/transform";
-import { CameraRef, createRemotePerspectiveCamera, getCamera } from "../../engine/camera/camera.game";
+import { CameraRef, createRemotePerspectiveCamera } from "../../engine/camera/camera.game";
 import { ThirdPersonComponent } from "./../thirdroom/thirdroom.game";
 import { CameraRigMessage } from "./CameraRig.common";
 import { ourPlayerQuery } from "../../engine/component/Player";
-import { embodyAvatar, NetPipeData, writeMetadata } from "../../engine/network/serialization.game";
+import { embodyAvatar } from "../../engine/network/serialization.game";
 import { PhysicsModule } from "../../engine/physics/physics.game";
-import { NetworkModule } from "../../engine/network/network.game";
-import { isHost } from "../../engine/network/network.common";
-import { sendReliable } from "../../engine/network/outbound.game";
-import { registerInboundMessageHandler } from "../../engine/network/inbound.game";
-import { NetworkAction } from "../../engine/network/NetworkAction";
-import {
-  createCursorView,
-  writeUint32,
-  writeFloat32,
-  sliceCursorView,
-  readUint32,
-  readFloat32,
-} from "../../engine/allocator/CursorView";
-import { Networked } from "../../engine/network/NetworkComponents";
 import { createDisposables } from "../../engine/utils/createDisposables";
 import { ThirdRoomMessageType } from "../thirdroom/thirdroom.common";
 import { sendInteractionMessage } from "../interaction/interaction.game";
@@ -54,9 +40,6 @@ export const CameraRigModule = defineModule<GameState, { orbiting: boolean }>({
     const input = getModule(ctx, InputModule);
     const controller = input.defaultController;
     enableActionMap(controller, CameraRigActionMap);
-
-    const network = getModule(ctx, NetworkModule);
-    registerInboundMessageHandler(network, NetworkAction.UpdateCamera, deserializeUpdateCamera);
 
     const module = getModule(ctx, CameraRigModule);
     return createDisposables([
@@ -446,12 +429,7 @@ function applyZoom(ctx: GameState, controller: InputController, rigZoom: ZoomCom
 const _v = vec3.create();
 export function CameraRigSystem(ctx: GameState) {
   const input = getModule(ctx, InputModule);
-  const network = getModule(ctx, NetworkModule);
   const camRigModule = getModule(ctx, CameraRigModule);
-
-  if (network.authoritative && !isHost(network) && !network.clientSidePrediction) {
-    return;
-  }
 
   // sync orbit anchor with their target's position
   const orbitAnchors = orbitAnchorQuery(ctx.world);
@@ -547,83 +525,5 @@ function exitQueryCleanup(ctx: GameState, query: Query, component: Map<number, a
   for (let i = 0; i < ents.length; i++) {
     const eid = ents[i];
     component.delete(eid);
-  }
-}
-
-/**************
- * Networking *
- *************/
-
-const MESSAGE_SIZE = Uint8Array.BYTES_PER_ELEMENT + Uint32Array.BYTES_PER_ELEMENT + 10 * Float32Array.BYTES_PER_ELEMENT;
-const messageView = createCursorView(new ArrayBuffer(100 * MESSAGE_SIZE));
-
-export function createUpdateCameraMessage(ctx: GameState, eid: number, camera: number) {
-  const data: NetPipeData = [ctx, messageView, ""];
-
-  const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
-  const cameraNode = tryGetRemoteResource<RemoteNode>(ctx, camera);
-
-  writeMetadata(NetworkAction.UpdateCamera)(data);
-
-  writeUint32(messageView, Networked.networkId[eid]);
-
-  writeFloat32(messageView, node.quaternion[0]);
-  writeFloat32(messageView, node.quaternion[1]);
-  writeFloat32(messageView, node.quaternion[2]);
-  writeFloat32(messageView, node.quaternion[3]);
-
-  writeFloat32(messageView, cameraNode.quaternion[0]);
-  writeFloat32(messageView, cameraNode.quaternion[1]);
-  writeFloat32(messageView, cameraNode.quaternion[2]);
-  writeFloat32(messageView, cameraNode.quaternion[3]);
-
-  return sliceCursorView(messageView);
-}
-
-function deserializeUpdateCamera(data: NetPipeData) {
-  const ctx = data[0];
-  const view = data[1];
-
-  // TODO: put network ref in the net pipe data
-  const network = getModule(ctx, NetworkModule);
-
-  const nid = readUint32(view);
-  const player = network.networkIdToEntityId.get(nid)!;
-  const node = tryGetRemoteResource<RemoteNode>(ctx, player);
-
-  const camera = getCamera(ctx, node);
-
-  node.quaternion[0] = readFloat32(view);
-  node.quaternion[1] = readFloat32(view);
-  node.quaternion[2] = readFloat32(view);
-  node.quaternion[3] = readFloat32(view);
-
-  camera.quaternion[0] = readFloat32(view);
-  camera.quaternion[1] = readFloat32(view);
-  camera.quaternion[2] = readFloat32(view);
-  camera.quaternion[3] = readFloat32(view);
-
-  return data;
-}
-
-export function NetworkedCameraSystem(ctx: GameState) {
-  const ourPlayer = ourPlayerQuery(ctx.world)[0];
-  const playerNode = getRemoteResource<RemoteNode>(ctx, ourPlayer);
-  const network = getModule(ctx, NetworkModule);
-
-  if (!network.authoritative || !ourPlayer || !playerNode) {
-    return;
-  }
-
-  const haveConnectedPeers = network.peers.length > 0;
-  const hosting = network.authoritative && isHost(network);
-  if (hosting || !haveConnectedPeers) {
-    return;
-  }
-
-  const camera = getCamera(ctx, playerNode);
-  const msg = createUpdateCameraMessage(ctx, ourPlayer, camera.eid);
-  if (msg.byteLength > 0) {
-    sendReliable(ctx, network, network.hostId, msg);
   }
 }

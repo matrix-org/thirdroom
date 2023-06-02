@@ -29,11 +29,11 @@ import {
   writeUint32,
   writeUint8,
 } from "../allocator/CursorView";
-import { OurPlayer, ourPlayerQuery, Player } from "../component/Player";
+import { OurPlayer, Player } from "../component/Player";
 import { NOOP } from "../config.common";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
-import { PhysicsModule, PhysicsModuleState, RigidBody } from "../physics/physics.game";
+import { PhysicsModuleState, RigidBody } from "../physics/physics.game";
 import { Prefab, createPrefabEntity } from "../prefab/prefab.game";
 import { checkBitflag } from "../utils/checkBitflag";
 import {
@@ -46,12 +46,11 @@ import {
 import { Networked } from "./NetworkComponents";
 import { NetworkModule } from "./network.game";
 import { NetworkAction } from "./NetworkAction";
-import { GameInputModule, InputModule } from "../input/input.game";
+import { GameInputModule } from "../input/input.game";
 import { setActiveInputController } from "../input/InputController";
 import { getCamera } from "../camera/camera.game";
 import { addNametag, getNametag, NametagAnchor } from "../../plugins/nametags/nametags.game";
 import { removeInteractableComponent } from "../../plugins/interaction/interaction.game";
-import { isHost } from "./network.common";
 import { waitUntil } from "../utils/waitUntil";
 import { AudioEmitterType } from "../resource/schema";
 import { getRemoteResource, tryGetRemoteResource } from "../resource/resource.game";
@@ -481,17 +480,10 @@ export function deserializeUpdatesChanged(input: NetPipeData) {
   const count = readUint32(v);
   for (let i = 0; i < count; i++) {
     const nid = readUint32(v);
-    let eid = network.networkIdToEntityId.get(nid) || NOOP;
+    const eid = network.networkIdToEntityId.get(nid) || NOOP;
 
     if (eid === NOOP) {
       console.warn(`could not deserialize update for non-existent entity for networkId ${nid}`);
-    }
-
-    if (network.authoritative && !isHost(network)) {
-      // HACK: if this update is for our avatar, skip it until CSP is fixed
-      const peerId = network.entityIdToPeerId.get(eid);
-      // deserialize onto noop entity to move the cursor forward
-      if (peerId === network.peerId) eid = 0;
     }
 
     deserializeTransformChanged(ctx, v, eid);
@@ -590,8 +582,6 @@ export const serializeInformPlayerNetworkId = (peerId: string) => (data: NetPipe
 export async function deserializeInformPlayerNetworkId(data: NetPipeData) {
   const [ctx, cv] = data;
 
-  const physics = getModule(ctx, PhysicsModule);
-  const input = getModule(ctx, InputModule);
   const network = getModule(ctx, NetworkModule);
 
   // read
@@ -638,19 +628,6 @@ export async function deserializeInformPlayerNetworkId(data: NetPipeData) {
   // if not our own avatar, add nametag
   if (peerId !== network.peerId) {
     addNametag(ctx, AVATAR_HEIGHT + AVATAR_HEIGHT / 3, peerNode, peerId);
-  }
-
-  // if our own avatar
-  if (network.authoritative && !isHost(network) && peerId === network.peerId) {
-    // unset our old avatar
-    // TODO: actually remove this entity. this leaks atm, but fixes a bug when removing the entire node
-    const old = ourPlayerQuery(ctx.world)[0];
-    removeComponent(ctx.world, OurPlayer, old);
-    removeComponent(ctx.world, RigidBody, old);
-    removeComponent(ctx.world, Networked, old);
-
-    // embody new avatar
-    embodyAvatar(ctx, physics, input, peerNode);
   }
 
   return data;

@@ -1,10 +1,10 @@
-import { defineQuery, enterQuery, exitQuery, Not, addComponent } from "bitecs";
+import { defineQuery, enterQuery, exitQuery, Not } from "bitecs";
 import murmurHash from "murmurhash-js";
 import { availableRead } from "@thirdroom/ringbuffer";
 
 import { createCursorView, CursorView } from "../allocator/CursorView";
 import { GameState } from "../GameTypes";
-import { ourPlayerQuery, Player } from "../component/Player";
+import { Player } from "../component/Player";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import {
   AddPeerIdMessage,
@@ -29,18 +29,13 @@ import {
   deserializeUpdateNetworkId,
   deserializeUpdatesChanged,
   deserializeUpdatesSnapshot,
-  embodyAvatar,
   NetPipeData,
 } from "./serialization.game";
 import { NetworkAction } from "./NetworkAction";
 import { registerInboundMessageHandler } from "./inbound.game";
 import { dequeueNetworkRingBuffer, NetworkRingBuffer } from "./RingBuffer";
-import { deserializeCommands } from "./commands.game";
-import { InputModule } from "../input/input.game";
-import { PhysicsModule } from "../physics/physics.game";
-import { waitUntil } from "../utils/waitUntil";
 import { ExitWorldMessage, ThirdRoomMessageType } from "../../plugins/thirdroom/thirdroom.common";
-import { getRemoteResource, tryGetRemoteResource } from "../resource/resource.game";
+import { getRemoteResource } from "../resource/resource.game";
 import { RemoteNode, removeObjectFromWorld } from "../resource/RemoteResources";
 import { Networked, Owned } from "./NetworkComponents";
 import { XRMode } from "../renderer/renderer.common";
@@ -83,8 +78,6 @@ export interface GameNetworkState {
   deferredUpdates: Map<number, DeferredUpdate[]>;
   // feature flags
   interpolate: boolean;
-  clientSidePrediction: boolean;
-  authoritative: boolean;
 }
 
 /******************
@@ -99,10 +92,7 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
       incomingUnreliableRingBuffer,
       outgoingReliableRingBuffer,
       outgoingUnreliableRingBuffer,
-      authoritative,
     } = await waitForMessage<InitializeNetworkStateMessage>(Thread.Main, NetworkMessageType.InitializeNetworkState);
-
-    if (authoritative) console.info("Authoritative networking activated");
 
     return {
       onExitWorldQueue: [],
@@ -131,8 +121,6 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
       deferredUpdates: new Map(),
       tickRate: 10,
       interpolate: false,
-      clientSidePrediction: true,
-      authoritative,
     };
   },
   init(ctx: GameState) {
@@ -149,7 +137,6 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
     registerInboundMessageHandler(network, NetworkAction.InformPlayerNetworkId, deserializeInformPlayerNetworkId);
     registerInboundMessageHandler(network, NetworkAction.NewPeerSnapshot, deserializeNewPeerSnapshot);
     registerInboundMessageHandler(network, NetworkAction.RemoveOwnershipMessage, deserializeRemoveOwnership);
-    registerInboundMessageHandler(network, NetworkAction.Command, deserializeCommands);
     registerInboundMessageHandler(network, NetworkAction.ClientPosition, deserializeClientPosition);
     registerInboundMessageHandler(network, NetworkAction.InformXRMode, deserializeInformXRMode);
 
@@ -201,19 +188,16 @@ const onRemovePeerId = (ctx: GameState, message: RemovePeerIdMessage) => {
   if (peerArrIndex > -1 && peerIndex) {
     const entities = networkedQuery(ctx.world);
 
-    // if not authoritative, remove all of this peer's owned entities
-    if (!network.authoritative) {
-      for (let i = entities.length - 1; i >= 0; i--) {
-        const eid = entities[i];
-        const node = getRemoteResource<RemoteNode>(ctx, eid);
+    for (let i = entities.length - 1; i >= 0; i--) {
+      const eid = entities[i];
+      const node = getRemoteResource<RemoteNode>(ctx, eid);
 
-        const networkId = Networked.networkId[eid];
+      const networkId = Networked.networkId[eid];
 
-        // if the entity's networkId contains the peerIndex it means that peer owns the entity
-        if (node && peerIndex === getPeerIndexFromNetworkId(networkId)) {
-          network.entityIdToPeerId.delete(eid);
-          removeObjectFromWorld(ctx, node);
-        }
+      // if the entity's networkId contains the peerIndex it means that peer owns the entity
+      if (node && peerIndex === getPeerIndexFromNetworkId(networkId)) {
+        network.entityIdToPeerId.delete(eid);
+        removeObjectFromWorld(ctx, node);
       }
     }
 
@@ -262,55 +246,8 @@ export const setLocalPeerId = (ctx: GameState, localPeerId: string) => {
 };
 
 const onSetHost = async (ctx: GameState, message: SetHostMessage) => {
-  const physics = getModule(ctx, PhysicsModule);
-  const input = getModule(ctx, InputModule);
   const network = getModule(ctx, NetworkModule);
-
   const newHostId = message.hostId;
-  const oldHostId = network.hostId;
-  const ourPeerId = network.peerId;
-
-  const newHostPeerIndex = network.peerIdToIndex.get(newHostId);
-
-  if (network.authoritative && newHostPeerIndex) {
-    const newHostElected = oldHostId !== newHostId;
-    const amNewHost = ourPeerId !== oldHostId && ourPeerId === newHostId;
-
-    // if we are new host, take authority over our avatar entity
-    const eid = await waitUntil<number>(() => ourPlayerQuery(ctx.world)[0] || network.peerIdToEntityId.get(ourPeerId));
-    if (amNewHost) {
-      const rig = tryGetRemoteResource<RemoteNode>(ctx, eid);
-      embodyAvatar(ctx, physics, input, rig);
-    }
-
-    // if host was re-elected, transfer ownership of old host's networked entities to new host
-    if (newHostElected) {
-      network.localIdCount = 1;
-      network.removedLocalIds = [];
-
-      const ents = remoteNetworkedQuery(ctx.world);
-      // update peerIdIndex of the networkId to new host's peerId
-      for (let i = 0; i < ents.length; i++) {
-        const eid = ents[i];
-        const nid = Networked.networkId[eid];
-
-        const entityPeerIndex = getPeerIndexFromNetworkId(nid);
-        const entityPeerId = network.indexToPeerId.get(entityPeerIndex);
-        if (!entityPeerId) throw new Error("could not find peerId for eid " + eid);
-
-        if (oldHostId !== entityPeerId) {
-          continue;
-        }
-
-        if (amNewHost) {
-          addComponent(ctx.world, Owned, eid);
-        } else {
-          // NOTE: if not new host, then the host sends networkId updates (outbound.game.ts#assignNetworkIds)
-        }
-      }
-    }
-  }
-
   network.hostId = newHostId;
 };
 

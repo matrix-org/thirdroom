@@ -41,9 +41,6 @@ export function UserProfileOverview() {
   const setOverlayWindow = useSetAtom(overlayWindowAtom);
 
   const [newDisplayName, setNewDisplayName] = useState(displayName);
-  const [authoritativeNetworking, setAuthNetworking] = useState(
-    localStorage.getItem("authoritativeNetworking") === "true"
-  );
   const [discoverPage, setDiscoverPage] = useLocalStorage("feature_discoverPage", false);
   const [immersiveAR, setImmersiveAR] = useLocalStorage("feature_immersiveAR", false);
   const [renderQuality, setRenderQuality] = useLocalStorage(LOCAL_STORAGE_RENDER_QUALITY, RenderQualitySetting.Auto);
@@ -76,11 +73,6 @@ export function UserProfileOverview() {
   const onDisplayNameChange = (evt: ChangeEvent<HTMLInputElement>) => {
     const name = evt.currentTarget.value.trim();
     debounceDisplayNameChange(name);
-  };
-
-  const onAuthoritativeNetworkingChange = (checked: boolean) => {
-    setAuthNetworking(checked);
-    localStorage.setItem("authoritativeNetworking", checked.toString());
   };
 
   const handleSubmit = async (evt: FormEvent<HTMLFormElement>) => {
@@ -125,19 +117,6 @@ export function UserProfileOverview() {
                 <div className="flex gap-lg">
                   <SettingTile className="grow basis-0" label={<Label>Graphics Quality (REQUIRES REFRESH)</Label>}>
                     <SelectInput options={renderQualityOptions} value={renderQuality} onChange={setRenderQuality} />
-                  </SettingTile>
-                  <span className="grow basis-0" />
-                </div>
-                <div className="flex gap-lg">
-                  <SettingTile
-                    className="grow basis-0"
-                    label={<Label>Authoritative Networking (EXPERIMENTAL, REQUIRES REFRESH)</Label>}
-                  >
-                    <Switch
-                      checked={authoritativeNetworking}
-                      onCheckedChange={onAuthoritativeNetworkingChange}
-                      defaultChecked={authoritativeNetworking}
-                    />
                   </SettingTile>
                   <span className="grow basis-0" />
                 </div>

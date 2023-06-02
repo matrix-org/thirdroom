@@ -47,7 +47,6 @@ import { OurPlayer, ourPlayerQuery, Player } from "../../engine/component/Player
 import { enableActionMap } from "../../engine/input/ActionMappingSystem";
 import { GameInputModule, InputModule } from "../../engine/input/input.game";
 import { spawnEntity } from "../../engine/utils/spawnEntity";
-import { AddPeerIdMessage, isHost, NetworkMessageType } from "../../engine/network/network.common";
 import {
   addInputController,
   createInputController,
@@ -55,7 +54,7 @@ import {
   InputController,
   inputControllerQuery,
 } from "../../engine/input/InputController";
-import { addInteractableComponent, GRAB_DISTANCE, removeInteractableComponent } from "../interaction/interaction.game";
+import { addInteractableComponent, GRAB_DISTANCE } from "../interaction/interaction.game";
 import { embodyAvatar } from "../../engine/network/serialization.game";
 import { addScriptComponent, loadScript, Script, ScriptComponent } from "../../engine/scripting/scripting.game";
 import {
@@ -91,7 +90,6 @@ import {
   RemoteMaterial,
 } from "../../engine/resource/RemoteResources";
 import { CharacterControllerType, SceneCharacterControllerComponent } from "../CharacterController";
-import { addNametag } from "../nametags/nametags.game";
 import { AvatarRef } from "../avatars/components";
 import { waitUntil } from "../../engine/utils/waitUntil";
 import { findResourceRetainerRoots, findResourceRetainers } from "../../engine/resource/findResourceRetainers";
@@ -236,7 +234,6 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
       registerMessageHandler(ctx, ThirdRoomMessageType.LoadWorld, onLoadWorld),
       registerMessageHandler(ctx, ThirdRoomMessageType.EnterWorld, onEnterWorld),
       registerMessageHandler(ctx, ThirdRoomMessageType.ExitWorld, onExitWorld),
-      registerMessageHandler(ctx, NetworkMessageType.AddPeerId, onAddPeerId),
       registerMessageHandler(ctx, ThirdRoomMessageType.PrintThreadState, onPrintThreadState),
       registerMessageHandler(ctx, ThirdRoomMessageType.PrintResources, onPrintResources),
       registerMessageHandler(ctx, ThirdRoomMessageType.GLTFViewerLoadGLTF, onGLTFViewerLoadGLTF),
@@ -366,16 +363,6 @@ async function onLoadWorld(ctx: GameState, message: LoadWorldMessage) {
       url: message.url,
       error: error.message || "Unknown error",
     });
-  }
-}
-
-// when peers join us in the world
-function onAddPeerId(ctx: GameState, message: AddPeerIdMessage) {
-  const physics = getModule(ctx, PhysicsModule);
-  const input = getModule(ctx, InputModule);
-  const network = getModule(ctx, NetworkModule);
-  if (network.authoritative && isHost(network)) {
-    loadRemotePlayerRig(ctx, physics, input, network, message.peerId);
   }
 }
 
@@ -630,63 +617,6 @@ function loadPlayerRig(ctx: GameState, physics: PhysicsModuleState, input: GameI
   }
 
   return eid;
-}
-
-function loadRemotePlayerRig(
-  ctx: GameState,
-  physics: PhysicsModuleState,
-  input: GameInputModule,
-  network: GameNetworkState,
-  peerId: string
-) {
-  console.log("loadRemotePlayerRig for peerId", peerId);
-  const rig = createPrefabEntity(ctx, "avatar");
-
-  // TODO: we only want to remove interactable for the other connected players' entities so they can't focus their own avatar, but we want to keep them interactable for the host's entity
-  removeInteractableComponent(ctx, physics, rig);
-
-  addNametag(ctx, AVATAR_HEIGHT + AVATAR_HEIGHT / 3, rig, peerId);
-
-  associatePeerWithEntity(network, peerId, rig.eid);
-
-  rig.name = peerId;
-
-  // setup positional audio emitter for VoIP & footsteps
-  rig.audioEmitter = new RemoteAudioEmitter(ctx.resourceManager, {
-    type: AudioEmitterType.Positional,
-    sources: [
-      new RemoteAudioSource(ctx.resourceManager, {
-        audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-01.ogg" }),
-      }),
-      new RemoteAudioSource(ctx.resourceManager, {
-        audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-02.ogg" }),
-      }),
-      new RemoteAudioSource(ctx.resourceManager, {
-        audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-03.ogg" }),
-      }),
-      new RemoteAudioSource(ctx.resourceManager, {
-        audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-04.ogg" }),
-      }),
-      new RemoteAudioSource(ctx.resourceManager, {
-        audio: new RemoteAudioData(ctx.resourceManager, { uri: `mediastream:${peerId}` }),
-      }),
-    ],
-  });
-
-  // caveat: if owned added after player, this local player entity is added to enteredRemotePlayerQuery
-  // TODO: add Authoring component for authoritatively controlled entities as a host,
-  //       use Owned to distinguish actual ownership on all clients
-  addComponent(ctx.world, Owned, rig.eid);
-  addComponent(ctx.world, Player, rig.eid);
-  // Networked component isn't reset when removed so reset on add
-  addComponent(ctx.world, Networked, rig.eid, true);
-
-  addObjectToWorld(ctx, rig);
-
-  const spawnPoints = getSpawnPoints(ctx);
-  if (spawnPoints.length > 0) {
-    spawnEntity(spawnPoints, rig);
-  }
 }
 
 function swapToFlyPlayerRig(ctx: GameState, physics: PhysicsModuleState, node: RemoteNode) {

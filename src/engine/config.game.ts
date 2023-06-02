@@ -4,12 +4,10 @@ import { InputModule, ResetInputSystem } from "./input/input.game";
 import { ApplyInputSystem } from "./input/ApplyInputSystem";
 import { PhysicsModule, PhysicsSystem } from "./physics/physics.game";
 import { NetworkExitWorldQueueSystem, NetworkModule } from "./network/network.game";
-import { ActionMapHistorianSystem, ActionMappingSystem } from "./input/ActionMappingSystem";
+import { ActionMappingSystem } from "./input/ActionMappingSystem";
 import {
   KinematicCharacterControllerModule,
   KinematicCharacterControllerSystem,
-  SendClientPosition,
-  UpdateClientPosition,
 } from "../plugins/KinematicCharacterController";
 import { GameWorkerStatsSystem, StatsModule } from "./stats/stats.game";
 import {
@@ -53,7 +51,7 @@ import { XRInteractionSystem } from "../plugins/interaction/XRInteractionSystem"
 import { MatrixModule } from "./matrix/matrix.game";
 import { WebSGNetworkModule } from "./network/scripting.game";
 import { WebSGUIModule } from "./ui/ui.game";
-import { CameraRigModule, CameraRigSystem, NetworkedCameraSystem } from "../plugins/camera/CameraRig.game";
+import { CameraRigModule, CameraRigSystem } from "../plugins/camera/CameraRig.game";
 import { ActionBarSystem } from "../plugins/thirdroom/action-bar.game";
 
 export default defineConfig<GameState>({
@@ -90,7 +88,6 @@ export default defineConfig<GameState>({
     CameraRigSystem,
 
     KinematicCharacterControllerSystem,
-    // ClientSidePredictionSystem,
     FlyControllerSystem,
     SetWebXRReferenceSpaceSystem,
     InteractionSystem,
@@ -98,14 +95,8 @@ export default defineConfig<GameState>({
     ActionBarSystem,
     ThirdroomSystem,
 
-    // update client position
-    UpdateClientPosition,
-
     // step physics forward and copy rigidbody data to transform component
     PhysicsSystem,
-
-    // send client position to host
-    SendClientPosition,
 
     // interpolate towards authoritative state
     NetworkInterpolationSystem,
@@ -120,7 +111,6 @@ export default defineConfig<GameState>({
     EditorStateSystem,
     //EditorSelectionSystem,
 
-    NetworkedCameraSystem,
     OutboundNetworkSystem,
     NetworkExitWorldQueueSystem,
 
@@ -128,7 +118,6 @@ export default defineConfig<GameState>({
     PrefabDisposalSystem,
     GLTFResourceDisposalSystem,
 
-    ActionMapHistorianSystem, // Store this frame's player input and the state it resulted in
     ResetInteractablesSystem,
     ResetInputSystem,
     GameWorkerStatsSystem,

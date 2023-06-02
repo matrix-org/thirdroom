@@ -42,15 +42,12 @@ export const NetworkModule = defineModule<IMainThreadContext, MainNetworkState>(
     const outgoingReliableRingBuffer = createNetworkRingBuffer(Uint8Array);
     const outgoingUnreliableRingBuffer = createNetworkRingBuffer(Uint8Array);
 
-    const authoritative = localStorage.getItem("authoritativeNetworking") === "true";
-
     sendMessage<InitializeNetworkStateMessage>(Thread.Game, NetworkMessageType.InitializeNetworkState, {
       type: NetworkMessageType.InitializeNetworkState,
       incomingReliableRingBuffer,
       incomingUnreliableRingBuffer,
       outgoingReliableRingBuffer,
       outgoingUnreliableRingBuffer,
-      authoritative,
     });
 
     return {

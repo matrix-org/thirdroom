@@ -1,23 +1,8 @@
-import { vec2, vec3 } from "gl-matrix";
+import { vec2 } from "gl-matrix";
 
-import {
-  createCursorView,
-  moveCursorView,
-  readFloat32,
-  readUint8,
-  sliceCursorView,
-  writeFloat32,
-  writeUint8,
-} from "../allocator/CursorView";
-import { ourPlayerQuery } from "../component/Player";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
-import { isHost } from "../network/network.common";
 import { GameNetworkState, NetworkModule } from "../network/network.game";
-import { RigidBody } from "../physics/physics.game";
-import { RemoteNode } from "../resource/RemoteResources";
-import { getRemoteResource } from "../resource/resource.game";
-import { addHistory } from "../utils/Historian";
 import {
   ActionBindingTypes,
   ActionDefinition,
@@ -32,16 +17,12 @@ import { InputController } from "./InputController";
 
 export interface Action<A extends ActionState> {
   create: () => A;
-  reduce(input: InputController, bindings: ActionBindingTypes[], state: A): A;
-  encode: (actionState: ActionState) => ArrayBuffer;
-  decode: (buffer: ArrayBuffer) => A;
+  reduce(input: InputController, bindings: ActionBindingTypes[], state: A): void;
 }
 
 function defineActionType<A>(actionDef: A): A {
   return actionDef;
 }
-
-const writeView = createCursorView(new ArrayBuffer(1000));
 
 export const ActionTypesToBindings = {
   [ActionType.Button]: defineActionType({
@@ -72,30 +53,6 @@ export const ActionTypesToBindings = {
       state.pressed = !state.held && down;
       state.released = state.held && !down;
       state.held = down;
-
-      // return changed && actionState;
-      return state;
-    },
-    encode: (actionState: ButtonActionState) => {
-      moveCursorView(writeView, 0);
-      let mask = 0;
-      mask |= (actionState.pressed ? 1 : 0) << 0;
-      mask |= (actionState.released ? 1 : 0) << 1;
-      mask |= (actionState.held ? 1 : 0) << 2;
-      writeUint8(writeView, mask);
-      return sliceCursorView(writeView);
-    },
-    decode: (buffer: ArrayBuffer) => {
-      const readView = createCursorView(buffer);
-      const mask = readUint8(readView);
-      const pressed = (mask & (1 << 0)) !== 0;
-      const released = (mask & (1 << 1)) !== 0;
-      const held = (mask & (1 << 2)) !== 0;
-      return {
-        pressed,
-        released,
-        held,
-      };
     },
   }),
   [ActionType.Vector2]: defineActionType({
@@ -144,19 +101,6 @@ export const ActionTypesToBindings = {
 
       state[0] = x;
       state[1] = y;
-
-      // return changed && actionState;
-      return state;
-    },
-    encode: (actionState: vec2) => {
-      moveCursorView(writeView, 0);
-      writeFloat32(writeView, actionState[0]);
-      writeFloat32(writeView, actionState[1]);
-      return sliceCursorView(writeView);
-    },
-    decode: (buffer: ArrayBuffer) => {
-      const readView = createCursorView(buffer);
-      return [readFloat32(readView), readFloat32(readView)] as vec2;
     },
   }),
 };
@@ -170,20 +114,10 @@ function updateActionMaps(ctx: GameState, network: GameNetworkState, controller:
       const actionDef = actionMap.actionDefs[j];
 
       const action = ActionTypesToBindings[actionDef.type];
-      let actionState = controller.actionStates.get(actionDef.path);
+      const actionState = controller.actionStates.get(actionDef.path);
 
       if (actionState) {
-        actionState = action.reduce(controller, actionDef.bindings, actionState as any);
-      }
-
-      const shouldSendActionToHost = network.authoritative && !isHost(network) && actionDef.networked && actionState;
-
-      if (shouldSendActionToHost) {
-        const actionId = controller.pathToId.get(actionDef.path);
-
-        if (actionId) {
-          network.commands.push([ctx.tick, actionId, action.encode(actionState as any)]);
-        }
+        action.reduce(controller, actionDef.bindings, actionState as any);
       }
     }
   }
@@ -196,54 +130,6 @@ export function ActionMappingSystem(ctx: GameState) {
     updateActionMaps(ctx, network, controller);
   }
 }
-
-export function ActionMapHistorianSystem(ctx: GameState) {
-  const input = getModule(ctx, InputModule);
-  const network = getModule(ctx, NetworkModule);
-
-  // add a copy of all the actionStates for the active controller to the input history for reconciliation later
-  const notHosting = network.authoritative && !isHost(network);
-  if (notHosting) {
-    const eid = ourPlayerQuery(ctx.world)[0];
-    const node = getRemoteResource<RemoteNode>(ctx, eid);
-    const body = RigidBody.store.get(eid);
-    if (!eid || !node || !body) {
-      return;
-    }
-
-    const vel = body.linvel();
-
-    addHistory(input.activeController.outbound, ctx.tick, [
-      // TODO: new Map creates needless garbage, add pooling here
-      new Map(input.activeController.actionStates),
-      { position: vec3.clone(node.position), velocity: vec3.set(vec3.create(), vel.x, vel.y, vel.z) },
-    ]);
-  }
-}
-
-// export function DrainClientInputQueueSystem(ctx: GameState) {
-//   const input = getModule(ctx, InputModule);
-//   const network = getModule(ctx, NetworkModule);
-
-//   const hosting = network.authoritative && isHost(network);
-//   if (hosting) {
-//     // iterate all controllers
-//     const ents = inputControllerQuery(ctx.world);
-//     for (let i = 0; i < ents.length; i++) {
-//       const eid = ents[i];
-//       const controller = tryGetInputController(input, eid);
-//       // drain input for client for the latest tick recieved by them
-//       const [latestTick] = controller.inbound[0];
-//       controller.inbound.forEach(([tick, actionState], i) => {
-//         if (tick === latestTick) {
-//           // controller.actionStates.set
-
-//           controller.inbound.splice(i, 1);
-//         }
-//       });
-//     }
-//   }
-// }
 
 export function initializeActionMap(controller: InputController, actionDef: ActionDefinition) {
   controller.actionStates.set(actionDef.path, ActionTypesToBindings[actionDef.type].create());

@@ -17,11 +17,9 @@ import {
   getInputController,
 } from "../../engine/input/InputController";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
-import { isHost } from "../../engine/network/network.common";
 import {
   GameNetworkState,
   getPeerIndexFromNetworkId,
-  networkedQuery,
   NetworkModule,
   ownedNetworkedQuery,
 } from "../../engine/network/network.game";
@@ -358,29 +356,16 @@ export function InteractionSystem(ctx: GameState) {
       const leftRay = tryGetRemoteResource<RemoteNode>(ctx, xr.leftRayEid);
       const rightRay = tryGetRemoteResource<RemoteNode>(ctx, xr.rightRayEid);
 
-      const hosting = network.authoritative && isHost(network);
-      const cspEnabled = network.authoritative && network.clientSidePrediction;
-      const p2p = !network.authoritative;
-
-      if (hosting || cspEnabled || p2p) {
-        // TODO: deletion
-        // updateDeletion(ctx, interaction, controller, eid);
-        updateGrabThrowXR(ctx, interaction, physics, network, controller, rig, leftRay, "left");
-        updateGrabThrowXR(ctx, interaction, physics, network, controller, rig, rightRay, "right");
-      }
+      // TODO: deletion
+      // updateDeletion(ctx, interaction, controller, eid);
+      updateGrabThrowXR(ctx, interaction, physics, network, controller, rig, leftRay, "left");
+      updateGrabThrowXR(ctx, interaction, physics, network, controller, rig, rightRay, "right");
     } else {
       const grabbingNode = getCamera(ctx, rig).parent!;
 
       updateFocus(ctx, physics, rig, grabbingNode);
-
-      const hosting = network.authoritative && isHost(network);
-      const cspEnabled = network.authoritative && network.clientSidePrediction;
-      const p2p = !network.authoritative;
-
-      if (hosting || cspEnabled || p2p) {
-        updateDeletion(ctx, interaction, controller, eid);
-        updateGrabThrow(ctx, interaction, physics, network, controller, rig, grabbingNode);
-      }
+      updateDeletion(ctx, interaction, controller, eid);
+      updateGrabThrow(ctx, interaction, physics, network, controller, rig, grabbingNode);
     }
   }
 }
@@ -655,7 +640,7 @@ function updateGrabThrow(
         if (grabPressed) {
           if (Interactable.type[node.eid] === InteractableType.Grabbable) {
             playOneShotAudio(ctx, interaction.clickEmitter?.sources[0] as RemoteAudioSource);
-            const ownedEnts = network.authoritative ? networkedQuery(ctx.world) : ownedNetworkedQuery(ctx.world);
+            const ownedEnts = ownedNetworkedQuery(ctx.world);
             if (ownedEnts.length > interaction.maxObjCap && !hasComponent(ctx.world, Owned, node.eid)) {
               // do nothing if we hit the max obj cap
               ctx.sendMessage(Thread.Main, {
@@ -803,7 +788,7 @@ function updateGrabThrowXR(
 
     if (hit.toi <= Interactable.interactionDistance[focusedNode.eid]) {
       if (squeezeState.held && Interactable.type[focusedNode.eid] === InteractableType.Grabbable) {
-        const ownedEnts = network.authoritative ? networkedQuery(ctx.world) : ownedNetworkedQuery(ctx.world);
+        const ownedEnts = ownedNetworkedQuery(ctx.world);
         if (ownedEnts.length > interaction.maxObjCap && !hasComponent(ctx.world, Owned, focusedNode.eid)) {
           // do nothing if we hit the max obj cap
           // TODO: websgui

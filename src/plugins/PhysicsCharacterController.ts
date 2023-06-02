@@ -8,8 +8,6 @@ import { ActionMap, ActionType, BindingType, ButtonActionState } from "../engine
 import { InputModule } from "../engine/input/input.game";
 import { tryGetInputController, InputController, inputControllerQuery } from "../engine/input/InputController";
 import { defineModule, getModule } from "../engine/module/module.common";
-import { isHost } from "../engine/network/network.common";
-import { NetworkModule } from "../engine/network/network.game";
 import { playerShapeCastCollisionGroups } from "../engine/physics/CollisionGroups";
 import { PhysicsModule, PhysicsModuleState, RigidBody } from "../engine/physics/physics.game";
 import { tryGetRemoteResource } from "../engine/resource/resource.game";
@@ -235,11 +233,6 @@ function updatePhysicsControls(
 export const PhysicsCharacterControllerSystem = (ctx: GameState) => {
   const physics = getModule(ctx, PhysicsModule);
   const input = getModule(ctx, InputModule);
-  const network = getModule(ctx, NetworkModule);
-
-  if (network.authoritative && !isHost(network) && !network.clientSidePrediction) {
-    return;
-  }
 
   const rigs = inputControllerQuery(ctx.world);
   for (let i = 0; i < rigs.length; i++) {
