@@ -104,8 +104,7 @@ export const KinematicCharacterControllerModule = defineModule<GameState, Kinema
     return {};
   },
   init(ctx) {
-    const input = getModule(ctx, InputModule);
-    enableActionMap(input.activeController, KinematicCharacterControllerActionMap);
+    enableActionMap(ctx, KinematicCharacterControllerActionMap);
   },
 });
 
@@ -318,6 +317,6 @@ export const KinematicCharacterControllerSystem = (ctx: GameState) => {
       continue;
     }
 
-    updateKinematicControls(ctx, physics, input.activeController.actionStates, node, body);
+    updateKinematicControls(ctx, physics, input.actionStates, node, body);
   }
 };

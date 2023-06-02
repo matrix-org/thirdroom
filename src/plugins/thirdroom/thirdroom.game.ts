@@ -47,7 +47,6 @@ import { OurPlayer, ourPlayerQuery, Player } from "../../engine/component/Player
 import { enableActionMap } from "../../engine/input/ActionMappingSystem";
 import { GameInputModule, InputModule } from "../../engine/input/input.game";
 import { spawnEntity } from "../../engine/utils/spawnEntity";
-import { InputController } from "../../engine/input/InputController";
 import { addInteractableComponent, GRAB_DISTANCE } from "../interaction/interaction.game";
 import { embodyAvatar } from "../../engine/network/serialization.game";
 import { addScriptComponent, loadScript, Script, ScriptComponent } from "../../engine/scripting/scripting.game";
@@ -290,7 +289,7 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
       }
     });
 
-    enableActionMap(input.activeController, {
+    enableActionMap(ctx, {
       id: "thirdroom-action-map",
       actionDefs: [
         {
@@ -319,7 +318,7 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
       ],
     });
 
-    enableActionMap(input.activeController, actionBarMap);
+    enableActionMap(ctx, actionBarMap);
 
     return () => {
       dispose();
@@ -634,46 +633,37 @@ function swapToFirstPerson(ctx: GameState, node: RemoteNode) {
   avatar.visible = false;
 }
 
-export function ThirdroomSystem(ctx: GameState) {
+export function EnableCharacterControllerSystem(ctx: GameState) {
   const input = getModule(ctx, InputModule);
   const physics = getModule(ctx, PhysicsModule);
 
   const eid = ourPlayerQuery(ctx.world)[0];
 
   if (eid) {
-    const playerNode = tryGetRemoteResource<RemoteNode>(ctx, eid);
-    updateCharacterController(ctx, physics, input.activeController, playerNode);
-  }
-}
+    const player = tryGetRemoteResource<RemoteNode>(ctx, eid);
+    const toggleFlyMode = input.actionStates.get("toggleFlyMode") as ButtonActionState;
 
-function updateCharacterController(
-  ctx: GameState,
-  physics: PhysicsModuleState,
-  controller: InputController,
-  player: RemoteNode
-) {
-  const toggleFlyMode = controller.actionStates.get("toggleFlyMode") as ButtonActionState;
+    const camRigModule = getModule(ctx, CameraRigModule);
 
-  const camRigModule = getModule(ctx, CameraRigModule);
-
-  if (camRigModule.orbiting) {
-    return;
-  }
-
-  if (toggleFlyMode.pressed) {
-    if (hasComponent(ctx.world, FlyControls, player.eid)) {
-      swapToPlayerRig(ctx, physics, player);
-    } else {
-      swapToFlyPlayerRig(ctx, physics, player);
+    if (camRigModule.orbiting) {
+      return;
     }
-  }
 
-  const toggleCameraMode = controller.actionStates.get("toggleThirdPerson") as ButtonActionState;
-  if (toggleCameraMode.pressed) {
-    if (hasComponent(ctx.world, ThirdPersonComponent, player.eid)) {
-      swapToFirstPerson(ctx, player);
-    } else {
-      swapToThirdPerson(ctx, player);
+    if (toggleFlyMode.pressed) {
+      if (hasComponent(ctx.world, FlyControls, player.eid)) {
+        swapToPlayerRig(ctx, physics, player);
+      } else {
+        swapToFlyPlayerRig(ctx, physics, player);
+      }
+    }
+
+    const toggleCameraMode = input.actionStates.get("toggleThirdPerson") as ButtonActionState;
+    if (toggleCameraMode.pressed) {
+      if (hasComponent(ctx.world, ThirdPersonComponent, player.eid)) {
+        swapToFirstPerson(ctx, player);
+      } else {
+        swapToThirdPerson(ctx, player);
+      }
     }
   }
 }

@@ -6,10 +6,9 @@ import { GameState } from "../engine/GameTypes";
 import { enableActionMap } from "../engine/input/ActionMappingSystem";
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "../engine/input/ActionMap";
 import { InputModule } from "../engine/input/input.game";
-import { InputController } from "../engine/input/InputController";
 import { defineModule, getModule } from "../engine/module/module.common";
 import { playerShapeCastCollisionGroups } from "../engine/physics/CollisionGroups";
-import { PhysicsModule, PhysicsModuleState, RigidBody } from "../engine/physics/physics.game";
+import { PhysicsModule, RigidBody } from "../engine/physics/physics.game";
 import { tryGetRemoteResource } from "../engine/resource/resource.game";
 import { RemoteNode } from "../engine/resource/RemoteResources";
 import { ourPlayerQuery } from "../engine/component/Player";
@@ -90,8 +89,7 @@ export const PhysicsCharacterControllerModule = defineModule<GameState, PhysicsC
     return {};
   },
   init(ctx) {
-    const input = getModule(ctx, InputModule);
-    enableActionMap(input.activeController, PhysicsCharacterControllerActionMap);
+    enableActionMap(ctx, PhysicsCharacterControllerActionMap);
   },
 });
 
@@ -134,12 +132,17 @@ export function addPhysicsControls(ctx: GameState, eid: number) {
   addComponent(ctx.world, PhysicsControls, eid);
 }
 
-function updatePhysicsControls(
-  ctx: GameState,
-  { physicsWorld }: PhysicsModuleState,
-  controller: InputController,
-  rig: RemoteNode
-) {
+export const PhysicsCharacterControllerSystem = (ctx: GameState) => {
+  const { physicsWorld } = getModule(ctx, PhysicsModule);
+  const { actionStates } = getModule(ctx, InputModule);
+  const eid = ourPlayerQuery(ctx.world)[0];
+
+  if (!eid) {
+    return;
+  }
+
+  const rig = tryGetRemoteResource<RemoteNode>(ctx, eid);
+
   const body = RigidBody.store.get(rig.eid);
   if (!body) {
     return;
@@ -149,10 +152,10 @@ function updatePhysicsControls(
   body.setRotation(obj.quaternion, true);
 
   // Handle Input
-  const moveVec = controller.actionStates.get(PhysicsCharacterControllerActions.Move) as Float32Array;
-  const jump = controller.actionStates.get(PhysicsCharacterControllerActions.Jump) as ButtonActionState;
-  const crouch = controller.actionStates.get(PhysicsCharacterControllerActions.Crouch) as ButtonActionState;
-  const sprint = controller.actionStates.get(PhysicsCharacterControllerActions.Sprint) as ButtonActionState;
+  const moveVec = actionStates.get(PhysicsCharacterControllerActions.Move) as Float32Array;
+  const jump = actionStates.get(PhysicsCharacterControllerActions.Jump) as ButtonActionState;
+  const crouch = actionStates.get(PhysicsCharacterControllerActions.Crouch) as ButtonActionState;
+  const sprint = actionStates.get(PhysicsCharacterControllerActions.Sprint) as ButtonActionState;
 
   linearVelocity.copy(body.linvel() as Vector3);
 
@@ -228,15 +231,4 @@ function updatePhysicsControls(
   }
 
   body.applyImpulse(moveForce, true);
-}
-
-export const PhysicsCharacterControllerSystem = (ctx: GameState) => {
-  const physics = getModule(ctx, PhysicsModule);
-  const input = getModule(ctx, InputModule);
-  const eid = ourPlayerQuery(ctx.world)[0];
-
-  if (eid) {
-    const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
-    updatePhysicsControls(ctx, physics, input.activeController, node);
-  }
 };

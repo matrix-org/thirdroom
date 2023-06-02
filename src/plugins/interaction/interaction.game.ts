@@ -10,7 +10,6 @@ import { maxEntities, MAX_OBJECT_CAP, NOOP } from "../../engine/config.common";
 import { GameState } from "../../engine/GameTypes";
 import { enableActionMap } from "../../engine/input/ActionMappingSystem";
 import { GameInputModule, InputModule } from "../../engine/input/input.game";
-import { InputController } from "../../engine/input/InputController";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
 import {
   GameNetworkState,
@@ -111,8 +110,7 @@ export const InteractionModule = defineModule<GameState, InteractionModuleState>
 
     addResourceRef(ctx, module.clickEmitter.eid);
 
-    const input = getModule(ctx, InputModule);
-    enableActionMap(input.activeController, InteractionActionMap);
+    enableActionMap(ctx, InteractionActionMap);
 
     ctx.worldResource.persistentScene.audioEmitters = [
       ...ctx.worldResource.persistentScene.audioEmitters,
@@ -349,15 +347,15 @@ export function InteractionSystem(ctx: GameState) {
       const rightRay = tryGetRemoteResource<RemoteNode>(ctx, xr.rightRayEid);
 
       // TODO: deletion
-      // updateDeletion(ctx, interaction, input.activeController, eid);
-      updateGrabThrowXR(ctx, interaction, physics, network, input.activeController, rig, leftRay, "left");
-      updateGrabThrowXR(ctx, interaction, physics, network, input.activeController, rig, rightRay, "right");
+      // updateDeletion(ctx, interaction, input, eid);
+      updateGrabThrowXR(ctx, interaction, physics, network, input, rig, leftRay, "left");
+      updateGrabThrowXR(ctx, interaction, physics, network, input, rig, rightRay, "right");
     } else {
       const grabbingNode = getCamera(ctx, rig).parent!;
 
       updateFocus(ctx, physics, rig, grabbingNode);
-      updateDeletion(ctx, interaction, input.activeController, eid);
-      updateGrabThrow(ctx, interaction, physics, network, input.activeController, rig, grabbingNode);
+      updateDeletion(ctx, interaction, input, eid);
+      updateGrabThrow(ctx, interaction, physics, network, input, rig, grabbingNode);
     }
   }
 }
@@ -390,7 +388,7 @@ function updateOrbitInteraction(
   mat4.getTranslation(_source, camera.worldMatrix);
 
   // set target at mouse screenspace, unproject, subtract source, then normalize
-  const screenPosition = input.activeController.actionStates.get("ScreenPosition") as vec2;
+  const screenPosition = input.actionStates.get("ScreenPosition") as vec2;
   const x = (screenPosition[0] / renderer.canvasWidth) * 2 - 1;
   const y = -(screenPosition[1] / renderer.canvasHeight) * 2 + 1;
   vec3.set(_target, x, y, 0.5);
@@ -437,7 +435,7 @@ function updateOrbitInteraction(
    * Interaction
    */
 
-  const grabBtn = input.activeController.actionStates.get("Grab") as ButtonActionState;
+  const grabBtn = input.actionStates.get("Grab") as ButtonActionState;
 
   if (!grabBtn.pressed) {
     return;
@@ -527,8 +525,8 @@ function updateFocus(ctx: GameState, physics: PhysicsModuleState, rig: RemoteNod
   }
 }
 
-function updateDeletion(ctx: GameState, interaction: InteractionModuleState, controller: InputController, rig: number) {
-  const deleteBtn = controller.actionStates.get("Delete") as ButtonActionState;
+function updateDeletion(ctx: GameState, interaction: InteractionModuleState, input: GameInputModule, rig: number) {
+  const deleteBtn = input.actionStates.get("Delete") as ButtonActionState;
   if (deleteBtn.pressed) {
     const focusedEid = FocusComponent.focusedEntity[rig];
     const focused = getRemoteResource<RemoteNode>(ctx, focusedEid);
@@ -560,17 +558,17 @@ function updateGrabThrow(
   interaction: InteractionModuleState,
   physics: PhysicsModuleState,
   network: GameNetworkState,
-  controller: InputController,
+  input: GameInputModule,
   rig: RemoteNode,
   grabbingNode: RemoteNode
 ) {
   let heldEntity = GrabComponent.grabbedEntity[rig.eid];
   let heldOffset = GrabComponent.heldOffset[rig.eid];
 
-  const grabBtn = controller.actionStates.get("Grab") as ButtonActionState;
-  const primaryTrigger = controller.actionStates.get("primaryTrigger") as ButtonActionState;
-  const secondaryTrigger = controller.actionStates.get("secondaryTrigger") as ButtonActionState;
-  const throwBtn = controller.actionStates.get("Throw") as ButtonActionState;
+  const grabBtn = input.actionStates.get("Grab") as ButtonActionState;
+  const primaryTrigger = input.actionStates.get("primaryTrigger") as ButtonActionState;
+  const secondaryTrigger = input.actionStates.get("secondaryTrigger") as ButtonActionState;
+  const throwBtn = input.actionStates.get("Throw") as ButtonActionState;
 
   const grabPressed = grabBtn.pressed || primaryTrigger.held || secondaryTrigger.held;
   const grabReleased = grabBtn.released || primaryTrigger.released || secondaryTrigger.released;
@@ -704,7 +702,7 @@ function updateGrabThrow(
 
   if (heldNode) {
     // move held point upon scrolling
-    const [, scrollY] = controller.actionStates.get("Scroll") as vec2;
+    const [, scrollY] = input.actionStates.get("Scroll") as vec2;
     if (scrollY !== 0) {
       heldOffset -= scrollY / 1000;
     }
@@ -741,7 +739,7 @@ function updateGrabThrowXR(
   interaction: InteractionModuleState,
   physics: PhysicsModuleState,
   network: GameNetworkState,
-  controller: InputController,
+  controller: GameInputModule,
   rig: RemoteNode,
   grabbingNode: RemoteNode,
   hand: XRHandedness

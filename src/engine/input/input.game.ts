@@ -7,6 +7,7 @@ import { getXRMode } from "../renderer/renderer.game";
 import { RemoteNode, removeObjectFromWorld } from "../resource/RemoteResources";
 import { getRemoteResource, tryGetRemoteResource } from "../resource/resource.game";
 import { createDisposables } from "../utils/createDisposables";
+import { ActionMap, ActionState } from "./ActionMap";
 import { enableActionMap } from "./ActionMappingSystem";
 import {
   InitializeInputStateMessage,
@@ -14,7 +15,7 @@ import {
   SharedXRInputSource,
   UpdateXRInputSourcesMessage,
 } from "./input.common";
-import { InputController, createInputController } from "./InputController";
+import { InputRingBuffer } from "./InputRingBuffer";
 import { ARActionMap, XRAvatarRig } from "./WebXRAvatarRigSystem";
 
 /*********
@@ -22,7 +23,10 @@ import { ARActionMap, XRAvatarRig } from "./WebXRAvatarRigSystem";
  ********/
 
 export interface GameInputModule {
-  activeController: InputController;
+  inputRingBuffer: InputRingBuffer;
+  actionStates: Map<string, ActionState>;
+  actionMaps: ActionMap[];
+  raw: { [path: string]: number };
   xrInputSources: Map<number, SharedXRInputSource>;
   xrInputSourcesByHand: Map<XRHandedness, SharedXRInputSource>;
   xrPrimaryHand: XRHandedness;
@@ -41,10 +45,11 @@ export const InputModule = defineModule<GameState, GameInputModule>({
       InputMessageType.InitializeInputState
     );
 
-    const controller = createInputController({ inputRingBuffer });
-
     return {
-      activeController: controller,
+      inputRingBuffer,
+      actionMaps: [],
+      actionStates: new Map(),
+      raw: {},
       xrInputSources: new Map(),
       xrPrimaryHand: "right",
       xrInputSourcesByHand: new Map(),
@@ -53,8 +58,7 @@ export const InputModule = defineModule<GameState, GameInputModule>({
   },
   init(ctx) {
     // TODO: we should enable / disable this depending on whether or not you're in XR
-    const input = getModule(ctx, InputModule);
-    enableActionMap(input.activeController, ARActionMap);
+    enableActionMap(ctx, ARActionMap);
 
     return createDisposables([
       registerMessageHandler(ctx, InputMessageType.UpdateXRInputSources, onUpdateXRInputSources),
@@ -102,18 +106,6 @@ function onUpdateXRInputSources(ctx: GameState, { added, removed }: UpdateXRInpu
     xrInputSources.set(item.id, item);
     xrInputSourcesByHand.set(item.handedness, item);
   }
-}
-
-/**********
- * System *
- **********/
-
-export function ResetInputSystem(ctx: GameState) {
-  const input = getModule(ctx, InputModule);
-  const { raw } = input.activeController;
-  raw["Mouse/movementX"] = 0;
-  raw["Mouse/movementY"] = 0;
-  raw["Mouse/Scroll"] = 0;
 }
 
 export function getPrimaryInputSourceNode(ctx: GameState) {

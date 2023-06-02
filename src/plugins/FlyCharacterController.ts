@@ -8,8 +8,7 @@ import { updateMatrixWorld } from "../engine/component/transform";
 import { GameState } from "../engine/GameTypes";
 import { enableActionMap } from "../engine/input/ActionMappingSystem";
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "../engine/input/ActionMap";
-import { InputModule } from "../engine/input/input.game";
-import { InputController } from "../engine/input/InputController";
+import { GameInputModule, InputModule } from "../engine/input/input.game";
 import { defineModule, getModule } from "../engine/module/module.common";
 import { tryGetRemoteResource } from "../engine/resource/resource.game";
 import { RemoteNode } from "../engine/resource/RemoteResources";
@@ -62,8 +61,7 @@ export const FlyCharacterControllerModule = defineModule<GameState, FlyCharacter
     return {};
   },
   init(ctx) {
-    const input = getModule(ctx, InputModule);
-    enableActionMap(input.activeController, FlyCharacterControllerActionMap);
+    enableActionMap(ctx, FlyCharacterControllerActionMap);
   },
 });
 
@@ -91,13 +89,14 @@ const _p = new Vector3();
 function applyFlyControls(
   ctx: GameState,
   body: RAPIER.RigidBody,
-  controller: InputController,
+  input: GameInputModule,
   playerRig: RemoteNode,
   camera: RemoteNode
 ) {
   const { speed } = FlyControls.get(playerRig.eid)!;
-  const moveVec = controller.actionStates.get(FlyCharacterControllerActions.Move) as Float32Array;
-  const boost = controller.actionStates.get(FlyCharacterControllerActions.Boost) as ButtonActionState;
+  const actionStates = input.actionStates;
+  const moveVec = actionStates.get(FlyCharacterControllerActions.Move) as Float32Array;
+  const boost = actionStates.get(FlyCharacterControllerActions.Boost) as ButtonActionState;
 
   const boostModifier = boost.held ? 2 : 1;
 
@@ -132,6 +131,6 @@ export function FlyControllerSystem(ctx: GameState) {
       throw new Error("rigidbody not found on eid " + playerRigEid);
     }
 
-    applyFlyControls(ctx, body, input.activeController, playerRig, camera);
+    applyFlyControls(ctx, body, input, playerRig, camera);
   }
 }

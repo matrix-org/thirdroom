@@ -3,7 +3,7 @@ import { availableRead } from "@thirdroom/ringbuffer";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import { InputComponentId, InputComponentState, SharedXRInputSource, XRInputComponentIdToName } from "./input.common";
-import { dequeueInputRingBuffer } from "./RingBuffer";
+import { dequeueInputRingBuffer } from "./InputRingBuffer";
 import { InputModule } from "./input.game";
 import { checkBitflag } from "../utils/checkBitflag";
 import { Keys } from "./KeyCodes";
@@ -19,10 +19,13 @@ const out: InputComponentState = {
   state: 0,
 };
 
-export function ApplyInputSystem(ctx: GameState) {
-  const input = getModule(ctx, InputModule);
-  const { activeController, xrInputSources, xrPrimaryHand } = input;
-  const { inputRingBuffer, raw } = activeController;
+/**
+ * Pull input events from the ring buffer and apply them to the raw input state.
+ * `out` is a temporary object that is reused for each input event and represents
+ * an item in the ring buffer.
+ */
+export function UpdateRawInputSystem(ctx: GameState) {
+  const { inputRingBuffer, raw, xrInputSources, xrPrimaryHand } = getModule(ctx, InputModule);
 
   while (availableRead(inputRingBuffer)) {
     dequeueInputRingBuffer(inputRingBuffer, out);
@@ -68,6 +71,16 @@ export function ApplyInputSystem(ctx: GameState) {
         break;
     }
   }
+}
+
+/**
+ * Resets per-frame input state.
+ */
+export function ResetRawInputSystem(ctx: GameState) {
+  const { raw } = getModule(ctx, InputModule);
+  raw["Mouse/movementX"] = 0;
+  raw["Mouse/movementY"] = 0;
+  raw["Mouse/Scroll"] = 0;
 }
 
 enum MouseButton {

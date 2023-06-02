@@ -2,22 +2,12 @@ import { vec2 } from "gl-matrix";
 
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
-import { GameNetworkState, NetworkModule } from "../network/network.game";
-import {
-  ActionBindingTypes,
-  ActionDefinition,
-  ActionMap,
-  ActionState,
-  ActionType,
-  BindingType,
-  ButtonActionState,
-} from "./ActionMap";
-import { InputModule } from "./input.game";
-import { InputController } from "./InputController";
+import { ActionBindingTypes, ActionMap, ActionState, ActionType, BindingType, ButtonActionState } from "./ActionMap";
+import { GameInputModule, InputModule } from "./input.game";
 
 export interface Action<A extends ActionState> {
   create: () => A;
-  reduce(input: InputController, bindings: ActionBindingTypes[], state: A): void;
+  reduce(input: GameInputModule, bindings: ActionBindingTypes[], state: A): void;
 }
 
 function defineActionType<A>(actionDef: A): A {
@@ -33,7 +23,7 @@ export const ActionTypesToBindings = {
      * held:      0b100
      */
     create: () => ({ pressed: false, released: false, held: false }),
-    reduce: (controller: InputController, bindings: ActionBindingTypes[], state: ButtonActionState) => {
+    reduce: (input: GameInputModule, bindings: ActionBindingTypes[], state: ButtonActionState) => {
       // TODO: In WebXR the pressed/release state doesn't work correctly.
       // It changes back and forth between pressed and released.
       let down = false;
@@ -42,7 +32,7 @@ export const ActionTypesToBindings = {
         const binding = bindings[i];
 
         if (binding.type === BindingType.Button) {
-          down = down || !!controller.raw[binding.path];
+          down = down || !!input.raw[binding.path];
         }
       }
 
@@ -57,7 +47,7 @@ export const ActionTypesToBindings = {
   }),
   [ActionType.Vector2]: defineActionType({
     create: () => vec2.create(),
-    reduce: (controller: InputController, bindings: ActionBindingTypes[], state: vec2) => {
+    reduce: (input: GameInputModule, bindings: ActionBindingTypes[], state: vec2) => {
       let x = 0;
       let y = 0;
 
@@ -66,28 +56,28 @@ export const ActionTypesToBindings = {
 
         if (binding.type === BindingType.Axes) {
           if (binding.x) {
-            x = controller.raw[binding.x] || 0;
+            x = input.raw[binding.x] || 0;
           }
 
           if (binding.y) {
-            y = controller.raw[binding.y] || 0;
+            y = input.raw[binding.y] || 0;
           }
 
           // const changed = rawX ? rawX !== actionState[0] : false || rawY ? rawY !== actionState[1] : false;
         } else if (binding.type === BindingType.DirectionalButtons) {
-          if (controller.raw[binding.up]) {
+          if (input.raw[binding.up]) {
             y += 1;
           }
 
-          if (controller.raw[binding.down]) {
+          if (input.raw[binding.down]) {
             y -= 1;
           }
 
-          if (controller.raw[binding.left]) {
+          if (input.raw[binding.left]) {
             x -= 1;
           }
 
-          if (controller.raw[binding.right]) {
+          if (input.raw[binding.right]) {
             x += 1;
           }
 
@@ -105,58 +95,46 @@ export const ActionTypesToBindings = {
   }),
 };
 
-// Note not optimized at all
-function updateActionMaps(ctx: GameState, network: GameNetworkState, controller: InputController) {
-  for (let i = 0; i < controller.actionMaps.length; i++) {
-    const actionMap = controller.actionMaps[i];
+export function ActionMappingSystem(ctx: GameState) {
+  const input = getModule(ctx, InputModule);
+
+  // Note not optimized at all
+  for (let i = 0; i < input.actionMaps.length; i++) {
+    const actionMap = input.actionMaps[i];
 
     for (let j = 0; j < actionMap.actionDefs.length; j++) {
       const actionDef = actionMap.actionDefs[j];
 
       const action = ActionTypesToBindings[actionDef.type];
-      const actionState = controller.actionStates.get(actionDef.path);
+      const actionState = input.actionStates.get(actionDef.path);
 
       if (actionState) {
-        action.reduce(controller, actionDef.bindings, actionState as any);
+        action.reduce(input, actionDef.bindings, actionState as any);
       }
     }
   }
 }
 
-export function ActionMappingSystem(ctx: GameState) {
-  const network = getModule(ctx, NetworkModule);
+export function enableActionMap(ctx: GameState, actionMap: ActionMap) {
   const input = getModule(ctx, InputModule);
-  updateActionMaps(ctx, network, input.activeController);
-}
-
-export function initializeActionMap(controller: InputController, actionDef: ActionDefinition) {}
-
-export function enableActionMap(controller: InputController, actionMap: ActionMap) {
-  const index = controller.actionMaps.indexOf(actionMap);
+  const index = input.actionMaps.indexOf(actionMap);
   if (index === -1) {
-    controller.actionMaps.push(actionMap);
+    input.actionMaps.push(actionMap);
 
     for (const actionDef of actionMap.actionDefs) {
-      controller.actionStates.set(actionDef.path, ActionTypesToBindings[actionDef.type].create());
-      // set ID maps for serialization
-      controller.pathToId.set(actionDef.path, controller.actionStates.size);
-      controller.pathToDef.set(actionDef.path, actionDef);
-      controller.idToPath.set(controller.actionStates.size, actionDef.path);
+      input.actionStates.set(actionDef.path, ActionTypesToBindings[actionDef.type].create());
     }
   }
 }
 
-export function disableActionMap(controller: InputController, actionMap: ActionMap) {
-  const index = controller.actionMaps.indexOf(actionMap);
+export function disableActionMap(ctx: GameState, actionMap: ActionMap) {
+  const input = getModule(ctx, InputModule);
+  const index = input.actionMaps.indexOf(actionMap);
   if (index !== -1) {
     for (const actionDef of actionMap.actionDefs) {
-      controller.actionStates.delete(actionDef.path);
-      const id = controller.pathToId.get(actionDef.path) as number;
-      controller.pathToId.delete(actionDef.path);
-      controller.pathToDef.delete(actionDef.path);
-      controller.idToPath.delete(id);
+      input.actionStates.delete(actionDef.path);
     }
 
-    controller.actionMaps.splice(index, 1);
+    input.actionMaps.splice(index, 1);
   }
 }

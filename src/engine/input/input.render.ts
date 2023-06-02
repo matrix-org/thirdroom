@@ -19,7 +19,7 @@ import {
   XRHandPosesTripleBuffer,
   XRToInputComponentId,
 } from "./input.common";
-import { enqueueInputRingBuffer, InputRingBuffer } from "./RingBuffer";
+import { enqueueInputRingBuffer, InputRingBuffer } from "./InputRingBuffer";
 import { createObjectTripleBuffer, getWriteObjectBufferView } from "../allocator/ObjectBufferView";
 import {
   updateComponentValuesFromGamepad,

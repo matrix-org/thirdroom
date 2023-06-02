@@ -1,7 +1,7 @@
 import { defineConfig } from "./module/module.common";
 import { AudioModule } from "./audio/audio.game";
-import { InputModule, ResetInputSystem } from "./input/input.game";
-import { ApplyInputSystem } from "./input/ApplyInputSystem";
+import { InputModule } from "./input/input.game";
+import { UpdateRawInputSystem, ResetRawInputSystem } from "./input/RawInputSystems";
 import { PhysicsModule, PhysicsSystem } from "./physics/physics.game";
 import { NetworkExitWorldQueueSystem, NetworkModule } from "./network/network.game";
 import { ActionMappingSystem } from "./input/ActionMappingSystem";
@@ -25,7 +25,7 @@ import {
   ResourceModule,
   ResourceTickSystem,
 } from "./resource/resource.game";
-import { ThirdRoomModule, ThirdroomSystem } from "../plugins/thirdroom/thirdroom.game";
+import { ThirdRoomModule, EnableCharacterControllerSystem } from "../plugins/thirdroom/thirdroom.game";
 import { UpdateMatrixWorldSystem } from "./component/transform";
 import { FlyCharacterControllerModule, FlyControllerSystem } from "../plugins/FlyCharacterController";
 import { NetworkInterpolationSystem } from "./network/NetworkInterpolationSystem";
@@ -79,7 +79,7 @@ export default defineConfig<GameState>({
   systems: [
     IncomingTripleBufferSystem,
 
-    ApplyInputSystem,
+    UpdateRawInputSystem,
     WebXRAvatarRigSystem,
     ActionMappingSystem,
 
@@ -93,7 +93,7 @@ export default defineConfig<GameState>({
     InteractionSystem,
     XRInteractionSystem,
     ActionBarSystem,
-    ThirdroomSystem,
+    EnableCharacterControllerSystem,
 
     // step physics forward and copy rigidbody data to transform component
     PhysicsSystem,
@@ -119,7 +119,7 @@ export default defineConfig<GameState>({
     GLTFResourceDisposalSystem,
 
     ResetInteractablesSystem,
-    ResetInputSystem,
+    ResetRawInputSystem,
     GameWorkerStatsSystem,
 
     GameResourceSystem, // Commit Resources to TripleBuffer

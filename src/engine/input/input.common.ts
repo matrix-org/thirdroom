@@ -1,5 +1,5 @@
 import { defineObjectBufferSchema, ObjectTripleBuffer } from "../allocator/ObjectBufferView";
-import { InputRingBuffer } from "./RingBuffer";
+import { InputRingBuffer } from "./InputRingBuffer";
 import { XRInputComponentId, XRInputLayout } from "./WebXRInputProfiles";
 
 export enum InputMessageType {

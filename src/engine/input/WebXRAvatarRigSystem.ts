@@ -219,20 +219,16 @@ export const ARActionMap: ActionMap = {
 };
 
 export function SetWebXRReferenceSpaceSystem(ctx: GameState) {
-  const { activeController } = getModule(ctx, InputModule);
+  const { actionStates } = getModule(ctx, InputModule);
 
   const xrMode = getXRMode(ctx);
 
   const sceneSupportsAR = ctx.worldResource.environment?.publicScene.supportsAR || false;
 
   if (xrMode === XRMode.ImmersiveAR && sceneSupportsAR) {
-    const resetReferenceSpaceLeft = activeController.actionStates.get(
-      ARActions.ResetReferenceSpaceLeft
-    ) as ButtonActionState;
+    const resetReferenceSpaceLeft = actionStates.get(ARActions.ResetReferenceSpaceLeft) as ButtonActionState;
 
-    const resetReferenceSpaceRight = activeController.actionStates.get(
-      ARActions.ResetReferenceSpaceRight
-    ) as ButtonActionState;
+    const resetReferenceSpaceRight = actionStates.get(ARActions.ResetReferenceSpaceRight) as ButtonActionState;
 
     let hand: XRHandedness | undefined;
 
