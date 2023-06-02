@@ -49,7 +49,7 @@ import { getRemoteResource, tryGetRemoteResource } from "../resource/resource.ga
 import { addObjectToWorld, RemoteNode, removeObjectFromWorld } from "../resource/RemoteResources";
 import { XRMode } from "../renderer/renderer.common";
 import { getReplicator } from "./Replicator";
-import { addPlayerFromPeer } from "./addPlayerFromPeer";
+import { addPlayerFromPeer } from "../player/addPlayerFromPeer";
 
 export type NetPipeData = [GameState, CursorView, string];
 

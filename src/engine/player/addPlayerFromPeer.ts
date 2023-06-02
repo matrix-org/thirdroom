@@ -2,13 +2,13 @@ import { addComponent } from "bitecs";
 
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
-import { AVATAR_HEIGHT } from "../player/common";
-import { addNametag } from "../player/nametags.game";
-import { Player } from "../player/Player";
+import { AVATAR_HEIGHT } from "./common";
+import { addNametag } from "./nametags.game";
+import { Player } from "./Player";
 import { RemoteNode, RemoteAudioEmitter, RemoteAudioSource, RemoteAudioData } from "../resource/RemoteResources";
 import { getRemoteResource } from "../resource/resource.game";
 import { AudioEmitterType } from "../resource/schema";
-import { NetworkModule } from "./network.game";
+import { NetworkModule } from "../network/network.game";
 
 export function addPlayerFromPeer(ctx: GameState, eid: number, peerId: string) {
   const network = getModule(ctx, NetworkModule);
