@@ -1,3 +1,4 @@
+import RAPIER from "@dimforge/rapier3d-compat";
 import { addComponent, defineComponent, hasComponent } from "bitecs";
 import { quat, vec3 } from "gl-matrix";
 
@@ -10,7 +11,8 @@ import { GameInputModule } from "../input/input.game";
 import { createLineMesh } from "../mesh/mesh.game";
 import { GameNetworkState, associatePeerWithEntity } from "../network/network.game";
 import { Owned, Networked } from "../network/NetworkComponents";
-import { PhysicsModuleState } from "../physics/physics.game";
+import { playerCollisionGroups } from "../physics/CollisionGroups";
+import { addRigidBody, Kinematic, PhysicsModuleState } from "../physics/physics.game";
 import { createPrefabEntity } from "../prefab/prefab.game";
 import {
   RemoteNode,
@@ -24,10 +26,15 @@ import { InteractableType, MaterialType, MaterialAlphaMode, AudioEmitterType } f
 import { ScriptComponent } from "../scripting/scripting.game";
 import { spawnEntity } from "../utils/spawnEntity";
 import { teleportEntity } from "../utils/teleportEntity";
-import { addAvatarRigidBody } from "./addAvatarRigidBody";
 import { addCameraRig, CameraRigType } from "./CameraRig.game";
 import { SceneCharacterControllerComponent, CharacterControllerType } from "./CharacterController";
-import { AvatarOptions, AVATAR_HEIGHT, AVATAR_CAMERA_OFFSET } from "./common";
+import {
+  AvatarOptions,
+  AVATAR_HEIGHT,
+  AVATAR_CAMERA_OFFSET,
+  AVATAR_CAPSULE_HEIGHT,
+  AVATAR_CAPSULE_RADIUS,
+} from "./common";
 import { AvatarRef } from "./components";
 import { embodyAvatar } from "./embodyAvatar";
 import { addFlyControls } from "./FlyCharacterController";
@@ -56,7 +63,22 @@ export const createAvatarRig =
     }
 
     addCameraRig(ctx, container, CameraRigType.PointerLock, [0, AVATAR_HEIGHT - AVATAR_CAMERA_OFFSET, 0]);
-    addAvatarRigidBody(ctx, physics, container);
+
+    const rigidBodyDesc = RAPIER.RigidBodyDesc.kinematicPositionBased();
+
+    addComponent(ctx.world, Kinematic, container.eid);
+
+    const rigidBody = physics.physicsWorld.createRigidBody(rigidBodyDesc);
+
+    const colliderDesc = RAPIER.ColliderDesc.capsule(AVATAR_CAPSULE_HEIGHT / 2, AVATAR_CAPSULE_RADIUS)
+      .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS)
+      .setCollisionGroups(playerCollisionGroups)
+      .setTranslation(0, AVATAR_CAPSULE_HEIGHT - 0.1, 0);
+
+    physics.physicsWorld.createCollider(colliderDesc, rigidBody);
+
+    addRigidBody(ctx, container, rigidBody);
+
     addInteractableComponent(ctx, physics, container, InteractableType.Player);
 
     addComponent(ctx.world, AvatarRef, container.eid);
