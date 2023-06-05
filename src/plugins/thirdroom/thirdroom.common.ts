@@ -47,6 +47,7 @@ export interface LoadWorldMessage {
   id: number;
   url: string;
   scriptUrl: string;
+  fileMap?: Map<string, string>;
 }
 
 export interface WorldLoadedMessage {

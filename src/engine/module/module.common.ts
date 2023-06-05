@@ -1,3 +1,5 @@
+import { createDisposables } from "../utils/createDisposables";
+
 export type ThreadSystem<ThreadContext extends BaseThreadContext> = (ctx: ThreadContext) => void;
 
 export interface SingleConsumerThreadSharedState {
@@ -72,15 +74,12 @@ export async function registerModules<ThreadContext extends BaseThreadContext>(
   context: ThreadContext,
   modules: Module<ThreadContext, {}>[]
 ) {
-  const { dispose, sendQueuedMessage, waitForQueuedMessage, handleQueuedMessages } = registerQueuedMessageHandler(
-    thread,
-    context,
-    "module-loader"
-  );
+  const { dispose, sendDeferredMessage, waitForDeferredMessage, handleDeferredMessages } =
+    registerDeferredMessageHandler(thread, context, "module-loader");
 
   const createLoaderContext = (moduleName: string): ModuleLoader => ({
-    sendMessage: sendQueuedMessage,
-    waitForMessage: waitForQueuedMessage,
+    sendMessage: sendDeferredMessage,
+    waitForMessage: waitForDeferredMessage,
   });
 
   async function loadModule(module: Module<ThreadContext, any>) {
@@ -94,8 +93,8 @@ export async function registerModules<ThreadContext extends BaseThreadContext>(
     const mainThreadModules = modules.map((module) => module.name);
 
     const [renderThreadModules, gameThreadModules] = await Promise.all([
-      waitForQueuedMessage<string[]>(Thread.Render, ModuleLoaderMessage.ModuleList),
-      waitForQueuedMessage<string[]>(Thread.Game, ModuleLoaderMessage.ModuleList),
+      waitForDeferredMessage<string[]>(Thread.Render, ModuleLoaderMessage.ModuleList),
+      waitForDeferredMessage<string[]>(Thread.Game, ModuleLoaderMessage.ModuleList),
     ]);
 
     const sortedModules = Array.from(
@@ -112,24 +111,24 @@ export async function registerModules<ThreadContext extends BaseThreadContext>(
       }
 
       if (renderThreadModules.includes(moduleName)) {
-        sendQueuedMessage(Thread.Render, ModuleLoaderMessage.CreateModule, moduleName);
-        promises.push(waitForQueuedMessage(Thread.Render, ModuleLoaderMessage.ModuleCreated));
+        sendDeferredMessage(Thread.Render, ModuleLoaderMessage.CreateModule, moduleName);
+        promises.push(waitForDeferredMessage(Thread.Render, ModuleLoaderMessage.ModuleCreated));
       }
 
       if (gameThreadModules.includes(moduleName)) {
-        sendQueuedMessage(Thread.Game, ModuleLoaderMessage.CreateModule, moduleName);
-        promises.push(waitForQueuedMessage(Thread.Game, ModuleLoaderMessage.ModuleCreated));
+        sendDeferredMessage(Thread.Game, ModuleLoaderMessage.CreateModule, moduleName);
+        promises.push(waitForDeferredMessage(Thread.Game, ModuleLoaderMessage.ModuleCreated));
       }
 
       await Promise.all(promises);
     }
 
-    sendQueuedMessage(Thread.Render, ModuleLoaderMessage.ModuleCreationFinished);
-    sendQueuedMessage(Thread.Game, ModuleLoaderMessage.ModuleCreationFinished);
+    sendDeferredMessage(Thread.Render, ModuleLoaderMessage.ModuleCreationFinished);
+    sendDeferredMessage(Thread.Game, ModuleLoaderMessage.ModuleCreationFinished);
   } else {
     // Send module list to main thread and wait for response
 
-    const disposeHandler = handleQueuedMessages<string>(
+    const disposeHandler = handleDeferredMessages<string>(
       Thread.Main,
       ModuleLoaderMessage.CreateModule,
       async (moduleName) => {
@@ -141,17 +140,17 @@ export async function registerModules<ThreadContext extends BaseThreadContext>(
 
         await loadModule(module);
 
-        sendQueuedMessage(Thread.Main, ModuleLoaderMessage.ModuleCreated);
+        sendDeferredMessage(Thread.Main, ModuleLoaderMessage.ModuleCreated);
       }
     );
 
-    sendQueuedMessage(
+    sendDeferredMessage(
       Thread.Main,
       ModuleLoaderMessage.ModuleList,
       modules.map((module) => module.name)
     );
 
-    await waitForQueuedMessage(Thread.Main, ModuleLoaderMessage.ModuleCreationFinished);
+    await waitForDeferredMessage(Thread.Main, ModuleLoaderMessage.ModuleCreationFinished);
 
     disposeHandler();
   }
@@ -176,16 +175,16 @@ export async function registerModules<ThreadContext extends BaseThreadContext>(
 
   if (thread === Thread.Main) {
     await Promise.all([
-      waitForQueuedMessage(Thread.Render, ModuleLoaderMessage.ModulesInitialized),
-      waitForQueuedMessage(Thread.Game, ModuleLoaderMessage.ModulesInitialized),
+      waitForDeferredMessage(Thread.Render, ModuleLoaderMessage.ModulesInitialized),
+      waitForDeferredMessage(Thread.Game, ModuleLoaderMessage.ModulesInitialized),
     ]);
 
-    sendQueuedMessage(Thread.Render, ModuleLoaderMessage.Complete);
-    sendQueuedMessage(Thread.Game, ModuleLoaderMessage.Complete);
+    sendDeferredMessage(Thread.Render, ModuleLoaderMessage.Complete);
+    sendDeferredMessage(Thread.Game, ModuleLoaderMessage.Complete);
   } else {
-    sendQueuedMessage(Thread.Main, ModuleLoaderMessage.ModulesInitialized);
+    sendDeferredMessage(Thread.Main, ModuleLoaderMessage.ModulesInitialized);
 
-    await waitForQueuedMessage(Thread.Main, ModuleLoaderMessage.Complete);
+    await waitForDeferredMessage(Thread.Main, ModuleLoaderMessage.Complete);
   }
 
   dispose();
@@ -233,7 +232,46 @@ export function registerMessageHandler<ThreadContext extends BaseThreadContext, 
   };
 }
 
-interface QueuedMessage<MessageType extends string = string, Key extends string = string, Data = unknown>
+export interface QueuedMessageHandler<M extends Message<string>> {
+  register(ctx: BaseThreadContext): () => void;
+  dequeue(): M | undefined;
+}
+
+export function createQueuedMessageHandler<M extends Message<string>>(
+  type: M["type"] | M["type"][]
+): QueuedMessageHandler<M> {
+  const queue: M[] = [];
+
+  return {
+    register(ctx: BaseThreadContext) {
+      let dispose: () => void;
+
+      if (Array.isArray(type)) {
+        dispose = createDisposables(
+          type.map((t) =>
+            registerMessageHandler(ctx, t, (ctx, message: M) => {
+              queue.push(message);
+            })
+          )
+        );
+      } else {
+        dispose = registerMessageHandler(ctx, type, (ctx, message: M) => {
+          queue.push(message);
+        });
+      }
+
+      return () => {
+        queue.length = 0;
+        dispose();
+      };
+    },
+    dequeue() {
+      return queue.shift();
+    },
+  };
+}
+
+interface QueuedDeferredMessage<MessageType extends string = string, Key extends string = string, Data = unknown>
   extends Message<MessageType> {
   fromThread: Thread;
   key: Key;
@@ -248,65 +286,65 @@ interface DeferredMessage<Key extends string = string> {
   timeoutId: number;
 }
 
-interface QueuedMessageHandler {
+interface DeferredMessageHandler {
   fromThread: Thread;
   key: string;
   callback: (data?: any) => void;
 }
 
-function registerQueuedMessageHandler<ThreadContext extends BaseThreadContext, MessageType extends string>(
+function registerDeferredMessageHandler<ThreadContext extends BaseThreadContext, MessageType extends string>(
   localThread: Thread,
   context: ThreadContext,
   type: MessageType
 ) {
   const deferredMessages: DeferredMessage[] = [];
-  const messageQueue: QueuedMessage<MessageType, string, any>[] = [];
-  const messageHandlers: QueuedMessageHandler[] = [];
+  const messageQueue: QueuedDeferredMessage<MessageType, string, any>[] = [];
+  const messageHandlers: DeferredMessageHandler[] = [];
 
-  const dispose = registerMessageHandler<ThreadContext, MessageType, QueuedMessage<MessageType, string, unknown>>(
-    context,
-    type,
-    (_, message) => {
-      const deferredIndex = deferredMessages.findIndex(
-        (deferredMessage) => deferredMessage.key === message.key && deferredMessage.fromThread === message.fromThread
-      );
+  const dispose = registerMessageHandler<
+    ThreadContext,
+    MessageType,
+    QueuedDeferredMessage<MessageType, string, unknown>
+  >(context, type, (_, message) => {
+    const deferredIndex = deferredMessages.findIndex(
+      (deferredMessage) => deferredMessage.key === message.key && deferredMessage.fromThread === message.fromThread
+    );
 
-      const deferred = deferredMessages[deferredIndex];
+    const deferred = deferredMessages[deferredIndex];
 
-      if (deferred) {
-        clearTimeout(deferred.timeoutId);
-        deferredMessages.splice(deferredIndex, 1);
-        deferred.resolve(message.data);
-        return;
-      }
-
-      const messageHandler = messageHandlers.find(
-        (handler) => handler.key === message.key && handler.fromThread === message.fromThread
-      );
-
-      if (messageHandler) {
-        messageHandler.callback(message.data);
-        return;
-      }
-
-      messageQueue.push(message);
+    if (deferred) {
+      clearTimeout(deferred.timeoutId);
+      deferredMessages.splice(deferredIndex, 1);
+      deferred.resolve(message.data);
+      return;
     }
-  );
 
-  function sendQueuedMessage(
+    const messageHandler = messageHandlers.find(
+      (handler) => handler.key === message.key && handler.fromThread === message.fromThread
+    );
+
+    if (messageHandler) {
+      messageHandler.callback(message.data);
+      return;
+    }
+
+    messageQueue.push(message);
+  });
+
+  function sendDeferredMessage(
     toThread: Thread,
     key: string,
     data?: unknown,
     transferList?: (Transferable | OffscreenCanvas)[]
   ) {
-    context.sendMessage<QueuedMessage<MessageType, string, unknown>>(
+    context.sendMessage<QueuedDeferredMessage<MessageType, string, unknown>>(
       toThread,
       { type, fromThread: localThread, key, data },
       transferList
     );
   }
 
-  function waitForQueuedMessage<Data = unknown>(fromThread: Thread, key: string): Promise<Data> {
+  function waitForDeferredMessage<Data = unknown>(fromThread: Thread, key: string): Promise<Data> {
     const index = messageQueue.findIndex((message) => message.key === key && message.fromThread === fromThread);
 
     if (index !== -1) {
@@ -328,7 +366,7 @@ function registerQueuedMessageHandler<ThreadContext extends BaseThreadContext, M
     });
   }
 
-  function handleQueuedMessages<Data = unknown>(
+  function handleDeferredMessages<Data = unknown>(
     fromThread: Thread,
     key: string,
     callback: (data: Data) => void
@@ -358,9 +396,9 @@ function registerQueuedMessageHandler<ThreadContext extends BaseThreadContext, M
 
   return {
     dispose,
-    waitForQueuedMessage,
-    sendQueuedMessage,
-    handleQueuedMessages,
+    waitForDeferredMessage,
+    sendDeferredMessage,
+    handleDeferredMessages,
   };
 }
 
