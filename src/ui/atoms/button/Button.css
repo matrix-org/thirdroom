@@ -133,10 +133,6 @@
   box-shadow: none;
 }
 
-.Button--danger.Button--none {
-  box-shadow: none;
-}
-
 .Button--xs {
   border-radius: var(--br-xxs);
   height: 24px;
