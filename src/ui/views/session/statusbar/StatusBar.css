@@ -14,6 +14,10 @@
   padding: 0 var(--sp-xs);
 }
 
+.StatusBar__right {
+  padding: 0 var(--sp-xs);
+}
+
 .OverlayButton {
   padding: 0 var(--sp-xs);
   height: 32px;

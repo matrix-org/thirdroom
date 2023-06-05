@@ -2,6 +2,12 @@
   publish = "dist/"
 
 [[redirects]]
+  from = "https://staging.thirdroom.io/*"
+  to = "https://staging--thirdroom.netlify.app/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
   from = "/.well-known/*"
   to = "/well-known/:splat"
   status = 200
@@ -15,7 +21,6 @@
   from = "/*"
   to = "/index.html"
   status = 200
-
 
 [[headers]]
 for = "/*"

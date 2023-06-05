@@ -1,5 +1,5 @@
 import { Scroll } from "../atoms/scroll/Scroll";
-import { BlogSection } from "./BlogSection";
+import { ContentSection } from "./ContentSection";
 import { FooterSection } from "./FooterSection";
 import { HeroSection } from "./HeroSection";
 import { NavigationBar } from "./NavigationBar";
@@ -12,7 +12,8 @@ export default function Site() {
       <div className="grow">
         <Scroll type="scroll">
           <HeroSection />
-          <BlogSection />
+          <div style={{ height: 70 }} />
+          <ContentSection />
           <FooterSection />
         </Scroll>
       </div>

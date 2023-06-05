@@ -73,7 +73,8 @@
   }
 }
 
-.Button--primary.Button--outline {
+.Button--primary.Button--outline,
+.Button--primary.Button--none {
   box-shadow: var(--bs-primary-border);
 
   @media (hover: hover) {
@@ -88,8 +89,12 @@
     background-color: var(--bg-primary-soft-active);
   }
 }
+.Button--primary.Button--none {
+  box-shadow: none;
+}
 
-.Button--secondary.Button--outline {
+.Button--secondary.Button--outline,
+.Button--secondary.Button--none {
   box-shadow: var(--bs-secondary-border);
 
   @media (hover: hover) {
@@ -104,8 +109,12 @@
     background-color: var(--bg-secondary-soft-active);
   }
 }
+.Button--secondary.Button--none {
+  box-shadow: none;
+}
 
-.Button--danger.Button--outline {
+.Button--danger.Button--outline,
+.Button--danger.Button--none {
   box-shadow: var(--bs-danger-border);
 
   @media (hover: hover) {
@@ -119,6 +128,9 @@
   &:active {
     background-color: var(--bg-danger-soft-active);
   }
+}
+.Button--danger.Button--none {
+  box-shadow: none;
 }
 
 .Button--xs {
