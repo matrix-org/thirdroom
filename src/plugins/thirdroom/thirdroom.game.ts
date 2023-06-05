@@ -495,7 +495,7 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
     name: "Transient Scene",
   });
 
-  const resourceManager = createRemoteResourceManager(ctx);
+  const resourceManager = createRemoteResourceManager(ctx, "environment");
 
   const environmentGLTFResource = await loadGLTF(ctx, url, { fileMap, resourceManager });
 

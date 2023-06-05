@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema",
+  "title": "MX_postprocessing Bloom",
+  "type": "object",
+  "allOf": [{ "$ref": "glTFProperty.schema.json" }],
+  "properties": {
+    "strength": {
+      "type": "number",
+      "description": "Bloom strength modifier",
+      "default": 0.4
+    },
+    "extensions": {},
+    "extras": {}
+  }
+}

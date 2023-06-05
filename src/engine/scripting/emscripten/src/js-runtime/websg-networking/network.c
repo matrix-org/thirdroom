@@ -5,6 +5,7 @@
 #include "./network-listener.h"
 #include "./peer.h"
 #include "../utils/exception.h"
+#include "./replicator.h"
 
 JSClassID js_websg_network_class_id;
 
@@ -91,9 +92,25 @@ static JSValue js_websg_network_get_peers(JSContext *ctx, JSValueConst this_val)
   return JS_DupValue(ctx, network_data->peers);
 }
 
+static JSValue js_websg_network_define_replicator(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  if (argc < 1 || !JS_IsFunction(ctx, argv[0])) {
+    return JS_ThrowTypeError(ctx, "WebSGNetworking: Unable to create replicator, expected a function as the first argument.");
+  }
+
+  WebSGNetworkData *network_data = JS_GetOpaque(this_val, js_websg_network_class_id);
+
+  JSValue factory_function = JS_DupValue(ctx, argv[0]);
+
+  replication_id_t replicator_id = websg_network_define_replicator();
+
+  return js_websg_new_replicator_instance(ctx, network_data, replicator_id, factory_function);
+}
+
+
 static const JSCFunctionListEntry js_websg_network_proto_funcs[] = {
   JS_CFUNC_DEF("listen", 0, js_websg_network_listen),
   JS_CFUNC_DEF("broadcast", 2, js_websg_network_broadcast),
+  JS_CFUNC_DEF("defineReplicator", 1, js_websg_network_define_replicator),
   JS_CGETSET_DEF("host", js_websg_network_get_host, NULL),
   JS_CGETSET_DEF("local", js_websg_network_get_local, NULL),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "Network", JS_PROP_CONFIGURABLE),

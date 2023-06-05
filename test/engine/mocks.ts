@@ -69,6 +69,7 @@ export const mockRenderState = () => ({
 
 export const mockNetworkState = () => ({
   networkIdToEntityId: new Map(),
+  prefabToReplicator: new Map(),
 });
 
 export const mockResourceModule = () => ({
@@ -119,7 +120,7 @@ export const mockGameState = () => {
   // NOOP Entity
   addEntity(ctx.world);
 
-  ctx.resourceManager = createRemoteResourceManager(ctx);
+  ctx.resourceManager = createRemoteResourceManager(ctx, "global");
 
   const activeCameraNode = new RemoteNode(ctx.resourceManager, {
     name: "Camera",

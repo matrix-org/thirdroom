@@ -20,6 +20,7 @@ import { overlayVisibilityAtom } from "../../state/overlayVisibility";
 import { CmdPanel, defaultActions } from "./cmd-panel/CmdPanel";
 import { useAccountManagementAction, useTechPreviewAction, useUserProfileAction } from "./cmd-panel/actions";
 import { editorEnabledAtom } from "../../state/editor";
+import { WhatsNew } from "./whats-new/WhatsNew";
 
 function RegisterKBarActions() {
   useUserProfileAction();
@@ -63,6 +64,7 @@ export default function SessionView() {
               <Outlet />
               {overlayVisible && <Overlay />}
               {!editorEnabled && <StatusBar />}
+              <WhatsNew />
             </MainThreadContextProvider>
           ) : (
             <LoadingScreen message="Initializing engine..." />

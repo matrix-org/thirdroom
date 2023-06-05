@@ -1,4 +1,4 @@
-import { Text } from "../atoms/text/Text";
+import { Text } from "../../atoms/text/Text";
 import "./BlogSection.css";
 
 function BlogImage({
@@ -290,7 +290,8 @@ export function BlogSection() {
 
           <li>
             <span className="semi-bold">Editing:</span> We have started on a direct-manipulation editor, letting you go
-            full Inception or Dark City and get hands on with changing the world; you can trigger it with the <kbd>§</kbd> or <kbd>`</kbd>
+            full Inception or Dark City and get hands on with changing the world; you can trigger it with the{" "}
+            <kbd>§</kbd> or <kbd>`</kbd>
             key. Right now it just lets you navigate the scene graph of the world and select the entities, but the next
             step will be to turn it into a full in-world editor.{" "}
           </li>
@@ -331,8 +332,7 @@ export function BlogSection() {
 
           <li>
             <span className="semi-bold">Engine features:</span> Realtime shadows (which need to play nice with the baked
-            lightmaps; experiment underway), smarter antialiasing
-            (e.g. Temporal Reprojection Anti Aliasing,{" "}
+            lightmaps; experiment underway), smarter antialiasing (e.g. Temporal Reprojection Anti Aliasing,{" "}
             <a href="https://github.com/mrdoob/three.js/issues/14050" target="_blank" rel="noreferrer noopener">
               if/when it lands
             </a>{" "}

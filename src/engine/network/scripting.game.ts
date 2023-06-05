@@ -1,3 +1,5 @@
+import { addComponent, hasComponent } from "bitecs";
+
 import {
   createCursorView,
   moveCursorView,
@@ -15,6 +17,8 @@ import { NetPipeData, writeMetadata } from "./serialization.game";
 import { writeUint32, readUint32 } from "../allocator/CursorView";
 import { registerInboundMessageHandler } from "./inbound.game";
 import {
+  getScriptResource,
+  readExtensionsAndExtras,
   readUint8Array,
   WASMModuleContext,
   writeArrayBuffer,
@@ -26,6 +30,9 @@ import { getRemoteResource } from "../resource/resource.game";
 import { createDisposables } from "../utils/createDisposables";
 import { NetworkMessageType, PeerEnteredMessage, PeerExitedMessage } from "./network.common";
 import { ScriptComponent, scriptQuery } from "../scripting/scripting.game";
+import { Replication, createReplicator } from "./Replicator";
+import { Networked, Owned } from "./NetworkComponents";
+import { addPrefabComponent } from "../prefab/prefab.game";
 
 export const WebSGNetworkModule = defineModule<GameState, {}>({
   name: "WebSGNetwork",
@@ -326,11 +333,318 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
         return -1;
       }
     },
+    define_replicator: () => {
+      const replicator = createReplicator(network, wasmCtx.resourceManager);
+      return replicator.id;
+    },
+    replicator_spawned_count: (replicatorId: number) => {
+      const replicator = wasmCtx.resourceManager.replicators.get(replicatorId);
+
+      if (!replicator) {
+        console.error("Undefined replicator.");
+        return -1;
+      }
+
+      return replicator.spawned.length;
+    },
+    replicator_despawned_count: (replicatorId: number) => {
+      const replicator = wasmCtx.resourceManager.replicators.get(replicatorId);
+
+      if (!replicator) {
+        console.error("Undefined replicator.");
+        return -1;
+      }
+
+      return replicator.despawned.length;
+    },
+    replicator_spawn_local: (replicatorId: number, nodeId: number, packetPtr: number, byteLength: number) => {
+      const replicator = wasmCtx.resourceManager.replicators.get(replicatorId);
+
+      if (!replicator) {
+        console.error("Undefined replicator.");
+        return -1;
+      }
+
+      addPrefabComponent(ctx.world, nodeId, replicator.prefabName);
+      addComponent(ctx.world, Networked, nodeId);
+      addComponent(ctx.world, Owned, nodeId);
+
+      const buffer = new Uint8Array([...readUint8Array(wasmCtx, packetPtr, byteLength)]);
+      const data = byteLength > 0 ? buffer : undefined;
+      const peerId = network.peerId;
+      const peerIndex = network.peerIdToIndex.get(peerId)!;
+
+      if (data) {
+        replicator.eidToData.set(nodeId, data);
+      }
+
+      replicator.spawned.push({ nodeId, peerIndex, data });
+
+      return 0;
+    },
+    replicator_despawn_local: (replicatorId: number, nodeId: number, packetPtr: number, byteLength: number) => {
+      const replicator = wasmCtx.resourceManager.replicators.get(replicatorId);
+
+      if (!replicator) {
+        console.error("Undefined replicator.");
+        return -1;
+      }
+
+      const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+      if (!node) {
+        console.error("Undefined node.");
+        return -1;
+      }
+
+      const buffer = new Uint8Array([...readUint8Array(wasmCtx, packetPtr, byteLength)]);
+      const data = byteLength > 0 ? buffer : undefined;
+      const peerId = network.peerId;
+      const peerIndex = network.peerIdToIndex.get(peerId)!;
+
+      if (data) {
+        replicator.eidToData.set(nodeId, data);
+      }
+
+      replicator.despawned.push({ nodeId, peerIndex, data });
+
+      return 0;
+    },
+    replicator_get_spawned_message_info: (replicatorId: number, infoPtr: number) => {
+      try {
+        const replicator = wasmCtx.resourceManager.replicators.get(replicatorId);
+
+        if (!replicator) {
+          moveCursorView(wasmCtx.cursorView, infoPtr);
+          writeUint32(wasmCtx.cursorView, 0);
+          writeUint32(wasmCtx.cursorView, 0);
+          writeUint32(wasmCtx.cursorView, 0);
+          writeUint32(wasmCtx.cursorView, 0);
+          console.error("Undefined replicator.");
+          return -1;
+        }
+
+        let replication: Replication | undefined;
+
+        while (replicator.spawned.length > 0) {
+          replication = replicator.spawned[0];
+
+          if (replication.peerIndex === undefined) {
+            console.warn("Discarded replication from peer that no longer exists");
+            replicator.spawned.shift();
+            replication = undefined;
+          } else {
+            break;
+          }
+        }
+
+        const nodeId = replication?.nodeId || 0;
+        const networkId = replication?.networkId || 0;
+        const peerIndex = replication?.peerIndex || 0;
+        const byteLength = replication?.data?.byteLength || 0;
+
+        moveCursorView(wasmCtx.cursorView, infoPtr);
+        writeUint32(wasmCtx.cursorView, nodeId);
+        writeUint32(wasmCtx.cursorView, networkId);
+        writeUint32(wasmCtx.cursorView, peerIndex);
+        writeUint32(wasmCtx.cursorView, byteLength);
+
+        return replicator.spawned.length;
+      } catch (e) {
+        console.error("Error getting replicator spawned message info:", e);
+        return -1;
+      }
+    },
+    replicator_get_despawned_message_info: (replicatorId: number, infoPtr: number) => {
+      try {
+        const replicator = wasmCtx.resourceManager.replicators.get(replicatorId);
+
+        if (!replicator) {
+          moveCursorView(wasmCtx.cursorView, infoPtr);
+          writeUint32(wasmCtx.cursorView, 0);
+          writeUint32(wasmCtx.cursorView, 0);
+          writeUint32(wasmCtx.cursorView, 0);
+          writeUint32(wasmCtx.cursorView, 0);
+          console.error("Undefined replicator.");
+          return -1;
+        }
+
+        let replication: Replication | undefined;
+
+        while (replicator.despawned.length > 0) {
+          replication = replicator.despawned[0];
+
+          if (replication.peerIndex === undefined) {
+            console.warn("Discarded replication from peer that no longer exists");
+            replicator.despawned.shift();
+            replication = undefined;
+          } else {
+            break;
+          }
+        }
+
+        const nodeId = replication?.nodeId || 0;
+        const networkId = replication?.networkId || 0;
+        const peerIndex = replication?.peerIndex || 0;
+        const byteLength = replication?.data?.byteLength || 0;
+
+        moveCursorView(wasmCtx.cursorView, infoPtr);
+        writeUint32(wasmCtx.cursorView, nodeId);
+        writeUint32(wasmCtx.cursorView, networkId);
+        writeUint32(wasmCtx.cursorView, peerIndex);
+        writeUint32(wasmCtx.cursorView, byteLength);
+
+        return replicator.despawned.length;
+      } catch (e) {
+        console.error("Error getting replicator despawned message info:", e);
+        return -1;
+      }
+    },
+    replicator_spawn_receive: (replicatorId: number, packetPtr: number, maxBufLength: number) => {
+      try {
+        const replicator = wasmCtx.resourceManager.replicators.get(replicatorId);
+
+        if (!replicator) {
+          console.error(`WebSGNetworking: replicator ${replicatorId} does not exist or has been closed.`);
+          return -1;
+        }
+
+        let replication: Replication | undefined;
+
+        while (replicator.spawned.length > 0) {
+          replication = replicator.spawned.shift();
+
+          if (!replication) {
+            break;
+          }
+
+          if (replication.peerIndex === undefined) {
+            console.warn("Discarded replication from peer that no longer exists");
+            // This message is from a peer that no longer exists.
+            replication = undefined;
+          } else {
+            break;
+          }
+        }
+
+        if (!replication) {
+          return 0;
+        }
+
+        if (!replication.data || replication.data.byteLength === 0) {
+          return 0;
+        }
+
+        if (replication.data.byteLength > maxBufLength) {
+          console.error("Failed to receive replication, length exceeded buffer length");
+          return -1;
+        }
+
+        return writeArrayBuffer(wasmCtx, packetPtr, replication.data);
+      } catch (e) {
+        console.error("Error writing packet to write buffer:", e);
+        return -1;
+      }
+    },
+    replicator_despawn_receive: (replicatorId: number, packetPtr: number, maxBufLength: number) => {
+      try {
+        const replicator = wasmCtx.resourceManager.replicators.get(replicatorId);
+
+        if (!replicator) {
+          console.error(`WebSGNetworking: replicator ${replicatorId} does not exist or has been closed.`);
+          return -1;
+        }
+
+        let replication: Replication | undefined;
+
+        while (replicator.despawned.length > 0) {
+          replication = replicator.despawned.shift();
+
+          if (!replication) {
+            break;
+          }
+
+          if (replication.peerIndex === undefined) {
+            console.warn("Discarded replication from peer that no longer exists");
+            // This message is from a peer that no longer exists.
+            replication = undefined;
+          } else {
+            break;
+          }
+        }
+
+        if (!replication || !replication.data || replication.data.byteLength === 0) {
+          return 0;
+        }
+
+        const byteLength = replication.data?.byteLength || 0;
+
+        if (byteLength > maxBufLength) {
+          console.error("Failed to receive replication, length exceeded buffer length");
+          return -1;
+        }
+
+        return writeArrayBuffer(wasmCtx, packetPtr, replication.data || new ArrayBuffer(0));
+      } catch (e) {
+        console.error("Error writing packet to write buffer:", e);
+        return -1;
+      }
+    },
+    node_add_network_synchronizer: (nodeId: number, propsPtr: number) => {
+      try {
+        const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
+
+        if (!node) {
+          return -1;
+        }
+
+        if (hasComponent(ctx.world, Networked, nodeId)) {
+          console.error("WebSGNetworking: node already has network synchronizer.");
+          return -1;
+        }
+
+        moveCursorView(wasmCtx.cursorView, propsPtr);
+        readExtensionsAndExtras(wasmCtx);
+        const networkId = readUint32(wasmCtx.cursorView);
+        const replicatorId = readUint32(wasmCtx.cursorView);
+
+        const replicator = wasmCtx.resourceManager.replicators.get(replicatorId);
+
+        if (!replicator) {
+          console.error(`WebSGNetworking: replicator ${replicatorId} does not exist or has been closed.`);
+          return -1;
+        }
+
+        addComponent(ctx.world, Networked, nodeId, true);
+        Networked.networkId[nodeId] = networkId;
+        network.networkIdToEntityId.set(networkId, nodeId);
+        addPrefabComponent(ctx.world, nodeId, replicator.prefabName);
+
+        const deferredUpdates = network.deferredUpdates.get(networkId);
+
+        if (deferredUpdates) {
+          for (let i = 0; i < deferredUpdates.length; i++) {
+            const { position, quaternion } = deferredUpdates[i];
+            // set the networked component state for networked objects
+            Networked.position[node.eid].set(position);
+            Networked.quaternion[node.eid].set(quaternion);
+          }
+
+          network.deferredUpdates.delete(networkId);
+        }
+
+        return 0;
+      } catch (error) {
+        console.error(`WebSG: error adding interactable:`, error);
+        return -1;
+      }
+    },
   };
 
   const disposeNetworkModule = () => {
     wasmCtx.resourceManager.networkListeners.length = 0;
     wasmCtx.resourceManager.nextNetworkListenerId = 1;
+    wasmCtx.resourceManager.replicators.clear();
+    wasmCtx.resourceManager.nextReplicatorId = 1;
   };
 
   return [networkWASMModule, disposeNetworkModule] as const;
