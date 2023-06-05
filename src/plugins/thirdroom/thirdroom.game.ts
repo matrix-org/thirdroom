@@ -149,6 +149,8 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
 });
 
 async function onLoadWorld(ctx: GameState, message: LoadWorldMessage) {
+  // TODO: Move to loading in a system and spawning all resources in a single frame
+  // World load lifecycle handled by GLTFLoader component etc.
   try {
     await loadEnvironment(ctx, message.url, message.scriptUrl);
 
@@ -295,10 +297,10 @@ async function loadEnvironment(ctx: GameState, url: string, scriptUrl?: string, 
     script = await loadScript(ctx, resourceManager, scriptUrl);
   }
 
-  const environmentScene = (await loadDefaultGLTFScene(ctx, environmentGLTFResource, {
+  const environmentScene = loadDefaultGLTFScene(ctx, environmentGLTFResource, {
     createDefaultMeshColliders: true,
     rootIsStatic: true,
-  })) as RemoteScene;
+  }) as RemoteScene;
 
   if (!environmentScene.reflectionProbe || !environmentScene.backgroundTexture) {
     const defaultEnvironmentMapTexture = new RemoteTexture(resourceManager, {
