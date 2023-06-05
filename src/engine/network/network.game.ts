@@ -30,7 +30,6 @@ import {
   deserializeUpdatesChanged,
   deserializeUpdatesSnapshot,
   embodyAvatar,
-  NetPipeData,
 } from "./serialization.game";
 import { NetworkAction } from "./NetworkAction";
 import { registerInboundMessageHandler } from "./inbound.game";
@@ -76,7 +75,9 @@ export interface GameNetworkState {
   networkIdToEntityId: Map<number, number>;
   localIdCount: number;
   removedLocalIds: number[];
-  messageHandlers: { [key: number]: (input: NetPipeData) => void };
+  messageHandlers: {
+    [key: number]: (ctx: GameState, v: CursorView, peerId: string) => void;
+  };
   cursorView: CursorView;
   tickRate: number;
   prefabToReplicator: Map<string, Replicator>;

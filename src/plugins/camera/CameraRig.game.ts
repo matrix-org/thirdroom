@@ -22,7 +22,7 @@ import { CameraRef, createRemotePerspectiveCamera, getCamera } from "../../engin
 import { ThirdPersonComponent } from "./../thirdroom/thirdroom.game";
 import { CameraRigMessage } from "./CameraRig.common";
 import { ourPlayerQuery } from "../../engine/component/Player";
-import { embodyAvatar, NetPipeData, writeMetadata } from "../../engine/network/serialization.game";
+import { embodyAvatar, writeMetadata } from "../../engine/network/serialization.game";
 import { PhysicsModule } from "../../engine/physics/physics.game";
 import { NetworkModule } from "../../engine/network/network.game";
 import { isHost } from "../../engine/network/network.common";
@@ -36,6 +36,7 @@ import {
   sliceCursorView,
   readUint32,
   readFloat32,
+  CursorView,
 } from "../../engine/allocator/CursorView";
 import { Networked } from "../../engine/network/NetworkComponents";
 import { createDisposables } from "../../engine/utils/createDisposables";
@@ -558,12 +559,10 @@ const MESSAGE_SIZE = Uint8Array.BYTES_PER_ELEMENT + Uint32Array.BYTES_PER_ELEMEN
 const messageView = createCursorView(new ArrayBuffer(100 * MESSAGE_SIZE));
 
 export function createUpdateCameraMessage(ctx: GameState, eid: number, camera: number) {
-  const data: NetPipeData = [ctx, messageView, ""];
-
   const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
   const cameraNode = tryGetRemoteResource<RemoteNode>(ctx, camera);
 
-  writeMetadata(NetworkAction.UpdateCamera)(data);
+  writeMetadata(messageView, NetworkAction.UpdateCamera);
 
   writeUint32(messageView, Networked.networkId[eid]);
 
@@ -580,10 +579,7 @@ export function createUpdateCameraMessage(ctx: GameState, eid: number, camera: n
   return sliceCursorView(messageView);
 }
 
-function deserializeUpdateCamera(data: NetPipeData) {
-  const ctx = data[0];
-  const view = data[1];
-
+function deserializeUpdateCamera(ctx: GameState, view: CursorView) {
   // TODO: put network ref in the net pipe data
   const network = getModule(ctx, NetworkModule);
 
@@ -602,8 +598,6 @@ function deserializeUpdateCamera(data: NetPipeData) {
   camera.quaternion[1] = readFloat32(view);
   camera.quaternion[2] = readFloat32(view);
   camera.quaternion[3] = readFloat32(view);
-
-  return data;
 }
 
 export function NetworkedCameraSystem(ctx: GameState) {

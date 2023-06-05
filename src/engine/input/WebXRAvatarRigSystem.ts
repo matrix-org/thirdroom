@@ -21,7 +21,7 @@ import { InputModule } from "./input.game";
 import { XRInputHandedness } from "./WebXRInputProfiles";
 import { Networked, Owned } from "../network/NetworkComponents";
 import { broadcastReliable } from "../network/outbound.game";
-import { createInformXRMode } from "../network/serialization.game";
+import { createInformXRModeMessage } from "../network/serialization.game";
 import { NetworkModule } from "../network/network.game";
 import { XRHeadComponent, XRControllerComponent } from "../../plugins/thirdroom/thirdroom.game";
 import { AvatarRef } from "../../plugins/avatars/components";
@@ -75,7 +75,7 @@ export function WebXRAvatarRigSystem(ctx: GameState) {
     rendererModule.prevXRMode = ourXRMode;
 
     // inform other clients of our XRMode
-    broadcastReliable(ctx, network, createInformXRMode(ctx, ourXRMode));
+    broadcastReliable(ctx, network, createInformXRModeMessage(ctx, ourXRMode));
   }
 
   for (let i = 0; i < rigs.length; i++) {
