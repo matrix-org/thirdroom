@@ -19,6 +19,7 @@ import { overlayWorldAtom } from "../../state/overlayWorld";
 import { overlayVisibilityAtom } from "../../state/overlayVisibility";
 import { CmdPanel, defaultActions } from "./cmd-panel/CmdPanel";
 import { useAccountManagementAction, useTechPreviewAction, useUserProfileAction } from "./cmd-panel/actions";
+import { WhatsNew } from "./whats-new/WhatsNew";
 
 function RegisterKBarActions() {
   useUserProfileAction();
@@ -60,6 +61,7 @@ export default function SessionView() {
               <Outlet />
               {overlayVisible && <Overlay />}
               <StatusBar />
+              <WhatsNew />
             </MainThreadContextProvider>
           ) : (
             <LoadingScreen message="Initializing engine..." />

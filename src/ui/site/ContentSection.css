@@ -1,0 +1,26 @@
+.ContentSection--low {
+  background-color: var(--bg-surface-low);
+}
+.ContentSection__content {
+  margin: auto;
+  padding: 120px var(--side-spacing);
+  max-width: var(--content-max-width);
+  display: flex;
+  flex-direction: column;
+  gap: 160px;
+}
+
+.ContentSection__realGraphicFeatures {
+  padding: var(--sp-md) 0;
+}
+
+@media screen and (max-width: 550px) {
+  .ContentSection__realGraphicFeatures {
+    flex-direction: column;
+    gap: var(--sp-lg);
+
+    & > div {
+      flex-basis: auto;
+    }
+  }
+}

@@ -15,6 +15,7 @@ import { activeChatsAtom } from "../../../state/overlayChat";
 import { worldChatVisibilityAtom } from "../../../state/worldChatVisibility";
 import { overlayVisibilityAtom } from "../../../state/overlayVisibility";
 import { sidebarTabAtom, SidebarTab } from "../../../state/sidebarTab";
+import { WhatsNewNotification } from "../whats-new/WhatsNewNotification";
 
 function OverlayButton({
   style,
@@ -160,7 +161,8 @@ export function StatusBar() {
           {isHome ? "Home" : world?.name ?? world?.canonicalAlias ?? "Unknown"}
         </Text>
       </div>
-      <div className="StatusBar__right grow basis-0 flex justify-end">
+      <div className="StatusBar__right grow basis-0 flex justify-end gap-xxs">
+        <WhatsNewNotification />
         {knownWorldId && <NotificationButton onClick={openNotifications} />}
       </div>
     </div>
