@@ -111,6 +111,17 @@ JSValue js_websg_node_children(JSContext *ctx, JSValueConst this_val, int argc, 
   return js_websg_create_node_iterator(ctx, node_data->world_data, children, count);
 }
 
+JSValue js_websg_node_dispose(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+  WebSGNodeData *node_data = JS_GetOpaque(this_val, js_websg_node_class_id);
+
+  if (websg_node_dispose(node_data->node_id) == -1) {
+    JS_ThrowInternalError(ctx, "WebSG: Couldn't set collider.");
+    return JS_EXCEPTION;
+  }
+
+  return JS_UNDEFINED;
+}
+
 static JSValue js_websg_node_parent(JSContext *ctx, JSValueConst this_val) {
   WebSGNodeData *node_data = JS_GetOpaque(this_val, js_websg_node_class_id);
 
@@ -416,6 +427,7 @@ static const JSCFunctionListEntry js_websg_node_proto_funcs[] = {
   JS_CFUNC_DEF("removeChild", 1, js_websg_node_remove_child),
   JS_CFUNC_DEF("getChild", 1, js_websg_node_get_child),
   JS_CFUNC_DEF("children", 0, js_websg_node_children),
+  JS_CFUNC_DEF("dispose", 0, js_websg_node_dispose),
   JS_CGETSET_DEF("parent", js_websg_node_parent, NULL),
   JS_CGETSET_DEF("isStatic", js_websg_node_get_is_static, js_websg_node_set_is_static),
   JS_CGETSET_DEF("visible", js_websg_node_get_visible, js_websg_node_set_visible),

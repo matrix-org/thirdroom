@@ -4,6 +4,8 @@
 
 typedef struct WebSGNetworkData {
   JSValue peers;
+  JSValue replicators;
+  JSValue replications;
 } WebSGNetworkData;
 
 extern JSClassID js_websg_network_class_id;

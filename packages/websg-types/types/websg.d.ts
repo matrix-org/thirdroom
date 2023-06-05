@@ -2539,6 +2539,60 @@ declare namespace WebSGNetworking {
   }
 
   /**
+   * An object representing a node that was spawned or despawned.
+   */
+  interface Replication {
+    /**
+     * The node that was spawned or despawned.
+     */
+    node: WebSG.Node;
+    /**
+     * The peer that spawned or despawned the node.
+     */
+    peer: WebSGNetworking.Peer;
+    /**
+     * The data that was sent with the spawn or despawn message.
+     */
+    data: ArrayBuffer;
+  }
+
+  /**
+   * An iterator for {@link WebSGNetworking.Replication | Replication }s.
+   */
+  class ReplicationIterator {
+    /**
+     * Returns the next {@link WebSGNetworking.Replication} in the iterator.
+     */
+    next(): { value: Replication; done: boolean };
+    [Symbol.iterator](): ReplicationIterator;
+  }
+
+  /**
+   * A replicator for spawning and despawning nodes.
+   */
+  class Replicator {
+    /**
+     * Spawns a node with the given optional data.
+     * @param data - Optional data to send with the spawn message.
+     */
+    spawn(data?: ArrayBuffer): WebSG.Node;
+    /**
+     * Despawns a node with the given optional data.
+     * @param node The node to despawn.
+     * @param data - Optional data to send with the despawn message.
+     */
+    despawn(node: WebSG.Node, data?: ArrayBuffer): void;
+    /**
+     * Returns an iterator for spawned nodes.
+     */
+    spawned(): ReplicationIterator;
+    /**
+     * Returns an iterator for despawned nodes.
+     */
+    despawned(): ReplicationIterator;
+  }
+
+  /**
    * Represents the networking methods available
    * for sending and receiving data in a WebSG script.
    */
@@ -2580,6 +2634,12 @@ declare namespace WebSGNetworking {
      * @param peer - The peer that exited the world.
      */
     onpeerexited: ((peer: Peer) => any) | null;
+
+    /**
+     * Defines a new replicator that can be used to spawn and despawn nodes
+     * @param factory - A function called whenever a new node is spawned.
+     */
+    defineReplicator(factory: () => WebSG.Node): Replicator;
   }
 }
 

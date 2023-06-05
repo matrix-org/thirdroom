@@ -1,4 +1,11 @@
-import { CursorView, moveCursorView, readFloat32Array, readUint32, rewindCursorView } from "../allocator/CursorView";
+import {
+  CursorView,
+  moveCursorView,
+  readFloat32Array,
+  readUint32,
+  rewindCursorView,
+  skipUint32,
+} from "../allocator/CursorView";
 import { GameState, RemoteResourceManager } from "../GameTypes";
 import { IRemoteResourceClass, RemoteResourceConstructor } from "../resource/RemoteResourceClass";
 import { getRemoteResources } from "../resource/resource.game";
@@ -320,4 +327,35 @@ export function readRefMap<T extends RemoteResourceConstructor>(
   rewind();
 
   return map;
+}
+
+export function readExtensionsAndExtras<T extends { [key: string]: unknown }>(
+  wasmCtx: WASMModuleContext,
+  parseExtension: (name: string) => T | undefined = () => undefined
+) {
+  const itemsPtr = readUint32(wasmCtx.cursorView);
+  const count = readUint32(wasmCtx.cursorView);
+  // TODO: Implement glTF extras in WebSG API
+  skipUint32(wasmCtx.cursorView); // Skip extras pointer
+
+  const extensions = {};
+
+  if (count > 0) {
+    const rewind = rewindCursorView(wasmCtx.cursorView);
+
+    moveCursorView(wasmCtx.cursorView, itemsPtr);
+
+    for (let i = 0; i < count; i++) {
+      const name = readStringFromCursorView(wasmCtx);
+      const extensionPtr = readUint32(wasmCtx.cursorView);
+      const itemRewind = rewindCursorView(wasmCtx.cursorView);
+      moveCursorView(wasmCtx.cursorView, extensionPtr);
+      Object.assign(extensions, parseExtension(name));
+      itemRewind();
+    }
+
+    rewind();
+  }
+
+  return extensions as Partial<T>;
 }

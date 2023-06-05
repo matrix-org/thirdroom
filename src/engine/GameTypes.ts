@@ -6,6 +6,7 @@ import { BaseThreadContext } from "./module/module.common";
 import { ComponentStore } from "./resource/ComponentStore";
 import { RemoteResource } from "./resource/RemoteResourceClass";
 import { RemoteWorld } from "./resource/RemoteResources";
+import { Replicator } from "./network/Replicator";
 
 export type World = IWorld;
 
@@ -36,6 +37,7 @@ export interface NetworkListener {
 }
 
 export interface RemoteResourceManager {
+  id: string;
   ctx: GameState;
   resourceIds: Set<number>;
   resourceMap: Map<number, string | ArrayBuffer | RemoteResource>;
@@ -54,6 +56,8 @@ export interface RemoteResourceManager {
   nextCollisionListenerId: number;
   actionBarListeners: ActionBarListener[];
   nextActionBarListenerId: number;
+  replicators: Map<number, Replicator>;
+  nextReplicatorId: number;
   matrixListening: boolean;
   inboundMatrixWidgetMessages: Uint8Array[];
   networkListeners: NetworkListener[];
