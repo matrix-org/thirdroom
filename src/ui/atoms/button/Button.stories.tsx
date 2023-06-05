@@ -169,6 +169,11 @@ export default function ButtonStories() {
           Hello, World
           <Icon color="primary" src={HomeIC} />
         </Button>
+
+        <Button variant="primary" fill="none" onClick={() => false}>
+          Hello, World
+          <Icon color="primary" src={HomeIC} />
+        </Button>
         <Button variant="secondary" fill="outline" onClick={() => false}>
           Hello, World
           <Icon color="secondary" src={HomeIC} />

@@ -1,0 +1,9 @@
+.WhatsNewModal__content {
+  height: 100%;
+}
+
+.WhatsNewModal__hero {
+  margin: auto;
+  max-width: 440px;
+  padding: var(--sp-lg) var(--sp-md);
+}

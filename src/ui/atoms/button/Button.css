@@ -129,7 +129,6 @@
     background-color: var(--bg-danger-soft-active);
   }
 }
-
 .Button--danger.Button--none {
   box-shadow: none;
 }
