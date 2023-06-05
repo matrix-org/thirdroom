@@ -1,6 +1,8 @@
-export const waitUntil = <T>(fn: Function, ms = 100): T =>
-  fn()
-    ? fn()
+export const waitUntil = <T>(fn: Function, ms = 100): Promise<T> => {
+  const initialValue = fn();
+
+  return initialValue
+    ? Promise.resolve(initialValue)
     : new Promise<T>((resolve) => {
         const interval = setInterval(() => {
           const result = fn();
@@ -10,3 +12,4 @@ export const waitUntil = <T>(fn: Function, ms = 100): T =>
           }
         }, ms);
       });
+};
