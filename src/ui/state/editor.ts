@@ -77,6 +77,7 @@ export const editorAtom = atom<EditorState, [EditorStateAction], void>(
 
       const newState = { ...editorState };
       newState.activeEntity = action.resourceId;
+      newState.selectedEntities = [action.resourceId];
 
       let history = [...get(activeEntityHistoryAtom)];
       if (action.isRef) {
@@ -111,6 +112,7 @@ export const editorAtom = atom<EditorState, [EditorStateAction], void>(
       const prevEntity = history[editorState.activeEntityHistoryIndex - 1];
       newState.activeEntityHistoryIndex -= 1;
       newState.activeEntity = prevEntity;
+      newState.selectedEntities = [prevEntity];
       set(baseEditorAtom, newState);
       return;
     }
@@ -125,6 +127,7 @@ export const editorAtom = atom<EditorState, [EditorStateAction], void>(
       const nextEntity = history[editorState.activeEntityHistoryIndex + 1];
       newState.activeEntityHistoryIndex += 1;
       newState.activeEntity = nextEntity;
+      newState.selectedEntities = [nextEntity];
       set(baseEditorAtom, newState);
       return;
     }
@@ -141,18 +144,18 @@ export const editorAtom = atom<EditorState, [EditorStateAction], void>(
 );
 
 export const DEFAULT_SCRIPT_SOURCE = `
+world.onload = () => {
+    
+    
 
+    world.onenter = () => {
+        
+    };
+    
+    world.onupdate = (dt, time) => {
 
-onload = () => {
+    };
 
-};
-
-onenter = () => {
-  
-};
-
-onupdate = (dt) => {
-  
 };
 `;
 

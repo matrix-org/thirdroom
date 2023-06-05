@@ -25,4 +25,4 @@ emcc \
   src/js-runtime/thirdroom/*.c \
   src/js-runtime/utils/*.c \
   src/js-runtime/websg/*.c \
-  src/js-runtime/websg-network/*.c
+  src/js-runtime/websg-networking/*.c

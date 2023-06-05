@@ -10,6 +10,7 @@ static void js_websg_rgba_finalizer(JSRuntime *rt, JSValue val) {
   WebSGRGBAData *rgba_data = JS_GetOpaque(val, js_websg_rgba_class_id);
 
   if (rgba_data) {
+    js_free_rt(rt, rgba_data->elements);
     js_free_rt(rt, rgba_data);
   }
 }
@@ -60,7 +61,7 @@ static JSValue js_websg_rgba_set_array(JSContext *ctx, JSValueConst this_val, in
   }
 
   if (rgba_data->set_array == NULL) {
-    return JS_UNDEFINED;
+    return JS_DupValue(ctx, this_val);
   }
 
   if (rgba_data->set_array(rgba_data->resource_id, rgba_data->elements) < 0) {
@@ -68,7 +69,7 @@ static JSValue js_websg_rgba_set_array(JSContext *ctx, JSValueConst this_val, in
     return JS_EXCEPTION;
   }
 
-  return JS_UNDEFINED;
+  return JS_DupValue(ctx, this_val);
 }
 
 static const JSCFunctionListEntry js_websg_rgba_proto_funcs[] = {
@@ -82,6 +83,7 @@ static const JSCFunctionListEntry js_websg_rgba_proto_funcs[] = {
   JS_CGETSET_MAGIC_DEF("a", js_websg_rgba_get, js_websg_rgba_set, 3),
   JS_CFUNC_DEF("set", 1, js_websg_rgba_set_array),
   JS_PROP_INT32_DEF("length", 4, JS_PROP_ENUMERABLE),
+  JS_PROP_STRING_DEF("[Symbol.toStringTag]", "RGBA", JS_PROP_CONFIGURABLE),
 };
 
 static JSValue js_websg_rgba_constructor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
@@ -112,6 +114,13 @@ void js_websg_define_rgba(JSContext *ctx, JSValue websg) {
   );
 }
 
+JSValue js_websg_create_rgba(JSContext *ctx, float* elements) {
+  JSValue rgba = JS_NewObjectClass(ctx, js_websg_rgba_class_id);
+  WebSGRGBAData *rgba_data = js_mallocz(ctx, sizeof(WebSGRGBAData));
+  rgba_data->elements = elements;
+  return rgba;
+}
+
 JSValue js_websg_new_rgba_get_set(
   JSContext *ctx,
   uint32_t resource_id,
@@ -122,6 +131,7 @@ JSValue js_websg_new_rgba_get_set(
   JSValue rgb = JS_NewObjectClass(ctx, js_websg_rgba_class_id);
 
   WebSGRGBAData *rgba_data = js_mallocz(ctx, sizeof(WebSGRGBAData));
+  rgba_data->elements = js_mallocz(ctx, sizeof(float_t) * 4);
   rgba_data->get = get;
   rgba_data->set = set;
   rgba_data->set_array = set_array;

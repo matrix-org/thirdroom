@@ -13,6 +13,7 @@ import { worldAtom } from "../../../state/world";
 import { WorldLoading } from "./WorldLoading";
 import { WorldThumbnail } from "./WorldThumbnail";
 import { WorldView } from "./WorldView";
+import { editorEnabledAtom } from "../../../state/editor";
 
 async function getWorldContent(world: Room) {
   const stateEvent = await world.getStateEvent("org.matrix.msc3815.world");
@@ -21,6 +22,7 @@ async function getWorldContent(world: Room) {
 
 export default function WorldRootView() {
   const { entered, loading } = useAtomValue(worldAtom);
+  const setWorld = useSetAtom(worldAtom);
   const { session } = useHydrogen(true);
   const isMounted = useIsMounted();
   const [error, setError] = useState<Error>();
@@ -29,6 +31,7 @@ export default function WorldRootView() {
   const selectWorld = useSetAtom(overlayWorldAtom);
   const [roomId, reloadId] = useWorldPath();
   const navigatedWorld = useRoom(session, roomId);
+  const setEditorEnabled = useSetAtom(editorEnabledAtom);
 
   /**
    * Handle loading are reloading
@@ -39,8 +42,7 @@ export default function WorldRootView() {
       (async () => {
         try {
           const content = await getWorldContent(navigatedWorld);
-          if (!content) return;
-          await loadWorld(navigatedWorld, content);
+          await loadWorld(navigatedWorld, content ?? {});
           await enterWorld(navigatedWorld);
         } catch (err) {
           setError(err as Error);
@@ -48,7 +50,7 @@ export default function WorldRootView() {
         }
       })();
     }
-  }, [navigatedWorld, reloadId, selectWorld, enterWorld, loadWorld, exitWorld]);
+  }, [navigatedWorld, reloadId, selectWorld, enterWorld, loadWorld, exitWorld, setWorld]);
 
   /**
    * Selects the world we are entered into for display in the overlay
@@ -78,6 +80,8 @@ export default function WorldRootView() {
         const content = event?.content;
         if (!content) return;
 
+        setEditorEnabled(false);
+
         try {
           await reloadWorld(navigatedWorld, content);
         } catch (err) {
@@ -93,7 +97,7 @@ export default function WorldRootView() {
     return () => {
       dispose?.();
     };
-  }, [navigatedWorld, entered, isMounted, reloadWorld]);
+  }, [navigatedWorld, entered, isMounted, reloadWorld, setEditorEnabled]);
 
   return (
     <>

@@ -1,82 +1,89 @@
 let node;
 let canvas;
-let rootFlex;
-let flexA;
-let flexB;
-let flexC;
+let root;
+let elA;
+let elB;
+let elC;
 let button;
 let text;
 
-const width = 5;
-const height = 2.5;
-const pixelDensity = 1000;
+const panelStyle = {
+  backgroundColor: [0, 0, 0, 0.5],
+  borderColor: [1, 1, 1, 1],
+  borderRadius: [64, 64, 64, 64],
+  borderWidth: [12, 12, 12, 12],
+  padding: [12, 12, 12, 12],
+};
 
-let tick = 0;
+world.onload = () => {
+  node = world.createNode();
+  node.translation.x = 2.5;
+  node.translation.y = 1.25;
 
-onloadworld = () => {
-  node = WebSG.createNode();
-
-  WebSG.nodeSetPosition(node, new Float32Array([width / 2, height / 2, 0]));
-
-  canvas = WebSG.UI.createUICanvas({ width, height, pixelDensity });
-  WebSG.UI.nodeSetUICanvas(node, canvas);
-
-  root = WebSG.UI.createUIFlex({
-    width: width * pixelDensity,
-    height: height * pixelDensity,
-    backgroundColor: new Float32Array([0, 0, 0, 0.5]),
-    borderColor: new Float32Array([1, 1, 1, 1]),
+  canvas = world.createUICanvas({
+    width: 1024,
+    height: 1024 / 2,
+    size: [5, 2.5],
   });
-  WebSG.UI.uiCanvasSetRoot(canvas, root);
 
-  flexA = WebSG.UI.createUIFlex({
+  node.uiCanvas = canvas;
+
+  root = world.createUIElement({
+    ...panelStyle,
     width: 1000,
     height: 1000,
-    backgroundColor: new Float32Array([1, 0, 0, 1]),
-    borderColor: new Float32Array([1, 1, 1, 1]),
+    margin: [12, 12, 12, 12],
   });
 
-  flexB = WebSG.UI.createUIFlex({
-    width: 1000,
-    height: 1000,
-    backgroundColor: new Float32Array([0, 1, 0, 1]),
-    borderColor: new Float32Array([1, 1, 1, 1]),
+  canvas.root = root;
+
+  elA = world.createUIElement({
+    ...panelStyle,
+    width: 500,
+    height: 500,
   });
 
-  button = WebSG.UI.createUIButton("button label");
+  elB = world.createUIElement({
+    width: 400,
+    height: 400,
+    backgroundColor: [0, 1, 0, 0.41],
+    borderColor: [1, 1, 1, 1],
+    borderRadius: [128, 128, 128, 128],
+  });
 
-  text = WebSG.UI.createUIText({
-    fontSize: 64,
-    color: new Float32Array([0, 0, 0, 1]),
+  button = world.createUIButton({
+    label: "button label",
     value: "button pressed 0 times",
-    fontFamily: "serif",
+    width: 180,
+    height: 180,
   });
 
-  flexC = WebSG.UI.createUIFlex({
-    width: 800,
-    height: 800,
-    backgroundColor: new Float32Array([0, 0, 1, 1]),
-    borderColor: new Float32Array([1, 1, 1, 1]),
+  text = world.createUIText({
+    value: "hello, world!",
+    color: [1, 1, 1, 1],
   });
 
-  WebSG.UI.uiFlexAddText(flexC, text);
-  WebSG.UI.uiFlexAddButton(flexC, button);
+  elC = world.createUIElement({
+    width: 250,
+    height: 250,
+    backgroundColor: [0, 0, 1, 1],
+    borderColor: [1, 1, 1, 1],
+  });
 
-  WebSG.UI.uiFlexAddChild(root, flexA);
-  WebSG.UI.uiFlexAddChild(root, flexB);
-  WebSG.UI.uiFlexAddChild(flexB, flexC);
+  elC.addChild(button);
 
-  const scene = WebSG.getEnvironmentScene();
-  WebSG.sceneAddNode(scene, node);
+  root.addChild(elA);
+  root.addChild(elB);
+  elB.addChild(elC);
+  elA.addChild(text);
 
-  WebSG.UI.uiCanvasRedraw(canvas);
+  world.environment.addNode(node);
 };
 
 let x = 0;
-onupdateworld = (dt) => {
-  if (button && WebSG.UI.uiButtonGetPressed(button)) {
-    x++;
-    WebSG.UI.uiTextSetValue(text, "button pressed " + x + " times");
-    WebSG.UI.uiCanvasRedraw(canvas);
+world.onupdate = (dt) => {
+  if (button.pressed) {
+    button.value = "button pressed " + ++x + " times";
+    canvas.redraw();
   }
 };

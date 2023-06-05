@@ -11,6 +11,8 @@
 #include "./collider.h"
 #include "./light.h"
 #include "./material.h"
+#include "./texture.h"
+#include "./image.h"
 #include "./mesh.h"
 #include "./node.h"
 #include "./scene.h"
@@ -18,6 +20,10 @@
 #include "./ui-element.h"
 #include "./ui-text.h"
 #include "./ui-button.h"
+#include "./component-store.h"
+#include "./query.h"
+#include "./collision-listener.h"
+#include "./vector3.h"
 
 JSClassID js_websg_world_class_id;
 
@@ -61,6 +67,26 @@ static JSValue js_websg_world_stop_orbit(JSContext *ctx, JSValueConst this_val, 
   return JS_UNDEFINED;
 }
 
+static JSValue js_websg_world_get_component_store_size(JSContext *ctx, JSValueConst this_val) {
+  uint32_t component_store_size = websg_world_get_component_store_size();
+  return JS_NewUint32(ctx, component_store_size);
+}
+
+static JSValue js_websg_world_set_component_store_size(JSContext *ctx, JSValueConst this_val, JSValueConst arg) {
+  uint32_t component_store_size;
+
+  if (JS_ToUint32(ctx, &component_store_size, arg) == -1) {
+    return JS_EXCEPTION;
+  }
+
+  if (websg_world_set_component_store_size(component_store_size) == -1) {
+    JS_ThrowInternalError(ctx, "WebSG: Invalid component store size.");
+    return JS_EXCEPTION;
+  }
+
+  return JS_UNDEFINED;
+}
+
 static const JSCFunctionListEntry js_websg_world_proto_funcs[] = {
   JS_CGETSET_DEF("environment", js_websg_world_get_environment, js_websg_world_set_environment),
   JS_CFUNC_DEF("createAccessorFrom", 1, js_websg_world_create_accessor_from),
@@ -72,6 +98,8 @@ static const JSCFunctionListEntry js_websg_world_proto_funcs[] = {
   JS_CFUNC_DEF("createMaterial", 1, js_websg_world_create_material),
   JS_CFUNC_DEF("createUnlitMaterial", 1, js_websg_world_create_unlit_material),
   JS_CFUNC_DEF("findMaterialByName", 1, js_websg_world_find_material_by_name),
+  JS_CFUNC_DEF("findTextureByName", 1, js_websg_world_find_texture_by_name),
+  JS_CFUNC_DEF("findImageByName", 1, js_websg_world_find_image_by_name),
   JS_CFUNC_DEF("createMesh", 1, js_websg_world_create_mesh),
   JS_CFUNC_DEF("createBoxMesh", 1, js_websg_world_create_box_mesh),
   JS_CFUNC_DEF("findMeshByName", 1, js_websg_world_find_mesh_by_name),
@@ -85,12 +113,24 @@ static const JSCFunctionListEntry js_websg_world_proto_funcs[] = {
   JS_CFUNC_DEF("createUIText", 1, js_websg_world_create_ui_text),
   JS_CFUNC_DEF("createUIButton", 1, js_websg_world_create_ui_button),
   JS_CFUNC_DEF("findUIElementByName", 1, js_websg_world_find_ui_element_by_name),
+  JS_CFUNC_DEF("findComponentStoreByName", 1, js_websg_world_find_component_store_by_name),
+  JS_CGETSET_DEF(
+    "componentStoreSize",
+    js_websg_world_get_component_store_size,
+    js_websg_world_set_component_store_size
+  ),
+  JS_CFUNC_DEF("createCollisionListener", 0, js_websg_world_create_collision_listener),
   JS_CFUNC_DEF("stopOrbit", 0, js_websg_world_stop_orbit),
+  JS_CFUNC_DEF("createQuery", 1, js_websg_world_create_query),
   JS_PROP_STRING_DEF("[Symbol.toStringTag]", "World", JS_PROP_CONFIGURABLE),
 };
 
 static JSValue js_websg_world_constructor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
   return JS_ThrowTypeError(ctx, "Illegal Constructor.");
+}
+
+static JSValue js_default_callback(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+    return JS_UNDEFINED;
 }
 
 void js_websg_define_world(JSContext *ctx, JSValue websg) {
@@ -115,6 +155,19 @@ void js_websg_define_world(JSContext *ctx, JSValue websg) {
     "World",
     constructor
   );
+
+  JS_SetPropertyStr(ctx, world_proto, "onload", JS_NewCFunction(ctx, js_default_callback, "onload", 0));
+  JS_SetPropertyStr(ctx, world_proto, "onenter", JS_NewCFunction(ctx, js_default_callback, "onenter", 0));
+  JS_SetPropertyStr(ctx, world_proto, "onupdate", JS_NewCFunction(ctx, js_default_callback, "onupdate", 2));
+
+}
+
+static float_t js_get_primary_input_source_origin_element(uint32_t resource_id, uint32_t index) {
+  return websg_get_primary_input_source_origin_element(index);
+}
+
+static float_t js_get_primary_input_source_direction_element(uint32_t resource_id, uint32_t index) {
+  return websg_get_primary_input_source_direction_element(index);
 }
 
 JSValue js_websg_new_world(JSContext *ctx) {
@@ -133,9 +186,27 @@ JSValue js_websg_new_world(JSContext *ctx) {
   world_data->nodes = JS_NewObject(ctx);
   world_data->scenes = JS_NewObject(ctx);
   world_data->textures = JS_NewObject(ctx);
+  world_data->images = JS_NewObject(ctx);
   world_data->ui_canvases = JS_NewObject(ctx);
   world_data->ui_elements = JS_NewObject(ctx);
+  world_data->component_stores = JS_NewObject(ctx);
   JS_SetOpaque(world, world_data);
+
+  js_websg_define_vector3_prop_read_only(
+    ctx,
+    world,
+    "primaryInputSourceOrigin",
+    0,
+    &js_get_primary_input_source_origin_element
+  );
+
+  js_websg_define_vector3_prop_read_only(
+    ctx,
+    world,
+    "primaryInputSourceDirection",
+    0,
+    &js_get_primary_input_source_direction_element
+  );
 
   return world;
 }

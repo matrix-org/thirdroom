@@ -1,5 +1,6 @@
 import { IMainThreadContext } from "../../engine/MainThread";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
+import { NetworkModule } from "../../engine/network/network.main";
 import { PhysicsMessageType, TogglePhysicsDebugMessage } from "../../engine/physics/physics.common";
 import { createDisposables } from "../../engine/utils/createDisposables";
 import { createDeferred } from "../../engine/utils/Deferred";
@@ -15,11 +16,14 @@ import {
   EnterWorldErrorMessage,
   EnterWorldMessage,
   FindResourceRetainersMessage,
+  SetActionBarItemsMessage,
+  ActionBarItem,
 } from "./thirdroom.common";
 
 interface ThirdRoomModuleState {
   messageId: number;
   environmentUrl?: string;
+  actionBarItems: ActionBarItem[];
 }
 
 export const ThirdroomModule = defineModule<IMainThreadContext, ThirdRoomModuleState>({
@@ -27,6 +31,7 @@ export const ThirdroomModule = defineModule<IMainThreadContext, ThirdRoomModuleS
   create() {
     return {
       messageId: 0,
+      actionBarItems: [],
     };
   },
   init(ctx) {
@@ -60,6 +65,10 @@ export const ThirdroomModule = defineModule<IMainThreadContext, ThirdRoomModuleS
         type: PhysicsMessageType.TogglePhysicsDebug,
       });
     });
+
+    return createDisposables([
+      registerMessageHandler(ctx, ThirdRoomMessageType.SetActionBarItems, onSetActionBarItems),
+    ]);
   },
 });
 
@@ -109,8 +118,9 @@ export async function loadWorld(ctx: IMainThreadContext, url: string, scriptUrl:
   return loadingEnvironment.promise;
 }
 
-export async function enterWorld(ctx: IMainThreadContext) {
+export function enterWorld(ctx: IMainThreadContext, localPeerId: string) {
   const thirdroom = getModule(ctx, ThirdroomModule);
+  const network = getModule(ctx, NetworkModule);
   const enteringWorld = createDeferred(false);
 
   const id = thirdroom.messageId++;
@@ -138,9 +148,12 @@ export async function enterWorld(ctx: IMainThreadContext) {
     registerMessageHandler(ctx, ThirdRoomMessageType.EnterWorldError, onEnterWorldError),
   ]);
 
+  network.peerId = localPeerId;
+
   ctx.sendMessage<EnterWorldMessage>(Thread.Game, {
     type: ThirdRoomMessageType.EnterWorld,
     id,
+    localPeerId,
   });
 
   return enteringWorld.promise;
@@ -156,4 +169,9 @@ export function togglePhysicsDebug(ctx: IMainThreadContext) {
   ctx.sendMessage<TogglePhysicsDebugMessage>(Thread.Game, {
     type: PhysicsMessageType.TogglePhysicsDebug,
   });
+}
+
+function onSetActionBarItems(ctx: IMainThreadContext, message: SetActionBarItemsMessage) {
+  const thirdroom = getModule(ctx, ThirdroomModule);
+  thirdroom.actionBarItems = message.actionBarItems;
 }

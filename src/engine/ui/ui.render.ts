@@ -197,7 +197,7 @@ function drawNode(
       ctx2d.textBaseline = "top";
       ctx2d.font = createFontString(element.text);
       ctx2d.fillStyle = rgbaToString(element.text.color);
-      ctx2d.fillText(element.text.value, layout.x + element.padding[0], layout.y + element.padding[3]);
+      ctx2d.fillText(element.text.value, layout.x + element.padding[3], layout.y + element.padding[0]);
     }
   }
 
@@ -228,10 +228,10 @@ function getTextSize(ctx2d: OffscreenCanvasRenderingContext2D, text: RenderUITex
 function updateYogaNode(ctx2d: OffscreenCanvasRenderingContext2D, yogaNode: Node, child: RenderUIElement) {
   yogaNode.setPositionType(child.positionType as PositionType);
 
-  yogaNode.setPosition(FlexEdge.LEFT as Edge, child.position[FlexEdge.LEFT]);
-  yogaNode.setPosition(FlexEdge.TOP as Edge, child.position[FlexEdge.TOP]);
-  yogaNode.setPosition(FlexEdge.RIGHT as Edge, child.position[FlexEdge.RIGHT]);
-  yogaNode.setPosition(FlexEdge.BOTTOM as Edge, child.position[FlexEdge.BOTTOM]);
+  yogaNode.setPosition(FlexEdge.TOP as Edge, child.position[0]);
+  yogaNode.setPosition(FlexEdge.RIGHT as Edge, child.position[1]);
+  yogaNode.setPosition(FlexEdge.BOTTOM as Edge, child.position[2]);
+  yogaNode.setPosition(FlexEdge.LEFT as Edge, child.position[3]);
 
   yogaNode.setWidth(child.width >= 0 ? child.width : "auto");
   yogaNode.setHeight(child.height >= 0 ? child.height : "auto");
@@ -242,23 +242,20 @@ function updateYogaNode(ctx2d: OffscreenCanvasRenderingContext2D, yogaNode: Node
   yogaNode.setMaxWidth(child.maxWidth >= 0 ? child.maxWidth : "100%");
   yogaNode.setMaxHeight(child.maxHeight >= 0 ? child.maxHeight : "100%");
 
-  yogaNode.setMargin(FlexEdge.LEFT as Edge, child.margin[FlexEdge.LEFT] >= 0 ? child.margin[FlexEdge.LEFT] : "auto");
-  yogaNode.setMargin(FlexEdge.TOP as Edge, child.margin[FlexEdge.TOP] >= 0 ? child.margin[FlexEdge.TOP] : "auto");
-  yogaNode.setMargin(FlexEdge.RIGHT as Edge, child.margin[FlexEdge.RIGHT] >= 0 ? child.margin[FlexEdge.RIGHT] : "auto");
-  yogaNode.setMargin(
-    FlexEdge.BOTTOM as Edge,
-    child.margin[FlexEdge.BOTTOM] >= 0 ? child.margin[FlexEdge.BOTTOM] : "auto"
-  );
+  yogaNode.setMargin(FlexEdge.TOP as Edge, child.margin[0] >= 0 ? child.margin[0] : "auto");
+  yogaNode.setMargin(FlexEdge.RIGHT as Edge, child.margin[1] >= 0 ? child.margin[1] : "auto");
+  yogaNode.setMargin(FlexEdge.BOTTOM as Edge, child.margin[2] >= 0 ? child.margin[2] : "auto");
+  yogaNode.setMargin(FlexEdge.LEFT as Edge, child.margin[3] >= 0 ? child.margin[3] : "auto");
 
-  yogaNode.setBorder(FlexEdge.LEFT as Edge, child.borderWidth[FlexEdge.LEFT]);
-  yogaNode.setBorder(FlexEdge.TOP as Edge, child.borderWidth[FlexEdge.TOP]);
-  yogaNode.setBorder(FlexEdge.RIGHT as Edge, child.borderWidth[FlexEdge.RIGHT]);
-  yogaNode.setBorder(FlexEdge.BOTTOM as Edge, child.borderWidth[FlexEdge.BOTTOM]);
+  yogaNode.setBorder(FlexEdge.TOP as Edge, child.borderWidth[0]);
+  yogaNode.setBorder(FlexEdge.RIGHT as Edge, child.borderWidth[1]);
+  yogaNode.setBorder(FlexEdge.BOTTOM as Edge, child.borderWidth[2]);
+  yogaNode.setBorder(FlexEdge.LEFT as Edge, child.borderWidth[3]);
 
-  yogaNode.setPadding(FlexEdge.LEFT as Edge, child.padding[FlexEdge.LEFT]);
-  yogaNode.setPadding(FlexEdge.TOP as Edge, child.padding[FlexEdge.TOP]);
-  yogaNode.setPadding(FlexEdge.RIGHT as Edge, child.padding[FlexEdge.RIGHT]);
-  yogaNode.setPadding(FlexEdge.BOTTOM as Edge, child.padding[FlexEdge.BOTTOM]);
+  yogaNode.setPadding(FlexEdge.TOP as Edge, child.padding[0]);
+  yogaNode.setPadding(FlexEdge.RIGHT as Edge, child.padding[1]);
+  yogaNode.setPadding(FlexEdge.BOTTOM as Edge, child.padding[2]);
+  yogaNode.setPadding(FlexEdge.LEFT as Edge, child.padding[3]);
 
   yogaNode.setFlexDirection(child.flexDirection as FlexDirection);
   if (child.flexBasis >= 0) yogaNode.setFlexBasis(child.flexBasis);

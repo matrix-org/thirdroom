@@ -13,7 +13,8 @@ export enum NetworkAction {
   UpdateCamera,
   UpdateNetworkId,
   ClientPosition,
-  ScriptMessage,
+  BinaryScriptMessage,
+  StringScriptMessage,
   InformXRMode,
 }
 

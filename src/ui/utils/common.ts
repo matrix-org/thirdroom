@@ -125,3 +125,29 @@ export function convertRGBA(
 export function inputFocused(): boolean {
   return document.activeElement?.tagName.toLowerCase() === "input";
 }
+
+export function saveData(blob: Blob, fileName: string) {
+  const a = document.createElement("a");
+  const url = window.URL.createObjectURL(blob);
+  document.body.appendChild(a);
+  a.style.display = "none";
+  a.href = url;
+  a.download = fileName;
+  a.click();
+  window.URL.revokeObjectURL(url);
+  document.body.removeChild(a);
+}
+
+export function clamp(value: number, min?: number, max?: number): number {
+  if (typeof min === "number" && value < min) return min;
+  if (typeof max === "number" && value > max) return max;
+  return value;
+}
+
+export function camelizeVariableName(str: string): string {
+  return str
+    .replace(/(?:^\w|[A-Z]|\b\w)/g, (word, index) => {
+      return index === 0 ? word.toLowerCase() : word.toUpperCase();
+    })
+    .replace(/([^a-zA-Z0-9_$])+/g, "");
+}

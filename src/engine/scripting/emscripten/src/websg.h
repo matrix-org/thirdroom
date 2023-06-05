@@ -14,7 +14,8 @@
 /*************
  * WebSG IDs *
  *************/
-
+typedef uint32_t query_id_t;
+typedef uint32_t component_id_t;
 typedef uint32_t scene_id_t;
 typedef uint32_t camera_id_t;
 typedef uint32_t skin_id_t;
@@ -23,10 +24,12 @@ typedef uint32_t mesh_id_t;
 typedef uint32_t accessor_id_t;
 typedef uint32_t material_id_t;
 typedef uint32_t texture_id_t;
+typedef uint32_t image_id_t;
 typedef uint32_t light_id_t;
 typedef uint32_t collider_id_t;
 typedef uint32_t ui_canvas_id_t;
 typedef uint32_t ui_element_id_t;
+typedef uint32_t collision_listener_id_t;
 
 /*******************************
  * Common WebSG Property Types *
@@ -58,6 +61,64 @@ typedef struct Extensions {
 
 import_websg(world_get_environment) scene_id_t websg_world_get_environment();
 import_websg(world_set_environment) int32_t websg_world_set_environment(scene_id_t scene_id);
+
+/***********
+ * Queries *
+ ***********/
+typedef enum QueryModifier {
+  QueryModifier_All,
+  QueryModifier_None,
+  QueryModifier_Any,
+} QueryModifier;
+
+typedef struct QueryItem {
+  component_id_t *component_ids;
+  uint32_t component_count;
+  QueryModifier modifier;
+} QueryItem;
+
+typedef struct QueryList {
+  QueryItem *items;
+  uint32_t count;
+} QueryList;
+
+import_websg(world_create_query) query_id_t websg_world_create_query(QueryList *query);
+import_websg(query_get_results_count) int32_t websg_query_get_results_count(query_id_t query_id);
+import_websg(query_get_results) int32_t websg_query_get_results(query_id_t query_id, node_id_t *results, uint32_t max_count);
+// Possible future API for a fast path to get component indices
+// import_websg(websg_query_get_component_indices) int32_t websg_query_get_component_indices(query_id_t query_id, uint32_t *indices, uint32_t max_count);
+
+/**************
+ * Components *
+ **************/
+
+typedef enum ComponentPropStorageType {
+  ComponentPropStorageType_i32,
+  ComponentPropStorageType_u32,
+  ComponentPropStorageType_f32,
+} ComponentPropStorageType;
+
+import_websg(world_find_component_definition_by_name) component_id_t websg_world_find_component_definition_by_name(const char *name, uint32_t length);
+import_websg(component_definition_get_name_length) uint32_t websg_component_definition_get_name_length(component_id_t component_id);
+import_websg(component_definition_get_name) int32_t websg_component_definition_get_name(component_id_t component_id,  const char *name, size_t length);
+import_websg(component_definition_get_prop_count) int32_t websg_component_definition_get_prop_count(component_id_t component_id);
+import_websg(component_definition_get_prop_name_length) uint32_t websg_component_definition_get_prop_name_length(component_id_t component_id, uint32_t prop_idx);
+import_websg(component_definition_get_prop_name) int32_t websg_component_definition_get_prop_name(component_id_t component_id, uint32_t prop_idx, const char *prop_name, size_t length);
+import_websg(component_definition_get_prop_type_length) uint32_t websg_component_definition_get_prop_type_length(component_id_t component_id, uint32_t prop_idx);
+import_websg(component_definition_get_prop_type) int32_t websg_component_definition_get_prop_type(component_id_t component_id, uint32_t prop_idx, const char *prop_type, size_t length);
+import_websg(component_definition_get_ref_type_length) uint32_t websg_component_definition_get_ref_type_length(component_id_t component_id, uint32_t prop_idx);
+import_websg(component_definition_get_ref_type) int32_t websg_component_definition_get_ref_type(component_id_t component_id, uint32_t prop_idx, const char *ref_type, size_t length);
+import_websg(component_definition_get_prop_storage_type) ComponentPropStorageType websg_component_definition_get_prop_storage_type(component_id_t component_id, uint32_t prop_idx);
+import_websg(component_definition_get_prop_size) int32_t websg_component_definition_get_prop_size(component_id_t component_id, uint32_t prop_idx);
+import_websg(world_get_component_store_size) uint32_t websg_world_get_component_store_size();
+import_websg(world_set_component_store_size) int32_t websg_world_set_component_store_size(uint32_t size);
+import_websg(world_set_component_store) int32_t websg_world_set_component_store(component_id_t component_id, void *ptr);
+import_websg(world_get_component_store) void *websg_world_get_component_store(component_id_t component_id);
+import_websg(node_add_component) int32_t websg_node_add_component(node_id_t node_id, component_id_t component_id);
+import_websg(node_remove_component) int32_t websg_node_remove_component(node_id_t node_id, component_id_t component_id);
+import_websg(node_has_component) int32_t websg_node_has_component(node_id_t node_id, component_id_t component_id);
+import_websg(node_get_component_store_index) uint32_t websg_node_get_component_store_index(node_id_t node_id);
+import_websg(node_set_forward_direction) int32_t websg_node_set_forward_direction(node_id_t node_id, float_t *direction);
 
 /*********
  * Scene *
@@ -371,6 +432,12 @@ import_websg(material_set_base_color_texture) int32_t websg_material_set_base_co
 import_websg(world_find_texture_by_name) texture_id_t websg_world_find_texture_by_name(const char *name, uint32_t length);
 
 /**
+ * Image
+ **/
+
+import_websg(world_find_image_by_name) image_id_t websg_world_find_image_by_name(const char *name, uint32_t length);
+
+/**
  * Light
  **/
 
@@ -413,6 +480,7 @@ import_websg(light_set_intensity) int32_t websg_light_set_intensity(light_id_t l
 
 typedef enum InteractableType {
   InteractableType_Interactable = 1,
+  InteractableType_Grabbable = 2,
 } InteractableType;
 
 typedef struct InteractableProps {
@@ -431,6 +499,12 @@ import_websg(node_get_interactable_released) int32_t websg_node_get_interactable
 /**
  * Collider
  */
+
+typedef struct ExtensionNodeColliderRef {
+  Extensions extensions;
+  void *extras;
+  collider_id_t collider;
+} ExtensionNodeColliderRef;
 
 typedef enum ColliderType {
   ColliderType_Box,
@@ -451,7 +525,6 @@ typedef struct ColliderProps {
   float_t radius;
   float_t height;
   mesh_id_t mesh;
-  
 } ColliderProps;
 
 import_websg(world_create_collider) collider_id_t websg_world_create_collider(ColliderProps *props);
@@ -471,6 +544,7 @@ typedef struct PhysicsBodyProps {
   Extensions extensions;
   void *extras;
   PhysicsBodyType type;
+  float_t mass;
   float_t linear_velocity[3];
   float_t angular_velocity[3];
   float_t inertia_tensor[9];
@@ -479,6 +553,28 @@ typedef struct PhysicsBodyProps {
 import_websg(node_add_physics_body) int32_t websg_node_add_physics_body(node_id_t node_id, PhysicsBodyProps *props);
 import_websg(node_remove_physics_body) int32_t websg_node_remove_physics_body(node_id_t node_id);
 import_websg(node_has_physics_body) int32_t websg_node_has_physics_body(node_id_t node_id);
+import_websg(physics_body_apply_impulse) int32_t websg_physics_body_apply_impulse(node_id_t node_id, float_t *impulse);
+
+/**
+ * CollisionListener
+ **/
+
+import_websg(world_create_collision_listener) collision_listener_id_t websg_world_create_collision_listener();
+import_websg(collision_listener_dispose) int32_t websg_collision_listener_dispose(collision_listener_id_t listener_id);
+
+import_websg(collisions_listener_get_collision_count) int32_t websg_collisions_listener_get_collision_count(collision_listener_id_t listener_id);
+
+typedef struct CollisionItem {
+  node_id_t node_a;
+  node_id_t node_b;
+  int32_t started;
+} CollisionItem;
+
+import_websg(collisions_listener_get_collisions) int32_t websg_collisions_listener_get_collisions(
+  collision_listener_id_t listener_id,
+  CollisionItem *collisions,
+  uint32_t max_count
+);
 
 /**
  * UI Canvas
@@ -718,5 +814,9 @@ import_websg(ui_text_get_color) int32_t websg_ui_text_get_color(ui_element_id_t 
 import_websg(ui_text_set_color) int32_t websg_ui_text_set_color(ui_element_id_t element_id, float_t *color);
 import_websg(ui_text_get_color_element) float_t websg_ui_text_get_color_element(ui_element_id_t ui_element_id, uint32_t index);
 import_websg(ui_text_set_color_element) int32_t websg_ui_text_set_color_element(ui_element_id_t ui_element_id, uint32_t index, float_t value);
+
+
+import_websg(get_primary_input_source_origin_element) float_t websg_get_primary_input_source_origin_element(uint32_t index);
+import_websg(get_primary_input_source_direction_element) float_t websg_get_primary_input_source_direction_element(uint32_t index);
 
 #endif

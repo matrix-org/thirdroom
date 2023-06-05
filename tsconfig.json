@@ -16,5 +16,12 @@
     "noEmit": true,
     "jsx": "react-jsx"
   },
-  "include": ["./src", "./deps.d.ts", "./test", "./vite.config.ts", "./logviewer/src"]
+  "include": [
+    "./src",
+    "./deps.d.ts",
+    "./test",
+    "./vite.config.ts",
+    "./logviewer/src",
+    "./packages/websg-types/types/websg.d.ts"
+  ]
 }
