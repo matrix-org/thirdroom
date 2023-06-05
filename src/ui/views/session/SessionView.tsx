@@ -19,6 +19,7 @@ import { overlayWorldAtom } from "../../state/overlayWorld";
 import { overlayVisibilityAtom } from "../../state/overlayVisibility";
 import { CmdPanel, defaultActions } from "./cmd-panel/CmdPanel";
 import { useAccountManagementAction, useTechPreviewAction, useUserProfileAction } from "./cmd-panel/actions";
+import { editorEnabledAtom } from "../../state/editor";
 import { WhatsNew } from "./whats-new/WhatsNew";
 
 function RegisterKBarActions() {
@@ -37,6 +38,8 @@ export default function SessionView() {
   const homeWorldId = useHomeWorld();
   const selectWorld = useSetAtom(overlayWorldAtom);
   useAutoJoinRoom(session, config.repositoryRoomIdOrAlias);
+
+  const editorEnabled = useAtomValue(editorEnabledAtom);
 
   useEffect(() => {
     if (!worldId && !worldAlias && homeWorldId) {
@@ -60,7 +63,7 @@ export default function SessionView() {
             <MainThreadContextProvider value={mainThread}>
               <Outlet />
               {overlayVisible && <Overlay />}
-              <StatusBar />
+              {!editorEnabled && <StatusBar />}
               <WhatsNew />
             </MainThreadContextProvider>
           ) : (

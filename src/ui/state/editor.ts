@@ -3,10 +3,17 @@ import { atom } from "jotai";
 import { NOOP } from "../../engine/config.common";
 import { MainNode, MainThreadResource } from "../../engine/resource/resource.main";
 
+export enum EditorMode {
+  SceneInspector = "scene_inspector",
+  SceneEditor = "scene_editor",
+  ScriptEditor = "script_editor",
+}
+
 export enum HierarchyTab {
   Scenes = "Scenes",
   Resources = "Resources",
 }
+
 export type ResourceOptions = { value: MainThreadResource; label: string }[];
 
 export type ResourceMenu = {
@@ -24,6 +31,10 @@ interface EditorState {
   activeEntity: number;
   selectedEntities: number[];
 }
+
+export const editorEnabledAtom = atom<boolean>(false);
+
+export const editorModeAtom = atom<EditorMode>(EditorMode.SceneInspector);
 
 export const hierarchyTabAtom = atom<HierarchyTab>(HierarchyTab.Scenes);
 
@@ -160,7 +171,3 @@ world.onload = () => {
 `;
 
 export const scriptSourceAtom = atom<string>(DEFAULT_SCRIPT_SOURCE);
-
-export const showCodeEditorAtom = atom<boolean>(false);
-
-export const editorEnabledAtom = atom<boolean>(false);

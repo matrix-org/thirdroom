@@ -47,6 +47,7 @@ export function UserProfileOverview() {
   const [discoverPage, setDiscoverPage] = useLocalStorage("feature_discoverPage", false);
   const [immersiveAR, setImmersiveAR] = useLocalStorage("feature_immersiveAR", false);
   const [renderQuality, setRenderQuality] = useLocalStorage(LOCAL_STORAGE_RENDER_QUALITY, RenderQualitySetting.Auto);
+  const [sceneEditor, setSceneEditor] = useLocalStorage("feature_sceneEditor", false);
 
   const mainThread = useMainThreadContext();
 
@@ -153,6 +154,15 @@ export function UserProfileOverview() {
                     label={<Label>Immersive AR (EXPERIMENTAL, REQUIRES REFRESH)</Label>}
                   >
                     <Switch checked={immersiveAR} onCheckedChange={setImmersiveAR} />
+                  </SettingTile>
+                  <span className="grow basis-0" />
+                </div>
+                <div className="flex gap-lg">
+                  <SettingTile
+                    className="grow basis-0"
+                    label={<Label>Scene Editor (EXPERIMENTAL, REQUIRES REFRESH)</Label>}
+                  >
+                    <Switch checked={sceneEditor} onCheckedChange={setSceneEditor} />
                   </SettingTile>
                   <span className="grow basis-0" />
                 </div>

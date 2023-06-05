@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useAtom, useSetAtom } from "jotai";
+import { useAtom } from "jotai";
 import { BlobHandle, Room } from "@thirdroom/hydrogen-view-sdk";
 import Editor, { Monaco, OnChange, useMonaco } from "@monaco-editor/react";
 import { editor as MonacoEditor } from "monaco-editor";
@@ -11,16 +11,14 @@ import { Text } from "../../../atoms/text/Text";
 import { EditorHeader, EditorHeaderTab } from "../../components/editor-header/EditorHeader";
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { uploadAttachment } from "../../../utils/matrixUtils";
-import { scriptSourceAtom, showCodeEditorAtom } from "../../../state/editor";
+import { scriptSourceAtom } from "../../../state/editor";
 import { useLocalStorage } from "../../../hooks/useLocalStorage";
 import { DEFAULT_SCRIPT_SOURCE } from "../../../state/editor";
 import { AlertDialog } from "../dialogs/AlertDialog";
 import "./ScriptEditor.css";
 import { IconButton } from "../../../atoms/button/IconButton";
 import DarkLightIC from "../../../../../res/ic/dark-light.svg";
-import ArrowBackIC from "../../../../../res/ic/arrow-back.svg";
 import { Tooltip } from "../../../atoms/tooltip/Tooltip";
-import { Icon } from "../../../atoms/icon/Icon";
 import websgTypes from "../../../../../packages/websg-types/types/websg.d.ts?raw";
 import { DnDItemTypes, NodeDragItem } from "./HierarchyPanel";
 import { MainThreadResource, getLocalResource } from "../../../../engine/resource/resource.main";
@@ -42,7 +40,6 @@ export function ScriptEditor({ room }: { room: Room }) {
 
   // component state
   const [editorTheme, setEditorTheme] = useLocalStorage<"light" | "vs-dark">(MONACO_THEME_KEY, "light");
-  const setShowCodeEditor = useSetAtom(showCodeEditorAtom);
   const [reloading, setReloading] = useState(false);
   const [saved, setSavedState] = useState(true);
   const [showResetModal, setShowResetModal] = useState(false);
@@ -198,8 +195,7 @@ export function ScriptEditor({ room }: { room: Room }) {
       <div ref={dropTarget} className="ScriptEditor flex flex-column">
         <EditorHeader className="ScriptEditor__header shrink-0 gap-sm">
           <div className="grow flex">
-            <EditorHeaderTab active={false} onClick={() => setShowCodeEditor(false)}>
-              <Icon size="sm" src={ArrowBackIC} />
+            <EditorHeaderTab active={false}>
               <Text variant="b2" weight="semi-bold">
                 Script Editor
               </Text>

@@ -1,5 +1,6 @@
 .Icon {
   display: inline-block;
+  flex-shrink: 0;
   mask-repeat: no-repeat;
   mask-size: cover;
 

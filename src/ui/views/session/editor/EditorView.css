@@ -1,7 +1,6 @@
 .EditorView {
-  --status-bar-height: 48px;
   pointer-events: none !important;
-  padding: calc(var(--status-bar-height) + var(--sp-xs)) var(--sp-md) var(--sp-md);
+  padding: var(--sp-xs);
   width: 100%;
   height: 100%;
 }
@@ -12,6 +11,7 @@
   width: 100vw;
 }
 
+.EditorView__toolbar,
 .EditorView__leftPanel,
 .EditorView__rightPanel,
 .EditorView__centerPanel {

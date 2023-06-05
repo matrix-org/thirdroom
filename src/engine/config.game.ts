@@ -55,6 +55,7 @@ import { WebSGNetworkModule } from "./network/scripting.game";
 import { WebSGUIModule } from "./ui/ui.game";
 import { CameraRigModule, CameraRigSystem, NetworkedCameraSystem } from "../plugins/camera/CameraRig.game";
 import { ActionBarSystem } from "../plugins/thirdroom/action-bar.game";
+import { RaycasterModule, RaycasterSystem } from "./raycaster/raycaster.game";
 
 export default defineConfig<GameState>({
   modules: [
@@ -77,11 +78,13 @@ export default defineConfig<GameState>({
     NametagModule,
     WebSGNetworkModule,
     WebSGUIModule,
+    RaycasterModule,
   ],
   systems: [
     IncomingTripleBufferSystem,
 
     ApplyInputSystem,
+    RaycasterSystem,
     WebXRAvatarRigSystem,
     ActionMappingSystem,
 

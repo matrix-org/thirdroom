@@ -1,9 +1,19 @@
 import { IMainThreadContext } from "../MainThread";
 import { defineModule, getModule, Thread } from "../module/module.common";
 import { codeToKeyCode } from "./KeyCodes";
-import { InitializeInputStateMessage, InputComponentId, InputMessageType, InputSourceId } from "./input.common";
+import {
+  InitializeInputStateMessage,
+  InputComponentId,
+  InputMessageType,
+  InputSourceId,
+  screenSpaceMouseCoordsSchema,
+  ScreenSpaceMouseCoordsTripleBuffer,
+} from "./input.common";
 import { createInputRingBuffer, enqueueInputRingBuffer, InputRingBuffer, RING_BUFFER_MAX } from "./RingBuffer";
 import { CameraRigModule } from "../../plugins/camera/CameraRig.main";
+import { createObjectTripleBuffer, getWriteObjectBufferView } from "../allocator/ObjectBufferView";
+import { ndcX, ndcY } from "../utils/cords";
+import { EditorModule } from "../editor/editor.main";
 
 /*********
  * Types *
@@ -13,6 +23,7 @@ export interface MainInputModule {
   nextStackId: number;
   disableInputStack: number[];
   inputRingBuffer: InputRingBuffer;
+  screenSpaceMouseCoords: ScreenSpaceMouseCoordsTripleBuffer;
 }
 
 /******************
@@ -25,21 +36,30 @@ export const InputModule = defineModule<IMainThreadContext, MainInputModule>({
     // TODO: optimize memory
     const inputRingBuffer = createInputRingBuffer(RING_BUFFER_MAX);
 
+    const screenSpaceMouseCoords = createObjectTripleBuffer(
+      screenSpaceMouseCoordsSchema,
+      ctx.mainToGameTripleBufferFlags
+    );
+
     sendMessage<InitializeInputStateMessage>(Thread.Game, InputMessageType.InitializeInputState, {
       inputRingBuffer,
+      screenSpaceMouseCoords,
     });
 
     sendMessage<InitializeInputStateMessage>(Thread.Render, InputMessageType.InitializeInputState, {
       inputRingBuffer,
+      screenSpaceMouseCoords,
     });
 
     return {
       nextStackId: 0,
       disableInputStack: [],
       inputRingBuffer,
+      screenSpaceMouseCoords,
     };
   },
   init(ctx) {
+    const editorModule = getModule(ctx, EditorModule);
     const inputModule = getModule(ctx, InputModule);
     const { inputRingBuffer: irb } = inputModule;
     const camRigModule = getModule(ctx, CameraRigModule);
@@ -63,6 +83,16 @@ export const InputModule = defineModule<IMainThreadContext, MainInputModule>({
 
       const orbiting = camRigModule.orbiting;
       const pointerLocked = document.pointerLockElement !== null;
+
+      // Allow editor specific inputs without pointerLocked
+      if (
+        editorModule.editorLoaded &&
+        ((inputSourceId === InputSourceId.Mouse && componentId === InputComponentId.MouseButtons) ||
+          state === codeToKeyCode("KeyF"))
+      ) {
+        enqueueInputRingBuffer(irb, inputSourceId, componentId, button, xAxis, yAxis, zAxis, wAxis, state);
+      }
+
       if (!pointerLocked && !orbiting) {
         return;
       }
@@ -119,6 +149,9 @@ export const InputModule = defineModule<IMainThreadContext, MainInputModule>({
     }
 
     function onMouseMove({ movementX, movementY, clientX, clientY }: MouseEvent) {
+      const writeView = getWriteObjectBufferView(inputModule.screenSpaceMouseCoords);
+      writeView.coords[0] = ndcX(clientX, canvas.clientWidth);
+      writeView.coords[1] = ndcY(clientY, canvas.clientHeight);
       enqueue(InputSourceId.Mouse, InputComponentId.MouseMovement, 0, movementX, movementY, clientX, clientY, 0);
     }
 

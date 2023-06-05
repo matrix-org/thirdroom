@@ -39,7 +39,7 @@ export function useEditor(treeViewRef: RefObject<TreeViewRefApi>): EditorUIState
   const setHierarchyTab = useSetAtom(hierarchyTabAtom);
   const setResourceMenu = useSetAtom(resourceMenuAtom);
   const selectedResourceType = useAtomValue(resourceMenuAtom).selected;
-  const [editorState] = useAtom(editorAtom);
+  const [editorState, setEditorState] = useAtom(editorAtom);
 
   useEffect(() => {
     const resources = buildResourceList(mainThread, selectedResourceType);
@@ -118,7 +118,12 @@ export function useEditor(treeViewRef: RefObject<TreeViewRefApi>): EditorUIState
       }));
     }
 
-    function onSelectionChanged({ activeEntity, selectedEntities }: SelectionChangedEvent) {}
+    function onSelectionChanged({ activeEntity, selectedEntities }: SelectionChangedEvent) {
+      setEditorState({
+        type: "SELECT",
+        resourceId: activeEntity,
+      });
+    }
 
     editor.eventEmitter.addListener(EditorEventType.EditorLoaded, onEditorLoaded);
     editor.eventEmitter.addListener(EditorEventType.HierarchyChanged, onHierarchyChanged);
@@ -131,7 +136,7 @@ export function useEditor(treeViewRef: RefObject<TreeViewRefApi>): EditorUIState
       editor.eventEmitter.removeListener(EditorEventType.HierarchyChanged, onHierarchyChanged);
       editor.eventEmitter.removeListener(EditorEventType.SelectionChanged, onSelectionChanged);
     };
-  }, [editor, mainThread, setResourceMenu]);
+  }, [editor, mainThread, setResourceMenu, setEditorState]);
 
   return { ...state };
 }

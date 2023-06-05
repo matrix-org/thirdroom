@@ -1,0 +1,55 @@
+.ToolbarButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-xxs);
+  padding: 0 var(--sp-xs);
+  height: 24px;
+  min-width: 24px;
+  cursor: pointer;
+  border-radius: var(--br-xxs);
+
+  &:has(:only-child) {
+    padding: 0 var(--sp-xxs);
+  }
+
+  &[aria-pressed="true"] {
+    background-color: var(--bg-surface-active);
+  }
+  &:hover {
+    background-color: var(--bg-surface-hover);
+  }
+  &:active {
+    background-color: var(--bg-surface-active);
+  }
+}
+
+.ToolbarButton--ui-before {
+  padding-left: var(--sp-xxs);
+}
+
+.ToolbarButton--ui-after {
+  padding-right: var(--sp-xxs);
+}
+
+.ToolbarButton--outlined {
+  box-shadow: inset 0 0 0 1px var(--bg-surface-border);
+}
+
+.ToolbarButtonGroup {
+  display: inline-flex;
+  border-radius: var(--br-xxs);
+  outline: 1px solid var(--bg-surface-border);
+  outline-offset: -1px;
+  overflow: hidden;
+
+  & .ToolbarButton {
+    border-radius: 0;
+  }
+}
+
+.ToolbarButtonDivider {
+  flex-shrink: 0;
+  width: 1px;
+  background-color: var(--bg-surface-border);
+}
