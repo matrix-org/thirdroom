@@ -40,7 +40,7 @@ export function WhatsNewModal({ open, requestClose, createSpecialWorld }: WhatsN
                     </Thumbnail>
                   }
                   title="Web Scene Graph API"
-                  description="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras et facilisis ex. Sed eget pellentesque mi. Pellentesque ultrices molestie ligula, eu finibus risus rhoncus vel. Praesent ac malesuada neque. Sed malesuada tempor ultrices. In blandit metus quis tincidunt vehicula. Suspendisse gravida posuere tincidunt"
+                  description="Add behaviors to your worlds using the new Web Scene Graph API. Create portable interactive worlds with JavaScript and WebAssembly."
                 />
                 <WhatsNewCard
                   thumbnail={
@@ -49,7 +49,7 @@ export function WhatsNewModal({ open, requestClose, createSpecialWorld }: WhatsN
                     </Thumbnail>
                   }
                   title="WebXR"
-                  description="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras et facilisis ex. Sed eget pellentesque mi. Pellentesque ultrices molestie ligula, eu finibus risus rhoncus vel. Praesent ac malesuada neque. Sed malesuada tempor ultrices. In blandit metus quis tincidunt vehicula. Suspendisse gravida posuere tincidunt"
+                  description="Third Room now has WebXR support! You can now use your AR or VR headset to explore 3D worlds and interact with other users."
                 />
                 <WhatsNewCard
                   thumbnail={
@@ -58,7 +58,7 @@ export function WhatsNewModal({ open, requestClose, createSpecialWorld }: WhatsN
                     </Thumbnail>
                   }
                   title="Discover Page"
-                  description="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras et facilisis ex. Sed eget pellentesque mi. Pellentesque ultrices molestie ligula, eu finibus risus rhoncus vel. Praesent ac malesuada neque. Sed malesuada tempor ultrices. In blandit metus quis tincidunt vehicula. Suspendisse gravida posuere tincidunt"
+                  description="Find and share scenes, worlds, and Matrix rooms created by the Third Room Community in the new Discover Page."
                 />
                 <WhatsNewCard
                   thumbnail={
@@ -67,7 +67,7 @@ export function WhatsNewModal({ open, requestClose, createSpecialWorld }: WhatsN
                     </Thumbnail>
                   }
                   title="In-World Inspector"
-                  description="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras et facilisis ex. Sed eget pellentesque mi. Pellentesque ultrices molestie ligula, eu finibus risus rhoncus vel. Praesent ac malesuada neque. Sed malesuada tempor ultrices. In blandit metus quis tincidunt vehicula. Suspendisse gravida posuere tincidunt"
+                  description="Inspect and adjust properties and scripts in your worlds using the new in-world inspector. Press the ` key to open the inspector in any world you have edit access to."
                 />
               </Category>
             </Scroll>
