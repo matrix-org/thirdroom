@@ -40,6 +40,7 @@ export default defineConfig({
               ],
             },
             { text: "Lighting", link: "/guides/websg/lighting" },
+            { text: "Interactables", link: "/guides/websg/interactables" },
             { text: "Networking", link: "/guides/websg/networking" },
           ],
         },
