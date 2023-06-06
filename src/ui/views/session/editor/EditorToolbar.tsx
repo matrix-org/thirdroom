@@ -54,6 +54,7 @@ interface IMenuItem<T extends string> {
   title: string;
   icon: string;
   disabled?: boolean;
+  disableReason?: string;
 }
 
 const useEditorModeMenu = (): IMenuItem<EditorMode>[] => {
@@ -71,6 +72,7 @@ const useEditorModeMenu = (): IMenuItem<EditorMode>[] => {
         title: "Scene Editor",
         icon: Box3dIC,
         disabled: !sceneEditor,
+        disableReason: "Coming soon!",
       },
       {
         id: EditorMode.ScriptEditor,
@@ -149,31 +151,42 @@ const useTransformPivotMenu = (): IMenuItem<TransformPivot>[] =>
   );
 
 type SwitcherMenuProps<T extends string> = {
+  label: string;
   selected: T;
   onSelect: (id: T) => void;
   menu: IMenuItem<T>[];
   children: ReactNode;
 };
-export function SwitcherMenu<T extends string>({ selected, onSelect, menu, children }: SwitcherMenuProps<T>) {
+export function SwitcherMenu<T extends string>({ label, selected, onSelect, menu, children }: SwitcherMenuProps<T>) {
   return (
     <DropdownMenu
       align="start"
       style={{ padding: "var(--sp-xxs) 0" }}
       content={
         <>
-          <Label style={{ padding: "var(--sp-xxs) var(--sp-sm)" }}>Transform Pivot Point</Label>
-          {menu.map((menuItem) => (
-            <DropdownMenuItem
-              key={menuItem.id}
-              className="gap-xs"
-              variant={menuItem.id === selected ? "primary" : "surface"}
-              onSelect={() => onSelect(menuItem.id)}
-              before={<Icon color={menuItem.id === selected ? "primary" : "surface"} src={menuItem.icon} />}
-              disabled={menuItem.disabled}
-            >
-              {menuItem.title}
-            </DropdownMenuItem>
-          ))}
+          <Label style={{ padding: "var(--sp-xxs) var(--sp-sm)" }}>{label}</Label>
+          {menu.map((menuItem) => {
+            const itemComp = (
+              <DropdownMenuItem
+                key={menuItem.id}
+                className="gap-xs"
+                variant={menuItem.id === selected ? "primary" : "surface"}
+                onSelect={() => onSelect(menuItem.id)}
+                before={<Icon color={menuItem.id === selected ? "primary" : "surface"} src={menuItem.icon} />}
+                disabled={menuItem.disabled}
+              >
+                {menuItem.title}
+              </DropdownMenuItem>
+            );
+
+            if (menuItem.disabled && menuItem.disableReason)
+              return (
+                <Tooltip key={menuItem.id} side="right" content={menuItem.disableReason}>
+                  {itemComp}
+                </Tooltip>
+              );
+            return itemComp;
+          })}
         </>
       }
     >
@@ -190,7 +203,7 @@ export function EditorModeSwitcher() {
   return (
     <>
       {activeMenuItem && (
-        <SwitcherMenu selected={editorMode} onSelect={setEditorMode} menu={editorModeMenu}>
+        <SwitcherMenu label="Editor Mode" selected={editorMode} onSelect={setEditorMode} menu={editorModeMenu}>
           <ToolbarButton
             before={<Icon size="sm" src={activeMenuItem.icon} />}
             after={<Icon size="sm" src={ChevronBottomIC} />}
@@ -233,7 +246,12 @@ export function TransformOrientationSwitcher() {
   return (
     <>
       {activeMenuItem && (
-        <SwitcherMenu selected={selected} onSelect={setSelected} menu={transformOrientationMenu}>
+        <SwitcherMenu
+          label="Transform Orientation"
+          selected={selected}
+          onSelect={setSelected}
+          menu={transformOrientationMenu}
+        >
           <ToolbarButton
             before={<Icon size="sm" src={activeMenuItem.icon} />}
             after={<Icon size="sm" src={ChevronBottomIC} />}
@@ -256,7 +274,7 @@ export function TransformPivotSwitcher() {
   return (
     <>
       {activeMenuItem && (
-        <SwitcherMenu selected={selected} onSelect={setSelected} menu={transformPivotMenu}>
+        <SwitcherMenu label="Transform Pivot" selected={selected} onSelect={setSelected} menu={transformPivotMenu}>
           <ToolbarButton
             before={<Icon size="sm" src={activeMenuItem.icon} />}
             after={<Icon size="sm" src={ChevronBottomIC} />}
