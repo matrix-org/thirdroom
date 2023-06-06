@@ -192,7 +192,7 @@ export function DiscoverCreator({ room, permissions }: DiscoverCreatorProps) {
               <DiscoverGroupGrid itemMinWidth={400} gap="md">
                 <a
                   target="_blank"
-                  href="https://github.com/matrix-org/thirdroom-unity-exporter/blob/main/Documentation~/index.md"
+                  href="/docs/guides/unity/"
                   className="DiscoverCreator__unityButton flex flex-column items-center justify-center"
                 >
                   <Text color="primary" type="span" variant="b1" weight="semi-bold">

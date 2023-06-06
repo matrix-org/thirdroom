@@ -42,7 +42,7 @@ export function WhatsNewNotification() {
         onClick={() => setWhatsNewDialog(true)}
       >
         <Text variant="b3" className="truncate" type="span" color="on-primary" weight="medium">
-          Tech Preview 2 is out! 🎉
+          The Creator Update is out! 🎉
         </Text>
       </button>
     </div>

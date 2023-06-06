@@ -49,7 +49,7 @@ export function ContentSection() {
                     with your colleagues.
                   </Text>
                 </div>
-                <a href="https://thirdroom.io" target="_blank" className="flex items-center gap-xxs">
+                <a href="https://try.element.io/contact-sales" rel="noopener" className="flex items-center gap-xxs">
                   <Text color="primary" type="span" weight="medium">
                     Contact Sales
                   </Text>
@@ -103,7 +103,7 @@ export function ContentSection() {
                   </Text>
                 </div>
 
-                <a href="https://matrix.org" target="_blank" className="flex items-center gap-xxs">
+                <a href="https://matrix.org" rel="noopener" className="flex items-center gap-xxs">
                   <Text color="primary" type="span" weight="medium">
                     Learn More About Matrix
                   </Text>
@@ -122,19 +122,19 @@ export function ContentSection() {
             flipRatio
             title={
               <Text variant="h1" weight="bold">
-                WebSceneGraph: The DOM API for 3D
+                Web Scene Graph: The DOM API for 3D
               </Text>
             }
             content={
               <div className="flex flex-column gap-md">
                 <Text variant="s1" weight="medium">
-                  Use the WebSceneGraph API to add interactions and behaviors to Third Room worlds. You can write
-                  scripts in any language that compiles to WebAssembly, including JavaScript via QuickJS. WebAssembly
-                  provides a fast, safe and interoperable runtime for user generated content.
+                  Use the Web Scene Graph (WebSG) API to add interactions and behaviors to Third Room worlds. You can
+                  write scripts in any language that compiles to WebAssembly, including JavaScript via QuickJS.
+                  WebAssembly provides a fast, safe and interoperable runtime for user generated content.
                 </Text>
-                <a href="https://thirdroom.io/docs" target="_blank" className="flex items-center gap-xxs">
+                <a href="/docs/guides/websg/" rel="noopener" className="flex items-center gap-xxs">
                   <Text color="primary" type="span" weight="medium">
-                    WebSceneGraph Documentation
+                    WebSG Documentation
                   </Text>
                   <Icon color="primary" src={ArrowForwardIC} />
                 </a>
@@ -236,7 +236,7 @@ export function ContentSection() {
                     >
                       <Text weight="medium">Exports as glTF 2.0</Text>
                     </FeatureItem>
-                    <a href="https://thirdroom.io/docs" target="_blank" className="flex items-center gap-xxs">
+                    <a href="/docs/guides/unity/" className="flex items-center gap-xxs">
                       <Text color="primary" type="span" weight="medium">
                         Exporter Documentation
                       </Text>
@@ -297,9 +297,9 @@ export function ContentSection() {
                     >
                       <Text weight="medium">Rapier Physics</Text>
                     </FeatureItem>
-                    <a href="https://thirdroom.io/docs" target="_blank" className="flex items-center gap-xxs">
+                    <a href="https://github.com/matrix-org/thirdroom" className="flex items-center gap-xxs">
                       <Text color="primary" type="span" weight="medium">
-                        Engine Documentation
+                        GitHub Repository
                       </Text>
                       <Icon color="primary" src={ArrowForwardIC} />
                     </a>

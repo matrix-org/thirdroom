@@ -14,7 +14,7 @@ function HeroBanner() {
   return (
     <div className="HeroSection_Banner flex items-center gap-xxs">
       <Text color="surface" weight="bold">
-        🔥 Tech Preview 2 is here! Web Scene Graph API, WebXR, and more!
+        🔥 The Creator Update is here! Web Scene Graph API, WebXR, and more!
       </Text>
       <Button fill="none" size="sm">
         <Text color="primary" weight="bold">
