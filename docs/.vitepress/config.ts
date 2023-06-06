@@ -45,7 +45,23 @@ export default defineConfig({
         },
         {
           text: "Unity Exporter",
-          items: [{ text: "Getting Started", link: "/guides/unity/" }],
+          items: [
+            { text: "Getting Started", link: "/guides/unity/" },
+            { text: "Exporter GitHub Repository", link: "https://github.com/matrix-org/thirdroom-unity-exporter" },
+          ],
+        },
+        {
+          text: "Community / Support",
+          items: [
+            {
+              text: "Matrix Chat Room",
+              link: "https://matrix.to/#/#thirdroom-dev:matrix.org",
+            },
+            {
+              text: "GitHub Discussions",
+              link: "https://github.com/matrix-org/thirdroom/discussions",
+            },
+          ],
         },
       ],
       // TODO: rename api -> websg-js when this issue is resolved:

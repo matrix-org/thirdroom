@@ -59,12 +59,12 @@ export function UserMenu() {
             </div>
             <div>
               <DropdownMenuItem onSelect={() => setOverlayWindow({ type: OverlayWindow.UserProfile })}>
-                View Profile
+                User Settings
               </DropdownMenuItem>
               {accountManagementUrl && (
                 <DropdownMenuItem onSelect={() => window.open(accountManagementUrl)}>Manage Account</DropdownMenuItem>
               )}
-              <DropdownMenuItem onSelect={() => navigate("/preview")}>Tech Preview</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => navigate("/preview")}>Landing Page</DropdownMenuItem>
               <DropdownMenuItem onSelect={() => setBugReport(true)}>Report Bug</DropdownMenuItem>
               <DropdownMenuItem
                 onSelect={() => {
