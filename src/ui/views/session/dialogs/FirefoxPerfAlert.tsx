@@ -5,8 +5,10 @@ import { AlertDialog } from "./AlertDialog";
 
 const FIREFOX_PERF_ALERT_KEY = "firefox_perf_alert";
 
+const isGecko = typeof navigator !== "undefined" && navigator.userAgent.indexOf("Gecko/") >= 0;
+
 export function FirefoxPerfAlert() {
-  const [alertVisible, setAlertVisible] = useLocalStorage(FIREFOX_PERF_ALERT_KEY, true);
+  const [alertVisible, setAlertVisible] = useLocalStorage(FIREFOX_PERF_ALERT_KEY, isGecko);
 
   const handleClose = () => setAlertVisible(false);
 
@@ -26,7 +28,7 @@ export function FirefoxPerfAlert() {
       }
       buttons={
         <Button onClick={handleClose} variant="primary" fill="outline">
-          Cancel
+          Ok
         </Button>
       }
     />
