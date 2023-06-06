@@ -44,7 +44,6 @@ export function UserProfileOverview() {
   const [authoritativeNetworking, setAuthNetworking] = useState(
     localStorage.getItem("authoritativeNetworking") === "true"
   );
-  const [discoverPage, setDiscoverPage] = useLocalStorage("feature_discoverPage", false);
   const [immersiveAR, setImmersiveAR] = useLocalStorage("feature_immersiveAR", false);
   const [renderQuality, setRenderQuality] = useLocalStorage(LOCAL_STORAGE_RENDER_QUALITY, RenderQualitySetting.Auto);
   const [sceneEditor, setSceneEditor] = useLocalStorage("feature_sceneEditor", false);
@@ -139,12 +138,6 @@ export function UserProfileOverview() {
                       onCheckedChange={onAuthoritativeNetworkingChange}
                       defaultChecked={authoritativeNetworking}
                     />
-                  </SettingTile>
-                  <span className="grow basis-0" />
-                </div>
-                <div className="flex gap-lg">
-                  <SettingTile className="grow basis-0" label={<Label>Discover Page (REQUIRES REFRESH)</Label>}>
-                    <Switch checked={discoverPage} onCheckedChange={setDiscoverPage} />
                   </SettingTile>
                   <span className="grow basis-0" />
                 </div>

@@ -26,26 +26,26 @@ export function WhatsNewModal({ open, requestClose, createSpecialWorld }: WhatsN
             <Scroll type="hover">
               <div className="WhatsNewModal__hero flex flex-column justify-center items-center gap-sm text-center">
                 <Text variant="h2" weight="bold">
-                  Welcome to Third Room
+                  Welcome to the Third Room
                 </Text>
                 <Text variant="s2" weight="semi-bold">
-                  Technical Preview 2
+                  Creator Update
                 </Text>
               </div>
               <Category header={<CategoryHeader title={"What's New"} />}>
                 <WhatsNewCard
                   thumbnail={
                     <Thumbnail size="sm" bgColor="var(--bg-surface-low)">
-                      <ThumbnailImg src="." />
+                      <ThumbnailImg src="/creator-update/WebSGThumbnail.jpg" />
                     </Thumbnail>
                   }
-                  title="Feature 1"
+                  title="Web Scene Graph API"
                   description="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras et facilisis ex. Sed eget pellentesque mi. Pellentesque ultrices molestie ligula, eu finibus risus rhoncus vel. Praesent ac malesuada neque. Sed malesuada tempor ultrices. In blandit metus quis tincidunt vehicula. Suspendisse gravida posuere tincidunt"
                 />
                 <WhatsNewCard
                   thumbnail={
                     <Thumbnail size="sm" bgColor="var(--bg-surface-low)">
-                      <ThumbnailImg src="." />
+                      <ThumbnailImg src="/creator-update/WebXRThumbnail.jpg" />
                     </Thumbnail>
                   }
                   title="WebXR"
@@ -54,19 +54,19 @@ export function WhatsNewModal({ open, requestClose, createSpecialWorld }: WhatsN
                 <WhatsNewCard
                   thumbnail={
                     <Thumbnail size="sm" bgColor="var(--bg-surface-low)">
-                      <ThumbnailImg src="." />
+                      <ThumbnailImg src="/creator-update/DiscoverPageThumbnail.jpg" />
                     </Thumbnail>
                   }
-                  title="Web Scene Graph"
+                  title="Discover Page"
                   description="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras et facilisis ex. Sed eget pellentesque mi. Pellentesque ultrices molestie ligula, eu finibus risus rhoncus vel. Praesent ac malesuada neque. Sed malesuada tempor ultrices. In blandit metus quis tincidunt vehicula. Suspendisse gravida posuere tincidunt"
                 />
                 <WhatsNewCard
                   thumbnail={
                     <Thumbnail size="sm" bgColor="var(--bg-surface-low)">
-                      <ThumbnailImg src="." />
+                      <ThumbnailImg src="/creator-update/InspectorThumbnail.jpg" />
                     </Thumbnail>
                   }
-                  title="Editor"
+                  title="In-World Inspector"
                   description="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras et facilisis ex. Sed eget pellentesque mi. Pellentesque ultrices molestie ligula, eu finibus risus rhoncus vel. Praesent ac malesuada neque. Sed malesuada tempor ultrices. In blandit metus quis tincidunt vehicula. Suspendisse gravida posuere tincidunt"
                 />
               </Category>

@@ -73,14 +73,14 @@ export const useAccountManagementAction = () => {
   );
 };
 
-export const useTechPreviewAction = () => {
+export const useLandingPageAction = () => {
   useRegisterActions(
     [
       {
-        id: "tech-preview",
-        name: "Tech Preview",
+        id: "landing-page",
+        name: "Landing Page",
         shortcut: undefined,
-        keywords: "preview",
+        keywords: "landing home preview",
         section: ActionSection.Global,
         icon: undefined,
         subtitle: undefined,
