@@ -40,7 +40,7 @@ export function UserProfile() {
               />
             }
           >
-            Profile
+            User Settings
           </HeaderTitle>
         }
         right={
