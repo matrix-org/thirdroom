@@ -1,6 +1,6 @@
 # Third Room for Developers
 
-Third Room is specifically engineered to enable developers to craft bespoke scripts for individual worlds and even extend the capabilities of the Third Room client itself. By placing the power of customization in developers' hands, Third Room fosters the creation of immersive virtual experiences that can captivate and enthrall.
+Third Room is designed to be a flexible and extensible platform for creating and sharing virtual worlds. Using the Web Scene Graph API, anyone can create and share their own virtual worlds and experiences with the language of their choice. The Third Room client is also completely open source, allowing you to self-host your own instance of Third Room and customize it to meet your specific needs. The Third Room web client is also designed to be just one client in a larger ecosystem of interoperable clients for browsing virtual worlds created with glTF and WebSG content.
 
 ## Web Scene Graph
 
@@ -10,26 +10,22 @@ There is also a custom JavaScript runtime and in-world editor, allowing you to f
 
 By utilizing the WebSG, you can create advanced and interactive experiences within Third Room that respond to user input, trigger events, and dynamically alter the virtual environment.
 
-To get started with WebSG:
-
-1. Familiarize yourself with the WebSG API documentation and its capabilities on the next few pages.
-2. Develop your custom behaviors and interactions using WebSG to manipulate the glTF scene graph.
-3. Upload your script and glTF scene by creating a new world or updating an existing world.
+[Read more about Web Scene Graph](./websg/)
 
 ## Self-Hosting
 
 Third Room can be self-hosted, giving you even more control over the user experience and content distribution. By self-hosting, you can customize the client to meet your specific needs and requirements while still benefiting from the core functionality of Third Room.
 
-To self-host your own Third Room client:
+Third Room is a single page web app (SPA) and can be hosted on any static web server. You do not need to host your own Matrix homeserver in order to customize or self-host your own Third Room client.
 
-1. Visit the Third Room GitHub repository and clone or download the source code for the client.
-2. Set up your development environment with the required dependencies and tools, as outlined in the repository's README file.
-3. Customize the client according to your needs, such as modifying the user interface, adding features, or integrating with other services.
-4. Set up a web server to host your custom client. This can be a local server for development and testing, or a production server for public access.
-5. Upload the client files to your web server and configure the server settings as necessary.
-6. Test your self-hosted client to ensure it's functioning correctly and connecting to the Third Room platform.
+[Read more about self-hosting Third Room](./self-hosting/)
 
-By self-hosting your own Third Room client, you can tailor the virtual experience to suit your specific requirements and maintain complete control over the content and features available to users.
+If you also want to self-host a Matrix homeserver, please refer to the [Synapse documentation](https://matrix-org.github.io/synapse/develop/welcome_and_overview.html).
+
+::: tip
+Third Room uses Matrix's Group VoIP Calls feature to enable networking and voice chat in virtual worlds.
+In order for WebRTC calls to connect in all networking scenarios, you should set up a TURN server such as Coturn. You can find more information on configuring Coturn in Synapse [here](https://matrix-org.github.io/synapse/develop/turn-howto.html).
+:::
 
 ## Contributing
 
@@ -41,3 +37,13 @@ Third Room embraces open-source principles, and we actively encourage contributi
 1. Submit a pull request to the main repository with your changes, including a detailed description of your contribution and any relevant issue numbers. The Third Room maintainers will review your submission and provide feedback or request changes as necessary.
 
 By contributing to the open-source repository, you can help shape the future of Third Room and enhance the platform for users around the world. Your expertise and dedication are invaluable to the growth and success of the project, and we look forward to collaborating with you.
+
+## Alternate Third Room Clients and WebSG Implementations
+
+We've designed Third Room from the start to be just one client in a larger ecosystem of interoperable clients for browsing virtual worlds created with glTF and WebSG content. We encourage you to create your own Third Room client or WebSG implementation, and we're happy to provide guidance and support to help you get started. If you're interested please reach out to us on [Matrix](https://matrix.to/#/#thirdroom-dev:matrix.org).
+
+## Participation in glTF Standards Groups
+
+We're active members of both the [Khronos 3D Formats Working Group](https://www.khronos.org/gltf/) and the [Open Metaverse Interoperability Group's glTF Working Group](https://github.com/omigroup/gltf-extensions). We're committed to helping shape the future of glTF and we're excited to collaborate with other members of the community to improve the standards and make interoperable virtual worlds better for everyone.
+
+Participation in Khronos requires a membership, but participation in the Open Metaverse Interoperability Group is open to anyone. If you're interested in participating in the glTF Working Group, please join the [OMI Discord](https://discord.com/invite/NJtT9grz5E) and [join us at one of our weekly meetings](https://github.com/omigroup/gltf-extensions#meetings).
