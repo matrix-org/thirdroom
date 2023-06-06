@@ -12,7 +12,7 @@ It will be split into 3 parts:
 
 ## Setup
 
-Create a new world using this scene.
+If you're coming here from the in-world tutorial, you should already have a world set up with the correct settings. If not, create a new world in Third Room using [this scene file](/gltf/BasketballCourt.glb) and [this preview image](/image/BasketballPreview.png). The Room name can be whatever you want and the other settings can be left as default.
 
 Open the editor using the `` ` `` key.
 
