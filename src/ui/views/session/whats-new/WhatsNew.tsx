@@ -23,8 +23,8 @@ const SCRIPTING_WORLD: CreateWorldOptions = {
   visibility: RoomVisibility.Private,
   content: {
     // FIXME: update mxc before merge
-    scene_url: "mxc://thirdroom.io/txYUeQFaBxHnOvCKIMmkCqxX",
-    scene_preview_url: "mxc://thirdroom.io/YokViVMnwUvGTJRvfIFqtOgO",
+    scene_url: "mxc://thirdroom.io/aTPpICQMDRnWddrfYWhdbYxd",
+    scene_preview_url: "mxc://thirdroom.io/eexkLRWjvBNZbAFHyZifnUyL",
     max_member_object_cap: MAX_OBJECT_CAP,
   },
 };
@@ -85,7 +85,7 @@ export function WhatsNew() {
       <WebSceneGraphDialog
         open={webSGTutDialog}
         requestClose={() => {
-          window.open("./docs/guides/websg/basketball/part-1.html", "__blank");
+          window.open("/docs/guides/websg/basketball/part-1.html", "__blank");
           setWebSGTutDialog(false);
           finishWhatsNew();
         }}

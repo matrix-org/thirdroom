@@ -20,7 +20,7 @@ export function Logo() {
     <div className="inline-flex flex-column items-end gap-xxs">
       <img height={20} src={LogoFullSVG} alt="Third Room" />
       <Text variant="b3" weight="medium" className="uppercase">
-        Tech Preview 2
+        Creator Update
       </Text>
     </div>
   );
@@ -34,12 +34,12 @@ export function CreateMenuItems() {
           Documentation
         </Text>
       </a>
-      <a className="MenuItem MenuItem--surface truncate" href="/docs">
+      <a className="MenuItem MenuItem--surface truncate" href="/docs/websg-js/">
         <Text variant="b2" weight="medium" type="span">
-          WebSceneGraph API
+          Web Scene Graph API
         </Text>
       </a>
-      <a className="MenuItem MenuItem--surface truncate" href="/docs">
+      <a className="MenuItem MenuItem--surface truncate" href="/docs/guides/unity/">
         <Text variant="b2" weight="medium" type="span">
           Unity Exporter
         </Text>
@@ -51,30 +51,22 @@ export function CreateMenuItems() {
 export function CommunityMenuItems() {
   return (
     <>
-      <a
-        className="MenuItem MenuItem--surface truncate"
-        href="https://matrix.to/#/#thirdroom-dev:matrix.org"
-        target="_blank"
-      >
+      <a className="MenuItem MenuItem--surface truncate" href="https://matrix.to/#/#thirdroom-dev:matrix.org">
         <Text variant="b2" weight="medium" type="span">
           Matrix
         </Text>
       </a>
-      <a
-        className="MenuItem MenuItem--surface truncate"
-        href="https://github.com/matrix-org/thirdroom/"
-        target="_blank"
-      >
+      <a className="MenuItem MenuItem--surface truncate" href="https://github.com/matrix-org/thirdroom/">
         <Text variant="b2" weight="medium" type="span">
           Github
         </Text>
       </a>
-      <a className="MenuItem MenuItem--surface truncate" href="https://mastodon.matrix.org/@thirdroom" target="_blank">
+      <a className="MenuItem MenuItem--surface truncate" href="https://mastodon.matrix.org/@thirdroom">
         <Text variant="b2" weight="medium" type="span">
           Mastodon
         </Text>
       </a>
-      <a className="MenuItem MenuItem--surface truncate" href="https://twitter.com/thirdroomio" target="_blank">
+      <a className="MenuItem MenuItem--surface truncate" href="https://twitter.com/thirdroomio">
         <Text variant="b2" weight="medium" type="span">
           Twitter
         </Text>

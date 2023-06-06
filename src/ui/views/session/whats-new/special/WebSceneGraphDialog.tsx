@@ -22,11 +22,10 @@ export function WebSceneGraphDialog({ open, requestClose }: WebSceneGraphDialogP
           </Text>
         </div>
         <div style={{ maxWidth: 225, margin: "auto" }} className="flex flex-column items-center gap-sm text-center">
-          <Text weight="bold">Open the tutorial in a new tab to get started.</Text>
           <Button style={{ minWidth: 175 }} onClick={requestClose}>
             Open Tutorial
           </Button>
-          <Text variant="b3">Instruction for the next step are on the next page 👀</Text>
+          <Text variant="b3">Instructions for the next step are on the next page 👀</Text>
         </div>
       </div>
     </Dialog>

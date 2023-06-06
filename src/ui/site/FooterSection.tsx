@@ -1,3 +1,4 @@
+// disable-noopener
 import { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -34,34 +35,25 @@ export function FooterSection() {
         <div className="flex flex-wrap">
           <FooterMenu>
             <Label className="uppercase">Join our community</Label>
-            <a
-              href="https://matrix.to/#/#thirdroom-dev:matrix.org"
-              target="_blank"
-              className="flex items-center gap-xs"
-            >
+            <a href="https://matrix.to/#/#thirdroom-dev:matrix.org" className="flex items-center gap-xs">
               <Icon size="sm" src={MatrixLogoSVG} />
               <Text variant="b2" type="span">
                 Matrix
               </Text>
             </a>
-            <a href="https://github.com/matrix-org/thirdroom/" target="_blank" className="flex items-center gap-xs">
+            <a href="https://github.com/matrix-org/thirdroom/" className="flex items-center gap-xs">
               <Icon size="sm" src={GithubLogoSVG} />
               <Text variant="b2" type="span">
                 Github
               </Text>
             </a>
-            <a
-              rel="me"
-              href="https://mastodon.matrix.org/@thirdroom"
-              target="_blank"
-              className="flex items-center gap-xs"
-            >
+            <a rel="me" href="https://mastodon.matrix.org/@thirdroom" className="flex items-center gap-xs">
               <Icon size="sm" src={MastodonLogoSVG} />
               <Text variant="b2" type="span">
                 Mastodon
               </Text>
             </a>
-            <a href="https://twitter.com/thirdroomio" target="_blank" className="flex items-center gap-xs">
+            <a href="https://twitter.com/thirdroomio" className="flex items-center gap-xs">
               <Icon size="sm" src={TwitterLogoSVG} />
               <Text variant="b2" type="span">
                 Twitter
@@ -71,18 +63,10 @@ export function FooterSection() {
         </div>
         <div className="FooterSection__copyright">
           <Text variant="b2">
-            {"Copyright © 2022 Element • "}
-            <a href="https://element.io/legal" target="_blank">
-              Legal
-            </a>
+            {"Copyright © 2023 Element • "}
+            <a href="https://element.io/legal">Legal</a>
             {" • "}
-            <a href="https://element.io/privacy" target="_blank">
-              Privacy
-            </a>
-            {" • "}
-            <a href="https://element.io/terms-of-service" target="_blank">
-              Terms of service
-            </a>
+            <a href="https://element.io/privacy">Privacy</a>
           </Text>
         </div>
       </div>

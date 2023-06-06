@@ -18,7 +18,7 @@ import config from "../../../../config.json";
 import { overlayWorldAtom } from "../../state/overlayWorld";
 import { overlayVisibilityAtom } from "../../state/overlayVisibility";
 import { CmdPanel, defaultActions } from "./cmd-panel/CmdPanel";
-import { useAccountManagementAction, useTechPreviewAction, useUserProfileAction } from "./cmd-panel/actions";
+import { useAccountManagementAction, useLandingPageAction, useUserProfileAction } from "./cmd-panel/actions";
 import { editorEnabledAtom } from "../../state/editor";
 import { WhatsNew } from "./whats-new/WhatsNew";
 import { FirefoxPerfAlert } from "./dialogs/FirefoxPerfAlert";
@@ -26,7 +26,7 @@ import { FirefoxPerfAlert } from "./dialogs/FirefoxPerfAlert";
 function RegisterKBarActions() {
   useUserProfileAction();
   useAccountManagementAction();
-  useTechPreviewAction();
+  useLandingPageAction();
   return null;
 }
 
