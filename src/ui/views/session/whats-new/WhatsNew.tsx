@@ -44,6 +44,8 @@ export function WhatsNew() {
     // Open whats new dialog initially
     if (whatsNewDialog === undefined && whatsNew && !worldId) {
       setWhatsNewDialog(true);
+      // exit possible pointerlock to interact with dialog
+      setTimeout(() => document.exitPointerLock(), 1);
     }
   }, [whatsNewDialog, whatsNew, setWhatsNewDialog, worldId]);
 
@@ -51,6 +53,8 @@ export function WhatsNew() {
     // Show WebSG tutorial dialog when user enter webSG room
     if (whatsNew && worldId === webSGRoomId && entered) {
       setWebSGTutDialog(true);
+      // exit possible pointerlock to interact with dialog
+      setTimeout(() => document.exitPointerLock(), 1);
     }
   }, [worldId, webSGRoomId, entered, whatsNew, setWebSGTutDialog]);
 
