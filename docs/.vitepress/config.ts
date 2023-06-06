@@ -52,6 +52,10 @@ export default defineConfig({
           ],
         },
         {
+          text: "Self Hosting",
+          link: "/guides/self-hosting",
+        },
+        {
           text: "Community / Support",
           items: [
             {

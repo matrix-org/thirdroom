@@ -41,7 +41,7 @@ More examples are available in the [examples](https://github.com/matrix-org/thir
 
 The WebSG JavaScript API is a thin wrapper around the WebAssembly API and uses the QuickJS JavaScript engine to execute Javascript code in a WebAssembly context.
 
-[Read the JavaScript API Docs Here](../websg-js/)
+[Read the JavaScript API Docs Here](../../websg-js/)
 
 ## WebSG C Headers
 

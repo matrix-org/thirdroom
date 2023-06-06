@@ -18,7 +18,7 @@ Third Room can be self-hosted, giving you even more control over the user experi
 
 Third Room is a single page web app (SPA) and can be hosted on any static web server. You do not need to host your own Matrix homeserver in order to customize or self-host your own Third Room client.
 
-[Read more about self-hosting Third Room](./self-hosting/)
+[Read more about self-hosting Third Room](./self-hosting)
 
 If you also want to self-host a Matrix homeserver, please refer to the [Synapse documentation](https://matrix-org.github.io/synapse/develop/welcome_and_overview.html).
 

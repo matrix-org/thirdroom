@@ -8,7 +8,7 @@ WebSG supports the following types of realtime lights:
 
 Third Room also supports Reflection Probes and Light Maps which are baked in Unity and exported in
 the glTF file. Currently there is no way to create or modify reflection probes from the WebSG API.
-Check out the Third Room Unity Exporter docs for more information [here](/docs/guides/unity/).
+Check out the Third Room Unity Exporter docs for more information [here](../unity/).
 
 ## Point Lights
 

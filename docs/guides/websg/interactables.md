@@ -54,4 +54,4 @@ ball.addInteractable({
 });
 ```
 
-For a more complete example, see [Part 1 of the WebSG tutorial series](/docs/guides/websg/basketball/part-1#Grabbables-and-Interactables).
+For a more complete example, see [Part 1 of the WebSG tutorial series](./basketball/part-1#Grabbables-and-Interactables).
