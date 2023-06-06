@@ -82,7 +82,7 @@ Then run Caddy in the same directory as your Caddyfile:
 caddy run
 ```
 
-You should now be able to access the client at http://localhost:3000.
+You should now be able to access the client at `http://localhost:3000`.
 
 You can change `localhost:3000` to whatever domain you're hosting the client on.
 
