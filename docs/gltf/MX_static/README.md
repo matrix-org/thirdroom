@@ -1,4 +1,4 @@
-# MX_spawn_point
+# MX_static
 
 ## Contributors
 
@@ -14,7 +14,7 @@ Written against the glTF 2.0 spec.
 
 ## Overview
 
-This extension allows for specifying whether a node should be used as a potential spawn point for avatars.
+This extension allows for specifying whether a node's transform should be marked static.
 
 ## glTF Schema Updates
 
