@@ -7,6 +7,10 @@
   & a {
     color: var(--tc-surface);
   }
+
+  & .Logo:hover {
+    text-decoration: none;
+  }
 }
 
 .NavigationBar__menuBtn {

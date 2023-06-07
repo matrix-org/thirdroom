@@ -16,7 +16,13 @@ function HeroBanner() {
       <Text color="surface" weight="bold">
         🔥 The Creator Update is here! Web Scene Graph API, WebXR, and more!
       </Text>
-      <Button fill="none" size="sm">
+      <Button
+        fill="none"
+        size="sm"
+        onClick={() =>
+          window.open("https://matrix.org/blog/2023/06/07/introducing-third-room-tp-2-the-creator-update", "_blank")
+        }
+      >
         <Text color="primary" weight="bold">
           Read More
         </Text>

@@ -21,6 +21,25 @@ export function ContentSection() {
       <section className="ContentSection">
         <div className="ContentSection__content">
           <LeftRightContent
+            flipped
+            title={
+              <Text variant="h1" weight="bold">
+                Your community's virtual home
+              </Text>
+            }
+            content={
+              <div className="flex flex-column gap-md">
+                <Text variant="s1" weight="medium">
+                  Third Room is a virtual space for your community to gather, share, and collaborate. Your own worlds
+                  for you to customize as you see fit. Host events and meetups, just hang out and chat, or dive into
+                  rich 3D experiences together.
+                </Text>
+              </div>
+            }
+            imgSrc="/landing/Community.jpg"
+            imgAlt="Two avatars in a virtual world playing basketball"
+          />
+          <LeftRightContent
             title={
               <Text variant="h1" weight="bold">
                 Add a third dimension to the conversation
@@ -57,8 +76,8 @@ export function ContentSection() {
                 </a>
               </div>
             }
-            imgSrc="/landing/ar-image.png"
-            imgAlt="Industrial application Image"
+            imgSrc="/landing/flightdeck.jpg"
+            imgAlt="A person in an AR headset looking at a 3D model of airplanes on a map"
           />
           <LeftRightContent
             flipped

@@ -64,7 +64,7 @@ export function UserMenu() {
               {accountManagementUrl && (
                 <DropdownMenuItem onSelect={() => window.open(accountManagementUrl)}>Manage Account</DropdownMenuItem>
               )}
-              <DropdownMenuItem onSelect={() => navigate("/preview")}>Landing Page</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => navigate("/landing")}>Landing Page</DropdownMenuItem>
               <DropdownMenuItem onSelect={() => setBugReport(true)}>Report Bug</DropdownMenuItem>
               <DropdownMenuItem
                 onSelect={() => {
