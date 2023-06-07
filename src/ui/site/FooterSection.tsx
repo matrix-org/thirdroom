@@ -32,7 +32,7 @@ export function FooterSection() {
             <Icon color="on-primary" src={ArrowForwardIC} />
           </Button>
         </div>
-        <div className="flex flex-wrap">
+        <div className="flex flex-wrap gap-lg">
           <FooterMenu>
             <Label className="uppercase">Join our community</Label>
             <a href="https://matrix.to/#/#thirdroom-dev:matrix.org" className="flex items-center gap-xs">
@@ -58,6 +58,12 @@ export function FooterSection() {
               <Text variant="b2" type="span">
                 Twitter
               </Text>
+            </a>
+          </FooterMenu>
+          <FooterMenu>
+            <Label className="uppercase">Blog</Label>
+            <a href="/preview" className="flex items-center gap-xs">
+              Introducing Third Room
             </a>
           </FooterMenu>
         </div>

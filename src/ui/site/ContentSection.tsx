@@ -76,8 +76,8 @@ export function ContentSection() {
                 </a>
               </div>
             }
-            imgSrc="/landing/ar-image.png"
-            imgAlt="Left a screenshot from the perspective of a person in an AR headset looking at a virtual map with planes on it and another person in the room wearing a VR headset. Right a person in a VR headset in a sci-fi looking room looking at the same map with the other person displayed as an avatar."
+            imgSrc="/landing/flightdeck.jpg"
+            imgAlt="A person in an AR headset looking at a 3D model of airplanes on a map"
           />
           <LeftRightContent
             flipped
