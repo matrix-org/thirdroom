@@ -73,14 +73,6 @@ export function App() {
             }
           />
           <Route
-            path="/preview"
-            element={
-              <Suspense fallback={<SplashScreen />}>
-                <PreviewBlog />
-              </Suspense>
-            }
-          />
-          <Route
             path="/login"
             element={
               <Suspense fallback={<LoadingScreen />}>
@@ -131,6 +123,14 @@ export function App() {
             }
           />
         </Route>
+        <Route
+          path="/preview"
+          element={
+            <Suspense fallback={<SplashScreen />}>
+              <PreviewBlog />
+            </Suspense>
+          }
+        />
         <Route
           path="/viewer"
           element={
