@@ -1,7 +1,8 @@
 .BlogSection {
-  margin: 150px 0;
+  margin: 100px 0;
 }
 .BlogSection__content {
+  --content-max-width: calc(960px + 2 * var(--side-spacing));
   padding: var(--sp-xl) var(--side-spacing);
   max-width: var(--content-max-width);
   width: 100%;

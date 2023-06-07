@@ -85,7 +85,7 @@ export const useLandingPageAction = () => {
         icon: undefined,
         subtitle: undefined,
         perform: () => {
-          document.location = "/preview";
+          document.location = "/landing";
         },
         parent: undefined,
       },
