@@ -2,7 +2,8 @@
 
 In this series we'll be creating a simple basketball game using the Web Scene Graph API.
 
-<iframe width="688" height="387" src="https://www.youtube-nocookie.com/embed/VimOoGCPWWw" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+<!-- Removed because COEP headers :/ >
+<!-- <iframe width="688" height="387" src="https://www.youtube-nocookie.com/embed/VimOoGCPWWw" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe> -->
 
 It will be split into 3 parts:
 
