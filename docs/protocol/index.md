@@ -147,3 +147,78 @@ message EntityUpdates {
   updates: Update[updateCount]
 }
 ```
+
+### Structs vs Messages
+
+Structs are schemas for the shape of the data in binary. They are encoded in the order that the properties are specified in. Messages contain one or more of these encoded structs.
+
+### Structs
+
+- NetworkMessageType
+
+  - An enumeration of the different types of messages that can be passed around in this network protocol. This includes the HostSnapshot, PeerJoin, PeerLeft, SpawnDespawnRPC, and EntityUpdates message types. There is a reserved range of enum integer representations for internal message types. Other message types can be defined by users using integer ranges outside of the internally reserved range.
+
+- PeerInfo
+
+  - This struct holds information about a peer in the network. It contains an index, the length of a peer's ID, and the ID itself, which is an mxid provided by Hydrogen.
+
+- Spawn
+
+  - This struct is used to spawn entities in the game world. It contains the network ID of the entity, a schema ID indicating the type of entity being spawned, and two byte arrays holding the creation and update data for the entity.
+
+- Despawn
+
+  - The Despawn struct is used to remove entities from the game world. It only needs the network ID of the entity to be despawned.
+
+- Update
+
+  - This struct contains an entity's network ID, a bitmask specifying which properties of the schema (inferred via networkID) are included in this update, and a byte array with the update data.
+
+- RPC (Remote Procedure Call)
+
+  - This struct is used for sending remote procedure calls. It contains an identifier for the type of RPC and a byte array containing the data unique to each RPC type.
+
+### Messages
+
+- HostSnapshot
+
+  - This message is reliably and orderedly sent from the host to the peers. It contains the host's time, the host's peer index, the local peer index for the receiving client, a count of peers, the peers' information, a count of entities, and the entity spawn information.
+  - Contains arrays of Spawn and Update structs
+
+- PeerJoin
+
+  - This message is reliably and orderedly sent when a new peer joins the network. It contains the new peer's information.
+  - Contains PeerInfo struct
+
+- PeerLeft
+
+  - This message is reliably and orderedly sent when a peer leaves the network. It contains the index of the peer that has left.
+  - Contains no structs, just a peerIndex
+
+- SpawnDespawnRPC
+
+  - This message is reliably and orderedly sent to spawn and despawn entities and make remote procedure calls. It contains counts and data for the spawns, despawns, and RPCs.
+  - Contains arrays of Spawn, Despawn, and RPC structs
+
+- EntityUpdates
+
+  - This message is sent unreliably and unordered to update entities. It contains the time of the update, a count of updates, and the updates themselves.
+  - Contains array of Update struct
+
+## Authority
+
+A peer having authority over an entity means that the peer is solely responsible for establishing the source-of-truth for that entity's state. By default, the host will have authority over all networked entities in the simulation **except for other peer's avatars**. Having peers send source-of-truth updates about their avatar is known as client-authority. When a non-host peer interacts with an entity that they do not have authority over, such as picking up an entity and moving it around, the peer obtains a temporary authority lock on the entity. The host will cease having authoritative simulation control over the entity, but will still be responsible for relaying the entity's source-of-truth. When the peer stops actively interacting with the entity, authority is relinquished by the peer back to the host.
+
+### Authoritative Components
+
+Three components are used to determine how the peer's simulation treats each networked entity.
+
+- Networked
+  - This component simply indicates that the entity exists as a networked entity.
+  - Holds the networkID for the entity
+  - Holds the authoring peer's peerIndex (our own peerIndex if we are the authoring host)
+- Authoring
+  - This component indicates that the current peer's simulation is responsible for dictating source-of-truth updates about the entity. When this component is combined with Networked, it will cause the client to start sending out source-of-truth updates for an entity.
+- Relaying
+  - This component indicates that this peer is hosting the simulation for this entity, but is only responsible for relaying the source-of-truth state for this entity which is being received by another peer who is authoring the source-of-truth for the entity
+  - Holds the peerIndex of the peer who we are relaying the source-of-truth for
