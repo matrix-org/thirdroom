@@ -306,7 +306,7 @@ describe("Network Tests", () => {
           return node;
         });
 
-      serializeUpdatesSnapshot([state, writer, ""]);
+      serializeUpdatesSnapshot(state, writer);
 
       const reader = createCursorView(writer.buffer);
 
@@ -356,7 +356,7 @@ describe("Network Tests", () => {
           return node;
         });
 
-      serializeUpdatesSnapshot([state, writer, ""]);
+      serializeUpdatesSnapshot(state, writer);
 
       nodes.forEach((node) => {
         const position = node.position;
@@ -367,7 +367,7 @@ describe("Network Tests", () => {
 
       const reader = createCursorView(writer.buffer);
 
-      deserializeUpdatesSnapshot([state, reader, ""]);
+      deserializeUpdatesSnapshot(state, reader);
 
       nodes.forEach((node) => {
         const position = Networked.position[node.eid];
@@ -399,7 +399,7 @@ describe("Network Tests", () => {
           return node;
         });
 
-      serializeUpdatesChanged([state, writer, ""]);
+      serializeUpdatesChanged(state, writer);
 
       const reader = createCursorView(writer.buffer);
 
@@ -444,11 +444,11 @@ describe("Network Tests", () => {
           return node;
         });
 
-      serializeUpdatesChanged([state, writer, ""]);
+      serializeUpdatesChanged(state, writer);
 
       const reader = createCursorView(writer.buffer);
 
-      deserializeUpdatesChanged([state, reader, ""]);
+      deserializeUpdatesChanged(state, reader);
 
       nodes.forEach((node) => {
         const position = Networked.position[node.eid];
@@ -483,7 +483,7 @@ describe("Network Tests", () => {
 
       strictEqual(ownedNetworkedQuery(state.world).length, 3);
 
-      serializeCreates([state, writer, ""]);
+      serializeCreates(state, writer);
 
       const reader = createCursorView(writer.buffer);
 
@@ -521,11 +521,11 @@ describe("Network Tests", () => {
 
       strictEqual(remoteNetworkedQuery(state.world).length, 0);
 
-      serializeCreates([state, writer, ""]);
+      serializeCreates(state, writer);
 
       const reader = createCursorView(writer.buffer);
 
-      deserializeCreates([state, reader, ""]);
+      deserializeCreates(state, reader, "");
 
       const remoteEntities = remoteNetworkedQuery(state.world);
       strictEqual(remoteEntities.length, 3);
@@ -567,7 +567,7 @@ describe("Network Tests", () => {
         removeComponent(state.world, Networked, eid, false);
       });
 
-      serializeDeletes([state, writer, ""]);
+      serializeDeletes(state, writer);
 
       const reader = createCursorView(writer.buffer);
 
@@ -598,11 +598,11 @@ describe("Network Tests", () => {
 
       strictEqual(ownedNetworkedQuery(state.world).length, 3);
 
-      serializeCreates([state, writer, ""]);
+      serializeCreates(state, writer);
 
       const reader = createCursorView(writer.buffer);
 
-      deserializeCreates([state, reader, ""]);
+      deserializeCreates(state, reader, "");
 
       const remoteEntities = remoteNetworkedQuery(state.world);
       strictEqual(remoteEntities.length, 3);
@@ -618,7 +618,7 @@ describe("Network Tests", () => {
 
       const writer2 = createCursorView();
 
-      serializeDeletes([state, writer2, ""]);
+      serializeDeletes(state, writer2);
 
       remoteEntities.forEach((eid) => {
         ok(entityExists(state.world, eid));
@@ -626,7 +626,7 @@ describe("Network Tests", () => {
 
       const reader2 = createCursorView(writer2.buffer);
 
-      deserializeDeletes([state, reader2, ""]);
+      deserializeDeletes(state, reader2);
 
       remoteEntities.forEach((eid) => {
         ok(getEntityComponents(state.world, eid).length === 0);

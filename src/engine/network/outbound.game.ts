@@ -18,14 +18,13 @@ import {
 import { Networked } from "./NetworkComponents";
 import { enqueueNetworkRingBuffer } from "./RingBuffer";
 import {
-  NetPipeData,
   createNewPeerSnapshotMessage,
   createInformPlayerNetworkIdMessage,
   createUpdateNetworkIdMessage,
   createCreateMessage,
   createDeleteMessage,
   createUpdateChangedMessage,
-  createInformXRMode,
+  createInformXRModeMessage,
 } from "./serialization.game";
 
 export const broadcastReliable = (state: GameState, network: GameNetworkState, packet: ArrayBuffer) => {
@@ -98,7 +97,6 @@ function disposeNetworkedEntities(state: GameState) {
 
 const sendUpdatesAuthoritative = (ctx: GameState) => {
   const network = getModule(ctx, NetworkModule);
-  const data: NetPipeData = [ctx, network.cursorView, ""];
 
   // only send updates when:
   // TODO: window is focused? otherwise ringbuffer overflowss
@@ -119,7 +117,7 @@ const sendUpdatesAuthoritative = (ctx: GameState) => {
 
   if (hosting) {
     if (haveNewPeers) {
-      const newPeerSnapshotMsg = createNewPeerSnapshotMessage(data);
+      const newPeerSnapshotMsg = createNewPeerSnapshotMessage(ctx, network.cursorView);
 
       while (network.newPeers.length) {
         const theirPeerId = network.newPeers.shift();
@@ -137,15 +135,15 @@ const sendUpdatesAuthoritative = (ctx: GameState) => {
     }
 
     // send reliable creates/deletes
-    const createMsg = createCreateMessage(data);
+    const createMsg = createCreateMessage(ctx, network.cursorView);
     broadcastReliable(ctx, network, createMsg);
 
     // send reliable creates/deletes
-    const deleteMsg = createDeleteMessage(data);
+    const deleteMsg = createDeleteMessage(ctx, network.cursorView);
     broadcastReliable(ctx, network, deleteMsg);
 
     // send unreliable updates
-    const updateMsg = createUpdateChangedMessage(data);
+    const updateMsg = createUpdateChangedMessage(ctx, network.cursorView);
     if (updateMsg.byteLength) {
       network.peers.forEach((peerId) => {
         // HACK: host adds last input tick processed from this peer to each packet
@@ -183,7 +181,6 @@ const sendUpdatesAuthoritative = (ctx: GameState) => {
 
 const sendUpdatesPeerToPeer = (ctx: GameState) => {
   const network = getModule(ctx, NetworkModule);
-  const data: NetPipeData = [ctx, network.cursorView, ""];
 
   // only send updates when:
   // - we have connected peers
@@ -196,7 +193,7 @@ const sendUpdatesPeerToPeer = (ctx: GameState) => {
     // send snapshot update to all new peers
     const haveNewPeers = network.newPeers.length > 0;
     if (haveNewPeers) {
-      const newPeerSnapshotMsg = createNewPeerSnapshotMessage(data);
+      const newPeerSnapshotMsg = createNewPeerSnapshotMessage(ctx, network.cursorView);
 
       while (network.newPeers.length) {
         const theirPeerId = network.newPeers.shift();
@@ -208,20 +205,20 @@ const sendUpdatesPeerToPeer = (ctx: GameState) => {
           sendReliable(ctx, network, theirPeerId, createInformPlayerNetworkIdMessage(ctx, network.peerId));
 
           // inform other clients of our XRMode
-          broadcastReliable(ctx, network, createInformXRMode(ctx, getXRMode(ctx)));
+          broadcastReliable(ctx, network, createInformXRModeMessage(ctx, getXRMode(ctx)));
         }
       }
     } else {
       // send reliable creates
-      const createMsg = createCreateMessage(data);
+      const createMsg = createCreateMessage(ctx, network.cursorView);
       broadcastReliable(ctx, network, createMsg);
 
       // send reliable deletes
-      const deleteMsg = createDeleteMessage(data);
+      const deleteMsg = createDeleteMessage(ctx, network.cursorView);
       broadcastReliable(ctx, network, deleteMsg);
 
       // send unreliable updates
-      const updateMsg = createUpdateChangedMessage(data);
+      const updateMsg = createUpdateChangedMessage(ctx, network.cursorView);
       broadcastUnreliable(ctx, network, updateMsg);
     }
   }
