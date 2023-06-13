@@ -159,11 +159,10 @@ describe("Network Tests", () => {
       const writer = createCursorView();
       const state = mockGameState();
       const node = new RemoteNode(state.resourceManager);
-      const eid = node.eid;
       node.position.set([1, 2, 3]);
       node.quaternion.set([4, 5, 6, 7]);
 
-      serializeTransformChanged(state, writer, eid);
+      serializeTransformChanged(writer, node);
 
       const reader = createCursorView(writer.buffer);
 
@@ -196,12 +195,11 @@ describe("Network Tests", () => {
       const state = mockGameState();
 
       const node = new RemoteNode(state.resourceManager);
-      const eid = node.eid;
 
       node.position.set([0, 2, 0]);
       node.quaternion.set([4, 0, 6, 0]);
 
-      serializeTransformChanged(state, writer, eid);
+      serializeTransformChanged(writer, node);
 
       const reader = createCursorView(writer.buffer);
 
@@ -239,14 +237,14 @@ describe("Network Tests", () => {
       node.position.set([1, 2, 3]);
       node.quaternion.set([4, 5, 6, 7]);
 
-      serializeTransformChanged(state, writer, eid);
+      serializeTransformChanged(writer, node);
 
       node.position.set([0, 0, 0]);
       node.quaternion.set([0, 0, 0, 0]);
 
       const reader = createCursorView(writer.buffer);
 
-      deserializeTransformChanged(state, reader, eid);
+      deserializeTransformChanged(reader, eid, node);
 
       strictEqual(Networked.position[eid][0], 1);
       strictEqual(Networked.position[eid][1], 2);
@@ -267,14 +265,14 @@ describe("Network Tests", () => {
       node.position.set([0, 2, 0]);
       node.quaternion.set([4, 0, 6, 0]);
 
-      serializeTransformChanged(state, writer, eid);
+      serializeTransformChanged(writer, node);
 
       node.position.set([0, 0, 0]);
       node.quaternion.set([0, 0, 0, 0]);
 
       const reader = createCursorView(writer.buffer);
 
-      deserializeTransformChanged(state, reader, eid);
+      deserializeTransformChanged(reader, eid, node);
 
       strictEqual(Networked.position[eid][0], 0);
       strictEqual(Networked.position[eid][1], 2);

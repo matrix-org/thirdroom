@@ -194,7 +194,7 @@ export const serializeTransformChanged = (v: CursorView, node: RemoteNode) => {
   changeMask |= writePropIfChanged(v, quaternion, 2) ? 1 << b++ : b++ && 0;
   changeMask |= writePropIfChanged(v, quaternion, 3) ? 1 << b++ : b++ && 0;
 
-  writeScalarPropIfChanged(v, "skipLerp", Uint32Array, node.skipLerp);
+  changeMask |= writeScalarPropIfChanged(v, "skipLerp", Uint32Array, node.skipLerp) ? 1 << b++ : b++ && 0;
 
   writeChangeMask(changeMask);
 
@@ -222,7 +222,7 @@ export const deserializeTransformChanged = (v: CursorView, nid: number, node: Re
     if (checkBitflag(changeMask, 1 << b++)) quaternion[2] = readFloat32(v);
     if (checkBitflag(changeMask, 1 << b++)) quaternion[3] = readFloat32(v);
 
-    node.skipLerp = readUint32(v);
+    if (checkBitflag(changeMask, 1 << b++)) node.skipLerp = readUint32(v);
   } else {
     console.warn(`could not deserialize transform update for non-existent entity for networkID ${nid}`);
     scrollCursorView(v, Float32Array.BYTES_PER_ELEMENT * 10 + Uint32Array.BYTES_PER_ELEMENT);
