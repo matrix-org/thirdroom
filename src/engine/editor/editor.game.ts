@@ -7,6 +7,9 @@ import {
   hasComponent,
   removeComponent,
 } from "bitecs";
+import RAPIER from "@dimforge/rapier3d-compat";
+import { vec3 } from "gl-matrix";
+import { Vector3 } from "three";
 
 import { GameState } from "../GameTypes";
 import { traverse } from "../component/transform";
@@ -39,17 +42,42 @@ import { NOOP } from "../config.common";
 import { addLayer, Layer, removeLayer } from "../node/node.common";
 import { getRemoteResource, RemoteResourceTypes, tryGetRemoteResource } from "../resource/resource.game";
 import { RemoteNode } from "../resource/RemoteResources";
+import { disableActionMap, enableActionMap } from "../input/ActionMappingSystem";
+import { ActionMap, ActionType, BindingType, ButtonActionState } from "../input/ActionMap";
+import { InputModule } from "../input/input.game";
+import { RigidBody } from "../physics/physics.game";
+import { flyControlsQuery } from "../player/FlyCharacterController";
+import { getCamera } from "../player/getCamera";
 
 /*********
  * Types *
  *********/
 
 export interface EditorModuleState {
+  editorLoaded: boolean;
   activeEntity: number;
   activeEntityChanged: boolean;
   editorStateBufferView: ObjectBufferView<typeof editorStateSchema, ArrayBuffer>;
   editorStateTripleBuffer: EditorStateTripleBuffer;
+  anchorEntity: number;
 }
+
+const editorActionMap: ActionMap = {
+  id: "editor-action-map",
+  actionDefs: [
+    {
+      id: "anchorCamera",
+      path: "anchorCamera",
+      type: ActionType.Button,
+      bindings: [
+        {
+          type: BindingType.Button,
+          path: "Keyboard/KeyF",
+        },
+      ],
+    },
+  ],
+};
 
 /******************
  * Initialization *
@@ -66,14 +94,20 @@ export const EditorModule = defineModule<GameState, EditorModuleState>({
     });
 
     return {
+      editorLoaded: false,
       activeEntity: NOOP,
       activeEntityChanged: false,
       editorStateBufferView,
       editorStateTripleBuffer,
+      anchorEntity: NOOP,
     };
   },
   init(ctx) {
-    return createDisposables([
+    const input = getModule(ctx, InputModule);
+
+    enableActionMap(input, editorActionMap);
+
+    const dispose = createDisposables([
       registerMessageHandler(ctx, EditorMessageType.LoadEditor, onLoadEditor),
       registerMessageHandler(ctx, EditorMessageType.DisposeEditor, onDisposeEditor),
       registerMessageHandler(ctx, EditorMessageType.SetSelectedEntity, onSetSelectedEntity),
@@ -86,6 +120,10 @@ export const EditorModule = defineModule<GameState, EditorModuleState>({
       registerMessageHandler(ctx, EditorMessageType.SetRefProperty, onSetRefProperty),
       registerMessageHandler(ctx, EditorMessageType.SetRefArrayProperty, onSetRefArrayProperty),
     ]);
+    return () => {
+      disableActionMap(input, editorActionMap);
+      dispose();
+    };
   },
 });
 
@@ -105,6 +143,7 @@ const selectedExitQuery = exitQuery(selectedQuery);
 export function onLoadEditor(ctx: GameState) {
   const editor = getModule(ctx, EditorModule);
 
+  editor.editorLoaded = true;
   ctx.editorLoaded = true;
 
   ctx.sendMessage<EditorLoadedMessage>(Thread.Main, {
@@ -115,27 +154,35 @@ export function onLoadEditor(ctx: GameState) {
 }
 
 export function onDisposeEditor(ctx: GameState) {
+  const editor = getModule(ctx, EditorModule);
+  editor.editorLoaded = true;
   ctx.editorLoaded = false;
 }
 
-export function onSetSelectedEntity(ctx: GameState, message: SetSelectedEntityMessage) {
+function onSetSelectedEntity(ctx: GameState, message: SetSelectedEntityMessage) {
+  selectEditorEntity(ctx, message.eid);
+}
+
+export function selectEditorEntity(ctx: GameState, eid: number) {
   const editor = getModule(ctx, EditorModule);
 
   const selected = selectedQuery(ctx.world);
 
   for (let i = 0; i < selected.length; i++) {
-    const eid = selected[i];
+    const selectedEid = selected[i];
 
-    if (message.eid === eid) {
+    if (eid === selectedEid) {
       continue;
     }
 
-    removeComponent(ctx.world, Selected, eid);
+    removeComponent(ctx.world, Selected, selectedEid);
   }
 
-  addComponent(ctx.world, Selected, message.eid);
+  if (eid) {
+    addComponent(ctx.world, Selected, eid);
+  }
 
-  editor.activeEntity = message.eid;
+  editor.activeEntity = eid;
   editor.activeEntityChanged = true;
 }
 
@@ -212,11 +259,59 @@ function onSetRefArrayProperty(ctx: GameState, message: SetRefArrayPropertyMessa
  * Systems *
  ***********/
 
+export function moveCharacterToAnchor(
+  ctx: GameState,
+  body: RAPIER.RigidBody,
+  anchor: RemoteNode,
+  playerRig: RemoteNode,
+  camera: RemoteNode
+) {
+  const posVec = anchor.position;
+
+  const charPos = vec3.create();
+
+  vec3.set(charPos, posVec[0], posVec[1], posVec[2]);
+
+  vec3.set(playerRig.position, charPos[0], charPos[1], charPos[2]);
+  vec3.set(camera.position, charPos[0], charPos[1], charPos[2]);
+
+  const _p = new Vector3();
+  _p.fromArray(playerRig.position);
+  body.setNextKinematicTranslation(_p);
+}
+
 export function EditorStateSystem(ctx: GameState) {
   const editor = getModule(ctx, EditorModule);
 
   if (!ctx.editorLoaded) {
     return;
+  }
+
+  const { actionStates } = getModule(ctx, InputModule);
+  const anchorBtn = actionStates.get("anchorCamera") as ButtonActionState;
+
+  const anchorCameraToActiveEntity = anchorBtn.pressed;
+  if (anchorCameraToActiveEntity && editor.activeEntity) {
+    editor.anchorEntity = editor.activeEntity;
+
+    const anchorEntity = getRemoteResource<RemoteNode>(ctx, editor.anchorEntity);
+    if (typeof anchorEntity === "object" && "position" in anchorEntity) {
+      const ents = flyControlsQuery(ctx.world);
+
+      for (let i = 0; i < ents.length; i++) {
+        const playerRigEid = ents[i];
+        const playerRig = tryGetRemoteResource<RemoteNode>(ctx, playerRigEid);
+        getCamera(ctx, playerRig);
+
+        const body = RigidBody.store.get(playerRigEid);
+
+        if (!body) {
+          throw new Error("rigidbody not found on eid " + playerRigEid);
+        }
+        // TODO: Place camera near active entity on `F` key press.
+        // moveCharacterToAnchor(ctx, body, anchorEntity, playerRig, camera);
+      }
+    }
   }
 
   // Update editor state and hierarchy triple buffers

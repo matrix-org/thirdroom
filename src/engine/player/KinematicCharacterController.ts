@@ -47,7 +47,6 @@ export const KinematicCharacterControllerActionMap: ActionMap = {
           y: "XRInputSource/secondary/xr-standard-thumbstick/y-axis",
         },
       ],
-      // networked: true,
     },
     {
       id: "jump",
@@ -63,7 +62,6 @@ export const KinematicCharacterControllerActionMap: ActionMap = {
           path: "XRInputSource/primary/xr-standard-thumbstick/button",
         },
       ],
-      // networked: true,
     },
     {
       id: "crouch",
@@ -75,7 +73,6 @@ export const KinematicCharacterControllerActionMap: ActionMap = {
           path: "Keyboard/KeyC",
         },
       ],
-      // networked: true,
     },
     {
       id: "sprint",
@@ -91,7 +88,6 @@ export const KinematicCharacterControllerActionMap: ActionMap = {
           path: "XRInputSource/secondary/xr-standard-thumbstick/button",
         },
       ],
-      // networked: true,
     },
   ],
 };
@@ -104,7 +100,8 @@ export const KinematicCharacterControllerModule = defineModule<GameState, Kinema
     return {};
   },
   init(ctx) {
-    enableActionMap(ctx, KinematicCharacterControllerActionMap);
+    const input = getModule(ctx, InputModule);
+    enableActionMap(input, KinematicCharacterControllerActionMap);
   },
 });
 

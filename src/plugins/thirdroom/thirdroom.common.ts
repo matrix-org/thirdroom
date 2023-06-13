@@ -9,9 +9,6 @@ export enum ThirdRoomMessageType {
   WorldLoadError = "world-load-error",
   PrintThreadState = "print-thread-state",
   PrintResources = "print-resources",
-  GLTFViewerLoadGLTF = "gltf-viewer-load-gltf",
-  GLTFViewerLoaded = "gltf-viewer-loaded",
-  GLTFViewerLoadError = "gltf-viewer-load-error",
   ReticleFocus = "reticle-focus",
   FindResourceRetainers = "find-resource-retainers",
   SetActionBarItems = "set-action-bar-items",
@@ -69,23 +66,6 @@ export interface PrintThreadStateMessage {
 
 export interface PrintResourcesMessage {
   type: ThirdRoomMessageType.PrintResources;
-}
-
-export interface GLTFViewerLoadGLTFMessage {
-  type: ThirdRoomMessageType.GLTFViewerLoadGLTF;
-  url: string;
-  scriptUrl: string;
-  fileMap: Map<string, string>;
-}
-
-export interface GLTFViewerLoadedMessage {
-  type: ThirdRoomMessageType.GLTFViewerLoaded;
-  url: string;
-}
-
-export interface GLTFViewerLoadErrorMessage {
-  type: ThirdRoomMessageType.GLTFViewerLoadError;
-  error: string;
 }
 
 export interface FindResourceRetainersMessage {

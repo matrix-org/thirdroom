@@ -39,7 +39,7 @@ import { Player, OurPlayer } from "./Player";
 
 const AVATAR_CAPSULE_HEIGHT = 1;
 const AVATAR_CAPSULE_RADIUS = 0.35;
-const AVATAR_HEIGHT = AVATAR_CAPSULE_HEIGHT + AVATAR_CAPSULE_RADIUS * 2;
+export const AVATAR_HEIGHT = AVATAR_CAPSULE_HEIGHT + AVATAR_CAPSULE_RADIUS * 2;
 const AVATAR_CAMERA_OFFSET = 0.06;
 
 export function registerPlayerPrefabs(ctx: GameState) {

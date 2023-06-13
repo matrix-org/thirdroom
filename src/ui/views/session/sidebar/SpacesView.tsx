@@ -12,7 +12,6 @@ import { useInviteList } from "../../../hooks/useInviteList";
 import { UserMenu } from "../menus/UserMenu";
 import "./SpacesView.css";
 import { RoomTypes, useRoomsOfType } from "../../../hooks/useRoomsOfType";
-import { useLocalStorage } from "../../../hooks/useLocalStorage";
 import { sidebarTabAtom, SidebarTab as SidebarTabEnum } from "../../../state/sidebarTab";
 import { OverlayWindow, overlayWindowAtom } from "../../../state/overlayWindow";
 
@@ -23,7 +22,6 @@ export function SpacesView() {
   const [directs] = useRoomsOfType(session, RoomTypes.Direct);
   const [sidebarTab, setSidebarTab] = useAtom(sidebarTabAtom);
   const [overlayWindow, setOverlayWindow] = useAtom(overlayWindowAtom);
-  const [discoverPage] = useLocalStorage("feature_discoverPage", false);
 
   const roomsNotifCount = rooms.reduce((total, room) => total + room.notificationCount, 0);
   const directsNotifCount = directs.reduce((total, room) => total + room.notificationCount, 0);
@@ -60,15 +58,13 @@ export function SpacesView() {
             variant="surface-low"
           />
         </BadgeWrapper>
-        {discoverPage && (
-          <SidebarTab
-            onClick={() => setOverlayWindow({ type: OverlayWindow.Discover })}
-            isActive={overlayWindow.type === OverlayWindow.Discover}
-            name="Discover"
-            iconSrc={ExploreIC}
-            variant="surface-low"
-          />
-        )}
+        <SidebarTab
+          onClick={() => setOverlayWindow({ type: OverlayWindow.Discover })}
+          isActive={overlayWindow.type === OverlayWindow.Discover}
+          name="Discover"
+          iconSrc={ExploreIC}
+          variant="surface-low"
+        />
       </div>
       <div className="shrink-0 flex flex-column items-center gap-xs">
         <UserMenu />

@@ -77,3 +77,20 @@ export function createAsyncTaskRunner() {
     },
   };
 }
+
+export function createSingletonTaskRunner() {
+  const taskRunner = createAsyncTaskRunner();
+
+  return {
+    run<A, T>(args: A, task: (args: A, signal: AbortSignal) => Generator<Promise<T>, void, T>) {
+      taskRunner.remove(0);
+      taskRunner.add(0, args, task);
+    },
+    cancel() {
+      taskRunner.remove(0);
+    },
+    update() {
+      taskRunner.update();
+    },
+  };
+}

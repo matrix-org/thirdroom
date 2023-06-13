@@ -5,6 +5,7 @@ import { CharacterControllerActionMap } from "./CharacterController";
 import { createDisposables } from "../utils/createDisposables";
 import { ThirdRoomMessageType } from "../../plugins/thirdroom/thirdroom.common";
 import { CameraRigActionMap } from "./CameraRig";
+import { InputModule } from "../input/input.game";
 
 export const PlayerModule = defineModule<GameState, { orbiting: boolean }>({
   name: "player",
@@ -12,8 +13,10 @@ export const PlayerModule = defineModule<GameState, { orbiting: boolean }>({
     return { orbiting: false };
   },
   init(ctx) {
-    enableActionMap(ctx, CameraRigActionMap);
-    enableActionMap(ctx, CharacterControllerActionMap);
+    const input = getModule(ctx, InputModule);
+
+    enableActionMap(input, CameraRigActionMap);
+    enableActionMap(input, CharacterControllerActionMap);
 
     const module = getModule(ctx, PlayerModule);
     return createDisposables([

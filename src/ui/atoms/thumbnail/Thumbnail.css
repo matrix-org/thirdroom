@@ -5,6 +5,7 @@
 
   background-color: var(--bg-surface-low);
   border-radius: var(--br-lg);
+  box-shadow: 0 0 0 1px var(--bg-surface-border);
   overflow: hidden;
   position: relative;
 }

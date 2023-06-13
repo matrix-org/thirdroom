@@ -55,6 +55,7 @@ import { PlayerModule } from "./player/Player.game";
 import { ActionBarSystem } from "../plugins/thirdroom/action-bar.game";
 import { EnableCharacterControllerSystem } from "./player/CharacterController";
 import { CameraRigSystem } from "./player/CameraRig";
+import { RaycasterModule, RaycasterSystem } from "./raycaster/raycaster.game";
 
 export default defineConfig<GameState>({
   modules: [
@@ -77,11 +78,14 @@ export default defineConfig<GameState>({
     NametagModule,
     WebSGNetworkModule,
     WebSGUIModule,
+    RaycasterModule,
   ],
   systems: [
     IncomingTripleBufferSystem,
 
     UpdateRawInputSystem,
+    RaycasterSystem,
+
     WebXRAvatarRigSystem,
     ActionMappingSystem,
 

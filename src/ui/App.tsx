@@ -49,7 +49,8 @@ if (import.meta.env.VITE_NETLIFY_DEPLOY_CONTEXT !== "production") {
   );
 }
 
-const Site = lazy(() => import("./site/Site"));
+const LandingPage = lazy(() => import("./site/LandingPage"));
+const PreviewBlog = lazy(() => import("./site/PreviewBlog"));
 const LoginView = lazy(() => import("./views/login/LoginView"));
 const GLTFViewer = lazy(() => import("./views/gltf-viewer/GLTFViewer"));
 const AssetPipeline = lazy(() => import("./views/asset-pipeline/AssetPipeline"));
@@ -64,10 +65,10 @@ export function App() {
       <SentryRoutes>
         <Route element={<HydrogenRootView />}>
           <Route
-            path="/preview"
+            path="/landing"
             element={
               <Suspense fallback={<SplashScreen />}>
-                <Site />
+                <LandingPage />
               </Suspense>
             }
           />
@@ -122,6 +123,14 @@ export function App() {
             }
           />
         </Route>
+        <Route
+          path="/preview"
+          element={
+            <Suspense fallback={<SplashScreen />}>
+              <PreviewBlog />
+            </Suspense>
+          }
+        />
         <Route
           path="/viewer"
           element={

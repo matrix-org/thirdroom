@@ -40,7 +40,6 @@ export const PhysicsCharacterControllerActionMap: ActionMap = {
           right: "Keyboard/KeyD",
         },
       ],
-      networked: true,
     },
     {
       id: "jump",
@@ -52,7 +51,6 @@ export const PhysicsCharacterControllerActionMap: ActionMap = {
           path: "Keyboard/Space",
         },
       ],
-      networked: true,
     },
     {
       id: "crouch",
@@ -64,7 +62,6 @@ export const PhysicsCharacterControllerActionMap: ActionMap = {
           path: "Keyboard/KeyC",
         },
       ],
-      networked: true,
     },
     {
       id: "sprint",
@@ -76,7 +73,6 @@ export const PhysicsCharacterControllerActionMap: ActionMap = {
           path: "Keyboard/ShiftLeft",
         },
       ],
-      networked: true,
     },
   ],
 };
@@ -89,7 +85,8 @@ export const PhysicsCharacterControllerModule = defineModule<GameState, PhysicsC
     return {};
   },
   init(ctx) {
-    enableActionMap(ctx, PhysicsCharacterControllerActionMap);
+    const input = getModule(ctx, InputModule);
+    enableActionMap(input, PhysicsCharacterControllerActionMap);
   },
 });
 

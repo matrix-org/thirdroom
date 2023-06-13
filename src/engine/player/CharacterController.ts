@@ -37,7 +37,6 @@ export const CharacterControllerActionMap: ActionMap = {
           path: "Keyboard/KeyB",
         },
       ],
-      networked: true,
     },
     {
       id: "toggleThirdPerson",

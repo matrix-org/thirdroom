@@ -76,6 +76,7 @@ export const InteractionModule = defineModule<GameState, InteractionModuleState>
   },
   async init(ctx) {
     const module = getModule(ctx, InteractionModule);
+    const input = getModule(ctx, InputModule);
 
     const clickAudio1 = new RemoteAudioData(ctx.resourceManager, {
       name: "Click1 Audio Data",
@@ -112,7 +113,7 @@ export const InteractionModule = defineModule<GameState, InteractionModuleState>
 
     addResourceRef(ctx, module.clickEmitter.eid);
 
-    enableActionMap(ctx, InteractionActionMap);
+    enableActionMap(input, InteractionActionMap);
 
     ctx.worldResource.persistentScene.audioEmitters = [
       ...ctx.worldResource.persistentScene.audioEmitters,
@@ -145,7 +146,6 @@ const InteractionActionMap: ActionMap = {
           path: "Keyboard/KeyE",
         },
       ],
-      networked: true,
     },
     {
       id: "primaryTrigger",
@@ -157,7 +157,6 @@ const InteractionActionMap: ActionMap = {
           path: "XRInputSource/primary/xr-standard-trigger",
         },
       ],
-      networked: true,
     },
     {
       id: "secondaryTrigger",
@@ -169,7 +168,6 @@ const InteractionActionMap: ActionMap = {
           path: "XRInputSource/secondary/xr-standard-trigger",
         },
       ],
-      networked: true,
     },
     {
       id: "primarySqueeze",
@@ -181,7 +179,6 @@ const InteractionActionMap: ActionMap = {
           path: "XRInputSource/primary/xr-standard-squeeze",
         },
       ],
-      networked: true,
     },
     {
       id: "secondarySqueeze",
@@ -193,7 +190,6 @@ const InteractionActionMap: ActionMap = {
           path: "XRInputSource/secondary/xr-standard-squeeze",
         },
       ],
-      networked: true,
     },
     {
       id: "throw",
@@ -209,7 +205,6 @@ const InteractionActionMap: ActionMap = {
           path: "Mouse/Left",
         },
       ],
-      networked: true,
     },
     {
       id: "delete",
@@ -221,7 +216,6 @@ const InteractionActionMap: ActionMap = {
           path: "Keyboard/KeyX",
         },
       ],
-      networked: true,
     },
     {
       id: "scroll",
@@ -233,7 +227,6 @@ const InteractionActionMap: ActionMap = {
           y: "Mouse/Scroll",
         },
       ],
-      networked: true,
     },
     {
       id: "screen-position",

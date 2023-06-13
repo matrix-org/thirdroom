@@ -28,7 +28,6 @@ for (let i = 0; i < 10; i++) {
         path: `Keyboard/Digit${i}`,
       },
     ],
-    networked: true,
   };
 
   if (i === 1) {

@@ -411,7 +411,7 @@ export function HydrogenRootView() {
     [client, platform, navigation, containerEl, urlRouter, logger, session, profileRoom, login, logout]
   );
 
-  const previewPath = useMatch({ path: "/preview" });
+  const landingPath = useMatch({ path: "/landing" });
   const loginPath = useMatch({ path: "/login" });
 
   const href = window.location.href;
@@ -421,7 +421,7 @@ export function HydrogenRootView() {
     localStorage.setItem("on_login_redirect_uri", href);
   }
 
-  if (sessionInfo && !loading && !session && !previewPath) {
+  if (sessionInfo && !loading && !session && !landingPath) {
     loadInitialSession(sessionInfo);
   }
 
@@ -444,12 +444,12 @@ export function HydrogenRootView() {
     return <Navigate to="/login" replace={true} />;
   }
 
-  if (!previewPath && !loginPath && !session && !sessionInfo) {
-    return <Navigate to="/preview" replace={true} />;
+  if (!landingPath && !loginPath && !session && !sessionInfo) {
+    return <Navigate to="/landing" replace={true} />;
   }
 
   const onLoginRedirectPath = localStorage.getItem("on_login_redirect_uri")?.match(WORLD_PATH_REG)?.[1];
-  if (sessionInfo && !previewPath && onLoginRedirectPath) {
+  if (sessionInfo && !landingPath && onLoginRedirectPath) {
     localStorage.removeItem("on_login_redirect_uri");
     return <Navigate to={onLoginRedirectPath} />;
   }

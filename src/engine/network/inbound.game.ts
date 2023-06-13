@@ -1,12 +1,12 @@
 import { availableRead } from "@thirdroom/ringbuffer";
 
-import { createCursorView } from "../allocator/CursorView";
+import { createCursorView, CursorView } from "../allocator/CursorView";
 import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import { GameNetworkState, NetworkModule, ownedPlayerQuery } from "./network.game";
 import { NetworkAction } from "./NetworkAction";
 import { dequeueNetworkRingBuffer } from "./RingBuffer";
-import { NetPipeData, readMetadata } from "./serialization.game";
+import { readMetadata } from "./serialization.game";
 
 const processNetworkMessage = (ctx: GameState, peerId: string, msg: ArrayBuffer) => {
   const network = getModule(ctx, NetworkModule);
@@ -25,7 +25,6 @@ const processNetworkMessage = (ctx: GameState, peerId: string, msg: ArrayBuffer)
     historian.needsUpdate = true;
   }
 
-  const data: NetPipeData = [ctx, cursorView, peerId];
   const { messageHandlers } = getModule(ctx, NetworkModule);
 
   const handler = messageHandlers[messageType];
@@ -37,7 +36,7 @@ const processNetworkMessage = (ctx: GameState, peerId: string, msg: ArrayBuffer)
     return;
   }
 
-  handler(data);
+  handler(ctx, cursorView, peerId);
 };
 
 const ringOut = { packet: new ArrayBuffer(0), peerId: "", broadcast: false };
@@ -81,7 +80,7 @@ const processNetworkMessages = (state: GameState, network: GameNetworkState) => 
 export const registerInboundMessageHandler = (
   network: GameNetworkState,
   type: number,
-  cb: (input: NetPipeData) => void
+  cb: (ctx: GameState, v: CursorView, peerId: string) => void
 ) => {
   // TODO: hold a list of multiple handlers
   network.messageHandlers[type] = cb;

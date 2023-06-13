@@ -94,6 +94,9 @@ jobs:
           owner: ${{ github.event.workflow_run.head_repository.owner.login }}
           branch: ${{ github.event.workflow_run.head_branch }}
 
+      - name: Rename .well-known -> well-known for Netlify upload
+        run: mv dist/.well-known dist/well-known
+
       - name: Deploy Preview to Netlify
         id: netlify
         uses: nwtgck/actions-netlify@v1.2

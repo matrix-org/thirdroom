@@ -6,9 +6,9 @@ import { useSearchParams } from "react-router-dom";
 import { registerMessageHandler, Thread } from "../../../engine/module/module.common";
 import { createDisposables } from "../../../engine/utils/createDisposables";
 import {
-  GLTFViewerLoadedMessage,
-  GLTFViewerLoadErrorMessage,
+  WorldLoadErrorMessage,
   ThirdRoomMessageType,
+  WorldLoadedMessage,
 } from "../../../plugins/thirdroom/thirdroom.common";
 import { useKeyDown } from "../../hooks/useKeyDown";
 import { MainThreadContextProvider, useInitMainThreadContext, useMainThreadContext } from "../../hooks/useMainThread";
@@ -64,7 +64,7 @@ export default function GLTFViewer() {
         setLoadState({ loading: true, loaded: false });
 
         mainThread.sendMessage(Thread.Game, {
-          type: ThirdRoomMessageType.GLTFViewerLoadGLTF,
+          type: ThirdRoomMessageType.LoadWorld,
           url,
           fileMap: new Map(),
         });
@@ -79,16 +79,11 @@ export default function GLTFViewer() {
   useEffect(() => {
     if (mainThread) {
       return createDisposables([
-        registerMessageHandler(
-          mainThread,
-          ThirdRoomMessageType.GLTFViewerLoaded,
-          (ctx, message: GLTFViewerLoadedMessage) => setLoadState({ loading: false, loaded: true })
+        registerMessageHandler(mainThread, ThirdRoomMessageType.WorldLoaded, (ctx, message: WorldLoadedMessage) =>
+          setLoadState({ loading: false, loaded: true })
         ),
-        registerMessageHandler(
-          mainThread,
-          ThirdRoomMessageType.GLTFViewerLoadError,
-          (ctx, message: GLTFViewerLoadErrorMessage) =>
-            setLoadState({ loading: false, loaded: true, error: message.error })
+        registerMessageHandler(mainThread, ThirdRoomMessageType.WorldLoadError, (ctx, message: WorldLoadErrorMessage) =>
+          setLoadState({ loading: false, loaded: true, error: message.error })
         ),
       ]);
     }
@@ -132,7 +127,7 @@ export default function GLTFViewer() {
         setLoadState({ loading: true, loaded: false });
 
         mainThread.sendMessage(Thread.Game, {
-          type: ThirdRoomMessageType.GLTFViewerLoadGLTF,
+          type: ThirdRoomMessageType.LoadWorld,
           url,
           scriptUrl,
           fileMap,

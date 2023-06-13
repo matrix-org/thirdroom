@@ -2,7 +2,8 @@
 
 In this series we'll be creating a simple basketball game using the Web Scene Graph API.
 
-<iframe width="688" height="387" src="https://www.youtube-nocookie.com/embed/VimOoGCPWWw" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+<!-- Removed because COEP headers :/ -->
+<!-- <iframe width="688" height="387" src="https://www.youtube-nocookie.com/embed/VimOoGCPWWw" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe> -->
 
 It will be split into 3 parts:
 
@@ -12,7 +13,7 @@ It will be split into 3 parts:
 
 ## Setup
 
-Create a new world using this scene.
+If you're coming here from the in-world tutorial, you should already have a world set up with the correct settings. If not, create a new world in Third Room using [this scene file](https://thirdroom.io/gltf/BasketballCourt.glb) and [this preview image](https://thirdroom.io/image/BasketballPreview.png). The Room name can be whatever you want and the other settings can be left as default.
 
 Open the editor using the `` ` `` key.
 

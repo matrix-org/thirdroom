@@ -210,7 +210,7 @@ const QuatProperty = memo<
 >(
   ({ propName, value, propDef, setProp }) => {
     return (
-      <PropertyContainer name={propName}>
+      <PropertyContainer name={propName === "quaternion" ? "Rotation" : propName}>
         <VectorInput
           value={getEulerRotation(value)}
           type="vec3"
@@ -452,15 +452,7 @@ export function getPropComponents(ctx: IMainThreadContext, resource: MainNode) {
     quat: (propName, propDef) => {
       const value = resource[propName];
       if (!ArrayBuffer.isView(value)) return null;
-      return (
-        <QuatProperty
-          key={propName}
-          value={value}
-          propName={propName === "quaternion" ? "Rotation" : propName}
-          setProp={setProp}
-          propDef={propDef}
-        />
-      );
+      return <QuatProperty key={propName} value={value} propName={propName} setProp={setProp} propDef={propDef} />;
     },
     rgb: (propName, propDef) => {
       const value = resource[propName];

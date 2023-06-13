@@ -314,6 +314,8 @@ function createMeshPrimitiveObject(
     object.geometry.setAttribute("uv2", object.geometry.attributes.uv);
   }
 
+  object.userData.nodeId = node.eid;
+
   return object;
 }
 

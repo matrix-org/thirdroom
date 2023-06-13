@@ -80,7 +80,6 @@ export const CameraRigActionMap: ActionMap = {
           x: "XRInputSource/primary/xr-standard-thumbstick/x-axis",
         },
       ],
-      networked: true,
     },
     {
       id: "exit-orbit",

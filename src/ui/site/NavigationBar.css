@@ -2,7 +2,43 @@
   min-height: 80px;
   padding: 0 var(--sp-md);
   border-bottom: 1px solid var(--bg-surface-border);
+  position: relative;
+
   & a {
     color: var(--tc-surface);
+  }
+
+  & .Logo:hover {
+    text-decoration: none;
+  }
+}
+
+.NavigationBar__menuBtn {
+  visibility: hidden;
+}
+
+@media screen and (max-width: 550px) {
+  .NavigationBar__menuBtn {
+    visibility: visible;
+  }
+  .NavigationBar__menu {
+    visibility: hidden;
+    position: absolute;
+    z-index: 999;
+    left: 0;
+    top: 100%;
+    width: 100%;
+    background: var(--bg-surface);
+    flex-direction: column;
+    align-items: initial;
+    padding: var(--sp-md);
+    border-bottom: 1px solid var(--bg-surface-border);
+
+    & .DropdownMenu__trigger > * {
+      width: 100%;
+    }
+  }
+  .NavigationBar__menu--open {
+    visibility: visible;
   }
 }

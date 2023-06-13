@@ -57,8 +57,9 @@ export const InputModule = defineModule<GameState, GameInputModule>({
     };
   },
   init(ctx) {
+    const input = getModule(ctx, InputModule);
     // TODO: we should enable / disable this depending on whether or not you're in XR
-    enableActionMap(ctx, ARActionMap);
+    enableActionMap(input, ARActionMap);
 
     return createDisposables([
       registerMessageHandler(ctx, InputMessageType.UpdateXRInputSources, onUpdateXRInputSources),

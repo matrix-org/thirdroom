@@ -38,7 +38,6 @@ export const FlyCharacterControllerActionMap: ActionMap = {
           right: "Keyboard/KeyD",
         },
       ],
-      networked: true,
     },
     {
       id: "boost",
@@ -50,7 +49,6 @@ export const FlyCharacterControllerActionMap: ActionMap = {
           path: "Keyboard/ShiftLeft",
         },
       ],
-      networked: true,
     },
   ],
 };
@@ -61,7 +59,8 @@ export const FlyCharacterControllerModule = defineModule<GameState, FlyCharacter
     return {};
   },
   init(ctx) {
-    enableActionMap(ctx, FlyCharacterControllerActionMap);
+    const input = getModule(ctx, InputModule);
+    enableActionMap(input, FlyCharacterControllerActionMap);
   },
 });
 

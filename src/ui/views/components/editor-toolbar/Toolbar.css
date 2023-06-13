@@ -1,0 +1,17 @@
+.Toolbar {
+  height: 38px;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-xs);
+
+  background-color: var(--bg-surface);
+  border-radius: var(--br-xs);
+  box-shadow: var(--bs-surface);
+}
+
+.ToolbarItemGroup {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 7px;
+}

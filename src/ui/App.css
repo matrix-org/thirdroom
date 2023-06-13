@@ -113,8 +113,8 @@
 
   /* line heights */
   --lh-h1: 48px;
-  --lh-h2: 28px;
-  --lh-s1: 24px;
+  --lh-h2: 30px;
+  --lh-s1: 26px;
   --lh-s2: 22px;
   --lh-c1: 26px;
   --lh-b1: 24px;
@@ -155,7 +155,7 @@
   --bs-dialog: 0 3px 8px 0 hsl(0deg 0% 0% / 20%);
 
   --z-dropdown: 500;
-  --z-modal: 100;
+  --z-modal: 200;
   --z-dialog: 200;
 
   /* outline */

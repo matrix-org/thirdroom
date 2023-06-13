@@ -1,0 +1,12 @@
+{
+  "m.homeserver": {
+    "base_url": "https://matrix.thirdroom.io/"
+  },
+  "org.matrix.msc2965.authentication": {
+    "issuer": "https://id.thirdroom.io/realms/thirdroom",
+    "account": "https://id.thirdroom.io/realms/thirdroom/account"
+  },
+  "org.matrix.msc3575.proxy": {
+    "url": "https://sync.matrix.thirdroom.io/"
+  }
+}

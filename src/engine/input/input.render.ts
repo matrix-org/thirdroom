@@ -18,6 +18,7 @@ import {
   XRHandPosesSchema,
   XRHandPosesTripleBuffer,
   XRToInputComponentId,
+  ScreenSpaceMouseCoordsTripleBuffer,
 } from "./input.common";
 import { enqueueInputRingBuffer, InputRingBuffer } from "./InputRingBuffer";
 import { createObjectTripleBuffer, getWriteObjectBufferView } from "../allocator/ObjectBufferView";
@@ -52,6 +53,7 @@ export interface RenderInputModule {
   rightControllerPose?: XRPose;
   updateReferenceSpaceHand?: XRHandedness;
   originalReferenceSpace?: XRReferenceSpace;
+  screenSpaceMouseCoords: ScreenSpaceMouseCoordsTripleBuffer;
 }
 
 /******************
@@ -61,7 +63,7 @@ export interface RenderInputModule {
 export const InputModule = defineModule<RenderThreadState, RenderInputModule>({
   name: "input",
   async create(ctx, { waitForMessage }) {
-    const { inputRingBuffer } = await waitForMessage<InitializeInputStateMessage>(
+    const { inputRingBuffer, screenSpaceMouseCoords } = await waitForMessage<InitializeInputStateMessage>(
       Thread.Main,
       InputMessageType.InitializeInputState
     );
@@ -75,6 +77,7 @@ export const InputModule = defineModule<RenderThreadState, RenderInputModule>({
       inputSourceItems: [],
       inputRingBuffer,
       cameraPoseTripleBuffer,
+      screenSpaceMouseCoords,
     };
   },
   init(ctx) {

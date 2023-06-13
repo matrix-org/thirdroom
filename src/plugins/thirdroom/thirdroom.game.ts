@@ -22,10 +22,7 @@ import {
   LoadWorldMessage,
   PrintThreadStateMessage,
   ThirdRoomMessageType,
-  // GLTFViewerLoadGLTFMessage,
   ExitedWorldMessage,
-  // GLTFViewerLoadErrorMessage,
-  // GLTFViewerLoadedMessage,
   PrintResourcesMessage,
   EnteredWorldMessage,
   EnterWorldErrorMessage,
@@ -66,7 +63,7 @@ import { RemoteResource } from "../../engine/resource/RemoteResourceClass";
 import { actionBarMap, setDefaultActionBarItems } from "./action-bar.game";
 import { createDisposables } from "../../engine/utils/createDisposables";
 import { registerPlayerPrefabs, loadPlayerRig } from "../../engine/player/PlayerRig";
-import { createAsyncTaskRunner } from "../../engine/utils/AsyncTaskRunner";
+import { createSingletonTaskRunner } from "../../engine/utils/AsyncTaskRunner";
 
 type WorldLoaderMessage = LoadWorldMessage | EnterWorldMessage | ExitWorldMessage;
 
@@ -107,12 +104,12 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
   },
   async init(ctx) {
     const { worldLoaderMessages } = getModule(ctx, ThirdRoomModule);
+    const input = getModule(ctx, InputModule);
 
     const dispose = createDisposables([
       worldLoaderMessages.register(ctx),
       registerMessageHandler(ctx, ThirdRoomMessageType.PrintThreadState, onPrintThreadState),
       registerMessageHandler(ctx, ThirdRoomMessageType.PrintResources, onPrintResources),
-      //registerMessageHandler(ctx, ThirdRoomMessageType.GLTFViewerLoadGLTF, onGLTFViewerLoadGLTF),
       registerMessageHandler(ctx, ThirdRoomMessageType.FindResourceRetainers, onFindResourceRetainers),
     ]);
 
@@ -155,7 +152,7 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
       }
     });
 
-    enableActionMap(ctx, actionBarMap);
+    enableActionMap(input, actionBarMap);
 
     return () => {
       dispose();
@@ -163,29 +160,6 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
     };
   },
 });
-
-// async function onLoadWorld(ctx: GameState, message: LoadWorldMessage) {
-//   // TODO: Move to loading in a system and spawning all resources in a single frame
-//   // World load lifecycle handled by GLTFLoader component etc.
-//   try {
-//     await loadEnvironment(ctx, message.url, message.scriptUrl);
-
-//     ctx.sendMessage<WorldLoadedMessage>(Thread.Main, {
-//       type: ThirdRoomMessageType.WorldLoaded,
-//       id: message.id,
-//       url: message.url,
-//     });
-//   } catch (error: any) {
-//     console.error(error);
-
-//     ctx.sendMessage<WorldLoadErrorMessage>(Thread.Main, {
-//       type: ThirdRoomMessageType.WorldLoadError,
-//       id: message.id,
-//       url: message.url,
-//       error: error.message || "Unknown error",
-//     });
-//   }
-// }
 
 function onPrintThreadState(ctx: GameState, message: PrintThreadStateMessage) {
   console.log(Thread.Game, ctx);
@@ -216,40 +190,6 @@ function onFindResourceRetainers(ctx: GameState, message: FindResourceRetainersM
   });
 }
 
-// async function onGLTFViewerLoadGLTF(ctx: GameState, message: GLTFViewerLoadGLTFMessage) {
-//   try {
-//     const network = getModule(ctx, NetworkModule);
-//     const physics = getModule(ctx, PhysicsModule);
-//     const input = getModule(ctx, InputModule);
-
-//     await loadEnvironment(ctx, message.url, message.scriptUrl, message.fileMap);
-
-//     loadPlayerRig(ctx, physics, input, network);
-
-//     await waitUntil(() => ourPlayerQuery(ctx.world).length > 0);
-
-//     await waitForCurrentSceneToRender(ctx, 10);
-
-//     ctx.sendMessage<GLTFViewerLoadedMessage>(Thread.Main, {
-//       type: ThirdRoomMessageType.GLTFViewerLoaded,
-//       url: message.url,
-//     });
-//   } catch (error: any) {
-//     console.error(error);
-
-//     ctx.sendMessage<GLTFViewerLoadErrorMessage>(Thread.Main, {
-//       type: ThirdRoomMessageType.GLTFViewerLoadError,
-//       error: error.message || "Unknown Error",
-//     });
-
-//     URL.revokeObjectURL(message.url);
-
-//     for (const objectUrl of message.fileMap.values()) {
-//       URL.revokeObjectURL(objectUrl);
-//     }
-//   }
-// }
-
 function disposeWorld(worldResource: RemoteWorld) {
   worldResource.activeCameraNode = undefined;
   worldResource.activeAvatarNode = undefined;
@@ -259,7 +199,7 @@ function disposeWorld(worldResource: RemoteWorld) {
 
 export const spawnPointQuery = defineQuery([SpawnPoint]);
 
-const worldLoaderTaskRunner = createAsyncTaskRunner();
+const worldLoaderTaskRunner = createSingletonTaskRunner();
 
 export function WorldLoaderSystem(ctx: GameState) {
   const { worldLoaderMessages } = getModule(ctx, ThirdRoomModule);
@@ -267,12 +207,11 @@ export function WorldLoaderSystem(ctx: GameState) {
 
   while ((message = worldLoaderMessages.dequeue())) {
     if (message.type === ThirdRoomMessageType.LoadWorld) {
-      worldLoaderTaskRunner.remove("world");
-      worldLoaderTaskRunner.add("world", [ctx, message], loadWorld as any);
+      worldLoaderTaskRunner.run([ctx, message], loadWorld as any);
     } else if (message.type === ThirdRoomMessageType.EnterWorld) {
-      worldLoaderTaskRunner.add("world", [ctx, message], enterWorld as any);
+      worldLoaderTaskRunner.run([ctx, message], enterWorld as any);
     } else if (message.type === ThirdRoomMessageType.ExitWorld) {
-      worldLoaderTaskRunner.remove("world");
+      worldLoaderTaskRunner.cancel();
       exitWorld(ctx, message);
     }
   }

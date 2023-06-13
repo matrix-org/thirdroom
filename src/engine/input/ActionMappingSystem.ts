@@ -115,8 +115,7 @@ export function ActionMappingSystem(ctx: GameState) {
   }
 }
 
-export function enableActionMap(ctx: GameState, actionMap: ActionMap) {
-  const input = getModule(ctx, InputModule);
+export function enableActionMap(input: GameInputModule, actionMap: ActionMap) {
   const index = input.actionMaps.indexOf(actionMap);
   if (index === -1) {
     input.actionMaps.push(actionMap);
@@ -127,8 +126,7 @@ export function enableActionMap(ctx: GameState, actionMap: ActionMap) {
   }
 }
 
-export function disableActionMap(ctx: GameState, actionMap: ActionMap) {
-  const input = getModule(ctx, InputModule);
+export function disableActionMap(input: GameInputModule, actionMap: ActionMap) {
   const index = input.actionMaps.indexOf(actionMap);
   if (index !== -1) {
     for (const actionDef of actionMap.actionDefs) {

@@ -23,7 +23,6 @@ export interface ActionDefinition {
   path: string;
   type: ActionType;
   bindings: ActionBindingTypes[];
-  networked?: boolean;
 }
 
 export enum BindingType {

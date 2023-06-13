@@ -21,7 +21,7 @@ import { InputModule } from "./input.game";
 import { XRInputHandedness } from "./WebXRInputProfiles";
 import { Networked, Owned } from "../network/NetworkComponents";
 import { broadcastReliable } from "../network/outbound.game";
-import { createInformXRMode } from "../network/serialization.game";
+import { createInformXRModeMessage } from "../network/serialization.game";
 import { NetworkModule } from "../network/network.game";
 import { XRHeadComponent, XRControllerComponent } from "../player/PlayerRig";
 import { AvatarRef } from "../player/components";
@@ -75,7 +75,7 @@ export function WebXRAvatarRigSystem(ctx: GameState) {
     rendererModule.prevXRMode = ourXRMode;
 
     // inform other clients of our XRMode
-    broadcastReliable(ctx, network, createInformXRMode(ctx, ourXRMode));
+    broadcastReliable(ctx, network, createInformXRModeMessage(ctx, ourXRMode));
   }
 
   for (let i = 0; i < rigs.length; i++) {
@@ -201,7 +201,6 @@ export const ARActionMap: ActionMap = {
           path: "XRInputSource/left/xr-standard-thumbstick/button",
         },
       ],
-      // networked: true,
     },
     {
       id: "reset-reference-space-right",
@@ -213,7 +212,6 @@ export const ARActionMap: ActionMap = {
           path: "XRInputSource/right/xr-standard-thumbstick/button",
         },
       ],
-      // networked: true,
     },
   ],
 };

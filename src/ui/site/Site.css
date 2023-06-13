@@ -1,7 +1,7 @@
 .Site {
   --side-spacing: var(--sp-lg);
   --hero-max-width: calc(940px + 2 * var(--side-spacing));
-  --content-max-width: calc(800px + 2 * var(--side-spacing));
+  --content-max-width: calc(1340px + 2 * var(--side-spacing));
 
   --fs-display: 48px;
   --lh-display: 56px;
