@@ -5164,6 +5164,11 @@ monaco-themes@^0.4.3:
   dependencies:
     fast-plist "^0.1.2"
 
+monaco-vim@^0.4.0:
+  version "0.4.0"
+  resolved "https://registry.yarnpkg.com/monaco-vim/-/monaco-vim-0.4.0.tgz#060b89bd00f3731ca48586a06023954fd5beaaf2"
+  integrity sha512-+CsW0+Mvx2+eitkXS7OpUXIu57qXlqAL8oVkYhkPCEZ/c6+6gOp/IcG7w+Lb33YiZuTyvJ891+czkeJRPIEwVA==
+
 mrmime@^1.0.0:
   version "1.0.1"
   resolved "https://registry.npmjs.org/mrmime/-/mrmime-1.0.1.tgz"

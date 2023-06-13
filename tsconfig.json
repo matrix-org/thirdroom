@@ -19,6 +19,7 @@
   "include": [
     "./src",
     "./deps.d.ts",
+    "./index.d.ts",
     "./test",
     "./vite.config.ts",
     "./logviewer/src",
