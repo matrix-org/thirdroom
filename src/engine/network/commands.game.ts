@@ -1,5 +1,6 @@
 import {
   createCursorView,
+  CursorView,
   readArrayBuffer,
   readUint16,
   readUint8,
@@ -15,7 +16,7 @@ import { getInputController } from "../input/InputController";
 import { getModule } from "../module/module.common";
 import { NetworkModule } from "./network.game";
 import { NetworkAction } from "./NetworkAction";
-import { NetPipeData, writeMetadata } from "./serialization.game";
+import { writeMetadata } from "./serialization.game";
 
 const MAX_MESSAGES = 1000;
 const MESSAGE_SIZE =
@@ -24,7 +25,7 @@ const MESSAGE_SIZE =
 const writeView = createCursorView(new ArrayBuffer(MAX_MESSAGES * MESSAGE_SIZE));
 
 export const createCommandsMessage = (ctx: GameState, actions: [number, number, ArrayBuffer][]) => {
-  writeMetadata(NetworkAction.Command)([ctx, writeView]);
+  writeMetadata(writeView, NetworkAction.Command);
   writeUint8(writeView, actions.length);
   for (let i = 0; i < actions.length; i++) {
     const [, actionId, buffer] = actions[i];
@@ -35,29 +36,28 @@ export const createCommandsMessage = (ctx: GameState, actions: [number, number, 
   return sliceCursorView(writeView);
 };
 
-export const deserializeCommands = (data: NetPipeData) => {
-  const [ctx, readView, peerId] = data;
+export const deserializeCommands = (ctx: GameState, v: CursorView, peerId: string) => {
   const input = getModule(ctx, InputModule);
   const network = getModule(ctx, NetworkModule);
 
   const eid = network.peerIdToEntityId.get(peerId);
 
   if (!eid) {
-    return data;
+    return;
   }
 
   const controller = getInputController(input, eid);
 
   if (!controller) {
     console.warn("could not deserialize commands for peerId", peerId, ", controller not found");
-    return data;
+    return;
   }
 
-  const count = readUint8(readView);
+  const count = readUint8(v);
   for (let i = 0; i < count; i++) {
-    const id = readUint8(readView);
-    const byteLength = readUint16(readView);
-    const encodedAction = readArrayBuffer(readView, byteLength);
+    const id = readUint8(v);
+    const byteLength = readUint16(v);
+    const encodedAction = readArrayBuffer(v, byteLength);
 
     const path = controller.idToPath.get(id)!;
     const actionDef = controller.pathToDef.get(path)!;
@@ -65,6 +65,4 @@ export const deserializeCommands = (data: NetPipeData) => {
     const decodedAction = action.decode(encodedAction);
     controller.actionStates.set(path, decodedAction);
   }
-
-  return data;
 };
