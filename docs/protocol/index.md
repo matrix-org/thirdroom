@@ -16,21 +16,21 @@ Member leaves or is disconnected from Matrix Group Call. This can happen when ex
 
 Dispose of all network entities and reset the network state.
 
-### Peer Join
+### Peer Entered
 
 There will be separate behaviors when a new member has entered the call for the host and for other members on the call.
 
-The host will assign a new peer index to the new member and send them a `HostSnapshot` message. The host will also send a `PeerJoin` message to all other members on the call. The host should also store a reference to the new member's `RTCDataChannel` and `MediaStream` objects referenced by their mxid.
+The host will assign a new peer index to the new member and send them a `HostSnapshot` message. The host will also send a `PeerEntered` message to all other members on the call. The host should also store a reference to the new member's `RTCDataChannel` and `MediaStream` objects referenced by their mxid.
 
 Non-host members will not send any messages to other peers. They will only store a reference to the new member's `RTCDataChannel` and `MediaStream` objects referenced by their mxid.
 
 New peers will not be eligible to be the host until they have received a `HostSnapshot` from the current host and have knowledge of the current peers on the call. Once they have received this message, they will be able to send their own `HostSnapshot` messages to the other peers on the call.
 
-### Peer Left
+### Peer Exited
 
-There will be separate behaviors when a member has left the call for the host and for other members on the call.
+There will be separate behaviors when a member has exited the call for the host and for other members on the call.
 
-The host will remove the peer from the list of peers and send a `PeerLeft` message to all other members on the call. The host should also remove the reference to the peer's `RTCDataChannel` and `MediaStream` objects referenced by their mxid.
+The host will remove the peer from the list of peers and send a `PeerExited` message to all other members on the call. The host should also remove the reference to the peer's `RTCDataChannel` and `MediaStream` objects referenced by their mxid.
 
 Non-host members will not send any messages to other peers. They will only remove the reference to the peer's `RTCDataChannel` and `MediaStream` objects referenced by their mxid.
 
@@ -66,10 +66,11 @@ These are monotonically increasing 64 bit unsigned integers that are assigned to
 ```c
 enum NetworkMessageType {
   HostSnapshot = 0
-  PeerJoin = 1
-  PeerLeft = 2
-  SpawnDespawnRPC = 3
-  EntityUpdates = 4
+  PeerEntered = 1
+  PeerExited = 2
+  HostCommands = 3
+  PeerCommands = 4
+  EntityUpdates = 5
 }
 
 struct PeerInfo {
@@ -81,8 +82,9 @@ struct PeerInfo {
 struct Spawn {
   networkId: uint64
   schemaId: uint32
+  creationDataByteLength: uint32
   creationData: uint8[]
-  updateData: uint8[]
+  updateData: uint8[] // byte length determined by schema
 }
 
 struct Despawn {
@@ -95,9 +97,19 @@ struct Update {
   data: uint8[] // The update data
 }
 
+struct AuthorityTransfer {
+  networkId: uint64 // The network id of the spawned node
+  newAuthorIndex: uint64 // The newly authoring peerIndex
+}
+
 struct RPC {
   type: uint32 // The RPC type
   data: uint8[] // The RPC data, unique to each RPC type (note script RPC should send a byte length for data so that we properly deserialize the full data array)
+}
+
+struct Action {
+  type: uint32 // The Action type
+  data: uint8[] // The Action data, unique to each Action type (note script Action should send a byte length for data so that we properly deserialize the full data array)
 }
 
 // reliable & ordered
@@ -110,29 +122,45 @@ message HostSnapshot {
   peers: PeerInfo[peerCount]
   entityCount: uint32
   entitySpawns: Spawn[entityCount]
+  hostStateByteLength: uint32
+  hostState: uint8[char]
 }
 
 // reliable & ordered
-message PeerJoin {
-  type: NetworkMessageType.PeerJoin
+message PeerEntered {
+  type: NetworkMessageType.PeerEntered
   peerInfo: PeerInfo
 }
 
 // reliable & ordered
-message PeerLeft {
-  type: NetworkMessageType.PeerLeft
+message PeerExited {
+  type: NetworkMessageType.PeerExited
   peerIndex: uint64
 }
 
 // reliable & ordered
-message SpawnDespawnRPC {
-  type: NetworkMessageType.SpawnDespawn
+message HostCommands {
+  type: NetworkMessageType.HostCommands
 
   spawnCount: uint32 // enterQuery.length
   spawns: Spawn[entitySpawnCount]
 
   despawnCount: uint32 // exitQuery.length
   despawns: Despawn[entityDespawnCount]
+
+  authorityTransferCount: uint32
+  authorityTransfers: AuthorityTransfer[authorityTransferCount]
+
+  rpcCount: uint32 // rpcs.length
+  rpcs: RPC[rpcCount]
+
+  actionCount: uint32 // actions.length
+  actions: Action[actionCount]
+}
+
+// reliable & ordered
+message PeerCommands {
+  type: NetworkMessageType.PeerCommands
 
   rpcCount: uint32 // rpcs.length
   rpcs: RPC[rpcCount]
@@ -156,7 +184,7 @@ Structs are schemas for the shape of the data in binary. They are encoded in the
 
 - NetworkMessageType
 
-  - An enumeration of the different types of messages that can be passed around in this network protocol. This includes the HostSnapshot, PeerJoin, PeerLeft, SpawnDespawnRPC, and EntityUpdates message types. There is a reserved range of enum integer representations for internal message types. Other message types can be defined by users using integer ranges outside of the internally reserved range.
+  - An enumeration of the different types of messages that can be passed around in this network protocol. This includes the HostSnapshot, PeerEntered, PeerExited, SpawnDespawnRPC, and EntityUpdates message types. There is a reserved range of enum integer representations for internal message types. Other message types can be defined by users using integer ranges outside of the internally reserved range.
 
 - PeerInfo
 
@@ -178,6 +206,13 @@ Structs are schemas for the shape of the data in binary. They are encoded in the
 
   - This struct is used for sending remote procedure calls. It contains an identifier for the type of RPC and a byte array containing the data unique to each RPC type.
 
+- Action
+
+  - This struct is used for sending replayable actions. It contains an identifier for the type of Action and a byte array containing the data unique to each Action type.
+
+- AuthorityTransfer
+  - This struct is used to transfer authority from one peer to another. It contains a networkId of the entity we are transfering the authority for, and the peer index of the new authoring peer.
+
 ### Messages
 
 - HostSnapshot
@@ -185,20 +220,25 @@ Structs are schemas for the shape of the data in binary. They are encoded in the
   - This message is reliably and orderedly sent from the host to the peers. It contains the host's time, the host's peer index, the local peer index for the receiving client, a count of peers, the peers' information, a count of entities, and the entity spawn information.
   - Contains arrays of Spawn and Update structs
 
-- PeerJoin
+- PeerEntered
 
-  - This message is reliably and orderedly sent when a new peer joins the network. It contains the new peer's information.
+  - This message is reliably and orderedly sent when a new peer enters the group call. It contains the new peer's information.
   - Contains PeerInfo struct
 
-- PeerLeft
+- PeerExited
 
-  - This message is reliably and orderedly sent when a peer leaves the network. It contains the index of the peer that has left.
+  - This message is reliably and orderedly sent when a peer leaves the group call. It contains the index of the peer that has exited.
   - Contains no structs, just a peerIndex
 
-- SpawnDespawnRPC
+- HostCommands
 
-  - This message is reliably and orderedly sent to spawn and despawn entities and make remote procedure calls. It contains counts and data for the spawns, despawns, and RPCs.
-  - Contains arrays of Spawn, Despawn, and RPC structs
+  - This message is reliably and orderedly sent to spawn and despawn entities, transfer authority, and make remote procedure calls. It contains counts and data for the spawns, despawns, authority transfers, and RPCs.
+  - Contains arrays of Spawn, Despawn, AuthorityTransfer, and RPC structs
+
+- PeerCommands
+
+  - This message is reliably and orderedly sent to make remote procedure calls. It contains a count and data for the RPCs.
+  - Contains an array of RPC structs
 
 - EntityUpdates
 
@@ -207,18 +247,4 @@ Structs are schemas for the shape of the data in binary. They are encoded in the
 
 ## Authority
 
-A peer having authority over an entity means that the peer is solely responsible for establishing the source-of-truth for that entity's state. By default, the host will have authority over all networked entities in the simulation **except for other peer's avatars**. Having peers send source-of-truth updates about their avatar is known as client-authority. When a non-host peer interacts with an entity that they do not have authority over, such as picking up an entity and moving it around, the peer obtains a temporary authority lock on the entity. The host will cease having authoritative simulation control over the entity, but will still be responsible for relaying the entity's source-of-truth. When the peer stops actively interacting with the entity, authority is relinquished by the peer back to the host.
-
-### Authoritative Components
-
-Three components are used to determine how the peer's simulation treats each networked entity.
-
-- Networked
-  - This component simply indicates that the entity exists as a networked entity.
-  - Holds the networkID for the entity
-  - Holds the authoring peer's peerIndex (our own peerIndex if we are the authoring host)
-- Authoring
-  - This component indicates that the current peer's simulation is responsible for dictating source-of-truth updates about the entity. When this component is combined with Networked, it will cause the client to start sending out source-of-truth updates for an entity.
-- Relaying
-  - This component indicates that this peer is hosting the simulation for this entity, but is only responsible for relaying the source-of-truth state for this entity which is being received by another peer who is authoring the source-of-truth for the entity
-  - Holds the peerIndex of the peer who we are relaying the source-of-truth for
+A peer having authority over an entity means that the peer is solely responsible for establishing the source-of-truth for that entity's state. By default, the host will have authority over all networked entities in the simulation **except for other peer's avatars**. The host will be responsible for spawning other peer's avatars, but peers will be responsible for sending source-of-truth updates to the host after being spawned. Having peers send source-of-truth updates about their avatar is known as client-authority. When a non-host peer interacts with an entity that they do not have authority over, such as picking up an entity and moving it around, the peer obtains a temporary authority lock on the entity. The host will cease having authoritative simulation control over the entity, but will still be responsible for relaying the entity's source-of-truth. When the peer stops actively interacting with the entity, authority is relinquished by the peer back to the host.
