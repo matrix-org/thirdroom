@@ -1,8 +1,13 @@
+import { Meta } from "@storybook/react";
+
 import { FileUploadCard } from "./FileUploadCard";
 
-export const title = "File Upload";
+export default {
+  title: "FileUploadCard",
+  component: FileUploadCard,
+} as Meta<typeof FileUploadCard>;
 
-export default function FileUploadStories() {
+export function FileUploadStories() {
   return (
     <div>
       <FileUploadCard

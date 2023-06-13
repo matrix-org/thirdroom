@@ -1,9 +1,14 @@
+import { Meta } from "@storybook/react";
+
 import { IconButton } from "./IconButton";
 import HomeIC from "../../../../res/ic/home.svg";
 
-export const title = "IconButton";
+export default {
+  title: "IconButton",
+  component: IconButton,
+} as Meta<typeof IconButton>;
 
-export default function IconButtonStories() {
+export function IconButtonStories() {
   return (
     <div className="flex">
       <div>

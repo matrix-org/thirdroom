@@ -1,11 +1,16 @@
+import { Meta } from "@storybook/react";
+
 import { WorldPreviewCard } from "./WorldPreviewCard";
 import { Button } from "../../../atoms/button/Button";
 import { Progress } from "../../../atoms/progress/Progress";
 import { Text } from "../../../atoms/text/Text";
 
-export const title = "WorldPreviewCard";
+export default {
+  title: "WorldPreviewCard",
+  component: WorldPreviewCard,
+} as Meta<typeof WorldPreviewCard>;
 
-export default function WorldPreviewCardStories() {
+export function WorldPreviewCardStories() {
   return (
     <div>
       <WorldPreviewCard

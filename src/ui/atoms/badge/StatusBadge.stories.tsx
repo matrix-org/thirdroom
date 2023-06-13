@@ -1,8 +1,13 @@
+import { Meta } from "@storybook/react";
+
 import { StatusBadge } from "./StatusBadge";
 
-export const title = "StatusBadge";
+export default {
+  title: "StatusBadge",
+  component: StatusBadge,
+} as Meta<typeof StatusBadge>;
 
-export default function StatusBadgeStories() {
+export function StatusBadgeStories() {
   return (
     <div className="flex">
       <StatusBadge status="offline" />

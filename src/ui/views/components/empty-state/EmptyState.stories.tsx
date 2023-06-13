@@ -1,9 +1,14 @@
+import { Meta } from "@storybook/react";
+
 import { Button } from "../../../atoms/button/Button";
 import { EmptyState } from "./EmptyState";
 
-export const title = "EmptyState";
+export default {
+  title: "EmptyState",
+  component: EmptyState,
+} as Meta<typeof EmptyState>;
 
-export default function EmptyStateStories() {
+export function EmptyStateStories() {
   return (
     <div>
       <EmptyState

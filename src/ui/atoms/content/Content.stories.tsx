@@ -1,8 +1,13 @@
+import { Meta } from "@storybook/react";
+
 import { Content } from "./Content";
 
-export const title = "Content";
+export default {
+  title: "Content",
+  component: Content,
+} as Meta<typeof Content>;
 
-export default function ContentStories() {
+export function ContentStories() {
   return (
     <div>
       <Content top="header" bottom="footer">

@@ -1,11 +1,15 @@
 import { useState } from "react";
+import { Meta } from "@storybook/react";
 
 import { NumericInput } from "./NumericInput";
 import { Text } from "../text/Text";
 
-export const title = "NumericInput";
+export default {
+  title: "NumericInput",
+  component: NumericInput,
+} as Meta<typeof NumericInput>;
 
-export default function NumericInputStories() {
+export function NumericInputStories() {
   const [f32, setF32] = useState<number>(10.32);
   const [u32, setU32] = useState<number>(10);
 
