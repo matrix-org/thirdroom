@@ -20,7 +20,7 @@ import { ResourceModule, MainNode, getLocalResource } from "../../engine/resourc
 import kebabToPascalCase from "../../engine/utils/kebabToPascalCase";
 import { editorAtom, HierarchyTab, hierarchyTabAtom, resourceMenuAtom } from "../state/editor";
 import { LocalResourceInstance, ResourceDefinition } from "../../engine/resource/ResourceDefinition";
-import { IMainThreadContext } from "../../engine/MainThread";
+import { MainContext } from "../../engine/MainThread";
 interface EditorUIState {
   loading: boolean;
   scene?: EditorNode;
@@ -56,10 +56,7 @@ export function useEditor(treeViewRef: RefObject<TreeViewRefApi>): EditorUIState
       setSelectedEntity(mainThread, resourceId);
     } else if (resourceId) {
       const resourceId = editorState.activeEntity;
-      const resource = getLocalResource<LocalResourceInstance<ResourceDefinition, IMainThreadContext>>(
-        mainThread,
-        resourceId
-      );
+      const resource = getLocalResource<LocalResourceInstance<ResourceDefinition, MainContext>>(mainThread, resourceId);
 
       if (!resource) {
         return;

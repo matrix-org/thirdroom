@@ -1,11 +1,11 @@
 import { defineModule, Thread } from "../module/module.common";
-import { IMainThreadContext } from "../MainThread";
+import { MainContext } from "../MainThread";
 import { InitializeCanvasMessage, RendererMessageType, rendererModuleName } from "./renderer.common";
 import { createDisposables } from "../utils/createDisposables";
 
 type MainRendererModuleState = {};
 
-export const RendererModule = defineModule<IMainThreadContext, MainRendererModuleState>({
+export const RendererModule = defineModule<MainContext, MainRendererModuleState>({
   name: rendererModuleName,
   async create({ canvas, useOffscreenCanvas, supportedXRSessionModes, quality }, { sendMessage }) {
     const canvasTarget = useOffscreenCanvas ? canvas.transferControlToOffscreen() : canvas;
@@ -39,7 +39,7 @@ export const RendererModule = defineModule<IMainThreadContext, MainRendererModul
   },
 });
 
-const registerResizeEventHandler = (ctx: IMainThreadContext) => {
+const registerResizeEventHandler = (ctx: MainContext) => {
   function onResize() {
     ctx.sendMessage(Thread.Render, {
       type: RendererMessageType.CanvasResize,

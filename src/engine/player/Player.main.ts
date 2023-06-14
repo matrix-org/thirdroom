@@ -1,9 +1,9 @@
-import { IMainThreadContext } from "../MainThread";
+import { MainContext } from "../MainThread";
 import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
 import { createDisposables } from "../utils/createDisposables";
 import { CameraRigMessage } from "./Player.common";
 
-export const PlayerModule = defineModule<IMainThreadContext, { orbiting: boolean }>({
+export const PlayerModule = defineModule<MainContext, { orbiting: boolean }>({
   name: "player",
   create() {
     return { orbiting: false };

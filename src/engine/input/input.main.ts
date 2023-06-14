@@ -1,4 +1,4 @@
-import { IMainThreadContext } from "../MainThread";
+import { MainContext } from "../MainThread";
 import { defineModule, getModule, Thread } from "../module/module.common";
 import { codeToKeyCode } from "./KeyCodes";
 import { PlayerModule } from "../player/Player.main";
@@ -30,7 +30,7 @@ export interface MainInputModule {
  * Initialization *
  *****************/
 
-export const InputModule = defineModule<IMainThreadContext, MainInputModule>({
+export const InputModule = defineModule<MainContext, MainInputModule>({
   name: "input",
   create(ctx, { sendMessage }) {
     // TODO: optimize memory

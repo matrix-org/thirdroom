@@ -1,4 +1,4 @@
-import { IMainThreadContext } from "../MainThread";
+import { MainContext } from "../MainThread";
 import { defineModule, getModule, Thread } from "../module/module.common";
 import { InitializeStatsBufferMessage, StatNames, Stats, StatsBuffer, StatsMessageType } from "./stats.common";
 
@@ -17,7 +17,7 @@ export type StatsObject = { [Property in Exclude<keyof typeof Stats, number>]: n
  * Initialization *
  *****************/
 
-export const StatsModule = defineModule<IMainThreadContext, StatsModuleState>({
+export const StatsModule = defineModule<MainContext, StatsModuleState>({
   name: "stats",
   create(ctx, { sendMessage }) {
     const statsBuffer = createStatsBuffer();
@@ -51,7 +51,7 @@ function createStatsBuffer(): StatsBuffer {
  * API *
  ******/
 
-export function getStats(context: IMainThreadContext): StatsObject {
+export function getStats(context: MainContext): StatsObject {
   const { stats, buffer } = getModule(context, StatsModule);
   stats.fps = buffer.f32[Stats.fps].toFixed(2);
   stats.frameTime = buffer.f32[Stats.frameTime].toFixed(2);

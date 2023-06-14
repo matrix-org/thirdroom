@@ -1,7 +1,7 @@
 import { availableRead } from "@thirdroom/ringbuffer";
 
 import { InitializeNetworkStateMessage, NetworkMessageType, SetHostMessage } from "./network.common";
-import { IMainThreadContext } from "../MainThread";
+import { MainContext } from "../MainThread";
 import { AudioModule, setPeerMediaStream } from "../audio/audio.main";
 import { defineModule, getModule, Thread } from "../module/module.common";
 import {
@@ -34,7 +34,7 @@ export interface MainNetworkState {
  * Initialization *
  *****************/
 
-export const NetworkModule = defineModule<IMainThreadContext, MainNetworkState>({
+export const NetworkModule = defineModule<MainContext, MainNetworkState>({
   name: "network",
   async create(ctx, { sendMessage }) {
     const incomingReliableRingBuffer = createNetworkRingBuffer();
@@ -74,7 +74,7 @@ function isPacketReliable(data: ArrayBuffer): boolean {
 }
 
 const onIncomingMessage =
-  (ctx: IMainThreadContext, network: MainNetworkState, peerId: string) =>
+  (ctx: MainContext, network: MainNetworkState, peerId: string) =>
   ({ data }: { data: ArrayBuffer }) => {
     const isReliable = isPacketReliable(data);
     if (isReliable) {
@@ -87,7 +87,7 @@ const onIncomingMessage =
     }
   };
 
-function onPeerLeft(mainThread: IMainThreadContext, peerId: string) {
+function onPeerLeft(mainThread: MainContext, peerId: string) {
   const network = getModule(mainThread, NetworkModule);
   const { reliableChannels, unreliableChannels } = network;
   const reliableChannel = reliableChannels.get(peerId);
@@ -116,7 +116,7 @@ function onPeerLeft(mainThread: IMainThreadContext, peerId: string) {
  * API *
  ******/
 
-export function setHost(mainThread: IMainThreadContext, hostId: string) {
+export function setHost(mainThread: MainContext, hostId: string) {
   const network = getModule(mainThread, NetworkModule);
   const hostChanged = network.hostId !== hostId;
 
@@ -130,14 +130,14 @@ export function setHost(mainThread: IMainThreadContext, hostId: string) {
   }
 }
 
-export function hasPeer(mainThread: IMainThreadContext, peerId: string): boolean {
+export function hasPeer(mainThread: MainContext, peerId: string): boolean {
   const network = getModule(mainThread, NetworkModule);
   const { reliableChannels } = network;
   return reliableChannels.has(peerId);
 }
 
 export function addPeer(
-  mainThread: IMainThreadContext,
+  mainThread: MainContext,
   peerId: string,
   dataChannel: RTCDataChannel,
   mediaStream?: MediaStream
@@ -183,11 +183,11 @@ export function addPeer(
   }
 }
 
-export function removePeer(mainThread: IMainThreadContext, peerId: string) {
+export function removePeer(mainThread: MainContext, peerId: string) {
   onPeerLeft(mainThread, peerId);
 }
 
-export function toggleMutePeer(mainThread: IMainThreadContext, peerId: string) {
+export function toggleMutePeer(mainThread: MainContext, peerId: string) {
   const audio = getModule(mainThread, AudioModule);
   const mediaStream = audio.mediaStreams.get(peerId);
   if (mediaStream) {
@@ -197,7 +197,7 @@ export function toggleMutePeer(mainThread: IMainThreadContext, peerId: string) {
   }
 }
 
-export function isPeerMuted(mainThread: IMainThreadContext, peerId: string) {
+export function isPeerMuted(mainThread: MainContext, peerId: string) {
   const audio = getModule(mainThread, AudioModule);
   const mediaStream = audio.mediaStreams.get(peerId);
   if (mediaStream) {
@@ -206,7 +206,7 @@ export function isPeerMuted(mainThread: IMainThreadContext, peerId: string) {
   }
 }
 
-export function disconnect(mainThread: IMainThreadContext) {
+export function disconnect(mainThread: MainContext) {
   const network = getModule(mainThread, NetworkModule);
   const { reliableChannels } = network;
   for (const [peerId] of reliableChannels) {
@@ -215,7 +215,7 @@ export function disconnect(mainThread: IMainThreadContext) {
 }
 
 const ringOut = { packet: new ArrayBuffer(0), peerId: "", broadcast: false };
-export function MainThreadNetworkSystem(ctx: IMainThreadContext) {
+export function MainThreadNetworkSystem(ctx: MainContext) {
   const network = getModule(ctx, NetworkModule);
 
   while (availableRead(network.outgoingReliableRingBuffer)) {

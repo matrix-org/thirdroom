@@ -20,9 +20,7 @@ import {
   RenderQualitySetting,
 } from "./renderer/renderer.common";
 
-export type MainThreadSystem = (state: IMainThreadContext) => void;
-
-export interface IMainThreadContext extends ConsumerThreadContext {
+export interface MainContext extends ConsumerThreadContext {
   useOffscreenCanvas: boolean;
   mainToGameTripleBufferFlags: Uint8Array;
   gameToMainTripleBufferFlags: Uint8Array;
@@ -36,6 +34,8 @@ export interface IMainThreadContext extends ConsumerThreadContext {
   elapsed: number;
   quality: RenderQuality;
 }
+
+export type MainThreadSystem = (ctx: MainContext) => void;
 
 async function getSupportedXRSessionModes(): Promise<false | XRSessionMode[]> {
   let supportedXRSessionModes: XRSessionMode[] | false = false;
@@ -131,7 +131,7 @@ export async function MainThread(canvas: HTMLCanvasElement) {
   const gameToRenderTripleBufferFlags = new Uint8Array(new SharedArrayBuffer(Uint8Array.BYTES_PER_ELEMENT)).fill(0x6);
   const gameToMainTripleBufferFlags = new Uint8Array(new SharedArrayBuffer(Uint8Array.BYTES_PER_ELEMENT)).fill(0x6);
 
-  const ctx: IMainThreadContext = {
+  const ctx: MainContext = {
     thread: Thread.Main,
     mainToGameTripleBufferFlags,
     gameToMainTripleBufferFlags,

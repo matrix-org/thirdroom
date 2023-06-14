@@ -2,7 +2,7 @@ import { Node } from "yoga-wasm-web";
 import { CanvasTexture } from "three";
 
 import { AudioModule } from "../audio/audio.main";
-import { IMainThreadContext } from "../MainThread";
+import { MainContext } from "../MainThread";
 import { getModule } from "../module/module.common";
 import { defineLocalResourceClass } from "./LocalResourceClass";
 import { createLocalResourceModule, LoadStatus, ResourceId } from "./resource.common";
@@ -60,18 +60,18 @@ export {
   ReturnRecycledResourcesSystem,
 };
 
-export type MainThreadResource = ILocalResourceConstructor<IMainThreadContext>;
+export type MainThreadResource = ILocalResourceConstructor<MainContext>;
 
 export class MainNametag extends defineLocalResourceClass(NametagResource) {
   declare resourceType: ResourceType.Nametag;
 
-  load(ctx: IMainThreadContext) {
+  load(ctx: MainContext) {
     const audioModule = getModule(ctx, AudioModule);
     const nametags = getLocalResources(ctx, MainNametag);
     audioModule.eventEmitter.emit("nametags-changed", [...nametags, this]);
   }
 
-  dispose(ctx: IMainThreadContext): void {
+  dispose(ctx: MainContext): void {
     super.dispose(ctx);
     const audioModule = getModule(ctx, AudioModule);
     const nametags = getLocalResources(ctx, MainNametag);
@@ -127,7 +127,7 @@ export class MainAudioEmitter extends defineLocalResourceClass(AudioEmitterResou
   outputGain: GainNode | undefined;
   destination: AudioNode | undefined;
 
-  load(ctx: IMainThreadContext) {
+  load(ctx: MainContext) {
     const audioModule = getModule(ctx, AudioModule);
     const audioContext = audioModule.context;
 
@@ -348,7 +348,7 @@ const {
   registerResourceLoader,
   ResourceLoaderSystem,
   ReturnRecycledResourcesSystem,
-} = createLocalResourceModule<IMainThreadContext>([
+} = createLocalResourceModule<MainContext>([
   MainNode,
   MainUIButton,
   MainUICanvas,
