@@ -4,7 +4,7 @@ import { radToDeg } from "three/src/math/MathUtils";
 
 import { addChild } from "../../engine/component/transform";
 import { getForwardVector, getPitch, getYaw } from "../../engine/component/math";
-import { GameState } from "../../engine/GameTypes";
+import { GameContext } from "../../engine/GameTypes";
 import { defineModule, getModule, registerMessageHandler } from "../../engine/module/module.common";
 import { projectPerspective } from "../../engine/camera/camera.game";
 import { RendererModule } from "../../engine/renderer/renderer.game";
@@ -17,7 +17,7 @@ type NametagState = {
   enabled: boolean;
 };
 
-export const NametagModule = defineModule<GameState, NametagState>({
+export const NametagModule = defineModule<GameContext, NametagState>({
   name: "nametags",
   create() {
     return {
@@ -29,7 +29,7 @@ export const NametagModule = defineModule<GameState, NametagState>({
   },
 });
 
-function onNametagsEnabledMessage(ctx: GameState, message: NametagsEnableMessageType) {
+function onNametagsEnabledMessage(ctx: GameContext, message: NametagsEnableMessageType) {
   const nametagModule = getModule(ctx, NametagModule);
   nametagModule.enabled = message.enabled;
 }
@@ -44,7 +44,7 @@ const _v = vec3.create();
 const _t = vec3.create();
 const _forward = vec3.create();
 
-export function NametagSystem(ctx: GameState) {
+export function NametagSystem(ctx: GameContext) {
   const renderer = getModule(ctx, RendererModule);
   const nametagModule = getModule(ctx, NametagModule);
   const ourPlayerEid = ourPlayerQuery(ctx.world)[0];
@@ -99,7 +99,7 @@ export function NametagSystem(ctx: GameState) {
   }
 }
 
-export function addNametag(ctx: GameState, height: number, node: RemoteNode, label: string) {
+export function addNametag(ctx: GameContext, height: number, node: RemoteNode, label: string) {
   const nametag = new RemoteNode(ctx.resourceManager, {
     position: [0, height, 0],
     nametag: new RemoteNametag(ctx.resourceManager, {
@@ -113,7 +113,7 @@ export function addNametag(ctx: GameState, height: number, node: RemoteNode, lab
   return nametag;
 }
 
-export function getNametag(ctx: GameState, parent: RemoteNode) {
+export function getNametag(ctx: GameContext, parent: RemoteNode) {
   const nametagEid = NametagRef.eid[parent.eid];
   if (!nametagEid) throw new Error(`NametagRef not found on node "${parent.name}"`);
   const nametag = tryGetRemoteResource<RemoteNode>(ctx, nametagEid);

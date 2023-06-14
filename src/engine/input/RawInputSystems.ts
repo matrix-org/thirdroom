@@ -1,6 +1,6 @@
 import { availableRead } from "@thirdroom/ringbuffer";
 
-import { GameState } from "../GameTypes";
+import { GameContext } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import { InputComponentId, InputComponentState, SharedXRInputSource, XRInputComponentIdToName } from "./input.common";
 import { dequeueInputRingBuffer } from "./InputRingBuffer";
@@ -24,7 +24,7 @@ const out: InputComponentState = {
  * `out` is a temporary object that is reused for each input event and represents
  * an item in the ring buffer.
  */
-export function UpdateRawInputSystem(ctx: GameState) {
+export function UpdateRawInputSystem(ctx: GameContext) {
   const { inputRingBuffer, raw, xrInputSources, xrPrimaryHand } = getModule(ctx, InputModule);
 
   while (availableRead(inputRingBuffer)) {
@@ -76,7 +76,7 @@ export function UpdateRawInputSystem(ctx: GameState) {
 /**
  * Resets per-frame input state.
  */
-export function ResetRawInputSystem(ctx: GameState) {
+export function ResetRawInputSystem(ctx: GameContext) {
   const { raw } = getModule(ctx, InputModule);
   raw["Mouse/movementX"] = 0;
   raw["Mouse/movementY"] = 0;

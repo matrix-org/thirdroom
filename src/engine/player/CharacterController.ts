@@ -2,7 +2,7 @@ import { removeComponent, addComponent, defineComponent, hasComponent } from "bi
 
 import { PlayerModule } from "./Player.game";
 import { ourPlayerQuery } from "./Player";
-import { GameState } from "../GameTypes";
+import { GameContext } from "../GameTypes";
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "../input/ActionMap";
 import { InputModule } from "../input/input.game";
 import { getModule } from "../module/module.common";
@@ -58,19 +58,19 @@ export interface ISceneCharacterControllerComponent {
 
 export const SceneCharacterControllerComponent: Map<number, ISceneCharacterControllerComponent> = new Map();
 
-function swapToFlyPlayerRig(ctx: GameState, physics: PhysicsModuleState, node: RemoteNode) {
+function swapToFlyPlayerRig(ctx: GameContext, physics: PhysicsModuleState, node: RemoteNode) {
   removeComponent(ctx.world, KinematicControls, node.eid);
   addFlyControls(ctx, node.eid);
 }
 
-function swapToPlayerRig(ctx: GameState, physics: PhysicsModuleState, node: RemoteNode) {
+function swapToPlayerRig(ctx: GameContext, physics: PhysicsModuleState, node: RemoteNode) {
   removeComponent(ctx.world, FlyControls, node.eid);
   addComponent(ctx.world, KinematicControls, node.eid);
 }
 
 export const ThirdPersonComponent = defineComponent();
 
-function swapToThirdPerson(ctx: GameState, node: RemoteNode) {
+function swapToThirdPerson(ctx: GameContext, node: RemoteNode) {
   addComponent(ctx.world, ThirdPersonComponent, node.eid);
   const camera = getCamera(ctx, node);
   camera.position[2] = 2;
@@ -80,7 +80,7 @@ function swapToThirdPerson(ctx: GameState, node: RemoteNode) {
   avatar.visible = true;
 }
 
-function swapToFirstPerson(ctx: GameState, node: RemoteNode) {
+function swapToFirstPerson(ctx: GameContext, node: RemoteNode) {
   removeComponent(ctx.world, ThirdPersonComponent, node.eid);
   const camera = getCamera(ctx, node);
   camera.position[2] = 0;
@@ -90,7 +90,7 @@ function swapToFirstPerson(ctx: GameState, node: RemoteNode) {
   avatar.visible = false;
 }
 
-export function EnableCharacterControllerSystem(ctx: GameState) {
+export function EnableCharacterControllerSystem(ctx: GameContext) {
   const input = getModule(ctx, InputModule);
   const physics = getModule(ctx, PhysicsModule);
 

@@ -13,7 +13,7 @@ import {
   writeUint8Array,
 } from "./WASMModuleContext";
 import { createMatrixWASMModule } from "../matrix/matrix.game";
-import { GameState } from "../GameTypes";
+import { GameContext } from "../GameTypes";
 import { createWebSGModule } from "./websg";
 import { createWebSGNetworkModule } from "../network/scripting.game";
 import { createThirdroomModule } from "./thirdroom";
@@ -44,7 +44,7 @@ describe.skip("JS Scripting API", () => {
     const wasmBuffer = await readFile(wasmPath);
     const memory = new WebAssembly.Memory({ initial: 1024, maximum: 1024 });
 
-    const ctx: GameState = mockGameState();
+    const ctx: GameContext = mockGameState();
 
     const wasmCtx: WASMModuleContext = {
       memory,

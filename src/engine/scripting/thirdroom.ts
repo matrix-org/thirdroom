@@ -4,7 +4,7 @@ import { moveCursorView } from "../allocator/CursorView";
 import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 import { FREQ_BIN_COUNT } from "../audio/audio.common";
 import { AudioModule } from "../audio/audio.game";
-import { GameState } from "../GameTypes";
+import { GameContext } from "../GameTypes";
 import { getModule, Thread } from "../module/module.common";
 import { EnableMatrixMaterialMessage, RendererMessageType, XRMode } from "../renderer/renderer.common";
 import { getXRMode } from "../renderer/renderer.game";
@@ -20,7 +20,7 @@ import {
   writeUint8Array,
 } from "./WASMModuleContext";
 
-export function createThirdroomModule(ctx: GameState, wasmCtx: WASMModuleContext) {
+export function createThirdroomModule(ctx: GameContext, wasmCtx: WASMModuleContext) {
   const thirdroom = getModule(ctx, ThirdRoomModule);
 
   const thirdroomModule = {

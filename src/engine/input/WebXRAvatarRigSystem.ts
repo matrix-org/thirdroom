@@ -6,7 +6,7 @@ import { addXRRaycaster } from "../../plugins/interaction/XRInteractionSystem";
 import { KinematicControls } from "../player/KinematicCharacterController";
 import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 import { addChild, removeChild, setFromLocalMatrix, updateMatrixWorld } from "../component/transform";
-import { GameState, World } from "../GameTypes";
+import { GameContext, World } from "../GameTypes";
 import { createNodeFromGLTFURI } from "../gltf/gltf.game";
 import { XRMode } from "../renderer/renderer.common";
 import { getXRMode, RendererModule } from "../renderer/renderer.game";
@@ -63,7 +63,7 @@ const remoteAvatarQuery = defineQuery([Networked, Not(Owned), AvatarRef]);
 const _v = vec3.create();
 const _q = quat.create();
 
-export function WebXRAvatarRigSystem(ctx: GameState) {
+export function WebXRAvatarRigSystem(ctx: GameContext) {
   const rendererModule = getModule(ctx, RendererModule);
   const { xrInputSourcesByHand } = getModule(ctx, InputModule);
   const network = getModule(ctx, NetworkModule);
@@ -216,7 +216,7 @@ export const ARActionMap: ActionMap = {
   ],
 };
 
-export function SetWebXRReferenceSpaceSystem(ctx: GameState) {
+export function SetWebXRReferenceSpaceSystem(ctx: GameContext) {
   const { actionStates } = getModule(ctx, InputModule);
 
   const xrMode = getXRMode(ctx);
@@ -248,7 +248,7 @@ export function SetWebXRReferenceSpaceSystem(ctx: GameState) {
 }
 
 function updateXRController(
-  ctx: GameState,
+  ctx: GameContext,
   xrInputSourcesByHand: Map<XRHandedness, SharedXRInputSource>,
   rigNode: RemoteNode,
   rig: XRAvatarRig,
@@ -354,7 +354,7 @@ function updateXRController(
 const _m = mat4.create();
 
 function updateXRCamera(
-  ctx: GameState,
+  ctx: GameContext,
   rigNode: RemoteNode,
   xrRig: XRAvatarRig,
   xrInputSourcesByHand: Map<XRHandedness, SharedXRInputSource>

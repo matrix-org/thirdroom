@@ -1,4 +1,4 @@
-import { GameState } from "../GameTypes";
+import { GameContext } from "../GameTypes";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import {
   CanvasResizeMessage,
@@ -20,7 +20,7 @@ export interface GameRendererModuleState {
   prevXRMode: XRMode;
 }
 
-export const RendererModule = defineModule<GameState, GameRendererModuleState>({
+export const RendererModule = defineModule<GameContext, GameRendererModuleState>({
   name: rendererModuleName,
   async create(ctx, { waitForMessage }) {
     const xrMode = await waitForMessage<Uint8Array>(
@@ -45,13 +45,13 @@ export const RendererModule = defineModule<GameState, GameRendererModuleState>({
   },
 });
 
-function onResize(state: GameState, { canvasWidth, canvasHeight }: CanvasResizeMessage) {
+function onResize(state: GameContext, { canvasWidth, canvasHeight }: CanvasResizeMessage) {
   const renderer = getModule(state, RendererModule);
   renderer.canvasWidth = canvasWidth;
   renderer.canvasHeight = canvasHeight;
 }
 
-function onSceneRenderedNotification(ctx: GameState, { id }: SceneRenderedNotificationMessage) {
+function onSceneRenderedNotification(ctx: GameContext, { id }: SceneRenderedNotificationMessage) {
   const renderer = getModule(ctx, RendererModule);
   const handler = renderer.sceneRenderedNotificationHandlers.get(id);
 
@@ -61,7 +61,7 @@ function onSceneRenderedNotification(ctx: GameState, { id }: SceneRenderedNotifi
   }
 }
 
-export function waitForCurrentSceneToRender(ctx: GameState, frames = 1): Promise<void> {
+export function waitForCurrentSceneToRender(ctx: GameContext, frames = 1): Promise<void> {
   const deferred = createDeferred<void>(false);
   const rendererModule = getModule(ctx, RendererModule);
   const id = rendererModule.sceneRenderedNotificationId++;
@@ -83,7 +83,7 @@ export function waitForCurrentSceneToRender(ctx: GameState, frames = 1): Promise
   return deferred.promise;
 }
 
-export function getXRMode(ctx: GameState): XRMode {
+export function getXRMode(ctx: GameContext): XRMode {
   const rendererModule = getModule(ctx, RendererModule);
   return rendererModule.xrMode[0];
 }

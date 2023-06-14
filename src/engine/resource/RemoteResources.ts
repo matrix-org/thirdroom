@@ -1,7 +1,7 @@
 import { AnimationClip } from "three";
 
 import { getLastSibling } from "../component/transform";
-import { GameState, RemoteResourceManager } from "../GameTypes";
+import { GameContext, RemoteResourceManager } from "../GameTypes";
 import { defineRemoteResourceClass, InitialRemoteResourceProps } from "./RemoteResourceClass";
 import {
   NametagResource,
@@ -228,7 +228,7 @@ export class RemoteWorld extends defineRemoteResourceClass(WorldResource) {
   declare activeRightControllerNode: RemoteNode | undefined;
 }
 
-export function addObjectToWorld(ctx: GameState, object: RemoteNode) {
+export function addObjectToWorld(ctx: GameContext, object: RemoteNode) {
   const worldResource = ctx.worldResource;
   const firstNode = worldResource.firstNode;
 
@@ -241,7 +241,7 @@ export function addObjectToWorld(ctx: GameState, object: RemoteNode) {
   }
 }
 
-export function removeObjectFromWorld(ctx: GameState, object: RemoteNode) {
+export function removeObjectFromWorld(ctx: GameContext, object: RemoteNode) {
   object.addRef();
 
   const worldResource = ctx.worldResource;

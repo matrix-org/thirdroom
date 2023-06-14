@@ -6,7 +6,7 @@ import {
   InteractionModule,
   sendInteractionMessage,
 } from "../../plugins/interaction/interaction.game";
-import { GameState } from "../GameTypes";
+import { GameContext } from "../GameTypes";
 import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
 import { dynamicObjectCollisionGroups } from "../physics/CollisionGroups";
 import { addRigidBody, PhysicsModuleState } from "../physics/physics.game";
@@ -24,12 +24,12 @@ import { UIButtonFocusMessage, UIButtonPressMessage, UIButtonUnfocusMessage, Web
 import { InteractableAction } from "../../plugins/interaction/interaction.common";
 import { playOneShotAudio } from "../audio/audio.game";
 
-export const WebSGUIModule = defineModule<GameState, {}>({
+export const WebSGUIModule = defineModule<GameContext, {}>({
   name: "GameWebSGUI",
   create: async () => {
     return {};
   },
-  async init(ctx: GameState) {
+  async init(ctx: GameContext) {
     return createDisposables([
       registerMessageHandler(ctx, WebSGUIMessage.ButtonPress, (ctx, message: UIButtonPressMessage) => {
         const button = tryGetRemoteResource<RemoteUIButton>(ctx, message.buttonEid);
@@ -49,7 +49,7 @@ export const WebSGUIModule = defineModule<GameState, {}>({
 });
 
 export function createUICanvasNode(
-  ctx: GameState,
+  ctx: GameContext,
   physics: PhysicsModuleState,
   size: vec2,
   width: number,
@@ -105,7 +105,7 @@ function removeUIElementFromLinkedList(parent: RemoteUIElement, child: RemoteUIE
   }
 }
 
-export function initNodeUICanvas(ctx: GameState, physics: PhysicsModuleState, node: RemoteNode) {
+export function initNodeUICanvas(ctx: GameContext, physics: PhysicsModuleState, node: RemoteNode) {
   const { size } = node.uiCanvas!;
 
   // setup collider

@@ -7,7 +7,7 @@ import { playOneShotAudio } from "../../engine/audio/audio.game";
 import { unproject } from "../../engine/camera/camera.game";
 import { OurPlayer, ourPlayerQuery } from "../../engine/player/Player";
 import { maxEntities, NOOP } from "../../engine/config.common";
-import { GameState } from "../../engine/GameTypes";
+import { GameContext } from "../../engine/GameTypes";
 import { enableActionMap } from "../../engine/input/ActionMappingSystem";
 import { GameInputModule, InputModule } from "../../engine/input/input.game";
 import { defineModule, getModule, Thread } from "../../engine/module/module.common";
@@ -61,7 +61,7 @@ type InteractionModuleState = {
   clickEmitter?: RemoteAudioEmitter;
 };
 
-export const InteractionModule = defineModule<GameState, InteractionModuleState>({
+export const InteractionModule = defineModule<GameContext, InteractionModuleState>({
   name: "interaction",
   create() {
     return {};
@@ -282,7 +282,7 @@ const zero = new Vector3();
 
 const interactableQuery = defineQuery([Interactable]);
 
-export function ResetInteractablesSystem(ctx: GameState) {
+export function ResetInteractablesSystem(ctx: GameContext) {
   const interactableEntities = interactableQuery(ctx.world);
 
   for (let i = 0; i < interactableEntities.length; i++) {
@@ -302,7 +302,7 @@ export function ResetInteractablesSystem(ctx: GameState) {
   }
 }
 
-export function InteractionSystem(ctx: GameState) {
+export function InteractionSystem(ctx: GameContext) {
   const thirdroom = getModule(ctx, ThirdRoomModule);
   const network = getModule(ctx, NetworkModule);
   const physics = getModule(ctx, PhysicsModule);
@@ -342,7 +342,7 @@ export function InteractionSystem(ctx: GameState) {
 }
 
 function updateOrbitInteraction(
-  ctx: GameState,
+  ctx: GameContext,
   input: GameInputModule,
   renderer: GameRendererModuleState,
   physics: PhysicsModuleState,
@@ -466,7 +466,7 @@ function hitscan(physics: PhysicsModuleState, node: RemoteNode, collisionGroup: 
   return hit;
 }
 
-function updateFocus(ctx: GameState, physics: PhysicsModuleState, rig: RemoteNode, focusingNode: RemoteNode) {
+function updateFocus(ctx: GameContext, physics: PhysicsModuleState, rig: RemoteNode, focusingNode: RemoteNode) {
   const hit = hitscan(physics, focusingNode, focusShapeCastCollisionGroups, MAX_FOCUS_DISTANCE);
 
   // if there's no hit, clear focus
@@ -506,7 +506,7 @@ function updateFocus(ctx: GameState, physics: PhysicsModuleState, rig: RemoteNod
   }
 }
 
-function updateDeletion(ctx: GameState, interaction: InteractionModuleState, input: GameInputModule, rig: number) {
+function updateDeletion(ctx: GameContext, interaction: InteractionModuleState, input: GameInputModule, rig: number) {
   const deleteBtn = input.actionStates.get("Delete") as ButtonActionState;
   if (deleteBtn.pressed) {
     const focusedEid = FocusComponent.focusedEntity[rig];
@@ -523,7 +523,7 @@ function updateDeletion(ctx: GameState, interaction: InteractionModuleState, inp
   }
 }
 
-function projectHitOntoCanvas(ctx: GameState, shapecastHit: RAPIER.ShapeColliderTOI, node: RemoteNode) {
+function projectHitOntoCanvas(ctx: GameContext, shapecastHit: RAPIER.ShapeColliderTOI, node: RemoteNode) {
   const { x, y, z } = shapecastHit.witness1;
 
   // convert to local space
@@ -535,7 +535,7 @@ function projectHitOntoCanvas(ctx: GameState, shapecastHit: RAPIER.ShapeCollider
 }
 
 function updateGrabThrow(
-  ctx: GameState,
+  ctx: GameContext,
   interaction: InteractionModuleState,
   physics: PhysicsModuleState,
   network: GameNetworkState,
@@ -717,7 +717,7 @@ function updateGrabThrow(
 }
 
 function updateGrabThrowXR(
-  ctx: GameState,
+  ctx: GameContext,
   physics: PhysicsModuleState,
   network: GameNetworkState,
   controller: GameInputModule,
@@ -835,7 +835,7 @@ function updateGrabThrowXR(
   }
 }
 
-function notifyUICanvasPressed(ctx: GameState, hitPoint: vec3, node: RemoteNode) {
+function notifyUICanvasPressed(ctx: GameContext, hitPoint: vec3, node: RemoteNode) {
   const uiCanvas = node.uiCanvas;
   ctx.sendMessage<UICanvasPressMessage>(Thread.Render, {
     type: WebSGUIMessage.CanvasPress,
@@ -844,7 +844,7 @@ function notifyUICanvasPressed(ctx: GameState, hitPoint: vec3, node: RemoteNode)
   });
 }
 
-function notifyUICanvasFocus(ctx: GameState, hitPoint: vec3, node: RemoteNode) {
+function notifyUICanvasFocus(ctx: GameContext, hitPoint: vec3, node: RemoteNode) {
   const uiCanvas = node.uiCanvas;
   ctx.sendMessage<UICanvasFocusMessage>(Thread.Render, {
     type: WebSGUIMessage.CanvasFocus,
@@ -853,7 +853,7 @@ function notifyUICanvasFocus(ctx: GameState, hitPoint: vec3, node: RemoteNode) {
   });
 }
 
-export function sendInteractionMessage(ctx: GameState, action: InteractableAction, eid = NOOP) {
+export function sendInteractionMessage(ctx: GameContext, action: InteractableAction, eid = NOOP) {
   const network = getModule(ctx, NetworkModule);
 
   const interactableType = Interactable.type[eid];
@@ -905,7 +905,7 @@ export function sendInteractionMessage(ctx: GameState, action: InteractableActio
 }
 
 export function addInteractableComponent(
-  ctx: GameState,
+  ctx: GameContext,
   physics: PhysicsModuleState,
   node: RemoteNode | RemoteUIButton,
   interactableType: InteractableType
@@ -938,7 +938,7 @@ export function addInteractableComponent(
   }
 }
 
-export function removeInteractableComponent(ctx: GameState, physics: PhysicsModuleState, node: RemoteNode) {
+export function removeInteractableComponent(ctx: GameContext, physics: PhysicsModuleState, node: RemoteNode) {
   removeComponent(ctx.world, Interactable, node.eid);
 
   const rigidBody = RigidBody.store.get(node.eid);

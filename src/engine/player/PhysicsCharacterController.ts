@@ -2,7 +2,7 @@ import RAPIER from "@dimforge/rapier3d-compat";
 import { addComponent, defineComponent, defineQuery, enterQuery } from "bitecs";
 import { Object3D, Quaternion, Vector3 } from "three";
 
-import { GameState } from "../GameTypes";
+import { GameContext } from "../GameTypes";
 import { enableActionMap } from "../input/ActionMappingSystem";
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "../input/ActionMap";
 import { InputModule } from "../input/input.game";
@@ -79,7 +79,7 @@ export const PhysicsCharacterControllerActionMap: ActionMap = {
 
 type PhysicsCharacterControllerModuleState = {};
 
-export const PhysicsCharacterControllerModule = defineModule<GameState, PhysicsCharacterControllerModuleState>({
+export const PhysicsCharacterControllerModule = defineModule<GameContext, PhysicsCharacterControllerModuleState>({
   name: "physics-character-controller",
   create() {
     return {};
@@ -125,11 +125,11 @@ const colliderShape = new RAPIER.Capsule(0.1, 0.5);
 const shapeTranslationOffset = new Vector3(0, 0, 0);
 const shapeRotationOffset = new Quaternion(0, 0, 0, 0);
 
-export function addPhysicsControls(ctx: GameState, eid: number) {
+export function addPhysicsControls(ctx: GameContext, eid: number) {
   addComponent(ctx.world, PhysicsControls, eid);
 }
 
-export const PhysicsCharacterControllerSystem = (ctx: GameState) => {
+export const PhysicsCharacterControllerSystem = (ctx: GameContext) => {
   const { physicsWorld } = getModule(ctx, PhysicsModule);
   const { actionStates } = getModule(ctx, InputModule);
   const eid = ourPlayerQuery(ctx.world)[0];

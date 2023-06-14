@@ -4,7 +4,7 @@ import { maxEntities, tickRate } from "./config.common";
 import { InitializeGameWorkerMessage, WorkerMessageType } from "./WorkerMessage";
 import { Message, registerModules, Thread } from "./module/module.common";
 import gameConfig from "./config.game";
-import { GameState, World } from "./GameTypes";
+import { GameContext, World } from "./GameTypes";
 
 const workerScope = globalThis as typeof globalThis & Worker;
 
@@ -43,7 +43,7 @@ async function onInit({
   // noop entity
   addEntity(world);
 
-  const ctx: GameState = {
+  const ctx: GameContext = {
     thread: Thread.Game,
     renderToGameTripleBufferFlags,
     mainToGameTripleBufferFlags,
@@ -156,13 +156,13 @@ async function onInit({
   }
 }
 
-function timeoutGameLoop(ctx: GameState) {
+function timeoutGameLoop(ctx: GameContext) {
   // need to call setTimeout immediately, otherwise network jitter ensues
   setTimeout(() => timeoutGameLoop(ctx), 1000 / tickRate);
   update(ctx);
 }
 
-function update(ctx: GameState) {
+function update(ctx: GameContext) {
   const now = performance.now();
   ctx.dt = (now - ctx.elapsed) / 1000;
   ctx.elapsed = now;

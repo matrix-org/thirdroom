@@ -11,7 +11,7 @@ import { BoxGeometry } from "three";
 import { mat4, vec2, vec3, vec4, quat } from "gl-matrix";
 import RAPIER from "@dimforge/rapier3d-compat";
 
-import { Collision, GameState } from "../GameTypes";
+import { Collision, GameContext } from "../GameTypes";
 import {
   getScriptResource,
   getScriptResourceByNamePtr,
@@ -385,7 +385,7 @@ const tempQuat = quat.create();
 // TODO: When do we update local / world matrices?
 // TODO: the mesh.primitives array is allocated whenever we request it but it's now immutable
 
-export function createWebSGModule(ctx: GameState, wasmCtx: WASMModuleContext) {
+export function createWebSGModule(ctx: GameContext, wasmCtx: WASMModuleContext) {
   const physics = getModule(ctx, PhysicsModule);
 
   const disposeCollisionHandler = registerCollisionHandler(

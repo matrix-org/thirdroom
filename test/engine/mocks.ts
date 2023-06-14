@@ -2,7 +2,7 @@ import RAPIER from "@dimforge/rapier3d-compat";
 import { addEntity, createWorld } from "bitecs";
 
 import { PrefabModule, PrefabType, registerPrefab } from "../../src/engine/prefab/prefab.game";
-import { GameState } from "../../src/engine/GameTypes";
+import { GameContext } from "../../src/engine/GameTypes";
 import { NetworkModule } from "../../src/engine/network/network.game";
 import { RendererModule } from "../../src/engine/renderer/renderer.game";
 import { PhysicsModule } from "../../src/engine/physics/physics.game";
@@ -12,7 +12,7 @@ import { addChild } from "../../src/engine/component/transform";
 import { MatrixModule } from "../../src/engine/matrix/matrix.game";
 import { WebSGNetworkModule } from "../../src/engine/network/scripting.game";
 
-export function registerDefaultPrefabs(ctx: GameState) {
+export function registerDefaultPrefabs(ctx: GameContext) {
   registerPrefab(ctx, {
     name: "test-prefab",
     type: PrefabType.Object,
@@ -107,7 +107,7 @@ export const mockGameState = () => {
     scopes: new Map(),
     modules: new Map(),
     resourceManager: undefined as any,
-  } as unknown as GameState;
+  } as unknown as GameContext;
 
   ctx.modules.set(PhysicsModule, mockPhysicsState());
   ctx.modules.set(NetworkModule, mockNetworkState());

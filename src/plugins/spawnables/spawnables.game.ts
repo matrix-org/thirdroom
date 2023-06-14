@@ -4,7 +4,7 @@ import { mat4, vec3, quat } from "gl-matrix";
 import { Vector3 } from "three";
 
 import { playOneShotAudio } from "../../engine/audio/audio.game";
-import { GameState } from "../../engine/GameTypes";
+import { GameContext } from "../../engine/GameTypes";
 import { createNodeFromGLTFURI } from "../../engine/gltf/gltf.game";
 import { createSphereMesh } from "../../engine/mesh/mesh.game";
 import { defineModule, getModule, Thread } from "../../engine/module/module.common";
@@ -41,7 +41,7 @@ type SpawnablesModuleState = {
   hitAudioEmitters: Map<number, RemoteAudioEmitter>;
 };
 
-export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
+export const SpawnablesModule = defineModule<GameContext, SpawnablesModuleState>({
   name: "spawnables",
   create() {
     return {
@@ -206,7 +206,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
 });
 
 function createBall(
-  ctx: GameState,
+  ctx: GameContext,
   module: SpawnablesModuleState,
   physics: PhysicsModuleState,
   size: number,
@@ -254,7 +254,7 @@ function createBall(
 }
 
 function createCrate(
-  ctx: GameState,
+  ctx: GameContext,
   module: SpawnablesModuleState,
   physics: PhysicsModuleState,
   size: number,
@@ -307,7 +307,7 @@ const _impulse = new Vector3();
 const _spawnWorldQuat = quat.create();
 
 // Returns false if the object exceeded the object cap
-export function spawnPrefab(ctx: GameState, spawnFrom: RemoteNode, prefabId: string, isXR: boolean): boolean {
+export function spawnPrefab(ctx: GameContext, spawnFrom: RemoteNode, prefabId: string, isXR: boolean): boolean {
   const { maxObjectCap } = getModule(ctx, ThirdRoomModule);
 
   // bounce out of the function if we hit the max object cap

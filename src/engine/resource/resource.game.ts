@@ -7,7 +7,7 @@ import {
   getWriteObjectBufferView,
 } from "../allocator/ObjectBufferView";
 import { removeAllEntityComponents } from "../ecs/removeAllEntityComponents";
-import { GameState, RemoteResourceManager } from "../GameTypes";
+import { GameContext, RemoteResourceManager } from "../GameTypes";
 import { defineModule, getModule, Thread } from "../module/module.common";
 import { createDisposables } from "../utils/createDisposables";
 import { createMessageQueueProducer } from "./MessageQueue";
@@ -110,13 +110,13 @@ interface ResourceInfo {
   dispose?: () => void;
 }
 
-const [queueResourceMessage, sendResourceMessages] = createMessageQueueProducer<GameState, CreateResourceMessage>(
+const [queueResourceMessage, sendResourceMessages] = createMessageQueueProducer<GameContext, CreateResourceMessage>(
   ResourceMessageType.LoadResources
 );
 
-export const ResourceModule = defineModule<GameState, ResourceModuleState>({
+export const ResourceModule = defineModule<GameContext, ResourceModuleState>({
   name: "resource",
-  async create(ctx: GameState, { sendMessage, waitForMessage }) {
+  async create(ctx: GameContext, { sendMessage, waitForMessage }) {
     const fromGameState = createObjectTripleBuffer(
       fromGameResourceModuleStateSchema,
       ctx.gameToRenderTripleBufferFlags
@@ -226,7 +226,7 @@ export const ResourceModule = defineModule<GameState, ResourceModuleState>({
   },
 });
 
-export function createRemoteResourceManager(ctx: GameState, id: string): RemoteResourceManager {
+export function createRemoteResourceManager(ctx: GameContext, id: string): RemoteResourceManager {
   const resourceModule = getModule(ctx, ResourceModule);
 
   return {
@@ -259,7 +259,7 @@ export function createRemoteResourceManager(ctx: GameState, id: string): RemoteR
 }
 
 function registerResource<Def extends ResourceDefinition>(
-  ctx: GameState,
+  ctx: GameContext,
   resourceDefOrClass: IRemoteResourceClass<Def>
 ) {
   const resourceModule = getModule(ctx, ResourceModule);
@@ -274,7 +274,7 @@ function registerResource<Def extends ResourceDefinition>(
 }
 
 function createResource(
-  ctx: GameState,
+  ctx: GameContext,
   resourceType: string,
   props: ResourceProps,
   resource: RemoteResourceTypes,
@@ -301,7 +301,7 @@ function createResource(
   return id;
 }
 
-export function createRemoteResource(ctx: GameState, resource: RemoteResource): number {
+export function createRemoteResource(ctx: GameContext, resource: RemoteResource): number {
   const resourceId = createResource(ctx, resource.constructor.resourceDef.name, resource.tripleBuffer, resource);
 
   addComponent(ctx.world, resource.constructor, resourceId);
@@ -323,19 +323,19 @@ export function createRemoteResource(ctx: GameState, resource: RemoteResource): 
   return resourceId;
 }
 
-export function createStringResource(ctx: GameState, value: string, dispose?: () => void): ResourceId {
+export function createStringResource(ctx: GameContext, value: string, dispose?: () => void): ResourceId {
   const resourceId = createResource(ctx, StringResourceType, value, value, dispose);
   addComponent(ctx.world, StringResourceType, resourceId);
   return resourceId;
 }
 
-export function createArrayBufferResource(ctx: GameState, value: SharedArrayBuffer): ResourceId {
+export function createArrayBufferResource(ctx: GameContext, value: SharedArrayBuffer): ResourceId {
   const resourceId = createResource(ctx, ArrayBufferResourceType, value, value);
   addComponent(ctx.world, ArrayBufferResourceType, resourceId);
   return resourceId;
 }
 
-export function removeResourceRef(ctx: GameState, resourceId: ResourceId): boolean {
+export function removeResourceRef(ctx: GameContext, resourceId: ResourceId): boolean {
   const resourceModule = getModule(ctx, ResourceModule);
 
   const resourceInfo = resourceModule.resourceInfos.get(resourceId);
@@ -390,7 +390,7 @@ export function removeResourceRef(ctx: GameState, resourceId: ResourceId): boole
   return true;
 }
 
-export function addResourceRef(ctx: GameState, resourceId: ResourceId) {
+export function addResourceRef(ctx: GameContext, resourceId: ResourceId) {
   const resourceModule = getModule(ctx, ResourceModule);
 
   const resourceInfo = resourceModule.resourceInfos.get(resourceId);
@@ -400,7 +400,7 @@ export function addResourceRef(ctx: GameState, resourceId: ResourceId) {
   }
 }
 
-export function tryGetRemoteResource<Res>(ctx: GameState, resourceId: ResourceId): Res {
+export function tryGetRemoteResource<Res>(ctx: GameContext, resourceId: ResourceId): Res {
   const resource = getModule(ctx, ResourceModule).resourceMap.get(resourceId);
 
   if (!resource) {
@@ -410,30 +410,30 @@ export function tryGetRemoteResource<Res>(ctx: GameState, resourceId: ResourceId
   return resource as Res;
 }
 
-export function getRemoteResource<Res>(ctx: GameState, resourceId: ResourceId): Res | undefined {
+export function getRemoteResource<Res>(ctx: GameContext, resourceId: ResourceId): Res | undefined {
   return getModule(ctx, ResourceModule).resourceMap.get(resourceId) as Res | undefined;
 }
 
 export function getRemoteResources<Def extends ResourceDefinition>(
-  ctx: GameState,
+  ctx: GameContext,
   resourceClass: IRemoteResourceClass<Def>
 ): InstanceType<IRemoteResourceClass<Def>>[] {
   return (getModule(ctx, ResourceModule).resourcesByType.get(resourceClass.resourceDef.resourceType) ||
     []) as InstanceType<IRemoteResourceClass<Def>>[];
 }
 
-export function ResourceTickSystem(ctx: GameState) {
+export function ResourceTickSystem(ctx: GameContext) {
   const { fromGameState } = getModule(ctx, ResourceModule);
   const { tick } = getWriteObjectBufferView(fromGameState);
   // Tell Main/Render threads what the game thread's tick is
   tick[0] = ctx.tick;
 }
 
-export function ResourceLoaderSystem(ctx: GameState) {
+export function ResourceLoaderSystem(ctx: GameContext) {
   sendResourceMessages(ctx);
 }
 
-export function ResourceDisposalSystem(ctx: GameState) {
+export function ResourceDisposalSystem(ctx: GameContext) {
   const { disposedResourcesQueue, mainDisposedResources, renderDisposedResources, disposeRefCounts } = getModule(
     ctx,
     ResourceModule
@@ -477,7 +477,7 @@ function processResourceRingBuffer(
   }
 }
 
-export function RecycleResourcesSystem(ctx: GameState) {
+export function RecycleResourcesSystem(ctx: GameContext) {
   const {
     mainRecycleResources,
     renderRecycleResources,

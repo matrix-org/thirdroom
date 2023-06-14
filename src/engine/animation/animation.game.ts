@@ -6,7 +6,7 @@ import { radToDeg } from "three/src/math/MathUtils";
 
 import { getForwardVector, getPitch, getRightVector, getYaw } from "../component/math";
 import { maxEntities } from "../config.common";
-import { GameState } from "../GameTypes";
+import { GameContext } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import { Networked, Owned } from "../network/NetworkComponents";
 import { PhysicsModule, PhysicsModuleState, RigidBody } from "../physics/physics.game";
@@ -45,7 +45,7 @@ const exitAnimationQuery = exitQuery(animationQuery);
 const boneQuery = defineQuery([BoneComponent]);
 const exitBoneQuery = exitQuery(boneQuery);
 
-export function AnimationSystem(ctx: GameState) {
+export function AnimationSystem(ctx: GameContext) {
   disposeAnimations(ctx);
   disposeBones(ctx);
   processAnimations(ctx);
@@ -72,7 +72,7 @@ const shapeCastPosition = new Vector3();
 const shapeCastRotation = new Quaternion();
 const _obj = new Object3D();
 
-const isGrounded = (ctx: GameState, physicsWorld: RAPIER.World, body: RAPIER.RigidBody) => {
+const isGrounded = (ctx: GameContext, physicsWorld: RAPIER.World, body: RAPIER.RigidBody) => {
   shapeCastPosition.copy(body.translation() as Vector3).add(shapeTranslationOffset);
   shapeCastRotation.copy(_obj.quaternion).multiply(shapeRotationOffset);
 
@@ -92,7 +92,7 @@ const isGrounded = (ctx: GameState, physicsWorld: RAPIER.World, body: RAPIER.Rig
   return isGrounded;
 };
 
-function processAnimations(ctx: GameState) {
+function processAnimations(ctx: GameContext) {
   const physics = getModule(ctx, PhysicsModule);
   const ents = animationQuery(ctx.world);
   for (let i = 0; i < ents.length; i++) {
@@ -127,7 +127,7 @@ function processAnimations(ctx: GameState) {
   return ctx;
 }
 
-function syncBones(ctx: GameState) {
+function syncBones(ctx: GameContext) {
   // sync bone positions
   const bones = boneQuery(ctx.world);
   for (let i = 0; i < bones.length; i++) {
@@ -180,7 +180,7 @@ function increaseClipActionWeights(actions: AnimationAction[], amount: number) {
 }
 
 function getClipActionsUsingVelocity(
-  ctx: GameState,
+  ctx: GameContext,
   physics: PhysicsModuleState,
   node: RemoteNode,
   rigidBody: RAPIER.RigidBody,
@@ -279,7 +279,7 @@ function getClipActionsUsingVelocity(
   return actions;
 }
 
-function disposeAnimations(ctx: GameState) {
+function disposeAnimations(ctx: GameContext) {
   const entities = exitAnimationQuery(ctx.world);
 
   for (let i = 0; i < entities.length; i++) {
@@ -296,7 +296,7 @@ function disposeAnimations(ctx: GameState) {
   }
 }
 
-function disposeBones(ctx: GameState) {
+function disposeBones(ctx: GameContext) {
   const entities = exitBoneQuery(ctx.world);
 
   for (let i = 0; i < entities.length; i++) {

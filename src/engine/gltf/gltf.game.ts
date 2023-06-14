@@ -5,7 +5,7 @@ import { AnimationAction, AnimationClip, AnimationMixer, Bone, Group, Object3D, 
 
 import { SpawnPoint } from "../component/SpawnPoint";
 import { addChild, traverse, updateMatrix, updateMatrixWorld } from "../component/transform";
-import { GameState, RemoteResourceManager, World } from "../GameTypes";
+import { GameContext, RemoteResourceManager, World } from "../GameTypes";
 import resolveURL from "../utils/resolveURL";
 import {
   GLTFRoot,
@@ -144,7 +144,7 @@ export interface LoadGLTFOptions {
 /**
  * Load a GLTFResource from a .gltf or .glb uri
  */
-export async function loadGLTF(ctx: GameState, uri: string, options?: LoadGLTFOptions): Promise<GLTFResource> {
+export async function loadGLTF(ctx: GameContext, uri: string, options?: LoadGLTFOptions): Promise<GLTFResource> {
   const url = new URL(uri, self.location.href);
 
   const resourceManager = options?.resourceManager || ctx.resourceManager;
@@ -208,7 +208,7 @@ function addGLTFResourceComponent(world: World, eid: number, resource: GLTFResou
 const gltfResourceQuery = defineQuery([GLTFResourceComponent]);
 const gltfResourceExitQuery = exitQuery(gltfResourceQuery);
 
-export function GLTFResourceDisposalSystem(ctx: GameState) {
+export function GLTFResourceDisposalSystem(ctx: GameContext) {
   const entities = gltfResourceExitQuery(ctx.world);
 
   for (let i = 0; i < entities.length; i++) {
@@ -222,14 +222,14 @@ export function GLTFResourceDisposalSystem(ctx: GameState) {
   }
 }
 
-export function createNodeFromGLTFURI(ctx: GameState, uri: string): RemoteNode {
+export function createNodeFromGLTFURI(ctx: GameContext, uri: string): RemoteNode {
   const node = new RemoteNode(ctx.resourceManager);
   loadGLTF(ctx, uri).then((resource) => loadDefaultGLTFScene(ctx, resource, { existingNode: node }));
   return node;
 }
 
 export function loadDefaultGLTFScene(
-  ctx: GameState,
+  ctx: GameContext,
   resource: GLTFResource,
   options?: GLTFSceneOptions & GLTFLoaderOptions
 ) {
@@ -250,7 +250,7 @@ const GLB_HEADER_BYTE_LENGTH = 12;
 const GLB_MAGIC = 0x46546c67; // "glTF" in ASCII
 
 async function loadGLTFResource(
-  ctx: GameState,
+  ctx: GameContext,
   resourceManager: RemoteResourceManager,
   url: string,
   options?: LoadGLTFOptions
@@ -291,7 +291,7 @@ const ChunkType = {
 const CHUNK_HEADER_BYTE_LENGTH = 8;
 
 async function loadGLTFBinary(
-  ctx: GameState,
+  ctx: GameContext,
   resourceManager: RemoteResourceManager,
   buffer: ArrayBuffer,
   url: string,
@@ -333,7 +333,7 @@ async function loadGLTFBinary(
 }
 
 async function loadGLTFJSON(
-  ctx: GameState,
+  ctx: GameContext,
   resourceManager: RemoteResourceManager,
   json: unknown,
   url: string,
@@ -409,7 +409,7 @@ export interface GLTFLoaderOptions {
  * tempCache is only used for resources that are referenced when building this hierarchy
  */
 export type GLTFLoaderContext = {
-  ctx: GameState;
+  ctx: GameContext;
   resource: GLTFResource;
   nodeIndexMap: Map<RemoteNode, number>;
   nodeMap: Map<number, RemoteNode>;
@@ -420,7 +420,7 @@ export type GLTFLoaderContext = {
 } & GLTFLoaderOptions;
 
 const createGLTFLoaderContext = (
-  ctx: GameState,
+  ctx: GameContext,
   resource: GLTFResource,
   options?: GLTFLoaderOptions
 ): GLTFLoaderContext => ({

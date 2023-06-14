@@ -1,9 +1,9 @@
 import { copyToWriteBuffer } from "../allocator/TripleBuffer";
-import { GameState } from "../GameTypes";
+import { GameContext } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import { ResourceModule } from "./resource.game";
 
-export function GameResourceSystem(ctx: GameState) {
+export function GameResourceSystem(ctx: GameContext) {
   const { resources } = getModule(ctx, ResourceModule);
 
   for (let i = 0; i < resources.length; i++) {

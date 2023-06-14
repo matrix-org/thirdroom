@@ -3,7 +3,7 @@ import { defineQuery, enterQuery, exitQuery, Not } from "bitecs";
 import { Vector3, Quaternion } from "three";
 import { quat, vec3 } from "gl-matrix";
 
-import { GameState } from "../GameTypes";
+import { GameContext } from "../GameTypes";
 import { RigidBody } from "../physics/physics.game";
 import { GameNetworkState, getPeerIndexFromNetworkId, NetworkModule, ownedPlayerQuery } from "./network.game";
 import { Networked, Owned } from "./NetworkComponents";
@@ -38,7 +38,7 @@ const _quat = new Quaternion();
 const _v3 = vec3.create();
 const _q = quat.create();
 
-export function NetworkInterpolationSystem(ctx: GameState) {
+export function NetworkInterpolationSystem(ctx: GameContext) {
   const network = getModule(ctx, NetworkModule);
 
   const haveConnectedPeers = network.peers.length > 0;
@@ -173,7 +173,7 @@ export function NetworkInterpolationSystem(ctx: GameState) {
   postprocessHistorians(ctx, network);
 }
 
-function preprocessHistorians(ctx: GameState, network: GameNetworkState) {
+function preprocessHistorians(ctx: GameContext, network: GameNetworkState) {
   for (const [, historian] of network.peerIdToHistorian) {
     if (historian.needsUpdate) {
       historian.latency = Date.now() - historian.latestTime;
@@ -222,7 +222,7 @@ function preprocessHistorians(ctx: GameState, network: GameNetworkState) {
   }
 }
 
-function postprocessHistorians(ctx: GameState, network: GameNetworkState) {
+function postprocessHistorians(ctx: GameContext, network: GameNetworkState) {
   for (const [, historian] of network.peerIdToHistorian) {
     historian.needsUpdate = false;
   }

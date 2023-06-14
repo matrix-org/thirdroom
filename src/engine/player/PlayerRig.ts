@@ -5,7 +5,7 @@ import { quat, vec3 } from "gl-matrix";
 import { addInteractableComponent, GRAB_DISTANCE } from "../../plugins/interaction/interaction.game";
 import { getSpawnPoints, spawnPointQuery } from "../../plugins/thirdroom/thirdroom.game";
 import { addChild } from "../component/transform";
-import { GameState } from "../GameTypes";
+import { GameContext } from "../GameTypes";
 import { createNodeFromGLTFURI } from "../gltf/gltf.game";
 import { GameInputModule } from "../input/input.game";
 import { createLineMesh } from "../mesh/mesh.game";
@@ -41,11 +41,11 @@ const AVATAR_CAPSULE_RADIUS = 0.35;
 export const AVATAR_HEIGHT = AVATAR_CAPSULE_HEIGHT + AVATAR_CAPSULE_RADIUS * 2;
 const AVATAR_CAMERA_OFFSET = 0.06;
 
-export function registerPlayerPrefabs(ctx: GameState) {
+export function registerPlayerPrefabs(ctx: GameContext) {
   registerPrefab(ctx, {
     name: "avatar",
     type: PrefabType.Avatar,
-    create: (ctx: GameState) => {
+    create: (ctx: GameContext) => {
       const physics = getModule(ctx, PhysicsModule);
       const spawnPoints = spawnPointQuery(ctx.world);
 
@@ -95,7 +95,7 @@ export function registerPlayerPrefabs(ctx: GameState) {
   registerPrefab(ctx, {
     name: "xr-head",
     type: PrefabType.Avatar,
-    create: (ctx: GameState, options?: any) => {
+    create: (ctx: GameContext, options?: any) => {
       const node = createNodeFromGLTFURI(ctx, `/gltf/headset.glb`);
       node.scale.set([0.75, 0.75, 0.75]);
       node.position.set([0, 0, 0.1]);
@@ -109,7 +109,7 @@ export function registerPlayerPrefabs(ctx: GameState) {
   registerPrefab(ctx, {
     name: "xr-hand-left",
     type: PrefabType.Avatar,
-    create: (ctx: GameState, options?: any) => {
+    create: (ctx: GameContext, options?: any) => {
       const node = createNodeFromGLTFURI(ctx, `/gltf/controller-left.glb`);
 
       addComponent(ctx.world, XRControllerComponent, node.eid);
@@ -121,7 +121,7 @@ export function registerPlayerPrefabs(ctx: GameState) {
   registerPrefab(ctx, {
     name: "xr-hand-right",
     type: PrefabType.Avatar,
-    create: (ctx: GameState, options?: any) => {
+    create: (ctx: GameContext, options?: any) => {
       const node = createNodeFromGLTFURI(ctx, `/gltf/controller-right.glb`);
 
       addComponent(ctx.world, XRControllerComponent, node.eid);
@@ -133,7 +133,7 @@ export function registerPlayerPrefabs(ctx: GameState) {
   registerPrefab(ctx, {
     name: "xr-ray",
     type: PrefabType.Avatar,
-    create: (ctx: GameState, options: any) => {
+    create: (ctx: GameContext, options: any) => {
       const color = options.color || [0, 0.3, 1, 0.3];
       const length = options.length || GRAB_DISTANCE;
       const rayMaterial = new RemoteMaterial(ctx.resourceManager, {
@@ -162,7 +162,7 @@ export const XRControllerComponent = defineComponent();
 export const XRHeadComponent = defineComponent();
 export const XRRayComponent = defineComponent();
 
-export function addPlayerFromPeer(ctx: GameState, eid: number, peerId: string) {
+export function addPlayerFromPeer(ctx: GameContext, eid: number, peerId: string) {
   const network = getModule(ctx, NetworkModule);
 
   addComponent(ctx.world, Player, eid);
@@ -201,7 +201,7 @@ export function addPlayerFromPeer(ctx: GameState, eid: number, peerId: string) {
   }
 }
 
-export function loadPlayerRig(ctx: GameState, physics: PhysicsModuleState, input: GameInputModule) {
+export function loadPlayerRig(ctx: GameContext, physics: PhysicsModuleState, input: GameInputModule) {
   ctx.worldResource.activeCameraNode = undefined;
 
   const rig = createPrefabEntity(ctx, "avatar");
@@ -236,7 +236,7 @@ export function loadPlayerRig(ctx: GameState, physics: PhysicsModuleState, input
 }
 
 export function loadNetworkedPlayerRig(
-  ctx: GameState,
+  ctx: GameContext,
   physics: PhysicsModuleState,
   input: GameInputModule,
   network: GameNetworkState,
@@ -255,7 +255,7 @@ export function loadNetworkedPlayerRig(
   return rig;
 }
 
-export function spawnPlayer(ctx: GameState, rig: RemoteNode) {
+export function spawnPlayer(ctx: GameContext, rig: RemoteNode) {
   const spawnPoints = getSpawnPoints(ctx);
 
   if (spawnPoints.length > 0) {

@@ -1,5 +1,5 @@
 import { ourPlayerQuery } from "../player/Player";
-import { GameState } from "../GameTypes";
+import { GameContext } from "../GameTypes";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import { getCamera } from "../player/getCamera";
 import { XRMode } from "../renderer/renderer.common";
@@ -37,7 +37,7 @@ export interface GameInputModule {
  * Initialization *
  *****************/
 
-export const InputModule = defineModule<GameState, GameInputModule>({
+export const InputModule = defineModule<GameContext, GameInputModule>({
   name: "input",
   async create(ctx, { waitForMessage }) {
     const { inputRingBuffer } = await waitForMessage<InitializeInputStateMessage>(
@@ -67,7 +67,7 @@ export const InputModule = defineModule<GameState, GameInputModule>({
   },
 });
 
-function onUpdateXRInputSources(ctx: GameState, { added, removed }: UpdateXRInputSourcesMessage) {
+function onUpdateXRInputSources(ctx: GameContext, { added, removed }: UpdateXRInputSourcesMessage) {
   const { xrInputSources, xrInputSourcesByHand } = getModule(ctx, InputModule);
 
   for (const id of removed) {
@@ -109,7 +109,7 @@ function onUpdateXRInputSources(ctx: GameState, { added, removed }: UpdateXRInpu
   }
 }
 
-export function getPrimaryInputSourceNode(ctx: GameState) {
+export function getPrimaryInputSourceNode(ctx: GameContext) {
   const ourPlayer = ourPlayerQuery(ctx.world)[0];
   const xrRig = getXRMode(ctx) !== XRMode.None ? XRAvatarRig.get(ourPlayer) : undefined;
   const rightRayNode = xrRig && xrRig.rightRayEid && tryGetRemoteResource<RemoteNode>(ctx, xrRig.rightRayEid);

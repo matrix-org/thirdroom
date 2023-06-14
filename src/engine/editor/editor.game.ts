@@ -11,7 +11,7 @@ import RAPIER from "@dimforge/rapier3d-compat";
 import { vec3 } from "gl-matrix";
 import { Vector3 } from "three";
 
-import { GameState } from "../GameTypes";
+import { GameContext } from "../GameTypes";
 import { traverse } from "../component/transform";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import {
@@ -83,7 +83,7 @@ const editorActionMap: ActionMap = {
  * Initialization *
  ******************/
 
-export const EditorModule = defineModule<GameState, EditorModuleState>({
+export const EditorModule = defineModule<GameContext, EditorModuleState>({
   name: "editor",
   create(ctx, { sendMessage }) {
     const editorStateBufferView = createObjectBufferView(editorStateSchema, ArrayBuffer);
@@ -140,7 +140,7 @@ const selectedExitQuery = exitQuery(selectedQuery);
  * Message Handlers *
  ********************/
 
-export function onLoadEditor(ctx: GameState) {
+export function onLoadEditor(ctx: GameContext) {
   const editor = getModule(ctx, EditorModule);
 
   editor.editorLoaded = true;
@@ -153,17 +153,17 @@ export function onLoadEditor(ctx: GameState) {
   });
 }
 
-export function onDisposeEditor(ctx: GameState) {
+export function onDisposeEditor(ctx: GameContext) {
   const editor = getModule(ctx, EditorModule);
   editor.editorLoaded = true;
   ctx.editorLoaded = false;
 }
 
-function onSetSelectedEntity(ctx: GameState, message: SetSelectedEntityMessage) {
+function onSetSelectedEntity(ctx: GameContext, message: SetSelectedEntityMessage) {
   selectEditorEntity(ctx, message.eid);
 }
 
-export function selectEditorEntity(ctx: GameState, eid: number) {
+export function selectEditorEntity(ctx: GameContext, eid: number) {
   const editor = getModule(ctx, EditorModule);
 
   const selected = selectedQuery(ctx.world);
@@ -186,14 +186,14 @@ export function selectEditorEntity(ctx: GameState, eid: number) {
   editor.activeEntityChanged = true;
 }
 
-export function onAddSelectedEntity(ctx: GameState, message: AddSelectedEntityMessage) {
+export function onAddSelectedEntity(ctx: GameContext, message: AddSelectedEntityMessage) {
   const editor = getModule(ctx, EditorModule);
   addComponent(ctx.world, Selected, message.eid);
   editor.activeEntity = message.eid;
   editor.activeEntityChanged = true;
 }
 
-export function onToggleSelectedEntity(ctx: GameState, message: ToggleSelectedEntityMessage) {
+export function onToggleSelectedEntity(ctx: GameContext, message: ToggleSelectedEntityMessage) {
   const editor = getModule(ctx, EditorModule);
 
   if (hasComponent(ctx.world, Selected, message.eid)) {
@@ -209,9 +209,9 @@ export function onToggleSelectedEntity(ctx: GameState, message: ToggleSelectedEn
   editor.activeEntityChanged = true;
 }
 
-export function onFocusEntity(ctx: GameState, message: FocusEntityMessage) {}
+export function onFocusEntity(ctx: GameContext, message: FocusEntityMessage) {}
 
-export function onRenameEntity(ctx: GameState, message: RenameEntityMessage) {
+export function onRenameEntity(ctx: GameContext, message: RenameEntityMessage) {
   const node = getRemoteResource<RemoteNode>(ctx, message.eid);
 
   if (node) {
@@ -219,9 +219,9 @@ export function onRenameEntity(ctx: GameState, message: RenameEntityMessage) {
   }
 }
 
-export function onReparentEntities(ctx: GameState, message: ReparentEntitiesMessage) {}
+export function onReparentEntities(ctx: GameContext, message: ReparentEntitiesMessage) {}
 
-function onSetProperty(ctx: GameState, message: SetPropertyMessage<unknown>) {
+function onSetProperty(ctx: GameContext, message: SetPropertyMessage<unknown>) {
   const resource = getRemoteResource<RemoteResourceTypes>(ctx, message.eid);
 
   const propName = message.propName;
@@ -233,7 +233,7 @@ function onSetProperty(ctx: GameState, message: SetPropertyMessage<unknown>) {
   (resource as any)[propName] = message.value;
 }
 
-function onSetRefProperty(ctx: GameState, message: SetRefPropertyMessage) {
+function onSetRefProperty(ctx: GameContext, message: SetRefPropertyMessage) {
   const resource = getRemoteResource<RemoteResourceTypes>(ctx, message.eid);
   const ref = getRemoteResource<RemoteResourceTypes>(ctx, message.refEid);
   const propName = message.propName;
@@ -244,7 +244,7 @@ function onSetRefProperty(ctx: GameState, message: SetRefPropertyMessage) {
   (resource as any)[propName] = ref;
 }
 
-function onSetRefArrayProperty(ctx: GameState, message: SetRefArrayPropertyMessage) {
+function onSetRefArrayProperty(ctx: GameContext, message: SetRefArrayPropertyMessage) {
   const resource = getRemoteResource<RemoteResourceTypes>(ctx, message.eid);
   const refArray = message.refEids.map((eid) => getRemoteResource<RemoteResourceTypes>(ctx, eid));
   const propName = message.propName;
@@ -260,7 +260,7 @@ function onSetRefArrayProperty(ctx: GameState, message: SetRefArrayPropertyMessa
  ***********/
 
 export function moveCharacterToAnchor(
-  ctx: GameState,
+  ctx: GameContext,
   body: RAPIER.RigidBody,
   anchor: RemoteNode,
   playerRig: RemoteNode,
@@ -280,7 +280,7 @@ export function moveCharacterToAnchor(
   body.setNextKinematicTranslation(_p);
 }
 
-export function EditorStateSystem(ctx: GameState) {
+export function EditorStateSystem(ctx: GameContext) {
   const editor = getModule(ctx, EditorModule);
 
   if (!ctx.editorLoaded) {

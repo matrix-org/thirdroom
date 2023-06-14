@@ -1,5 +1,5 @@
 import { NOOP } from "../config.common";
-import { GameState } from "../GameTypes";
+import { GameContext } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import { getXRMode } from "../renderer/renderer.game";
 import {
@@ -23,35 +23,35 @@ import {
   createInformXRModeMessage,
 } from "./serialization.game";
 
-export const broadcastReliable = (state: GameState, network: GameNetworkState, packet: ArrayBuffer) => {
+export const broadcastReliable = (state: GameContext, network: GameNetworkState, packet: ArrayBuffer) => {
   if (!packet.byteLength) return;
   if (!enqueueNetworkRingBuffer(network.outgoingReliableRingBuffer, "", packet, true)) {
     console.warn("outgoing reliable network ring buffer full");
   }
 };
 
-export const broadcastUnreliable = (state: GameState, network: GameNetworkState, packet: ArrayBuffer) => {
+export const broadcastUnreliable = (state: GameContext, network: GameNetworkState, packet: ArrayBuffer) => {
   if (!packet.byteLength) return;
   if (!enqueueNetworkRingBuffer(network.outgoingUnreliableRingBuffer, "", packet, true)) {
     console.warn("outgoing unreliable network ring buffer full");
   }
 };
 
-export const sendReliable = (state: GameState, network: GameNetworkState, peerId: string, packet: ArrayBuffer) => {
+export const sendReliable = (state: GameContext, network: GameNetworkState, peerId: string, packet: ArrayBuffer) => {
   if (!packet.byteLength) return;
   if (!enqueueNetworkRingBuffer(network.outgoingReliableRingBuffer, peerId, packet)) {
     console.warn("outgoing reliable network ring buffer full");
   }
 };
 
-export const sendUnreliable = (state: GameState, network: GameNetworkState, peerId: string, packet: ArrayBuffer) => {
+export const sendUnreliable = (state: GameContext, network: GameNetworkState, peerId: string, packet: ArrayBuffer) => {
   if (!packet.byteLength) return;
   if (!enqueueNetworkRingBuffer(network.outgoingUnreliableRingBuffer, peerId, packet)) {
     console.warn("outgoing unreliable network ring buffer full");
   }
 };
 
-const assignNetworkIds = (ctx: GameState) => {
+const assignNetworkIds = (ctx: GameContext) => {
   const network = getModule(ctx, NetworkModule);
   const entered = enteredNetworkIdQuery(ctx.world);
   for (let i = 0; i < entered.length; i++) {
@@ -65,7 +65,7 @@ const assignNetworkIds = (ctx: GameState) => {
   return ctx;
 };
 
-const unassignNetworkIds = (state: GameState) => {
+const unassignNetworkIds = (state: GameContext) => {
   const exited = exitedNetworkIdQuery(state.world);
   for (let i = 0; i < exited.length; i++) {
     const eid = exited[i];
@@ -76,7 +76,7 @@ const unassignNetworkIds = (state: GameState) => {
   return state;
 };
 
-function disposeNetworkedEntities(state: GameState) {
+function disposeNetworkedEntities(state: GameContext) {
   const network = getModule(state, NetworkModule);
   const exited = exitedNetworkedQuery(state.world);
 
@@ -86,7 +86,7 @@ function disposeNetworkedEntities(state: GameState) {
   }
 }
 
-const sendUpdatesPeerToPeer = (ctx: GameState) => {
+const sendUpdatesPeerToPeer = (ctx: GameContext) => {
   const network = getModule(ctx, NetworkModule);
 
   // only send updates when:
@@ -133,7 +133,7 @@ const sendUpdatesPeerToPeer = (ctx: GameState) => {
   return ctx;
 };
 
-export function OutboundNetworkSystem(ctx: GameState) {
+export function OutboundNetworkSystem(ctx: GameContext) {
   const network = getModule(ctx, NetworkModule);
 
   const hasPeerIdIndex = network.peerIdToIndex.has(network.peerId);

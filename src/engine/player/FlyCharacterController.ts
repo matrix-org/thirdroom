@@ -5,7 +5,7 @@ import { Quaternion, Vector3 } from "three";
 
 import { getCamera } from "./getCamera";
 import { updateMatrixWorld } from "../component/transform";
-import { GameState } from "../GameTypes";
+import { GameContext } from "../GameTypes";
 import { enableActionMap } from "../input/ActionMappingSystem";
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "../input/ActionMap";
 import { GameInputModule, InputModule } from "../input/input.game";
@@ -53,7 +53,7 @@ export const FlyCharacterControllerActionMap: ActionMap = {
   ],
 };
 
-export const FlyCharacterControllerModule = defineModule<GameState, FlyCharacterControllerModuleState>({
+export const FlyCharacterControllerModule = defineModule<GameContext, FlyCharacterControllerModuleState>({
   name: "fly-character-controller",
   create() {
     return {};
@@ -74,7 +74,7 @@ export const flyControlsQuery = defineQuery([FlyControls]);
 const velocityVec = vec3.create();
 const cameraWorldRotation = quat.create();
 
-export function addFlyControls(ctx: GameState, eid: number) {
+export function addFlyControls(ctx: GameContext, eid: number) {
   addComponent(ctx.world, FlyControls, eid);
   FlyControls.set(eid, {
     speed: 10,
@@ -86,7 +86,7 @@ const _q = new Quaternion();
 const _p = new Vector3();
 
 function applyFlyControls(
-  ctx: GameState,
+  ctx: GameContext,
   body: RAPIER.RigidBody,
   input: GameInputModule,
   playerRig: RemoteNode,
@@ -116,7 +116,7 @@ function applyFlyControls(
   body.setNextKinematicTranslation(_p);
 }
 
-export function FlyControllerSystem(ctx: GameState) {
+export function FlyControllerSystem(ctx: GameContext) {
   const input = getModule(ctx, InputModule);
   const ents = flyControlsQuery(ctx.world);
 

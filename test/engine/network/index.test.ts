@@ -2,7 +2,7 @@
 import { ok, strictEqual } from "assert";
 import { addComponent, entityExists, getEntityComponents, removeComponent } from "bitecs";
 
-import { GameState } from "../../../src/engine/GameTypes";
+import { GameContext } from "../../../src/engine/GameTypes";
 import {
   createNetworkId,
   getPeerIndexFromNetworkId,
@@ -67,7 +67,7 @@ describe("Network Tests", () => {
           localIdCount: 0x000f,
           removedLocalIds: [],
         },
-      } as unknown as GameState;
+      } as unknown as GameContext;
       const nid = createNetworkId(state);
       strictEqual(nid, 0x000f_00ff);
     });

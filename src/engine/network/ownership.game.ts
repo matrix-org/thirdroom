@@ -2,7 +2,7 @@ import { addComponent, hasComponent } from "bitecs";
 
 import { sliceCursorView, CursorView, writeUint32, readUint32, createCursorView } from "../allocator/CursorView";
 import { NOOP } from "../config.common";
-import { GameState } from "../GameTypes";
+import { GameContext } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import { RigidBody } from "../physics/physics.game";
 import { getPrefabTemplate, Prefab } from "../prefab/prefab.game";
@@ -17,7 +17,7 @@ import { writeMetadata } from "./serialization.game";
 // const messageView = createCursorView(new ArrayBuffer(Uint32Array.BYTES_PER_ELEMENT * 3));
 const messageView = createCursorView(new ArrayBuffer(Uint32Array.BYTES_PER_ELEMENT * 30));
 
-export const createRemoveOwnershipMessage = (ctx: GameState, eid: number) => {
+export const createRemoveOwnershipMessage = (ctx: GameContext, eid: number) => {
   writeMetadata(messageView, NetworkAction.RemoveOwnershipMessage);
   serializeRemoveOwnership(messageView, eid);
   return sliceCursorView(messageView);
@@ -27,7 +27,7 @@ export const serializeRemoveOwnership = (cv: CursorView, eid: number) => {
   writeUint32(cv, Networked.networkId[eid]);
 };
 
-export const deserializeRemoveOwnership = (ctx: GameState, cv: CursorView) => {
+export const deserializeRemoveOwnership = (ctx: GameContext, cv: CursorView) => {
   const network = getModule(ctx, NetworkModule);
   const nid = readUint32(cv);
   const eid = network.networkIdToEntityId.get(nid);
@@ -37,7 +37,7 @@ export const deserializeRemoveOwnership = (ctx: GameState, cv: CursorView) => {
   }
 };
 
-export const takeOwnership = (ctx: GameState, network: GameNetworkState, node: RemoteNode): number => {
+export const takeOwnership = (ctx: GameContext, network: GameNetworkState, node: RemoteNode): number => {
   const eid = node.eid;
   if (
     hasComponent(ctx.world, Prefab, eid) &&

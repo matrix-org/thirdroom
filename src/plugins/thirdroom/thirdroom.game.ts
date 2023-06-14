@@ -3,7 +3,7 @@ import RAPIER from "@dimforge/rapier3d-compat";
 
 import { SpawnPoint } from "../../engine/component/SpawnPoint";
 import { addChild } from "../../engine/component/transform";
-import { GameState } from "../../engine/GameTypes";
+import { GameContext } from "../../engine/GameTypes";
 import {
   createQueuedMessageHandler,
   defineModule,
@@ -92,7 +92,7 @@ export interface ThirdRoomModuleState {
 
 const tempSpawnPoints: RemoteNode[] = [];
 
-export function getSpawnPoints(ctx: GameState): RemoteNode[] {
+export function getSpawnPoints(ctx: GameContext): RemoteNode[] {
   const spawnPoints = spawnPointQuery(ctx.world);
   tempSpawnPoints.length = 0;
 
@@ -108,7 +108,7 @@ export function getSpawnPoints(ctx: GameState): RemoteNode[] {
   return tempSpawnPoints;
 }
 
-export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
+export const ThirdRoomModule = defineModule<GameContext, ThirdRoomModuleState>({
   name: "thirdroom",
   create() {
     return {
@@ -183,11 +183,11 @@ export const ThirdRoomModule = defineModule<GameState, ThirdRoomModuleState>({
   },
 });
 
-function onPrintThreadState(ctx: GameState, message: PrintThreadStateMessage) {
+function onPrintThreadState(ctx: GameContext, message: PrintThreadStateMessage) {
   console.log(Thread.Game, ctx);
 }
 
-function onPrintResources(ctx: GameState, message: PrintResourcesMessage) {
+function onPrintResources(ctx: GameContext, message: PrintResourcesMessage) {
   const resourceMap: { [key: string]: RemoteResource[] } = {};
 
   const { resourcesByType, resourceDefByType } = getModule(ctx, ResourceModule);
@@ -200,7 +200,7 @@ function onPrintResources(ctx: GameState, message: PrintResourcesMessage) {
   console.log(resourceMap);
 }
 
-function onFindResourceRetainers(ctx: GameState, message: FindResourceRetainersMessage) {
+function onFindResourceRetainers(ctx: GameContext, message: FindResourceRetainersMessage) {
   const { refs, refCount } = findResourceRetainers(ctx, message.resourceId);
   const roots = findResourceRetainerRoots(ctx, message.resourceId);
 
@@ -212,7 +212,7 @@ function onFindResourceRetainers(ctx: GameState, message: FindResourceRetainersM
   });
 }
 
-function disposeWorld(ctx: GameState) {
+function disposeWorld(ctx: GameContext) {
   const thirdroom = getModule(ctx, ThirdRoomModule);
 
   if (thirdroom.loadWorldAbortController) {
@@ -234,7 +234,7 @@ function disposeWorld(ctx: GameState) {
 
 export const spawnPointQuery = defineQuery([SpawnPoint]);
 
-export function WorldLoaderSystem(ctx: GameState) {
+export function WorldLoaderSystem(ctx: GameContext) {
   const thirdroom = getModule(ctx, ThirdRoomModule);
   let message: WorldLoaderMessage | undefined;
 
@@ -251,7 +251,7 @@ export function WorldLoaderSystem(ctx: GameState) {
   }
 }
 
-async function onLoadWorld(ctx: GameState, message: LoadWorldMessage) {
+async function onLoadWorld(ctx: GameContext, message: LoadWorldMessage) {
   try {
     await loadWorld(ctx, message.environmentUrl, message.options);
 
@@ -274,7 +274,7 @@ async function onLoadWorld(ctx: GameState, message: LoadWorldMessage) {
   }
 }
 
-async function loadWorld(ctx: GameState, environmentUrl: string, options: LoadWorldOptions = {}) {
+async function loadWorld(ctx: GameContext, environmentUrl: string, options: LoadWorldOptions = {}) {
   const thirdroom = getModule(ctx, ThirdRoomModule);
 
   if (thirdroom.loadState !== WorldLoadState.Uninitialized) {
@@ -307,7 +307,7 @@ async function loadWorld(ctx: GameState, environmentUrl: string, options: LoadWo
 }
 
 // when we join the world
-function onEnterWorld(ctx: GameState, message: EnterWorldMessage) {
+function onEnterWorld(ctx: GameContext, message: EnterWorldMessage) {
   try {
     enterWorld(ctx, message.localPeerId);
 
@@ -328,7 +328,7 @@ function onEnterWorld(ctx: GameState, message: EnterWorldMessage) {
   }
 }
 
-function enterWorld(ctx: GameState, localPeerId?: string) {
+function enterWorld(ctx: GameContext, localPeerId?: string) {
   const thirdroom = getModule(ctx, ThirdRoomModule);
 
   if (thirdroom.loadState !== WorldLoadState.Loaded) {
@@ -400,7 +400,7 @@ function enterWorld(ctx: GameState, localPeerId?: string) {
   thirdroom.loadState = WorldLoadState.Entered;
 }
 
-async function onReloadWorld(ctx: GameState, message: ReloadWorldMessage) {
+async function onReloadWorld(ctx: GameContext, message: ReloadWorldMessage) {
   try {
     const network = getModule(ctx, NetworkModule);
 
@@ -434,7 +434,7 @@ async function onReloadWorld(ctx: GameState, message: ReloadWorldMessage) {
   }
 }
 
-function onExitWorld(ctx: GameState, message: ExitWorldMessage) {
+function onExitWorld(ctx: GameContext, message: ExitWorldMessage) {
   disposeWorld(ctx);
 
   ctx.sendMessage<ExitedWorldMessage>(Thread.Main, {
@@ -442,7 +442,7 @@ function onExitWorld(ctx: GameState, message: ExitWorldMessage) {
   });
 }
 
-function onSetObjectCap(ctx: GameState, message: SetObjectCapMessage) {
+function onSetObjectCap(ctx: GameContext, message: SetObjectCapMessage) {
   const thirdroom = getModule(ctx, ThirdRoomModule);
   thirdroom.maxObjectCap = message.value;
 }

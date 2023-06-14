@@ -1,4 +1,4 @@
-import { GameState } from "../GameTypes";
+import { GameContext } from "../GameTypes";
 import { Thread } from "../module/module.common";
 
 const GATHERING_PEERS_PERIOD = 5 * 1000;
@@ -63,7 +63,7 @@ export function createNetworkModuleState(): NetworkModuleState {
 
 // Called when you enter the world
 export function onConnect(
-  ctx: GameState,
+  ctx: GameContext,
   network: NetworkModuleState,
   roomId: string,
   localUserId: string,
@@ -80,7 +80,7 @@ export function onConnect(
 }
 
 // Called when you exit the world
-export function onDisconnect(ctx: GameState, network: NetworkModuleState) {
+export function onDisconnect(ctx: GameContext, network: NetworkModuleState) {
   network.hostConnectionState = HostConnectionState.Disconnected;
   network.localPeerId = undefined;
   network.currentRoomId = undefined;
@@ -138,7 +138,7 @@ export function onMembersChanged(network: NetworkModuleState, roomId: string, ad
 
 // Called for every WebRTC message.
 // Each client should broadcast a keep alive message every second if it hasn't sent any other messages.
-export function onPeerMessageReceived(ctx: GameState, network: NetworkModuleState, peerId: string) {
+export function onPeerMessageReceived(ctx: GameContext, network: NetworkModuleState, peerId: string) {
   const peer = network.peerIdMap.get(peerId);
 
   if (!peer) {
@@ -159,7 +159,7 @@ function hostComparator(a: Peer, b: Peer): number {
   }
 }
 
-export function updateConnectionStates(ctx: GameState, network: NetworkModuleState) {
+export function updateConnectionStates(ctx: GameContext, network: NetworkModuleState) {
   for (const peer of network.peers) {
     const peerTimeout =
       !peer.local && peer.connected && peer.lastReceivedMessage + LAST_RECEIVED_MESSAGE_TIMEOUT < ctx.elapsed;

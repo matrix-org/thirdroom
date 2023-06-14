@@ -38,7 +38,7 @@ export interface NetworkListener {
 
 export interface RemoteResourceManager {
   id: string;
-  ctx: GameState;
+  ctx: GameContext;
   resourceIds: Set<number>;
   resourceMap: Map<number, string | ArrayBuffer | RemoteResource>;
   gltfCache: Map<string, ResourceManagerGLTFCacheEntry>;
@@ -64,7 +64,7 @@ export interface RemoteResourceManager {
   nextNetworkListenerId: number;
 }
 
-export interface GameState extends BaseThreadContext {
+export interface GameContext extends BaseThreadContext {
   mainToGameTripleBufferFlags: Uint8Array;
   renderToGameTripleBufferFlags: Uint8Array;
   gameToMainTripleBufferFlags: Uint8Array;

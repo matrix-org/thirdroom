@@ -1,6 +1,6 @@
 import { vec2 } from "gl-matrix";
 
-import { GameState } from "../GameTypes";
+import { GameContext } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import { ActionBindingTypes, ActionMap, ActionState, ActionType, BindingType, ButtonActionState } from "./ActionMap";
 import { GameInputModule, InputModule } from "./input.game";
@@ -81,7 +81,7 @@ export const ActionTypesToBindings = {
   }),
 };
 
-export function ActionMappingSystem(ctx: GameState) {
+export function ActionMappingSystem(ctx: GameContext) {
   const input = getModule(ctx, InputModule);
 
   // Note not optimized at all

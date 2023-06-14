@@ -5,7 +5,7 @@ import { mat4, quat, vec3 } from "gl-matrix";
 import { getReadObjectBufferView } from "../../engine/allocator/ObjectBufferView";
 import { ourPlayerQuery } from "../../engine/player/Player";
 import { setFromLocalMatrix } from "../../engine/component/transform";
-import { GameState } from "../../engine/GameTypes";
+import { GameContext } from "../../engine/GameTypes";
 import { InputModule } from "../../engine/input/input.game";
 import { getModule } from "../../engine/module/module.common";
 import { grabShapeCastCollisionGroups } from "../../engine/physics/CollisionGroups";
@@ -43,7 +43,7 @@ const _rayPosePosition = vec3.create();
 const _rayPoseRotation = quat.create();
 const _rayDirection = vec3.create();
 
-export function XRInteractionSystem(ctx: GameState) {
+export function XRInteractionSystem(ctx: GameContext) {
   const { xrInputSourcesByHand } = getModule(ctx, InputModule);
   const { physicsWorld, handleToEid } = getModule(ctx, PhysicsModule);
 
@@ -103,7 +103,7 @@ export function XRInteractionSystem(ctx: GameState) {
   }
 }
 
-export function addXRRaycaster(ctx: GameState, eid: number, hand: XRHandedness) {
+export function addXRRaycaster(ctx: GameContext, eid: number, hand: XRHandedness) {
   addComponent(ctx.world, XRRaycaster, eid);
   const ourPlayer = ourPlayerQuery(ctx.world)[0];
   XRRaycaster.set(eid, {
@@ -117,7 +117,7 @@ export function addXRRaycaster(ctx: GameState, eid: number, hand: XRHandedness) 
   });
 }
 
-export function removeXRRaycaster(ctx: GameState, eid: number) {
+export function removeXRRaycaster(ctx: GameContext, eid: number) {
   removeComponent(ctx.world, XRRaycaster, eid);
   XRRaycaster.delete(eid);
 }

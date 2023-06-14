@@ -1,12 +1,12 @@
 import { defineQuery } from "bitecs";
 
-import { GameState } from "../GameTypes";
+import { GameContext } from "../GameTypes";
 import { RemoteNode } from "../resource/RemoteResources";
 import { getRemoteResource } from "../resource/resource.game";
 
 const skipRenderLerpQuery = defineQuery([RemoteNode]);
 
-export function SkipRenderLerpSystem(ctx: GameState) {
+export function SkipRenderLerpSystem(ctx: GameContext) {
   const ents = skipRenderLerpQuery(ctx.world);
 
   for (let i = 0; i < ents.length; i++) {

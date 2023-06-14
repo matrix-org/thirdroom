@@ -26,7 +26,7 @@ import {
   writeUint8,
 } from "../allocator/CursorView";
 import { NOOP } from "../config.common";
-import { GameState } from "../GameTypes";
+import { GameContext } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import { RigidBody } from "../physics/physics.game";
 import { Prefab, createPrefabEntity } from "../prefab/prefab.game";
@@ -223,7 +223,7 @@ export const deserializeTransformChanged = (v: CursorView, nid: number, node: Re
 
 /* Create */
 export function createRemoteNetworkedEntity(
-  ctx: GameState,
+  ctx: GameContext,
   network: GameNetworkState,
   nid: number,
   prefab: string
@@ -265,7 +265,7 @@ function writeCreation(network: GameNetworkState, v: CursorView, eid: number) {
   }
 }
 
-export function serializeCreatesSnapshot(ctx: GameState, v: CursorView) {
+export function serializeCreatesSnapshot(ctx: GameContext, v: CursorView) {
   const network = getModule(ctx, NetworkModule);
   const entities = ownedNetworkedQuery(ctx.world);
 
@@ -277,7 +277,7 @@ export function serializeCreatesSnapshot(ctx: GameState, v: CursorView) {
   }
 }
 
-export function serializeCreates(ctx: GameState, v: CursorView) {
+export function serializeCreates(ctx: GameContext, v: CursorView) {
   const network = getModule(ctx, NetworkModule);
   const entities = createdOwnedNetworkedQuery(ctx.world);
 
@@ -288,7 +288,7 @@ export function serializeCreates(ctx: GameState, v: CursorView) {
   }
 }
 
-export function deserializeCreates(ctx: GameState, v: CursorView, peerId: string) {
+export function deserializeCreates(ctx: GameContext, v: CursorView, peerId: string) {
   const network = getModule(ctx, NetworkModule);
   const count = readUint32(v);
   for (let i = 0; i < count; i++) {
@@ -323,7 +323,7 @@ export function deserializeCreates(ctx: GameState, v: CursorView, peerId: string
 
 /* Updates - Snapshot */
 
-export function serializeUpdatesSnapshot(ctx: GameState, v: CursorView) {
+export function serializeUpdatesSnapshot(ctx: GameContext, v: CursorView) {
   const entities = ownedNetworkedQuery(ctx.world);
   writeUint32(v, entities.length);
   for (let i = 0; i < entities.length; i++) {
@@ -335,7 +335,7 @@ export function serializeUpdatesSnapshot(ctx: GameState, v: CursorView) {
   }
 }
 
-export function deserializeUpdatesSnapshot(ctx: GameState, v: CursorView) {
+export function deserializeUpdatesSnapshot(ctx: GameContext, v: CursorView) {
   const network = getModule(ctx, NetworkModule);
   const count = readUint32(v);
   for (let i = 0; i < count; i++) {
@@ -353,7 +353,7 @@ export function deserializeUpdatesSnapshot(ctx: GameState, v: CursorView) {
 
 /* Updates - Changed */
 
-export function serializeUpdatesChanged(ctx: GameState, v: CursorView) {
+export function serializeUpdatesChanged(ctx: GameContext, v: CursorView) {
   const entities = ownedNetworkedQuery(ctx.world);
   const writeCount = spaceUint32(v);
   let count = 0;
@@ -374,7 +374,7 @@ export function serializeUpdatesChanged(ctx: GameState, v: CursorView) {
   writeCount(count);
 }
 
-export function deserializeUpdatesChanged(ctx: GameState, v: CursorView) {
+export function deserializeUpdatesChanged(ctx: GameContext, v: CursorView) {
   const network = getModule(ctx, NetworkModule);
   const count = readUint32(v);
   for (let i = 0; i < count; i++) {
@@ -392,7 +392,7 @@ export function deserializeUpdatesChanged(ctx: GameState, v: CursorView) {
 
 /* Delete */
 
-export function serializeDeletes(ctx: GameState, v: CursorView) {
+export function serializeDeletes(ctx: GameContext, v: CursorView) {
   const entities = deletedOwnedNetworkedQuery(ctx.world);
   writeUint32(v, entities.length);
   for (let i = 0; i < entities.length; i++) {
@@ -403,7 +403,7 @@ export function serializeDeletes(ctx: GameState, v: CursorView) {
   }
 }
 
-export function deserializeDeletes(ctx: GameState, v: CursorView) {
+export function deserializeDeletes(ctx: GameContext, v: CursorView) {
   const network = getModule(ctx, NetworkModule);
   const count = readUint32(v);
   for (let i = 0; i < count; i++) {
@@ -422,12 +422,12 @@ export function deserializeDeletes(ctx: GameState, v: CursorView) {
 
 /* Update NetworkId Message */
 
-export const serializeUpdateNetworkId = (ctx: GameState, v: CursorView, from: number, to: number) => {
+export const serializeUpdateNetworkId = (ctx: GameContext, v: CursorView, from: number, to: number) => {
   console.info("serializeUpdateNetworkId", from, "->", to);
   writeUint32(v, from);
   writeUint32(v, to);
 };
-export function deserializeUpdateNetworkId(ctx: GameState, v: CursorView) {
+export function deserializeUpdateNetworkId(ctx: GameContext, v: CursorView) {
   const network = getModule(ctx, NetworkModule);
 
   const from = readUint32(v);
@@ -440,7 +440,7 @@ export function deserializeUpdateNetworkId(ctx: GameState, v: CursorView) {
 
   console.info("deserializeUpdateNetworkId", from, "->", to);
 }
-export function createUpdateNetworkIdMessage(ctx: GameState, from: number, to: number) {
+export function createUpdateNetworkIdMessage(ctx: GameContext, from: number, to: number) {
   writeMetadata(messageView, NetworkAction.UpdateNetworkId);
   serializeUpdateNetworkId(ctx, messageView, from, to);
   return sliceCursorView(messageView);
@@ -448,7 +448,7 @@ export function createUpdateNetworkIdMessage(ctx: GameState, from: number, to: n
 
 /* Player NetworkId Message */
 
-export const serializeInformPlayerNetworkId = (ctx: GameState, v: CursorView, peerId: string) => {
+export const serializeInformPlayerNetworkId = (ctx: GameContext, v: CursorView, peerId: string) => {
   console.info("serializeInformPlayerNetworkId", peerId);
   const network = getModule(ctx, NetworkModule);
   const peerEid = network.peerIdToEntityId.get(peerId);
@@ -465,7 +465,7 @@ export const serializeInformPlayerNetworkId = (ctx: GameState, v: CursorView, pe
   writeUint32(v, peerNid);
 };
 
-export async function deserializeInformPlayerNetworkId(ctx: GameState, v: CursorView) {
+export async function deserializeInformPlayerNetworkId(ctx: GameContext, v: CursorView) {
   const network = getModule(ctx, NetworkModule);
 
   // read
@@ -517,7 +517,7 @@ export async function deserializeInformPlayerNetworkId(ctx: GameState, v: Cursor
   }
 }
 
-export function createInformXRModeMessage(ctx: GameState, xrMode: XRMode) {
+export function createInformXRModeMessage(ctx: GameContext, xrMode: XRMode) {
   writeMetadata(messageView, NetworkAction.InformXRMode);
 
   serializeInformXRMode(messageView, xrMode);
@@ -527,7 +527,7 @@ export function createInformXRModeMessage(ctx: GameState, xrMode: XRMode) {
 export const serializeInformXRMode = (v: CursorView, xrMode: XRMode) => {
   writeUint8(v, xrMode);
 };
-export const deserializeInformXRMode = (ctx: GameState, v: CursorView, peerId: string) => {
+export const deserializeInformXRMode = (ctx: GameContext, v: CursorView, peerId: string) => {
   const network = getModule(ctx, NetworkModule);
 
   // read
@@ -539,7 +539,7 @@ export const deserializeInformXRMode = (ctx: GameState, v: CursorView, peerId: s
   network.peerIdToXRMode.set(peerId, xrMode);
 };
 
-export function createInformPlayerNetworkIdMessage(ctx: GameState, peerId: string) {
+export function createInformPlayerNetworkIdMessage(ctx: GameContext, peerId: string) {
   writeMetadata(messageView, NetworkAction.InformPlayerNetworkId);
   serializeInformPlayerNetworkId(ctx, messageView, peerId);
   return sliceCursorView(messageView);
@@ -549,20 +549,20 @@ export function createInformPlayerNetworkIdMessage(ctx: GameState, peerId: strin
 
 // New Peer Snapshot Update
 
-export const createNewPeerSnapshotMessage = (ctx: GameState, v: CursorView) => {
+export const createNewPeerSnapshotMessage = (ctx: GameContext, v: CursorView) => {
   writeMetadata(v, NetworkAction.NewPeerSnapshot);
   serializeCreatesSnapshot(ctx, v);
   serializeUpdatesSnapshot(ctx, v);
   return sliceCursorView(v);
 };
 
-export const deserializeNewPeerSnapshot = (ctx: GameState, v: CursorView, peerId: string) => {
+export const deserializeNewPeerSnapshot = (ctx: GameContext, v: CursorView, peerId: string) => {
   deserializeCreates(ctx, v, peerId);
   deserializeUpdatesSnapshot(ctx, v);
 };
 
 // Full Snapshot Update
-export const createFullSnapshotMessage = (ctx: GameState, v: CursorView) => {
+export const createFullSnapshotMessage = (ctx: GameContext, v: CursorView) => {
   writeMetadata(v, NetworkAction.FullSnapshot);
   serializeCreates(ctx, v);
   serializeUpdatesSnapshot(ctx, v);
@@ -573,13 +573,13 @@ export const createFullSnapshotMessage = (ctx: GameState, v: CursorView) => {
   return sliceCursorView(v);
 };
 
-export const deserializeSnapshot = (ctx: GameState, v: CursorView, peerId: string) => {
+export const deserializeSnapshot = (ctx: GameContext, v: CursorView, peerId: string) => {
   deserializeCreates(ctx, v, peerId);
   deserializeUpdatesSnapshot(ctx, v);
 };
 
 // Changed State Update
-export const createFullChangedMessage = (ctx: GameState, v: CursorView) => {
+export const createFullChangedMessage = (ctx: GameContext, v: CursorView) => {
   writeMetadata(v, NetworkAction.FullChanged);
   serializeCreates(ctx, v);
   serializeUpdatesChanged(ctx, v);
@@ -590,14 +590,14 @@ export const createFullChangedMessage = (ctx: GameState, v: CursorView) => {
   return sliceCursorView(v);
 };
 
-export const deserializeFullChangedUpdate = (ctx: GameState, v: CursorView, peerId: string) => {
+export const deserializeFullChangedUpdate = (ctx: GameContext, v: CursorView, peerId: string) => {
   deserializeCreates(ctx, v, peerId);
   deserializeUpdatesChanged(ctx, v);
   deserializeDeletes(ctx, v);
 };
 
 // Deletion Update
-export const createDeleteMessage = (ctx: GameState, v: CursorView) => {
+export const createDeleteMessage = (ctx: GameContext, v: CursorView) => {
   writeMetadata(v, NetworkAction.Delete);
   serializeDeletes(ctx, v);
   if (v.cursor <= metadataTotalBytes + Uint32Array.BYTES_PER_ELEMENT) {
@@ -606,7 +606,7 @@ export const createDeleteMessage = (ctx: GameState, v: CursorView) => {
   return sliceCursorView(v);
 };
 
-export const createCreateMessage = (ctx: GameState, v: CursorView) => {
+export const createCreateMessage = (ctx: GameContext, v: CursorView) => {
   writeMetadata(v, NetworkAction.Create);
   serializeCreates(ctx, v);
   if (v.cursor <= metadataTotalBytes + Uint32Array.BYTES_PER_ELEMENT) {
@@ -615,7 +615,7 @@ export const createCreateMessage = (ctx: GameState, v: CursorView) => {
   return sliceCursorView(v);
 };
 
-export const createUpdateChangedMessage = (ctx: GameState, v: CursorView) => {
+export const createUpdateChangedMessage = (ctx: GameContext, v: CursorView) => {
   writeMetadata(v, NetworkAction.UpdateChanged);
   serializeUpdatesChanged(ctx, v);
   if (v.cursor <= metadataTotalBytes + Uint32Array.BYTES_PER_ELEMENT) {
@@ -624,7 +624,7 @@ export const createUpdateChangedMessage = (ctx: GameState, v: CursorView) => {
   return sliceCursorView(v);
 };
 
-export const createUpdateSnapshotMessage = (ctx: GameState, v: CursorView) => {
+export const createUpdateSnapshotMessage = (ctx: GameContext, v: CursorView) => {
   writeMetadata(v, NetworkAction.UpdateSnapshot);
   serializeUpdatesSnapshot(ctx, v);
   if (v.cursor <= metadataTotalBytes + Uint32Array.BYTES_PER_ELEMENT) {

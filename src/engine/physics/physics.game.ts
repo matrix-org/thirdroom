@@ -12,7 +12,7 @@ import {
 import RAPIER, { RigidBody as RapierRigidBody, RigidBodyDesc } from "@dimforge/rapier3d-compat";
 import { Quaternion, Vector3 } from "three";
 
-import { GameState, World } from "../GameTypes";
+import { GameContext, World } from "../GameTypes";
 import { defineMapComponent } from "../ecs/MapComponent";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import { addResourceRef, getRemoteResource, removeResourceRef } from "../resource/resource.game";
@@ -50,7 +50,7 @@ export interface PhysicsModuleState {
   eidTocharacterController: Map<number, RAPIER.KinematicCharacterController>;
 }
 
-export const PhysicsModule = defineModule<GameState, PhysicsModuleState>({
+export const PhysicsModule = defineModule<GameContext, PhysicsModuleState>({
   name: "physics",
   async create(_ctx, { waitForMessage }) {
     await RAPIER.init();
@@ -78,7 +78,7 @@ export const PhysicsModule = defineModule<GameState, PhysicsModuleState>({
   },
 });
 
-function onTogglePhysicsDebug(ctx: GameState) {
+function onTogglePhysicsDebug(ctx: GameContext) {
   const physicsModule = getModule(ctx, PhysicsModule);
   physicsModule.debugRender = !physicsModule.debugRender;
 }
@@ -132,7 +132,7 @@ const applyRigidBodyToTransform = (body: RapierRigidBody, node: RemoteNode) => {
   quaternion[3] = rigidRot.w;
 };
 
-export function PhysicsSystem(ctx: GameState) {
+export function PhysicsSystem(ctx: GameContext) {
   const { world, dt } = ctx;
   const physicsModule = getModule(ctx, PhysicsModule);
 
@@ -371,7 +371,7 @@ export function createNodeColliderDescriptions(node: RemoteNode): RAPIER.Collide
 const tempPosition = vec3.create();
 const tempRotation = quat.create();
 
-export function addNodePhysicsBody(ctx: GameState, node: RemoteNode) {
+export function addNodePhysicsBody(ctx: GameContext, node: RemoteNode) {
   const physicsBody = node.physicsBody;
 
   if (!physicsBody) {
@@ -468,7 +468,7 @@ export function addNodePhysicsBody(ctx: GameState, node: RemoteNode) {
 }
 
 export function addRigidBody(
-  ctx: GameState,
+  ctx: GameContext,
   node: RemoteNode,
   rigidBody: RapierRigidBody,
   meshResource?: RemoteMesh,
@@ -493,7 +493,7 @@ export function removeRigidBody(world: World, eid: number) {
   RigidBody.store.delete(eid);
 }
 
-export function registerCollisionHandler(ctx: GameState, handler: CollisionHandler) {
+export function registerCollisionHandler(ctx: GameContext, handler: CollisionHandler) {
   const { collisionHandlers } = getModule(ctx, PhysicsModule);
 
   collisionHandlers.push(handler);
