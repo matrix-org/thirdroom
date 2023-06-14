@@ -116,21 +116,6 @@ function onPeerLeft(mainThread: IMainThreadContext, peerId: string) {
  * API *
  ******/
 
-export function reconnectPeers(ctx: IMainThreadContext) {
-  const network = getModule(ctx, NetworkModule);
-  const { reliableChannels } = network;
-  for (const [peerId] of reliableChannels) {
-    ctx.sendMessage(Thread.Game, {
-      type: NetworkMessageType.RemovePeerId,
-      peerId,
-    });
-    ctx.sendMessage(Thread.Game, {
-      type: NetworkMessageType.AddPeerId,
-      peerId,
-    });
-  }
-}
-
 export function setHost(mainThread: IMainThreadContext, hostId: string) {
   const network = getModule(mainThread, NetworkModule);
   const hostChanged = network.hostId !== hostId;

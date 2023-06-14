@@ -8,7 +8,6 @@ import { enableActionMap } from "../input/ActionMappingSystem";
 import { ActionMap, ActionState, ActionType, BindingType, ButtonActionState } from "../input/ActionMap";
 import { InputModule } from "../input/input.game";
 import { defineModule, getModule } from "../module/module.common";
-import { Owned } from "../network/NetworkComponents";
 import { PhysicsModule, PhysicsModuleState, RigidBody } from "../physics/physics.game";
 import { tryGetRemoteResource } from "../resource/resource.game";
 import { RemoteNode } from "../resource/RemoteResources";
@@ -106,8 +105,7 @@ export const KinematicCharacterControllerModule = defineModule<GameState, Kinema
 });
 
 export const KinematicControls = defineComponent();
-// TODO: remove owned for CSP
-export const kinematicControlsQuery = defineQuery([KinematicControls, Owned]);
+export const kinematicControlsQuery = defineQuery([KinematicControls]);
 export const enteredKinematicControlsQuery = enterQuery(kinematicControlsQuery);
 
 export const _q = new Quaternion();

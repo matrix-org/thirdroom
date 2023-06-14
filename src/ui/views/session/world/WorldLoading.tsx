@@ -110,6 +110,13 @@ export function WorldLoading({ world, loading, error }: { world: Room; loading: 
                 </div>
               </div>
             }
+            options={
+              <div className="flex gap-xxs">
+                <Button onClick={navigateExitWorld} fill="outline">
+                  Cancel
+                </Button>
+              </div>
+            }
           />
         </div>
       )}

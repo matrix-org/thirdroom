@@ -11,7 +11,6 @@ import { RendererOutgoingTripleBufferSystem } from "./renderer/RendererOutgoingT
 import { ResourceModule, ResourceLoaderSystem, ReturnRecycledResourcesSystem } from "./resource/resource.render";
 import { StatsModule, RenderThreadStatsSystem } from "./stats/stats.render";
 import { WebSGUIModule } from "./ui/ui.render";
-import { RaycasterModule, RaycasterSystem } from "./raycaster/raycaster.render";
 
 export default defineConfig({
   modules: [
@@ -23,12 +22,10 @@ export default defineConfig({
     ThirdroomModule,
     EditorModule,
     WebSGUIModule,
-    RaycasterModule,
   ],
   systems: [
     RendererIncomingTripleBufferSystem,
     UpdateXRInputSourcesSystem,
-    RaycasterSystem,
     ResourceLoaderSystem, // Drain dispose queue and create messages. Add eid to recycle queue if disposed.
     UpdateRendererMaterialSystem,
     UpdateRendererMeshPrimitivesSystem,

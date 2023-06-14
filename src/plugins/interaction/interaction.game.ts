@@ -1,4 +1,4 @@
-import RAPIER from "@dimforge/rapier3d-compat";
+import RAPIER, { QueryFilterFlags } from "@dimforge/rapier3d-compat";
 import { defineComponent, Types, removeComponent, addComponent, hasComponent, defineQuery } from "bitecs";
 import { vec3, mat4, quat, vec2 } from "gl-matrix";
 import { Quaternion, Vector3, Vector4 } from "three";
@@ -6,11 +6,11 @@ import { Quaternion, Vector3, Vector4 } from "three";
 import { playOneShotAudio } from "../../engine/audio/audio.game";
 import { unproject } from "../../engine/camera/camera.game";
 import { OurPlayer, ourPlayerQuery } from "../../engine/player/Player";
-import { maxEntities, MAX_OBJECT_CAP, NOOP } from "../../engine/config.common";
+import { maxEntities, NOOP } from "../../engine/config.common";
 import { GameState } from "../../engine/GameTypes";
 import { enableActionMap } from "../../engine/input/ActionMappingSystem";
 import { GameInputModule, InputModule } from "../../engine/input/input.game";
-import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
+import { defineModule, getModule, Thread } from "../../engine/module/module.common";
 import {
   GameNetworkState,
   getPeerIndexFromNetworkId,
@@ -40,14 +40,8 @@ import {
   removeObjectFromWorld,
 } from "../../engine/resource/RemoteResources";
 import { AudioEmitterType, InteractableType } from "../../engine/resource/schema";
-import { createDisposables } from "../../engine/utils/createDisposables";
 import { clamp } from "../../engine/utils/interpolation";
 import { PortalComponent } from "../portals/portals.game";
-import {
-  ObjectCapReachedMessageType,
-  SetObjectCapMessage,
-  SetObjectCapMessageType,
-} from "../spawnables/spawnables.common";
 import { InteractableAction, InteractionMessage, InteractionMessageType } from "./interaction.common";
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
 import { XRAvatarRig } from "../../engine/input/WebXRAvatarRigSystem";
@@ -57,22 +51,20 @@ import { PlayerModule } from "../../engine/player/Player.game";
 import { ZoomComponent, orbitAnchorQuery, OrbitAnchor } from "../../engine/player/CameraRig";
 import { GameRendererModuleState, RendererModule } from "../../engine/renderer/renderer.game";
 import { getCamera } from "../../engine/player/getCamera";
+import { ThirdRoomMessageType } from "../thirdroom/thirdroom.common";
+import { ThirdRoomModule, ThirdRoomModuleState } from "../thirdroom/thirdroom.game";
 
 // TODO: importing from spawnables.game in this file induces a runtime error
 // import { SpawnablesModule } from "../spawnables/spawnables.game";
 
 type InteractionModuleState = {
   clickEmitter?: RemoteAudioEmitter;
-  // HACK: add duplicate obj cap config to interaction module until import issue is resolved
-  maxObjCap: number;
 };
 
 export const InteractionModule = defineModule<GameState, InteractionModuleState>({
   name: "interaction",
   create() {
-    return {
-      maxObjCap: MAX_OBJECT_CAP,
-    };
+    return {};
   },
   async init(ctx) {
     const module = getModule(ctx, InteractionModule);
@@ -119,15 +111,8 @@ export const InteractionModule = defineModule<GameState, InteractionModuleState>
       ...ctx.worldResource.persistentScene.audioEmitters,
       module.clickEmitter,
     ];
-
-    return createDisposables([registerMessageHandler(ctx, SetObjectCapMessageType, onSetObjectCap)]);
   },
 });
-
-function onSetObjectCap(ctx: GameState, message: SetObjectCapMessage) {
-  const module = getModule(ctx, InteractionModule);
-  module.maxObjCap = message.value;
-}
 
 const InteractionActionMap: ActionMap = {
   id: "interaction",
@@ -318,6 +303,7 @@ export function ResetInteractablesSystem(ctx: GameState) {
 }
 
 export function InteractionSystem(ctx: GameState) {
+  const thirdroom = getModule(ctx, ThirdRoomModule);
   const network = getModule(ctx, NetworkModule);
   const physics = getModule(ctx, PhysicsModule);
   const input = getModule(ctx, InputModule);
@@ -343,14 +329,14 @@ export function InteractionSystem(ctx: GameState) {
 
       // TODO: deletion
       // updateDeletion(ctx, interaction, input, eid);
-      updateGrabThrowXR(ctx, interaction, physics, network, input, rig, leftRay, "left");
-      updateGrabThrowXR(ctx, interaction, physics, network, input, rig, rightRay, "right");
+      updateGrabThrowXR(ctx, physics, network, input, thirdroom, rig, leftRay, "left");
+      updateGrabThrowXR(ctx, physics, network, input, thirdroom, rig, rightRay, "right");
     } else {
       const grabbingNode = getCamera(ctx, rig).parent!;
 
       updateFocus(ctx, physics, rig, grabbingNode);
       updateDeletion(ctx, interaction, input, eid);
-      updateGrabThrow(ctx, interaction, physics, network, input, rig, grabbingNode);
+      updateGrabThrow(ctx, interaction, physics, network, input, thirdroom, rig, grabbingNode);
     }
   }
 }
@@ -405,7 +391,7 @@ function updateOrbitInteraction(
     colliderShape,
     10.0,
     true,
-    0,
+    0 as QueryFilterFlags,
     focusShapeCastCollisionGroups
   );
 
@@ -554,6 +540,7 @@ function updateGrabThrow(
   physics: PhysicsModuleState,
   network: GameNetworkState,
   input: GameInputModule,
+  thirdroom: ThirdRoomModuleState,
   rig: RemoteNode,
   grabbingNode: RemoteNode
 ) {
@@ -620,10 +607,10 @@ function updateGrabThrow(
           if (Interactable.type[node.eid] === InteractableType.Grabbable) {
             playOneShotAudio(ctx, interaction.clickEmitter?.sources[0] as RemoteAudioSource);
             const ownedEnts = ownedNetworkedQuery(ctx.world);
-            if (ownedEnts.length > interaction.maxObjCap && !hasComponent(ctx.world, Owned, node.eid)) {
+            if (ownedEnts.length > thirdroom.maxObjectCap && !hasComponent(ctx.world, Owned, node.eid)) {
               // do nothing if we hit the max obj cap
               ctx.sendMessage(Thread.Main, {
-                type: ObjectCapReachedMessageType,
+                type: ThirdRoomMessageType.ObjectCapReached,
               });
             } else {
               // otherwise attempt to take ownership
@@ -731,10 +718,10 @@ function updateGrabThrow(
 
 function updateGrabThrowXR(
   ctx: GameState,
-  interaction: InteractionModuleState,
   physics: PhysicsModuleState,
   network: GameNetworkState,
   controller: GameInputModule,
+  thirdroom: ThirdRoomModuleState,
   rig: RemoteNode,
   grabbingNode: RemoteNode,
   hand: XRHandedness
@@ -768,7 +755,7 @@ function updateGrabThrowXR(
     if (hit.toi <= Interactable.interactionDistance[focusedNode.eid]) {
       if (squeezeState.held && Interactable.type[focusedNode.eid] === InteractableType.Grabbable) {
         const ownedEnts = ownedNetworkedQuery(ctx.world);
-        if (ownedEnts.length > interaction.maxObjCap && !hasComponent(ctx.world, Owned, focusedNode.eid)) {
+        if (ownedEnts.length > thirdroom.maxObjectCap && !hasComponent(ctx.world, Owned, focusedNode.eid)) {
           // do nothing if we hit the max obj cap
           // TODO: websgui
           // ctx.sendMessage(Thread.Main, {

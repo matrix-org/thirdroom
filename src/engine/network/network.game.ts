@@ -158,10 +158,9 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
  * Message Handlers *
  *******************/
 
-const onAddPeerId = (ctx: GameState, message: AddPeerIdMessage) => {
-  console.info("onAddPeerId", message.peerId);
+export const addPeerId = (ctx: GameState, peerId: string) => {
+  console.info("addPeerId", peerId);
   const network = getModule(ctx, NetworkModule);
-  const { peerId } = message;
 
   if (network.peers.includes(peerId) || network.peerId === peerId) return;
 
@@ -177,9 +176,10 @@ const onAddPeerId = (ctx: GameState, message: AddPeerIdMessage) => {
   ctx.sendMessage<PeerEnteredMessage>(Thread.Game, { type: NetworkMessageType.PeerEntered, peerIndex });
 };
 
-const onRemovePeerId = (ctx: GameState, message: RemovePeerIdMessage) => {
+const onAddPeerId = (ctx: GameState, message: AddPeerIdMessage) => addPeerId(ctx, message.peerId);
+
+export const removePeerId = (ctx: GameState, peerId: string) => {
   const network = getModule(ctx, NetworkModule);
-  const { peerId } = message;
 
   const peerArrIndex = network.peers.indexOf(peerId);
   const peerIndex = network.peerIdToIndex.get(peerId);
@@ -207,6 +207,8 @@ const onRemovePeerId = (ctx: GameState, message: RemovePeerIdMessage) => {
     console.warn(`cannot remove peerId ${peerId}, does not exist in peer list`);
   }
 };
+
+const onRemovePeerId = (ctx: GameState, message: RemovePeerIdMessage) => removePeerId(ctx, message.peerId);
 
 const onExitWorld = (ctx: GameState, message: ExitWorldMessage) => {
   const network = getModule(ctx, NetworkModule);
@@ -320,6 +322,6 @@ export const ownedPlayerQuery = defineQuery([Player, Owned]);
 export const enteredOwnedPlayerQuery = enterQuery(ownedPlayerQuery);
 export const exitedOwnedPlayerQuery = exitQuery(ownedPlayerQuery);
 
-export const remotePlayerQuery = defineQuery([Player, Not(Owned)]);
-export const enteredRemotePlayerQuery = enterQuery(remotePlayerQuery);
-export const exitedRemotePlayerQuery = exitQuery(remotePlayerQuery);
+// export const remotePlayerQuery = defineQuery([Player, Not(Owned)]);
+// export const enteredRemotePlayerQuery = enterQuery(remotePlayerQuery);
+// export const exitedRemotePlayerQuery = exitQuery(remotePlayerQuery);

@@ -18,7 +18,6 @@ import { useToast } from "../../../hooks/useToast";
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { IMainThreadContext } from "../../../../engine/MainThread";
 import { createDisposables } from "../../../../engine/utils/createDisposables";
-import { ObjectCapReachedMessage, ObjectCapReachedMessageType } from "../../../../plugins/spawnables/spawnables.common";
 import { useCalls } from "../../../hooks/useCalls";
 import { useRoomCall } from "../../../hooks/useRoomCall";
 import { useWebXRSession } from "../../../hooks/useWebXRSession";
@@ -44,6 +43,7 @@ import { inputFocused } from "../../../utils/common";
 import { useDisableInput } from "../../../hooks/useDisableInput";
 import { editorEnabledAtom } from "../../../state/editor";
 import { usePowerLevels } from "../../../hooks/usePowerLevels";
+import { ObjectCapReachedMessage, ThirdRoomMessageType } from "../../../../plugins/thirdroom/thirdroom.common";
 
 const SHOW_NAMES_STORE = "showNames";
 interface WorldViewProps {
@@ -83,7 +83,7 @@ export function WorldView({ world }: WorldViewProps) {
     };
 
     const disposables = createDisposables([
-      registerMessageHandler(mainThread, ObjectCapReachedMessageType, onObjectCapReached),
+      registerMessageHandler(mainThread, ThirdRoomMessageType.ObjectCapReached, onObjectCapReached),
     ]);
     return () => {
       disposables();

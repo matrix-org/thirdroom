@@ -53,6 +53,7 @@ export function NetworkInterpolationSystem(ctx: GameState) {
     const eid = entered[i];
     const node = getRemoteResource<RemoteNode>(ctx, eid);
     const body = RigidBody.store.get(eid);
+
     if (node) {
       applyNetworkedToEntity(node, body);
 

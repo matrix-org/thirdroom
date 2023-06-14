@@ -27,7 +27,7 @@ export default function WorldRootView() {
   const isMounted = useIsMounted();
   const [error, setError] = useState<Error>();
   const setOverlayVisibility = useSetAtom(overlayVisibilityAtom);
-  const { loadWorld, enterWorld, reloadWorld, exitWorld } = useWorldLoader();
+  const { loadAndEnterWorld, reloadWorld, exitWorld } = useWorldLoader();
   const selectWorld = useSetAtom(overlayWorldAtom);
   const [roomId, reloadId] = useWorldPath();
   const navigatedWorld = useRoom(session, roomId);
@@ -42,15 +42,14 @@ export default function WorldRootView() {
       (async () => {
         try {
           const content = await getWorldContent(navigatedWorld);
-          await loadWorld(navigatedWorld, content ?? {});
-          await enterWorld(navigatedWorld);
+          await loadAndEnterWorld(navigatedWorld, content ?? {});
         } catch (err) {
           setError(err as Error);
           console.error(err);
         }
       })();
     }
-  }, [navigatedWorld, reloadId, selectWorld, enterWorld, loadWorld, exitWorld, setWorld]);
+  }, [navigatedWorld, reloadId, selectWorld, loadAndEnterWorld, exitWorld, setWorld]);
 
   /**
    * Selects the world we are entered into for display in the overlay

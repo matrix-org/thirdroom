@@ -187,7 +187,7 @@ export async function loadScript(
       }
 
       if (this.state !== ScriptState.Initialized) {
-        throw new Error("initialize() can only be called from the Initialized state");
+        throw new Error("loaded() can only be called from the Initialized state");
       }
 
       if (websgLoad) {
@@ -208,7 +208,7 @@ export async function loadScript(
       }
 
       if (this.state !== ScriptState.Loaded) {
-        throw new Error("initialize() can only be called from the Loaded state");
+        throw new Error("entered() can only be called from the Loaded state");
       }
 
       if (websgEnter) {
@@ -281,14 +281,13 @@ export async function loadScript(
       }
     },
     dispose() {
+      console.trace("script disposed");
       disposeThirdroomModule();
       disposeWebSGModule();
       disposeMatrixModule();
       disposeNetworkModule();
     },
   };
-
-  script.initialize();
 
   return script;
 }

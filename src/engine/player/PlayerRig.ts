@@ -1,5 +1,5 @@
 import RAPIER from "@dimforge/rapier3d-compat";
-import { addComponent, defineComponent, hasComponent } from "bitecs";
+import { addComponent, defineComponent } from "bitecs";
 import { quat, vec3 } from "gl-matrix";
 
 import { addInteractableComponent, GRAB_DISTANCE } from "../../plugins/interaction/interaction.game";
@@ -10,7 +10,7 @@ import { createNodeFromGLTFURI } from "../gltf/gltf.game";
 import { GameInputModule } from "../input/input.game";
 import { createLineMesh } from "../mesh/mesh.game";
 import { getModule } from "../module/module.common";
-import { GameNetworkState, associatePeerWithEntity, NetworkModule } from "../network/network.game";
+import { GameNetworkState, associatePeerWithEntity, NetworkModule, setLocalPeerId } from "../network/network.game";
 import { Owned, Networked } from "../network/NetworkComponents";
 import { playerCollisionGroups } from "../physics/CollisionGroups";
 import { addRigidBody, Kinematic, PhysicsModule, PhysicsModuleState } from "../physics/physics.game";
@@ -25,7 +25,6 @@ import {
 } from "../resource/RemoteResources";
 import { getRemoteResource } from "../resource/resource.game";
 import { InteractableType, MaterialType, MaterialAlphaMode, AudioEmitterType } from "../resource/schema";
-import { ScriptComponent } from "../scripting/scripting.game";
 import { spawnEntity } from "../utils/spawnEntity";
 import { teleportEntity } from "../utils/teleportEntity";
 import { addCameraRig, CameraRigType } from "./CameraRig";
@@ -202,22 +201,10 @@ export function addPlayerFromPeer(ctx: GameState, eid: number, peerId: string) {
   }
 }
 
-export function loadPlayerRig(
-  ctx: GameState,
-  physics: PhysicsModuleState,
-  input: GameInputModule,
-  network: GameNetworkState
-) {
+export function loadPlayerRig(ctx: GameState, physics: PhysicsModuleState, input: GameInputModule) {
   ctx.worldResource.activeCameraNode = undefined;
 
   const rig = createPrefabEntity(ctx, "avatar");
-  const eid = rig.eid;
-
-  // addNametag(ctx, AVATAR_HEIGHT + AVATAR_OFFSET, rig, network.peerId);
-
-  associatePeerWithEntity(network, network.peerId, eid);
-
-  rig.name = network.peerId;
 
   // setup positional audio emitter for footsteps
   rig.audioEmitter = new RemoteAudioEmitter(ctx.resourceManager, {
@@ -238,17 +225,37 @@ export function loadPlayerRig(
     ],
   });
 
-  // caveat: if owned added after player, this local player entity is added to enteredRemotePlayerQuery
-  // TODO: add Authoring component for authoritatively controlled entities as a host,
-  //       use Owned to distinguish actual ownership on all clients
-  addComponent(ctx.world, Owned, eid);
-  addComponent(ctx.world, Player, eid);
-  addComponent(ctx.world, OurPlayer, eid);
-  // Networked component isn't reset when removed so reset on add
-  addComponent(ctx.world, Networked, eid, true);
+  addComponent(ctx.world, Player, rig.eid);
+  addComponent(ctx.world, OurPlayer, rig.eid);
 
   addObjectToWorld(ctx, rig);
 
+  embodyAvatar(ctx, physics, input, rig);
+
+  return rig;
+}
+
+export function loadNetworkedPlayerRig(
+  ctx: GameState,
+  physics: PhysicsModuleState,
+  input: GameInputModule,
+  network: GameNetworkState,
+  localPeerId: string
+) {
+  const rig = loadPlayerRig(ctx, physics, input);
+  const eid = rig.eid;
+  setLocalPeerId(ctx, localPeerId);
+  associatePeerWithEntity(network, localPeerId, eid);
+  rig.name = localPeerId;
+  // TODO: add Authoring component for authoritatively controlled entities as a host,
+  //       use Owned to distinguish actual ownership on all clients
+  // Networked component isn't reset when removed so reset on add
+  addComponent(ctx.world, Owned, eid);
+  addComponent(ctx.world, Networked, eid, true);
+  return rig;
+}
+
+export function spawnPlayer(ctx: GameState, rig: RemoteNode) {
   const spawnPoints = getSpawnPoints(ctx);
 
   if (spawnPoints.length > 0) {
@@ -256,18 +263,4 @@ export function loadPlayerRig(
   } else {
     teleportEntity(rig, vec3.fromValues(0, 0, 0), quat.create());
   }
-
-  embodyAvatar(ctx, physics, input, rig);
-
-  const gltfScene = ctx.worldResource.environment?.publicScene;
-
-  if (gltfScene && hasComponent(ctx.world, ScriptComponent, gltfScene.eid)) {
-    const script = ScriptComponent.get(gltfScene.eid);
-
-    if (script) {
-      script.entered();
-    }
-  }
-
-  return eid;
 }

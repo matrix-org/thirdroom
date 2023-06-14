@@ -40,7 +40,7 @@ for (let i = 0; i < 10; i++) {
   actionBarMap.actionDefs.push(actionDef);
 }
 
-const defaultActionBarItems: ActionBarItem[] = [
+export const defaultActionBarItems: ActionBarItem[] = [
   {
     id: "small-crate",
     label: "Small Crate",
