@@ -1,7 +1,7 @@
 import { Box3, Scene, Vector3, Texture, InstancedMesh, Matrix4, WebGLArrayRenderTarget, Event, Vector2 } from "three";
 
 import { getModule } from "../module/module.common";
-import { RendererModule, RendererModuleState, RenderThreadState } from "../renderer/renderer.render";
+import { RendererModule, RendererModuleState, RenderContext } from "../renderer/renderer.render";
 import { LoadStatus } from "../resource/resource.common";
 import { getLocalResources, RenderNode, RenderScene } from "../resource/resource.render";
 import { createPool, obtainFromPool, releaseToPool } from "../utils/Pool";
@@ -9,7 +9,7 @@ import { ReflectionProbe } from "./ReflectionProbe";
 
 const tempReflectionProbes: ReflectionProbe[] = [];
 
-function getReflectionProbes(ctx: RenderThreadState): ReflectionProbe[] {
+function getReflectionProbes(ctx: RenderContext): ReflectionProbe[] {
   const nodes = getLocalResources(ctx, RenderNode);
 
   tempReflectionProbes.length = 0;
@@ -25,7 +25,7 @@ function getReflectionProbes(ctx: RenderThreadState): ReflectionProbe[] {
   return tempReflectionProbes;
 }
 
-export function updateNodeReflectionProbe(ctx: RenderThreadState, scene: Scene, node: RenderNode) {
+export function updateNodeReflectionProbe(ctx: RenderContext, scene: Scene, node: RenderNode) {
   const currentReflectionProbeResourceId = node.currentReflectionProbeResourceId;
   const nextReflectionProbeResourceId = node.reflectionProbe?.eid || 0;
 
@@ -49,7 +49,7 @@ export function updateNodeReflectionProbe(ctx: RenderThreadState, scene: Scene, 
   node.reflectionProbeObject.update(ctx, node);
 }
 
-export function updateSceneReflectionProbe(ctx: RenderThreadState, scene: RenderScene) {
+export function updateSceneReflectionProbe(ctx: RenderContext, scene: RenderScene) {
   const currentReflectionProbeResourceId = scene.currentReflectionProbeResourceId;
   const nextReflectionProbeResourceId = scene.reflectionProbe?.eid || 0;
 
@@ -62,7 +62,7 @@ export function updateSceneReflectionProbe(ctx: RenderThreadState, scene: Render
 
 const reflectionProbeMapRenderTargets = new WeakMap<Texture, WebGLArrayRenderTarget>();
 
-export function updateReflectionProbeTextureArray(ctx: RenderThreadState, scene: RenderScene | undefined) {
+export function updateReflectionProbeTextureArray(ctx: RenderContext, scene: RenderScene | undefined) {
   if (!scene) {
     return;
   }
@@ -163,7 +163,7 @@ const instanceWorldMatrix = new Matrix4();
 const instanceReflectionProbeParams = new Vector3();
 
 export function updateNodeReflections(
-  ctx: RenderThreadState,
+  ctx: RenderContext,
   scene: RenderScene | undefined,
   rendererModule: RendererModuleState
 ) {

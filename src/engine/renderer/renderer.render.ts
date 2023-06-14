@@ -48,7 +48,7 @@ import { updateDynamicAccessors } from "../accessor/accessor.render";
 import { EditorModule } from "../editor/editor.render";
 import { HologramMaterial } from "../material/HologramMaterial";
 
-export interface RenderThreadState extends ConsumerThreadContext {
+export interface RenderContext extends ConsumerThreadContext {
   canvas?: HTMLCanvasElement;
   elapsed: number;
   dt: number;
@@ -88,7 +88,7 @@ declare module "three" {
   }
 }
 
-export const RendererModule = defineModule<RenderThreadState, RendererModuleState>({
+export const RendererModule = defineModule<RenderContext, RendererModuleState>({
   name: rendererModuleName,
   async create(ctx, { waitForMessage, sendMessage }) {
     const { canvasTarget, initialCanvasHeight, initialCanvasWidth, supportedXRSessionModes, quality } =
@@ -197,12 +197,12 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
   },
 });
 
-export function startRenderLoop(state: RenderThreadState) {
+export function startRenderLoop(state: RenderContext) {
   const { renderer } = getModule(state, RendererModule);
   renderer.setAnimationLoop(() => onUpdate(state));
 }
 
-function onUpdate(ctx: RenderThreadState) {
+function onUpdate(ctx: RenderContext) {
   const now = performance.now();
   ctx.dt = (now - ctx.elapsed) / 1000;
   ctx.elapsed = now;
@@ -216,30 +216,30 @@ function onUpdate(ctx: RenderThreadState) {
   }
 }
 
-function onResize(state: RenderThreadState, { canvasWidth, canvasHeight }: CanvasResizeMessage) {
+function onResize(state: RenderContext, { canvasWidth, canvasHeight }: CanvasResizeMessage) {
   const renderer = getModule(state, RendererModule);
   renderer.needsResize = true;
   renderer.canvasWidth = canvasWidth;
   renderer.canvasHeight = canvasHeight;
 }
 
-function onNotifySceneRendered(ctx: RenderThreadState, { id, sceneResourceId, frames }: NotifySceneRendererMessage) {
+function onNotifySceneRendered(ctx: RenderContext, { id, sceneResourceId, frames }: NotifySceneRendererMessage) {
   const renderer = getModule(ctx, RendererModule);
   renderer.sceneRenderedRequests.push({ id, sceneResourceId, frames });
 }
 
-function onEnterXR(ctx: RenderThreadState, { session, mode }: EnterXRMessage) {
+function onEnterXR(ctx: RenderContext, { session, mode }: EnterXRMessage) {
   const { renderer, xrMode } = getModule(ctx, RendererModule);
   renderer.xr.setSession(session as unknown as any);
   Atomics.store(xrMode, 0, XRSessionModeToXRMode[mode] || XRMode.None);
 }
 
-function onExitXR(ctx: RenderThreadState) {
+function onExitXR(ctx: RenderContext) {
   const { xrMode } = getModule(ctx, RendererModule);
   Atomics.store(xrMode, 0, XRMode.None);
 }
 
-export function RendererSystem(ctx: RenderThreadState) {
+export function RendererSystem(ctx: RenderContext) {
   const rendererModule = getModule(ctx, RendererModule);
   const inputModule = getModule(ctx, InputModule);
   const { needsResize, canvasWidth, canvasHeight, renderPipeline, tileRendererNodes, dynamicAccessors } =
@@ -307,7 +307,7 @@ export function RendererSystem(ctx: RenderThreadState) {
   }
 }
 
-function onEnableMatrixMaterial(ctx: RenderThreadState, message: EnableMatrixMaterialMessage) {
+function onEnableMatrixMaterial(ctx: RenderContext, message: EnableMatrixMaterialMessage) {
   const renderer = getModule(ctx, RendererModule);
   renderer.enableMatrixMaterial = message.enabled;
 }

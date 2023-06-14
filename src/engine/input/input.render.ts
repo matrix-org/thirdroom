@@ -1,6 +1,6 @@
 import { quat, vec3 } from "gl-matrix";
 
-import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
+import { RendererModule, RenderContext } from "../renderer/renderer.render";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import {
   HandJointNameToIndex,
@@ -60,7 +60,7 @@ export interface RenderInputModule {
  * Initialization *
  *****************/
 
-export const InputModule = defineModule<RenderThreadState, RenderInputModule>({
+export const InputModule = defineModule<RenderContext, RenderInputModule>({
   name: "input",
   async create(ctx, { waitForMessage }) {
     const { inputRingBuffer, screenSpaceMouseCoords } = await waitForMessage<InitializeInputStateMessage>(
@@ -191,13 +191,13 @@ export const InputModule = defineModule<RenderThreadState, RenderInputModule>({
   },
 });
 
-function onSetXRReferenceSpace(ctx: RenderThreadState, message: SetXRReferenceSpaceMessage) {
+function onSetXRReferenceSpace(ctx: RenderContext, message: SetXRReferenceSpaceMessage) {
   const inputModule = getModule(ctx, InputModule);
   inputModule.updateReferenceSpaceHand = message.hand;
 }
 
 async function createXRInputSourceItem(
-  ctx: RenderThreadState,
+  ctx: RenderContext,
   inputProfileManager: XRInputProfileManager,
   id: number,
   inputSource: XRInputSource
@@ -246,7 +246,7 @@ function getInputSourceItem(inputSourceItems: XRInputSourceItem[], handedness: X
   return undefined;
 }
 
-export function UpdateXRInputSourcesSystem(ctx: RenderThreadState) {
+export function UpdateXRInputSourcesSystem(ctx: RenderContext) {
   const inputModule = getModule(ctx, InputModule);
   const { inputSourceItems, inputRingBuffer } = inputModule;
   const rendererModule = getModule(ctx, RendererModule);

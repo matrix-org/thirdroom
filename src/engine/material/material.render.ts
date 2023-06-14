@@ -12,7 +12,7 @@ import {
 } from "three";
 
 import { getModule } from "../module/module.common";
-import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
+import { RendererModule, RenderContext } from "../renderer/renderer.render";
 import { RenderMaterial, RenderMeshPrimitive } from "../resource/resource.render";
 import { MeshPrimitiveAttributeIndex, MeshPrimitiveMode } from "../resource/schema";
 import { MatrixMaterial } from "./MatrixMaterial";
@@ -59,7 +59,7 @@ export function findCachedMaterial(
   return undefined;
 }
 
-export function getDefaultMaterialForMeshPrimitive(ctx: RenderThreadState, meshPrimitive: RenderMeshPrimitive) {
+export function getDefaultMaterialForMeshPrimitive(ctx: RenderContext, meshPrimitive: RenderMeshPrimitive) {
   const vertexColors = !!meshPrimitive.attributes[MeshPrimitiveAttributeIndex.COLOR_0];
   const flatShading = !meshPrimitive.attributes[MeshPrimitiveAttributeIndex.NORMAL];
   const useDerivativeTangents = !meshPrimitive.attributes[MeshPrimitiveAttributeIndex.TANGENT];
@@ -122,7 +122,7 @@ export function getDefaultMaterialForMeshPrimitive(ctx: RenderThreadState, meshP
   return material;
 }
 
-export function patchMaterial(ctx: RenderThreadState, material: PrimitiveMaterial) {
+export function patchMaterial(ctx: RenderContext, material: PrimitiveMaterial) {
   const rendererModule = getModule(ctx, RendererModule);
 
   if (!material.defines) {

@@ -33,7 +33,7 @@ import { RGBE, RGBELoader } from "three/examples/jsm/loaders/RGBELoader";
 import { KTX2Container, VK_FORMAT_UNDEFINED } from "ktx-parse";
 
 import { getModule } from "../module/module.common";
-import { RendererModule, RendererModuleState, RenderThreadState } from "../renderer/renderer.render";
+import { RendererModule, RendererModuleState, RenderContext } from "../renderer/renderer.render";
 import { LoadStatus } from "../resource/resource.common";
 import { getLocalResources, RenderImage, RenderTexture } from "../resource/resource.render";
 import { SamplerMagFilter, SamplerMapping, SamplerMinFilter, SamplerWrap, TextureFormat } from "../resource/schema";
@@ -220,7 +220,7 @@ async function loadRenderImageData(
   }
 }
 
-export function updateImageResources(ctx: RenderThreadState) {
+export function updateImageResources(ctx: RenderContext) {
   const rendererModule = getModule(ctx, RendererModule);
 
   const renderImages = getLocalResources(ctx, RenderImage);
@@ -379,7 +379,7 @@ function updateTextureProperties(renderTexture: RenderTexture, texture: Texture,
   }
 }
 
-export function updateTextureResources(ctx: RenderThreadState) {
+export function updateTextureResources(ctx: RenderContext) {
   const { ktx2Loader } = getModule(ctx, RendererModule);
 
   const renderTextures = getLocalResources(ctx, RenderTexture);

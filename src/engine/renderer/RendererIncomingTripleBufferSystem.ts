@@ -1,7 +1,7 @@
 import { swapReadBufferFlags } from "../allocator/TripleBuffer";
-import { RenderThreadState } from "./renderer.render";
+import { RenderContext } from "./renderer.render";
 
-export function RendererIncomingTripleBufferSystem(ctx: RenderThreadState) {
+export function RendererIncomingTripleBufferSystem(ctx: RenderContext) {
   const bufferSwapped = swapReadBufferFlags(ctx.gameToRenderTripleBufferFlags);
   ctx.isStaleFrame = !bufferSwapped;
 }

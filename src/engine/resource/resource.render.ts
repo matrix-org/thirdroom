@@ -45,7 +45,7 @@ import {
 import { PrimitiveObject3D, MeshPrimitiveAttributeToThreeAttribute } from "../mesh/mesh.render";
 import { getModule } from "../module/module.common";
 import { ReflectionProbe } from "../reflection-probe/ReflectionProbe";
-import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
+import { RendererModule, RenderContext } from "../renderer/renderer.render";
 import { removeUndefinedProperties } from "../utils/removeUndefinedProperties";
 import { RenderImageData, RenderImageDataType } from "../utils/textures";
 import { toTrianglesDrawMode } from "../utils/toTrianglesDrawMode";
@@ -174,7 +174,7 @@ export class RenderMaterial extends defineLocalResourceClass(MaterialResource) {
 
   materialCache: MaterialCacheEntry[] = [];
 
-  getMaterialForMeshPrimitive(ctx: RenderThreadState, meshPrimitive: RenderMeshPrimitive): PrimitiveMaterial {
+  getMaterialForMeshPrimitive(ctx: RenderContext, meshPrimitive: RenderMeshPrimitive): PrimitiveMaterial {
     const rendererModule = getModule(ctx, RendererModule);
     const mode = meshPrimitive.mode;
     const vertexColors = !!meshPrimitive.attributes[MeshPrimitiveAttributeIndex.COLOR_0];
@@ -479,7 +479,7 @@ export class RenderMaterial extends defineLocalResourceClass(MaterialResource) {
     }
   }
 
-  dispose(ctx: RenderThreadState): void {
+  dispose(ctx: RenderContext): void {
     for (const entry of this.materialCache) {
       entry.material.dispose();
     }
@@ -504,7 +504,7 @@ export class RenderAccessor extends defineLocalResourceClass(AccessorResource) {
   attribute: BufferAttribute | InterleavedBufferAttribute = defaultAttribute;
   prevVersion = 0;
 
-  load(ctx: RenderThreadState) {
+  load(ctx: RenderContext) {
     const elementSize = AccessorTypeToElementSize[this.type];
     const arrConstructor = AccessorComponentTypeToTypedArray[this.componentType];
     const componentByteLength = arrConstructor.BYTES_PER_ELEMENT;
@@ -533,7 +533,7 @@ export class RenderAccessor extends defineLocalResourceClass(AccessorResource) {
     }
   }
 
-  dispose(ctx: RenderThreadState): void {
+  dispose(ctx: RenderContext): void {
     const { dynamicAccessors } = getModule(ctx, RendererModule);
 
     const index = dynamicAccessors.indexOf(this);
@@ -564,7 +564,7 @@ export class RenderMeshPrimitive extends defineLocalResourceClass(MeshPrimitiveR
   materialObj: PrimitiveMaterial = defaultMaterial;
   autoUpdateNormals = false;
 
-  load(ctx: RenderThreadState) {
+  load(ctx: RenderContext) {
     let geometryObj = new BufferGeometry();
 
     if (this.indices) {
@@ -705,7 +705,7 @@ export class RenderNode extends defineLocalResourceClass(NodeResource) {
   object3DWorldMatrix = new Matrix4();
   uiCanvasMesh?: Mesh;
 
-  dispose(ctx: RenderThreadState) {
+  dispose(ctx: RenderContext) {
     if (this.meshPrimitiveObjects) {
       for (let i = 0; i < this.meshPrimitiveObjects.length; i++) {
         const primitive = this.meshPrimitiveObjects[i];
@@ -810,7 +810,7 @@ const {
   registerResourceLoader,
   ResourceLoaderSystem,
   ReturnRecycledResourcesSystem,
-} = createLocalResourceModule<RenderThreadState>([
+} = createLocalResourceModule<RenderContext>([
   RenderNode,
   RenderUIButton,
   RenderUICanvas,

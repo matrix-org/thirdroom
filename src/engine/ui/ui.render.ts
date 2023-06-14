@@ -16,7 +16,7 @@ import { Scene } from "three";
 import { vec3 } from "gl-matrix";
 
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
-import { RenderThreadState } from "../renderer/renderer.render";
+import { RenderContext } from "../renderer/renderer.render";
 import {
   RenderImage,
   RenderNode,
@@ -46,7 +46,7 @@ interface UIModuleState {
   yoga: Yoga;
 }
 
-export const WebSGUIModule = defineModule<RenderThreadState, UIModuleState>({
+export const WebSGUIModule = defineModule<RenderContext, UIModuleState>({
   name: "MainWebSGUI",
   create: async () => {
     const response = await fetch(yogaUrl);
@@ -60,7 +60,7 @@ export const WebSGUIModule = defineModule<RenderThreadState, UIModuleState>({
       loadingText: new Set(),
     };
   },
-  async init(ctx: RenderThreadState) {
+  async init(ctx: RenderContext) {
     return createDisposables([
       registerMessageHandler(ctx, WebSGUIMessage.CanvasPress, onCanvasPressed),
       registerMessageHandler(ctx, WebSGUIMessage.CanvasFocus, onCanvasFocused),
@@ -110,7 +110,7 @@ function findHitButton(uiCanvas: RenderUICanvas, hitPoint: vec3): RenderUIButton
   return button;
 }
 
-function onCanvasFocused(ctx: RenderThreadState, message: UICanvasFocusMessage): void {
+function onCanvasFocused(ctx: RenderContext, message: UICanvasFocusMessage): void {
   const uiCanvas = getLocalResource<RenderUICanvas>(ctx, message.uiCanvasEid);
   if (!uiCanvas) {
     console.warn("Could not find UI canvas for eid", message.uiCanvasEid);
@@ -131,7 +131,7 @@ function onCanvasFocused(ctx: RenderThreadState, message: UICanvasFocusMessage):
   });
 }
 
-function onCanvasPressed(ctx: RenderThreadState, message: UICanvasPressMessage): void {
+function onCanvasPressed(ctx: RenderContext, message: UICanvasPressMessage): void {
   const uiCanvas = getLocalResource<RenderUICanvas>(ctx, message.uiCanvasEid);
   if (!uiCanvas) {
     console.warn("Could not find UI canvas for eid", message.uiCanvasEid);
@@ -327,7 +327,7 @@ function drawCanvas(
   drawNode(ctx2d, loadingImages, loadingText, uiCanvas.root);
 }
 
-export function updateNodeUICanvas(ctx: RenderThreadState, scene: Scene, node: RenderNode) {
+export function updateNodeUICanvas(ctx: RenderContext, scene: Scene, node: RenderNode) {
   const { yoga, loadingImages, loadingText } = getModule(ctx, WebSGUIModule);
 
   const currentUICanvasResourceId = node.currentUICanvasResourceId;

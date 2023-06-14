@@ -1,6 +1,6 @@
 import { swapWriteBufferFlags } from "../allocator/TripleBuffer";
-import { RenderThreadState } from "./renderer.render";
+import { RenderContext } from "./renderer.render";
 
-export function RendererOutgoingTripleBufferSystem(ctx: RenderThreadState) {
+export function RendererOutgoingTripleBufferSystem(ctx: RenderContext) {
   swapWriteBufferFlags(ctx.renderToGameTripleBufferFlags);
 }

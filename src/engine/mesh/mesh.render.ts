@@ -27,7 +27,7 @@ import { getDefaultMaterialForMeshPrimitive } from "../material/material.render"
 import { MatrixMaterial } from "../material/MatrixMaterial";
 import { getModule } from "../module/module.common";
 import { setTransformFromNode, updateTransformFromNode } from "../node/node.render";
-import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
+import { RendererModule, RenderContext } from "../renderer/renderer.render";
 import {
   getLocalResource,
   getLocalResources,
@@ -57,7 +57,7 @@ const tempScale = new Vector3();
 const tempMatrix4 = new Matrix4();
 
 function createMeshPrimitiveObject(
-  ctx: RenderThreadState,
+  ctx: RenderContext,
   node: RenderNode,
   primitive: RenderMeshPrimitive
 ): PrimitiveObject3D {
@@ -321,7 +321,7 @@ function createMeshPrimitiveObject(
 
 /* Updates */
 
-export function UpdateRendererMeshPrimitivesSystem(ctx: RenderThreadState) {
+export function UpdateRendererMeshPrimitivesSystem(ctx: RenderContext) {
   const meshPrimitives = getLocalResources(ctx, RenderMeshPrimitive);
 
   for (let i = 0; i < meshPrimitives.length; i++) {
@@ -352,7 +352,7 @@ export function UpdateRendererMeshPrimitivesSystem(ctx: RenderThreadState) {
   }
 }
 
-export function updateNodeMesh(ctx: RenderThreadState, node: RenderNode) {
+export function updateNodeMesh(ctx: RenderContext, node: RenderNode) {
   const rendererModule = getModule(ctx, RendererModule);
   const currentMeshResourceId = node.currentMeshResourceId;
   const nextMeshResourceId = node.mesh?.eid || 0;

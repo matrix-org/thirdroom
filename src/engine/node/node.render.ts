@@ -8,7 +8,7 @@ import { RenderInputModule } from "../input/input.render";
 import { updateNodeLight } from "../light/light.render";
 import { updateNodeMesh } from "../mesh/mesh.render";
 import { updateNodeReflectionProbe } from "../reflection-probe/reflection-probe.render";
-import { RendererModuleState, RenderThreadState } from "../renderer/renderer.render";
+import { RendererModuleState, RenderContext } from "../renderer/renderer.render";
 import { getLocalResources, RenderNode } from "../resource/resource.render";
 import { updateNodeTilesRenderer } from "../tiles-renderer/tiles-renderer.render";
 import { updateNodeUICanvas } from "../ui/ui.render";
@@ -18,7 +18,7 @@ const tempPosition = new Vector3();
 const tempQuaternion = new Quaternion();
 const tempScale = new Vector3();
 
-export function updateTransformFromNode(ctx: RenderThreadState, node: RenderNode, object3D: Object3D) {
+export function updateTransformFromNode(ctx: RenderContext, node: RenderNode, object3D: Object3D) {
   if (node.skipLerp) {
     setTransformFromNode(ctx, node, object3D);
     return;
@@ -40,7 +40,7 @@ export function updateTransformFromNode(ctx: RenderThreadState, node: RenderNode
 }
 
 export function setTransformFromNode(
-  ctx: RenderThreadState,
+  ctx: RenderContext,
   node: RenderNode,
   object3D: Object3D,
   inverseMatrix?: Matrix4
@@ -60,7 +60,7 @@ export function setTransformFromNode(
 }
 
 export function updateLocalNodeResources(
-  ctx: RenderThreadState,
+  ctx: RenderContext,
   rendererModule: RendererModuleState,
   forceUpdate: boolean
 ) {
@@ -93,7 +93,7 @@ export function updateLocalNodeResources(
 }
 
 export function updateNodesFromXRPoses(
-  ctx: RenderThreadState,
+  ctx: RenderContext,
   rendererModule: RendererModuleState,
   inputModule: RenderInputModule
 ) {

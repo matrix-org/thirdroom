@@ -2,7 +2,7 @@ import { BufferGeometry, DynamicDrawUsage, Float32BufferAttribute, LineBasicMate
 
 import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
-import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
+import { RendererModule, RenderContext } from "../renderer/renderer.render";
 import { createDisposables } from "../utils/createDisposables";
 import { PhysicsDebugRenderTripleBuffer, PhysicsEnableDebugRenderMessage, PhysicsMessageType } from "./physics.common";
 
@@ -12,7 +12,7 @@ export interface RenderPhysicsModuleState {
   debugLines?: LineSegments;
 }
 
-export const PhysicsModule = defineModule<RenderThreadState, RenderPhysicsModuleState>({
+export const PhysicsModule = defineModule<RenderContext, RenderPhysicsModuleState>({
   name: "physics",
   async create() {
     return {
@@ -28,19 +28,19 @@ export const PhysicsModule = defineModule<RenderThreadState, RenderPhysicsModule
   },
 });
 
-function onEnableDebugRender(ctx: RenderThreadState, { tripleBuffer }: PhysicsEnableDebugRenderMessage) {
+function onEnableDebugRender(ctx: RenderContext, { tripleBuffer }: PhysicsEnableDebugRenderMessage) {
   const physicsModule = getModule(ctx, PhysicsModule);
   physicsModule.debugRender = true;
   physicsModule.debugRenderTripleBuffer = tripleBuffer;
 }
 
-function onDisableDebugRender(ctx: RenderThreadState) {
+function onDisableDebugRender(ctx: RenderContext) {
   const physicsModule = getModule(ctx, PhysicsModule);
   physicsModule.debugRender = false;
   physicsModule.debugRenderTripleBuffer = undefined;
 }
 
-export function PhysicsDebugRenderSystem(ctx: RenderThreadState) {
+export function PhysicsDebugRenderSystem(ctx: RenderContext) {
   const physicsModule = getModule(ctx, PhysicsModule);
   const renderModule = getModule(ctx, RendererModule);
 

@@ -3,10 +3,10 @@ import { Scene } from "three";
 
 import { getModule } from "../module/module.common";
 import { updateTransformFromNode } from "../node/node.render";
-import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
+import { RendererModule, RenderContext } from "../renderer/renderer.render";
 import { RenderNode } from "../resource/resource.render";
 
-export function updateNodeTilesRenderer(ctx: RenderThreadState, scene: Scene, node: RenderNode) {
+export function updateNodeTilesRenderer(ctx: RenderContext, scene: Scene, node: RenderNode) {
   const { tileRendererNodes } = getModule(ctx, RendererModule);
 
   const currentTilesRendererResourceId = node.currentTilesRendererResourceId;
@@ -38,7 +38,7 @@ export function updateNodeTilesRenderer(ctx: RenderThreadState, scene: Scene, no
   updateTransformFromNode(ctx, node, node.tilesRendererObject.group);
 }
 
-export function updateTileRenderers(ctx: RenderThreadState, nodes: RenderNode[], cameraNode: RenderNode | undefined) {
+export function updateTileRenderers(ctx: RenderContext, nodes: RenderNode[], cameraNode: RenderNode | undefined) {
   const { needsResize, renderer } = getModule(ctx, RendererModule);
 
   if (!cameraNode?.cameraObject) {

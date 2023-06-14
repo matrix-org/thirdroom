@@ -1,10 +1,10 @@
 import { defineModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
-import { RenderThreadState } from "../../engine/renderer/renderer.render";
+import { RenderContext } from "../../engine/renderer/renderer.render";
 import { ThirdRoomMessageType } from "./thirdroom.common";
 
 type ThirdRoomModuleState = {};
 
-export const ThirdroomModule = defineModule<RenderThreadState, ThirdRoomModuleState>({
+export const ThirdroomModule = defineModule<RenderContext, ThirdRoomModuleState>({
   name: "thirdroom",
   create() {
     return {};
@@ -14,6 +14,6 @@ export const ThirdroomModule = defineModule<RenderThreadState, ThirdRoomModuleSt
   },
 });
 
-function onPrintThreadState(ctx: RenderThreadState) {
+function onPrintThreadState(ctx: RenderContext) {
   console.log(Thread.Render, ctx);
 }

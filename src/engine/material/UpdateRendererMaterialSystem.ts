@@ -1,6 +1,6 @@
 import { Texture, DoubleSide, FrontSide, MeshPhysicalMaterial } from "three";
 
-import { RenderThreadState } from "../renderer/renderer.render";
+import { RenderContext } from "../renderer/renderer.render";
 import { getLocalResources, RenderMaterial, RenderTexture } from "../resource/resource.render";
 import { MaterialAlphaMode } from "../resource/schema";
 import { PrimitiveMaterial } from "./material.render";
@@ -30,7 +30,7 @@ function updateMaterialTexture<Mat extends PrimitiveMaterial>(
   }
 }
 
-export function UpdateRendererMaterialSystem(ctx: RenderThreadState) {
+export function UpdateRendererMaterialSystem(ctx: RenderContext) {
   const localMaterials = getLocalResources(ctx, RenderMaterial);
 
   for (let i = 0; i < localMaterials.length; i++) {

@@ -1,5 +1,5 @@
 import { defineModule, getModule, Thread } from "../module/module.common";
-import { RendererModule, RenderThreadState } from "../renderer/renderer.render";
+import { RendererModule, RenderContext } from "../renderer/renderer.render";
 import { InitializeStatsBufferMessage, Stats, StatsBuffer, StatsMessageType } from "./stats.common";
 
 interface StatsModuleState {
@@ -8,7 +8,7 @@ interface StatsModuleState {
   staleTripleBufferCounter: number;
 }
 
-export const StatsModule = defineModule<RenderThreadState, StatsModuleState>({
+export const StatsModule = defineModule<RenderContext, StatsModuleState>({
   name: "stats",
   async create(ctx, { waitForMessage }) {
     const { statsBuffer } = await waitForMessage<InitializeStatsBufferMessage>(
@@ -25,7 +25,7 @@ export const StatsModule = defineModule<RenderThreadState, StatsModuleState>({
   init() {},
 });
 
-export function RenderThreadStatsSystem(ctx: RenderThreadState) {
+export function RenderThreadStatsSystem(ctx: RenderContext) {
   const renderModule = getModule(ctx, RendererModule);
   const {
     render: { frame, calls, triangles, points, lines },

@@ -1,7 +1,7 @@
 import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
 import { EditorMessageType } from "./editor.common";
 import { createDisposables } from "../utils/createDisposables";
-import { RenderThreadState } from "../renderer/renderer.render";
+import { RenderContext } from "../renderer/renderer.render";
 
 /*********
  * Types *
@@ -15,7 +15,7 @@ export interface EditorModuleState {
  * Initialization *
  ******************/
 
-export const EditorModule = defineModule<RenderThreadState, EditorModuleState>({
+export const EditorModule = defineModule<RenderContext, EditorModuleState>({
   name: "editor",
   create() {
     return {
@@ -34,12 +34,12 @@ export const EditorModule = defineModule<RenderThreadState, EditorModuleState>({
  * Message Handlers *
  ********************/
 
-export function onLoadEditor(ctx: RenderThreadState) {
+export function onLoadEditor(ctx: RenderContext) {
   const editor = getModule(ctx, EditorModule);
   editor.editorLoaded = true;
 }
 
-export function onDisposeEditor(ctx: RenderThreadState) {
+export function onDisposeEditor(ctx: RenderContext) {
   const editor = getModule(ctx, EditorModule);
   editor.editorLoaded = false;
 }

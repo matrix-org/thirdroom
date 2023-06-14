@@ -3,13 +3,13 @@ import { Color } from "three";
 import { getModule } from "../module/module.common";
 import { updateSceneReflectionProbe } from "../reflection-probe/reflection-probe.render";
 import { RendererModule } from "../renderer/renderer.render";
-import { RenderThreadState } from "../renderer/renderer.render";
+import { RenderContext } from "../renderer/renderer.render";
 import { LoadStatus } from "../resource/resource.common";
 import { getLocalResources, RenderNode, RenderScene } from "../resource/resource.render";
 
 const blackBackground = new Color(0x000000);
 
-export function updateActiveSceneResource(ctx: RenderThreadState, activeScene: RenderScene | undefined) {
+export function updateActiveSceneResource(ctx: RenderContext, activeScene: RenderScene | undefined) {
   const rendererModule = getModule(ctx, RendererModule);
 
   if (activeScene) {
@@ -56,7 +56,7 @@ export function updateActiveSceneResource(ctx: RenderThreadState, activeScene: R
   }
 }
 
-export function updateWorldVisibility(ctx: RenderThreadState, ignoreStatic: boolean) {
+export function updateWorldVisibility(ctx: RenderContext, ignoreStatic: boolean) {
   const nodes = getLocalResources(ctx, RenderNode);
 
   for (let i = 0; i < nodes.length; i++) {
