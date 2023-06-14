@@ -197,9 +197,9 @@ export const RendererModule = defineModule<RenderContext, RendererModuleState>({
   },
 });
 
-export function startRenderLoop(state: RenderContext) {
-  const { renderer } = getModule(state, RendererModule);
-  renderer.setAnimationLoop(() => onUpdate(state));
+export function startRenderLoop(ctx: RenderContext) {
+  const { renderer } = getModule(ctx, RendererModule);
+  renderer.setAnimationLoop(() => onUpdate(ctx));
 }
 
 function onUpdate(ctx: RenderContext) {
@@ -216,8 +216,8 @@ function onUpdate(ctx: RenderContext) {
   }
 }
 
-function onResize(state: RenderContext, { canvasWidth, canvasHeight }: CanvasResizeMessage) {
-  const renderer = getModule(state, RendererModule);
+function onResize(ctx: RenderContext, { canvasWidth, canvasHeight }: CanvasResizeMessage) {
+  const renderer = getModule(ctx, RendererModule);
   renderer.needsResize = true;
   renderer.canvasWidth = canvasWidth;
   renderer.canvasHeight = canvasHeight;

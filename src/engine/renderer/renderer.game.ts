@@ -45,8 +45,8 @@ export const RendererModule = defineModule<GameContext, GameRendererModuleState>
   },
 });
 
-function onResize(state: GameContext, { canvasWidth, canvasHeight }: CanvasResizeMessage) {
-  const renderer = getModule(state, RendererModule);
+function onResize(ctx: GameContext, { canvasWidth, canvasHeight }: CanvasResizeMessage) {
+  const renderer = getModule(ctx, RendererModule);
   renderer.canvasWidth = canvasWidth;
   renderer.canvasHeight = canvasHeight;
 }

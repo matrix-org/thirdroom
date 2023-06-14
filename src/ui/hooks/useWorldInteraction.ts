@@ -22,10 +22,7 @@ export interface InteractionState {
   uri?: string;
 }
 
-export function useWorldInteraction(
-  mainThread: MainContext,
-  interactionCallback: (interaction?: InteractionState) => void
-) {
+export function useWorldInteraction(ctx: MainContext, interactionCallback: (interaction?: InteractionState) => void) {
   useEffect(() => {
     const handleInteraction = async (ctx: MainContext, message: InteractionMessage) => {
       const { interactableType, action } = message;
@@ -75,9 +72,9 @@ export function useWorldInteraction(
     };
 
     const disposables = createDisposables([
-      registerMessageHandler(mainThread, InteractionMessageType, handleInteraction),
-      registerMessageHandler(mainThread, ThirdRoomMessageType.ExitedWorld, onExitedWorld),
+      registerMessageHandler(ctx, InteractionMessageType, handleInteraction),
+      registerMessageHandler(ctx, ThirdRoomMessageType.ExitedWorld, onExitedWorld),
     ]);
     return disposables;
-  }, [mainThread, interactionCallback]);
+  }, [ctx, interactionCallback]);
 }

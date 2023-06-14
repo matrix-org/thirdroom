@@ -23,28 +23,28 @@ import {
   createInformXRModeMessage,
 } from "./serialization.game";
 
-export const broadcastReliable = (state: GameContext, network: GameNetworkState, packet: ArrayBuffer) => {
+export const broadcastReliable = (ctx: GameContext, network: GameNetworkState, packet: ArrayBuffer) => {
   if (!packet.byteLength) return;
   if (!enqueueNetworkRingBuffer(network.outgoingReliableRingBuffer, "", packet, true)) {
     console.warn("outgoing reliable network ring buffer full");
   }
 };
 
-export const broadcastUnreliable = (state: GameContext, network: GameNetworkState, packet: ArrayBuffer) => {
+export const broadcastUnreliable = (ctx: GameContext, network: GameNetworkState, packet: ArrayBuffer) => {
   if (!packet.byteLength) return;
   if (!enqueueNetworkRingBuffer(network.outgoingUnreliableRingBuffer, "", packet, true)) {
     console.warn("outgoing unreliable network ring buffer full");
   }
 };
 
-export const sendReliable = (state: GameContext, network: GameNetworkState, peerId: string, packet: ArrayBuffer) => {
+export const sendReliable = (ctx: GameContext, network: GameNetworkState, peerId: string, packet: ArrayBuffer) => {
   if (!packet.byteLength) return;
   if (!enqueueNetworkRingBuffer(network.outgoingReliableRingBuffer, peerId, packet)) {
     console.warn("outgoing reliable network ring buffer full");
   }
 };
 
-export const sendUnreliable = (state: GameContext, network: GameNetworkState, peerId: string, packet: ArrayBuffer) => {
+export const sendUnreliable = (ctx: GameContext, network: GameNetworkState, peerId: string, packet: ArrayBuffer) => {
   if (!packet.byteLength) return;
   if (!enqueueNetworkRingBuffer(network.outgoingUnreliableRingBuffer, peerId, packet)) {
     console.warn("outgoing unreliable network ring buffer full");
@@ -65,20 +65,20 @@ const assignNetworkIds = (ctx: GameContext) => {
   return ctx;
 };
 
-const unassignNetworkIds = (state: GameContext) => {
-  const exited = exitedNetworkIdQuery(state.world);
+const unassignNetworkIds = (ctx: GameContext) => {
+  const exited = exitedNetworkIdQuery(ctx.world);
   for (let i = 0; i < exited.length; i++) {
     const eid = exited[i];
     console.info("networkId", Networked.networkId[eid], "deleted from eid", eid);
-    removeNetworkId(state, Networked.networkId[eid]);
+    removeNetworkId(ctx, Networked.networkId[eid]);
     Networked.networkId[eid] = NOOP;
   }
-  return state;
+  return ctx;
 };
 
-function disposeNetworkedEntities(state: GameContext) {
-  const network = getModule(state, NetworkModule);
-  const exited = exitedNetworkedQuery(state.world);
+function disposeNetworkedEntities(ctx: GameContext) {
+  const network = getModule(ctx, NetworkModule);
+  const exited = exitedNetworkedQuery(ctx.world);
 
   for (let i = 0; i < exited.length; i++) {
     const eid = exited[i];

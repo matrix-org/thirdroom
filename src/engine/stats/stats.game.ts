@@ -21,9 +21,9 @@ export const StatsModule = defineModule<GameContext, StatsModuleState>({
   init() {},
 });
 
-export function GameWorkerStatsSystem(state: GameContext) {
-  const stats = getModule(state, StatsModule);
-  const frameDuration = performance.now() - state.elapsed;
-  stats.statsBuffer.f32[Stats.gameTime] = state.dt;
+export function GameWorkerStatsSystem(ctx: GameContext) {
+  const stats = getModule(ctx, StatsModule);
+  const frameDuration = performance.now() - ctx.elapsed;
+  stats.statsBuffer.f32[Stats.gameTime] = ctx.dt;
   stats.statsBuffer.f32[Stats.gameDuration] = frameDuration;
 }

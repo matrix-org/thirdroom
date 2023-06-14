@@ -40,7 +40,7 @@ const processNetworkMessage = (ctx: GameContext, peerId: string, msg: ArrayBuffe
 };
 
 const ringOut = { packet: new ArrayBuffer(0), peerId: "", broadcast: false };
-const processNetworkMessages = (state: GameContext, network: GameNetworkState) => {
+const processNetworkMessages = (ctx: GameContext, network: GameNetworkState) => {
   try {
     while (availableRead(network.incomingReliableRingBuffer)) {
       dequeueNetworkRingBuffer(network.incomingReliableRingBuffer, ringOut);
@@ -54,7 +54,7 @@ const processNetworkMessages = (state: GameContext, network: GameNetworkState) =
         continue;
       }
 
-      processNetworkMessage(state, ringOut.peerId, ringOut.packet);
+      processNetworkMessage(ctx, ringOut.peerId, ringOut.packet);
     }
 
     while (availableRead(network.incomingUnreliableRingBuffer)) {
@@ -70,7 +70,7 @@ const processNetworkMessages = (state: GameContext, network: GameNetworkState) =
         continue;
       }
 
-      processNetworkMessage(state, ringOut.peerId, ringOut.packet);
+      processNetworkMessage(ctx, ringOut.peerId, ringOut.packet);
     }
   } catch (e) {
     console.error(e);

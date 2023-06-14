@@ -100,14 +100,14 @@ export const EditorModule = defineModule<MainContext, EditorModuleState>({
  * Systems *
  ***********/
 
-export function MainThreadEditorSystem(mainThread: MainContext) {
-  const editor = getModule(mainThread, EditorModule);
+export function MainThreadEditorSystem(ctx: MainContext) {
+  const editor = getModule(ctx, EditorModule);
 
   if (!editor.editorLoaded) {
     return;
   }
 
-  updateHierarchy(mainThread, editor);
+  updateHierarchy(ctx, editor);
 }
 
 function updateHierarchy(ctx: MainContext, editor: EditorModuleState) {

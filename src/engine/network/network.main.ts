@@ -87,8 +87,8 @@ const onIncomingMessage =
     }
   };
 
-function onPeerLeft(mainThread: MainContext, peerId: string) {
-  const network = getModule(mainThread, NetworkModule);
+function onPeerLeft(ctx: MainContext, peerId: string) {
+  const network = getModule(ctx, NetworkModule);
   const { reliableChannels, unreliableChannels } = network;
   const reliableChannel = reliableChannels.get(peerId);
   const unreliableChannel = unreliableChannels.get(peerId);
@@ -103,10 +103,10 @@ function onPeerLeft(mainThread: MainContext, peerId: string) {
   reliableChannels.delete(peerId);
   unreliableChannels.delete(peerId);
 
-  const audio = getModule(mainThread, AudioModule);
+  const audio = getModule(ctx, AudioModule);
   setPeerMediaStream(audio, peerId, undefined);
 
-  mainThread.sendMessage(Thread.Game, {
+  ctx.sendMessage(Thread.Game, {
     type: NetworkMessageType.RemovePeerId,
     peerId,
   });
@@ -116,34 +116,29 @@ function onPeerLeft(mainThread: MainContext, peerId: string) {
  * API *
  ******/
 
-export function setHost(mainThread: MainContext, hostId: string) {
-  const network = getModule(mainThread, NetworkModule);
+export function setHost(ctx: MainContext, hostId: string) {
+  const network = getModule(ctx, NetworkModule);
   const hostChanged = network.hostId !== hostId;
 
   if (hostChanged) {
     console.info("electing new host", hostId);
     network.hostId = hostId;
-    mainThread.sendMessage<SetHostMessage>(Thread.Game, {
+    ctx.sendMessage<SetHostMessage>(Thread.Game, {
       type: NetworkMessageType.SetHost,
       hostId,
     });
   }
 }
 
-export function hasPeer(mainThread: MainContext, peerId: string): boolean {
-  const network = getModule(mainThread, NetworkModule);
+export function hasPeer(ctx: MainContext, peerId: string): boolean {
+  const network = getModule(ctx, NetworkModule);
   const { reliableChannels } = network;
   return reliableChannels.has(peerId);
 }
 
-export function addPeer(
-  mainThread: MainContext,
-  peerId: string,
-  dataChannel: RTCDataChannel,
-  mediaStream?: MediaStream
-) {
-  const network = getModule(mainThread, NetworkModule);
-  const audio = getModule(mainThread, AudioModule);
+export function addPeer(ctx: MainContext, peerId: string, dataChannel: RTCDataChannel, mediaStream?: MediaStream) {
+  const network = getModule(ctx, NetworkModule);
+  const audio = getModule(ctx, AudioModule);
   const { reliableChannels, unreliableChannels } = network;
 
   if (reliableChannels.has(peerId)) {
@@ -156,15 +151,15 @@ export function addPeer(
 
   const onOpen = () => {
     const onClose = () => {
-      onPeerLeft(mainThread, peerId);
+      onPeerLeft(ctx, peerId);
     };
 
-    const handler = onIncomingMessage(mainThread, network, peerId);
+    const handler = onIncomingMessage(ctx, network, peerId);
     network.incomingMessageHandlers.set(peerId, handler);
     dataChannel.addEventListener("message", handler);
     dataChannel.addEventListener("close", onClose);
 
-    mainThread.sendMessage(Thread.Game, {
+    ctx.sendMessage(Thread.Game, {
       type: NetworkMessageType.AddPeerId,
       peerId,
     });
@@ -183,12 +178,12 @@ export function addPeer(
   }
 }
 
-export function removePeer(mainThread: MainContext, peerId: string) {
-  onPeerLeft(mainThread, peerId);
+export function removePeer(ctx: MainContext, peerId: string) {
+  onPeerLeft(ctx, peerId);
 }
 
-export function toggleMutePeer(mainThread: MainContext, peerId: string) {
-  const audio = getModule(mainThread, AudioModule);
+export function toggleMutePeer(ctx: MainContext, peerId: string) {
+  const audio = getModule(ctx, AudioModule);
   const mediaStream = audio.mediaStreams.get(peerId);
   if (mediaStream) {
     const tracks = mediaStream.getAudioTracks();
@@ -197,8 +192,8 @@ export function toggleMutePeer(mainThread: MainContext, peerId: string) {
   }
 }
 
-export function isPeerMuted(mainThread: MainContext, peerId: string) {
-  const audio = getModule(mainThread, AudioModule);
+export function isPeerMuted(ctx: MainContext, peerId: string) {
+  const audio = getModule(ctx, AudioModule);
   const mediaStream = audio.mediaStreams.get(peerId);
   if (mediaStream) {
     const tracks = mediaStream.getAudioTracks();
@@ -206,11 +201,11 @@ export function isPeerMuted(mainThread: MainContext, peerId: string) {
   }
 }
 
-export function disconnect(mainThread: MainContext) {
-  const network = getModule(mainThread, NetworkModule);
+export function disconnect(ctx: MainContext) {
+  const network = getModule(ctx, NetworkModule);
   const { reliableChannels } = network;
   for (const [peerId] of reliableChannels) {
-    onPeerLeft(mainThread, peerId);
+    onPeerLeft(ctx, peerId);
   }
 }
 

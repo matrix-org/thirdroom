@@ -270,8 +270,8 @@ export const setPeerIdIndexInNetworkId = (nid: number, peerIdIndex: number) => {
   return ((localId << 16) | peerIdIndex) >>> 0;
 };
 
-export const createNetworkId = (state: GameContext) => {
-  const network = getModule(state, NetworkModule);
+export const createNetworkId = (ctx: GameContext) => {
+  const network = getModule(ctx, NetworkModule);
 
   const localId = network.removedLocalIds.shift() || network.localIdCount++;
   const peerIndex = network.peerIdToIndex.get(network.peerId);
