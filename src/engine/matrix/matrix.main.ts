@@ -454,7 +454,7 @@ function handleReadEventsAction(
   });
 }
 
-export async function setActiveMatrixRoom(ctx: IMainThreadContext, session: Session, roomId: string) {
+export function setActiveMatrixRoom(ctx: IMainThreadContext, session: Session, roomId: string) {
   const matrixModule = getModule(ctx, MatrixModule);
 
   const room = session.rooms.get(roomId);

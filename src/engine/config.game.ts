@@ -1,16 +1,14 @@
 import { defineConfig } from "./module/module.common";
 import { AudioModule } from "./audio/audio.game";
-import { InputModule, ResetInputSystem } from "./input/input.game";
-import { ApplyInputSystem } from "./input/ApplyInputSystem";
+import { InputModule } from "./input/input.game";
+import { UpdateRawInputSystem, ResetRawInputSystem } from "./input/RawInputSystems";
 import { PhysicsModule, PhysicsSystem } from "./physics/physics.game";
 import { NetworkExitWorldQueueSystem, NetworkModule } from "./network/network.game";
-import { ActionMapHistorianSystem, ActionMappingSystem } from "./input/ActionMappingSystem";
+import { ActionMappingSystem } from "./input/ActionMappingSystem";
 import {
   KinematicCharacterControllerModule,
   KinematicCharacterControllerSystem,
-  SendClientPosition,
-  UpdateClientPosition,
-} from "../plugins/KinematicCharacterController";
+} from "./player/KinematicCharacterController";
 import { GameWorkerStatsSystem, StatsModule } from "./stats/stats.game";
 import {
   EditorModule,
@@ -27,9 +25,9 @@ import {
   ResourceModule,
   ResourceTickSystem,
 } from "./resource/resource.game";
-import { ThirdRoomModule, ThirdroomSystem } from "../plugins/thirdroom/thirdroom.game";
+import { ThirdRoomModule, WorldLoaderSystem } from "../plugins/thirdroom/thirdroom.game";
 import { UpdateMatrixWorldSystem } from "./component/transform";
-import { FlyCharacterControllerModule, FlyControllerSystem } from "../plugins/FlyCharacterController";
+import { FlyCharacterControllerModule, FlyControllerSystem } from "./player/FlyCharacterController";
 import { NetworkInterpolationSystem } from "./network/NetworkInterpolationSystem";
 import { PrefabDisposalSystem, PrefabModule } from "./prefab/prefab.game";
 import { AnimationSystem } from "./animation/animation.game";
@@ -38,7 +36,7 @@ import {
   InteractionSystem,
   ResetInteractablesSystem,
 } from "../plugins/interaction/interaction.game";
-import { NametagModule, NametagSystem } from "../plugins/nametags/nametags.game";
+import { NametagModule, NametagSystem } from "./player/nametags.game";
 import { ScriptingSystem } from "./scripting/scripting.game";
 import { GameResourceSystem } from "./resource/GameResourceSystem";
 import { RemoteCameraSystem } from "./camera/camera.game";
@@ -53,9 +51,10 @@ import { XRInteractionSystem } from "../plugins/interaction/XRInteractionSystem"
 import { MatrixModule } from "./matrix/matrix.game";
 import { WebSGNetworkModule } from "./network/scripting.game";
 import { WebSGUIModule } from "./ui/ui.game";
-import { CameraRigModule, CameraRigSystem, NetworkedCameraSystem } from "../plugins/camera/CameraRig.game";
+import { PlayerModule } from "./player/Player.game";
 import { ActionBarSystem } from "../plugins/thirdroom/action-bar.game";
-import { RaycasterModule, RaycasterSystem } from "./raycaster/raycaster.game";
+import { EnableCharacterControllerSystem } from "./player/CharacterController";
+import { CameraRigSystem } from "./player/CameraRig";
 
 export default defineConfig<GameState>({
   modules: [
@@ -70,7 +69,7 @@ export default defineConfig<GameState>({
     RendererModule,
     ThirdRoomModule,
     MatrixModule,
-    CameraRigModule,
+    PlayerModule,
     KinematicCharacterControllerModule,
     FlyCharacterControllerModule,
     InteractionModule,
@@ -78,37 +77,31 @@ export default defineConfig<GameState>({
     NametagModule,
     WebSGNetworkModule,
     WebSGUIModule,
-    RaycasterModule,
   ],
   systems: [
     IncomingTripleBufferSystem,
 
-    ApplyInputSystem,
-    RaycasterSystem,
+    UpdateRawInputSystem,
+
     WebXRAvatarRigSystem,
     ActionMappingSystem,
 
     InboundNetworkSystem,
 
+    WorldLoaderSystem,
+
     CameraRigSystem,
 
     KinematicCharacterControllerSystem,
-    // ClientSidePredictionSystem,
     FlyControllerSystem,
     SetWebXRReferenceSpaceSystem,
     InteractionSystem,
     XRInteractionSystem,
     ActionBarSystem,
-    ThirdroomSystem,
-
-    // update client position
-    UpdateClientPosition,
+    EnableCharacterControllerSystem,
 
     // step physics forward and copy rigidbody data to transform component
     PhysicsSystem,
-
-    // send client position to host
-    SendClientPosition,
 
     // interpolate towards authoritative state
     NetworkInterpolationSystem,
@@ -123,7 +116,6 @@ export default defineConfig<GameState>({
     EditorStateSystem,
     //EditorSelectionSystem,
 
-    NetworkedCameraSystem,
     OutboundNetworkSystem,
     NetworkExitWorldQueueSystem,
 
@@ -131,9 +123,8 @@ export default defineConfig<GameState>({
     PrefabDisposalSystem,
     GLTFResourceDisposalSystem,
 
-    ActionMapHistorianSystem, // Store this frame's player input and the state it resulted in
     ResetInteractablesSystem,
-    ResetInputSystem,
+    ResetRawInputSystem,
     GameWorkerStatsSystem,
 
     GameResourceSystem, // Commit Resources to TripleBuffer

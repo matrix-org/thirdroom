@@ -1,6 +1,6 @@
-import { GameState } from "../../engine/GameTypes";
-import { RemoteNode } from "../../engine/resource/RemoteResources";
-import { tryGetRemoteResource } from "../../engine/resource/resource.game";
+import { GameState } from "../GameTypes";
+import { RemoteNode } from "../resource/RemoteResources";
+import { tryGetRemoteResource } from "../resource/resource.game";
 import { AvatarRef } from "./components";
 
 export function getAvatar(ctx: GameState, node: RemoteNode) {

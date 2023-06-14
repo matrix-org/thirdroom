@@ -3,18 +3,17 @@ import { quat, vec3 } from "gl-matrix";
 import RAPIER from "@dimforge/rapier3d-compat";
 import { Quaternion, Vector3 } from "three";
 
-import { getCamera } from "../engine/camera/camera.game";
-import { updateMatrixWorld } from "../engine/component/transform";
-import { GameState } from "../engine/GameTypes";
-import { enableActionMap } from "../engine/input/ActionMappingSystem";
-import { ActionMap, ActionType, BindingType, ButtonActionState } from "../engine/input/ActionMap";
-import { InputModule } from "../engine/input/input.game";
-import { tryGetInputController, InputController } from "../engine/input/InputController";
-import { defineModule, getModule } from "../engine/module/module.common";
-import { tryGetRemoteResource } from "../engine/resource/resource.game";
-import { RemoteNode } from "../engine/resource/RemoteResources";
-import { RigidBody } from "../engine/physics/physics.game";
-import { getRotationNoAlloc } from "../engine/utils/getRotationNoAlloc";
+import { getCamera } from "./getCamera";
+import { updateMatrixWorld } from "../component/transform";
+import { GameState } from "../GameTypes";
+import { enableActionMap } from "../input/ActionMappingSystem";
+import { ActionMap, ActionType, BindingType, ButtonActionState } from "../input/ActionMap";
+import { GameInputModule, InputModule } from "../input/input.game";
+import { defineModule, getModule } from "../module/module.common";
+import { tryGetRemoteResource } from "../resource/resource.game";
+import { RemoteNode } from "../resource/RemoteResources";
+import { RigidBody } from "../physics/physics.game";
+import { getRotationNoAlloc } from "../utils/getRotationNoAlloc";
 
 type FlyCharacterControllerModuleState = {};
 
@@ -39,7 +38,6 @@ export const FlyCharacterControllerActionMap: ActionMap = {
           right: "Keyboard/KeyD",
         },
       ],
-      networked: true,
     },
     {
       id: "boost",
@@ -51,7 +49,6 @@ export const FlyCharacterControllerActionMap: ActionMap = {
           path: "Keyboard/ShiftLeft",
         },
       ],
-      networked: true,
     },
   ],
 };
@@ -63,8 +60,7 @@ export const FlyCharacterControllerModule = defineModule<GameState, FlyCharacter
   },
   init(ctx) {
     const input = getModule(ctx, InputModule);
-    const controller = input.defaultController;
-    enableActionMap(controller, FlyCharacterControllerActionMap);
+    enableActionMap(input, FlyCharacterControllerActionMap);
   },
 });
 
@@ -92,13 +88,14 @@ const _p = new Vector3();
 function applyFlyControls(
   ctx: GameState,
   body: RAPIER.RigidBody,
-  controller: InputController,
+  input: GameInputModule,
   playerRig: RemoteNode,
   camera: RemoteNode
 ) {
   const { speed } = FlyControls.get(playerRig.eid)!;
-  const moveVec = controller.actionStates.get(FlyCharacterControllerActions.Move) as Float32Array;
-  const boost = controller.actionStates.get(FlyCharacterControllerActions.Boost) as ButtonActionState;
+  const actionStates = input.actionStates;
+  const moveVec = actionStates.get(FlyCharacterControllerActions.Move) as Float32Array;
+  const boost = actionStates.get(FlyCharacterControllerActions.Boost) as ButtonActionState;
 
   const boostModifier = boost.held ? 2 : 1;
 
@@ -127,14 +124,12 @@ export function FlyControllerSystem(ctx: GameState) {
     const playerRigEid = ents[i];
     const playerRig = tryGetRemoteResource<RemoteNode>(ctx, playerRigEid);
     const camera = getCamera(ctx, playerRig);
-    const controller = tryGetInputController(input, playerRigEid);
-
     const body = RigidBody.store.get(playerRigEid);
 
     if (!body) {
       throw new Error("rigidbody not found on eid " + playerRigEid);
     }
 
-    applyFlyControls(ctx, body, controller, playerRig, camera);
+    applyFlyControls(ctx, body, input, playerRig, camera);
   }
 }

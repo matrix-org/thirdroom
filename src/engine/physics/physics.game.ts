@@ -21,7 +21,7 @@ import { maxEntities } from "../config.common";
 import { ColliderType, MeshPrimitiveAttributeIndex, PhysicsBodyType } from "../resource/schema";
 import { getAccessorArrayView, scaleVec3Array } from "../accessor/accessor.common";
 import { updateMatrixWorld } from "../component/transform";
-import { Player } from "../component/Player";
+import { Player } from "../player/Player";
 import {
   PhysicsDebugRenderTripleBuffer,
   PhysicsDisableDebugRenderMessage,
@@ -35,7 +35,6 @@ import {
 } from "../allocator/ObjectBufferView";
 import { createDisposables } from "../utils/createDisposables";
 import { getRotationNoAlloc } from "../utils/getRotationNoAlloc";
-import { InputControllerComponent } from "../input/InputControllerComponent";
 import { dynamicObjectCollisionGroups, staticRigidBodyCollisionGroups } from "./CollisionGroups";
 
 export type CollisionHandler = (eid1: number, eid2: number, handle1: number, handle2: number, started: boolean) => void;
@@ -226,11 +225,10 @@ export function PhysicsSystem(ctx: GameState) {
     }
 
     const isPlayer = hasComponent(ctx.world, Player, eid);
-    const hasInputController = hasComponent(ctx.world, InputControllerComponent, eid);
 
     if (bodyType === RAPIER.RigidBodyType.Dynamic || isPlayer) {
       applyRigidBodyToTransform(body, node);
-    } else if (bodyType === RAPIER.RigidBodyType.KinematicPositionBased && !isPlayer && !hasInputController) {
+    } else if (bodyType === RAPIER.RigidBodyType.KinematicPositionBased && !isPlayer) {
       updateMatrixWorld(node);
 
       getRotationNoAlloc(_worldQuat, node.worldMatrix);

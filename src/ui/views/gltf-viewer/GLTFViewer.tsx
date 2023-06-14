@@ -6,9 +6,11 @@ import { useSearchParams } from "react-router-dom";
 import { registerMessageHandler, Thread } from "../../../engine/module/module.common";
 import { createDisposables } from "../../../engine/utils/createDisposables";
 import {
-  GLTFViewerLoadedMessage,
-  GLTFViewerLoadErrorMessage,
+  WorldLoadErrorMessage,
   ThirdRoomMessageType,
+  WorldLoadedMessage,
+  LoadWorldMessage,
+  EnterWorldMessage,
 } from "../../../plugins/thirdroom/thirdroom.common";
 import { useKeyDown } from "../../hooks/useKeyDown";
 import { MainThreadContextProvider, useInitMainThreadContext, useMainThreadContext } from "../../hooks/useMainThread";
@@ -58,15 +60,15 @@ export default function GLTFViewer() {
     const loadScene = async () => {
       const response = await fetch(sceneUrl);
       const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
+      const environmentUrl = URL.createObjectURL(blob);
 
-      if (mainThread && url) {
+      if (mainThread && environmentUrl) {
         setLoadState({ loading: true, loaded: false });
 
-        mainThread.sendMessage(Thread.Game, {
-          type: ThirdRoomMessageType.GLTFViewerLoadGLTF,
-          url,
-          fileMap: new Map(),
+        mainThread.sendMessage<LoadWorldMessage>(Thread.Game, {
+          type: ThirdRoomMessageType.LoadWorld,
+          environmentUrl,
+          id: 1,
         });
       }
     };
@@ -79,16 +81,16 @@ export default function GLTFViewer() {
   useEffect(() => {
     if (mainThread) {
       return createDisposables([
-        registerMessageHandler(
-          mainThread,
-          ThirdRoomMessageType.GLTFViewerLoaded,
-          (ctx, message: GLTFViewerLoadedMessage) => setLoadState({ loading: false, loaded: true })
-        ),
-        registerMessageHandler(
-          mainThread,
-          ThirdRoomMessageType.GLTFViewerLoadError,
-          (ctx, message: GLTFViewerLoadErrorMessage) =>
-            setLoadState({ loading: false, loaded: true, error: message.error })
+        registerMessageHandler(mainThread, ThirdRoomMessageType.WorldLoaded, (ctx, message: WorldLoadedMessage) => {
+          ctx.sendMessage<EnterWorldMessage>(Thread.Game, {
+            type: ThirdRoomMessageType.EnterWorld,
+            id: message.id,
+          });
+
+          setLoadState({ loading: false, loaded: true });
+        }),
+        registerMessageHandler(mainThread, ThirdRoomMessageType.WorldLoadError, (ctx, message: WorldLoadErrorMessage) =>
+          setLoadState({ loading: false, loaded: true, error: message.error })
         ),
       ]);
     }
@@ -108,8 +110,8 @@ export default function GLTFViewer() {
         return;
       }
 
-      let url: string | undefined = undefined;
-      let scriptUrl: string | undefined = undefined;
+      let environmentUrl: string | undefined = undefined;
+      let environmentScriptUrl: string | undefined = undefined;
       const fileMap: Map<string, string> = new Map();
 
       for (const item of e.dataTransfer.items) {
@@ -119,23 +121,26 @@ export default function GLTFViewer() {
           const fileUrl = URL.createObjectURL(file);
 
           if (file.name.match(/\.gl(?:tf|b)$/)) {
-            url = fileUrl;
+            environmentUrl = fileUrl;
           } else if (file.name.match(/\.(js|wasm)$/)) {
-            scriptUrl = fileUrl;
+            environmentScriptUrl = fileUrl;
           } else {
             fileMap.set(encodeURIComponent(file.name), fileUrl);
           }
         }
       }
 
-      if (mainThread && url) {
+      if (mainThread && environmentUrl) {
         setLoadState({ loading: true, loaded: false });
 
-        mainThread.sendMessage(Thread.Game, {
-          type: ThirdRoomMessageType.GLTFViewerLoadGLTF,
-          url,
-          scriptUrl,
-          fileMap,
+        mainThread.sendMessage<LoadWorldMessage>(Thread.Game, {
+          type: ThirdRoomMessageType.LoadWorld,
+          id: 1,
+          environmentUrl,
+          options: {
+            environmentScriptUrl,
+            fileMap,
+          },
         });
       }
     },

@@ -15,10 +15,10 @@ function reportStatus(ctx: GameState, status: { loaded: number; total: number })
   });
 }
 
-export async function fetchWithProgress(ctx: GameState, url: string): Promise<Response> {
+export async function fetchWithProgress(ctx: GameState, url: string, options?: RequestInit): Promise<Response> {
   const status = { loaded: 0, total: 0 };
 
-  const response = await fetch(url);
+  const response = await fetch(url, options);
   const contentLength = response.headers.get("content-length");
   const total = parseInt(contentLength || "0", 10);
 

@@ -1,27 +1,19 @@
-import RAPIER from "@dimforge/rapier3d-compat";
+import RAPIER, { QueryFilterFlags } from "@dimforge/rapier3d-compat";
 import { defineComponent, Types, removeComponent, addComponent, hasComponent, defineQuery } from "bitecs";
 import { vec3, mat4, quat, vec2 } from "gl-matrix";
 import { Quaternion, Vector3, Vector4 } from "three";
 
 import { playOneShotAudio } from "../../engine/audio/audio.game";
-import { getCamera, unproject } from "../../engine/camera/camera.game";
-import { OurPlayer } from "../../engine/component/Player";
-import { maxEntities, MAX_OBJECT_CAP, NOOP } from "../../engine/config.common";
+import { unproject } from "../../engine/camera/camera.game";
+import { OurPlayer, ourPlayerQuery } from "../../engine/player/Player";
+import { maxEntities, NOOP } from "../../engine/config.common";
 import { GameState } from "../../engine/GameTypes";
 import { enableActionMap } from "../../engine/input/ActionMappingSystem";
 import { GameInputModule, InputModule } from "../../engine/input/input.game";
-import {
-  tryGetInputController,
-  InputController,
-  inputControllerQuery,
-  getInputController,
-} from "../../engine/input/InputController";
-import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
-import { isHost } from "../../engine/network/network.common";
+import { defineModule, getModule, Thread } from "../../engine/module/module.common";
 import {
   GameNetworkState,
   getPeerIndexFromNetworkId,
-  networkedQuery,
   NetworkModule,
   ownedNetworkedQuery,
 } from "../../engine/network/network.game";
@@ -48,40 +40,35 @@ import {
   removeObjectFromWorld,
 } from "../../engine/resource/RemoteResources";
 import { AudioEmitterType, InteractableType } from "../../engine/resource/schema";
-import { createDisposables } from "../../engine/utils/createDisposables";
 import { clamp } from "../../engine/utils/interpolation";
 import { PortalComponent } from "../portals/portals.game";
-import {
-  ObjectCapReachedMessageType,
-  SetObjectCapMessage,
-  SetObjectCapMessageType,
-} from "../spawnables/spawnables.common";
 import { InteractableAction, InteractionMessage, InteractionMessageType } from "./interaction.common";
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
 import { XRAvatarRig } from "../../engine/input/WebXRAvatarRigSystem";
 import { UICanvasFocusMessage, UICanvasPressMessage, WebSGUIMessage } from "../../engine/ui/ui.common";
 import { getRotationNoAlloc } from "../../engine/utils/getRotationNoAlloc";
-import { CameraRigModule, ZoomComponent, orbitAnchorQuery, OrbitAnchor } from "../camera/CameraRig.game";
+import { PlayerModule } from "../../engine/player/Player.game";
+import { ZoomComponent, orbitAnchorQuery, OrbitAnchor } from "../../engine/player/CameraRig";
 import { GameRendererModuleState, RendererModule } from "../../engine/renderer/renderer.game";
+import { getCamera } from "../../engine/player/getCamera";
+import { ThirdRoomMessageType } from "../thirdroom/thirdroom.common";
+import { ThirdRoomModule, ThirdRoomModuleState } from "../thirdroom/thirdroom.game";
 
 // TODO: importing from spawnables.game in this file induces a runtime error
 // import { SpawnablesModule } from "../spawnables/spawnables.game";
 
 type InteractionModuleState = {
   clickEmitter?: RemoteAudioEmitter;
-  // HACK: add duplicate obj cap config to interaction module until import issue is resolved
-  maxObjCap: number;
 };
 
 export const InteractionModule = defineModule<GameState, InteractionModuleState>({
   name: "interaction",
   create() {
-    return {
-      maxObjCap: MAX_OBJECT_CAP,
-    };
+    return {};
   },
   async init(ctx) {
     const module = getModule(ctx, InteractionModule);
+    const input = getModule(ctx, InputModule);
 
     const clickAudio1 = new RemoteAudioData(ctx.resourceManager, {
       name: "Click1 Audio Data",
@@ -118,23 +105,14 @@ export const InteractionModule = defineModule<GameState, InteractionModuleState>
 
     addResourceRef(ctx, module.clickEmitter.eid);
 
-    const input = getModule(ctx, InputModule);
-    const controller = input.defaultController;
-    enableActionMap(controller, InteractionActionMap);
+    enableActionMap(input, InteractionActionMap);
 
     ctx.worldResource.persistentScene.audioEmitters = [
       ...ctx.worldResource.persistentScene.audioEmitters,
       module.clickEmitter,
     ];
-
-    return createDisposables([registerMessageHandler(ctx, SetObjectCapMessageType, onSetObjectCap)]);
   },
 });
-
-function onSetObjectCap(ctx: GameState, message: SetObjectCapMessage) {
-  const module = getModule(ctx, InteractionModule);
-  module.maxObjCap = message.value;
-}
 
 const InteractionActionMap: ActionMap = {
   id: "interaction",
@@ -153,7 +131,6 @@ const InteractionActionMap: ActionMap = {
           path: "Keyboard/KeyE",
         },
       ],
-      networked: true,
     },
     {
       id: "primaryTrigger",
@@ -165,7 +142,6 @@ const InteractionActionMap: ActionMap = {
           path: "XRInputSource/primary/xr-standard-trigger",
         },
       ],
-      networked: true,
     },
     {
       id: "secondaryTrigger",
@@ -177,7 +153,6 @@ const InteractionActionMap: ActionMap = {
           path: "XRInputSource/secondary/xr-standard-trigger",
         },
       ],
-      networked: true,
     },
     {
       id: "primarySqueeze",
@@ -189,7 +164,6 @@ const InteractionActionMap: ActionMap = {
           path: "XRInputSource/primary/xr-standard-squeeze",
         },
       ],
-      networked: true,
     },
     {
       id: "secondarySqueeze",
@@ -201,7 +175,6 @@ const InteractionActionMap: ActionMap = {
           path: "XRInputSource/secondary/xr-standard-squeeze",
         },
       ],
-      networked: true,
     },
     {
       id: "throw",
@@ -217,7 +190,6 @@ const InteractionActionMap: ActionMap = {
           path: "Mouse/Left",
         },
       ],
-      networked: true,
     },
     {
       id: "delete",
@@ -229,7 +201,6 @@ const InteractionActionMap: ActionMap = {
           path: "Keyboard/KeyX",
         },
       ],
-      networked: true,
     },
     {
       id: "scroll",
@@ -241,7 +212,6 @@ const InteractionActionMap: ActionMap = {
           y: "Mouse/Scroll",
         },
       ],
-      networked: true,
     },
     {
       id: "screen-position",
@@ -333,11 +303,12 @@ export function ResetInteractablesSystem(ctx: GameState) {
 }
 
 export function InteractionSystem(ctx: GameState) {
+  const thirdroom = getModule(ctx, ThirdRoomModule);
   const network = getModule(ctx, NetworkModule);
   const physics = getModule(ctx, PhysicsModule);
   const input = getModule(ctx, InputModule);
   const interaction = getModule(ctx, InteractionModule);
-  const camRigModule = getModule(ctx, CameraRigModule);
+  const camRigModule = getModule(ctx, PlayerModule);
   const renderer = getModule(ctx, RendererModule);
 
   // TODO: refactor & make orbit handle multiple controllers
@@ -346,41 +317,26 @@ export function InteractionSystem(ctx: GameState) {
     return;
   }
 
-  const rigs = inputControllerQuery(ctx.world);
+  const eid = ourPlayerQuery(ctx.world)[0];
 
-  for (let i = 0; i < rigs.length; i++) {
-    const eid = rigs[i];
+  if (eid) {
     const rig = tryGetRemoteResource<RemoteNode>(ctx, eid);
-    const controller = tryGetInputController(input, eid);
     const xr = XRAvatarRig.get(eid);
 
     if (xr && xr.leftRayEid && xr.rightRayEid) {
       const leftRay = tryGetRemoteResource<RemoteNode>(ctx, xr.leftRayEid);
       const rightRay = tryGetRemoteResource<RemoteNode>(ctx, xr.rightRayEid);
 
-      const hosting = network.authoritative && isHost(network);
-      const cspEnabled = network.authoritative && network.clientSidePrediction;
-      const p2p = !network.authoritative;
-
-      if (hosting || cspEnabled || p2p) {
-        // TODO: deletion
-        // updateDeletion(ctx, interaction, controller, eid);
-        updateGrabThrowXR(ctx, interaction, physics, network, controller, rig, leftRay, "left");
-        updateGrabThrowXR(ctx, interaction, physics, network, controller, rig, rightRay, "right");
-      }
+      // TODO: deletion
+      // updateDeletion(ctx, interaction, input, eid);
+      updateGrabThrowXR(ctx, physics, network, input, thirdroom, rig, leftRay, "left");
+      updateGrabThrowXR(ctx, physics, network, input, thirdroom, rig, rightRay, "right");
     } else {
       const grabbingNode = getCamera(ctx, rig).parent!;
 
       updateFocus(ctx, physics, rig, grabbingNode);
-
-      const hosting = network.authoritative && isHost(network);
-      const cspEnabled = network.authoritative && network.clientSidePrediction;
-      const p2p = !network.authoritative;
-
-      if (hosting || cspEnabled || p2p) {
-        updateDeletion(ctx, interaction, controller, eid);
-        updateGrabThrow(ctx, interaction, physics, network, controller, rig, grabbingNode);
-      }
+      updateDeletion(ctx, interaction, input, eid);
+      updateGrabThrow(ctx, interaction, physics, network, input, thirdroom, rig, grabbingNode);
     }
   }
 }
@@ -399,12 +355,6 @@ function updateOrbitInteraction(
 
   const orbitAnchorEid = orbitAnchorQuery(ctx.world)[0];
   const orbitAnchor = OrbitAnchor.get(orbitAnchorEid);
-  const controller = getInputController(input, orbitAnchorEid);
-
-  if (!controller) {
-    console.warn("Controller not found for eid", orbitAnchorEid);
-    return;
-  }
 
   // TODO: CameraRef
   const zoom = ZoomComponent.get(orbitAnchorEid)!;
@@ -419,7 +369,7 @@ function updateOrbitInteraction(
   mat4.getTranslation(_source, camera.worldMatrix);
 
   // set target at mouse screenspace, unproject, subtract source, then normalize
-  const screenPosition = controller.actionStates.get("ScreenPosition") as vec2;
+  const screenPosition = input.actionStates.get("ScreenPosition") as vec2;
   const x = (screenPosition[0] / renderer.canvasWidth) * 2 - 1;
   const y = -(screenPosition[1] / renderer.canvasHeight) * 2 + 1;
   vec3.set(_target, x, y, 0.5);
@@ -441,7 +391,7 @@ function updateOrbitInteraction(
     colliderShape,
     10.0,
     true,
-    0,
+    0 as QueryFilterFlags,
     focusShapeCastCollisionGroups
   );
 
@@ -466,7 +416,7 @@ function updateOrbitInteraction(
    * Interaction
    */
 
-  const grabBtn = controller.actionStates.get("Grab") as ButtonActionState;
+  const grabBtn = input.actionStates.get("Grab") as ButtonActionState;
 
   if (!grabBtn.pressed) {
     return;
@@ -556,8 +506,8 @@ function updateFocus(ctx: GameState, physics: PhysicsModuleState, rig: RemoteNod
   }
 }
 
-function updateDeletion(ctx: GameState, interaction: InteractionModuleState, controller: InputController, rig: number) {
-  const deleteBtn = controller.actionStates.get("Delete") as ButtonActionState;
+function updateDeletion(ctx: GameState, interaction: InteractionModuleState, input: GameInputModule, rig: number) {
+  const deleteBtn = input.actionStates.get("Delete") as ButtonActionState;
   if (deleteBtn.pressed) {
     const focusedEid = FocusComponent.focusedEntity[rig];
     const focused = getRemoteResource<RemoteNode>(ctx, focusedEid);
@@ -589,17 +539,18 @@ function updateGrabThrow(
   interaction: InteractionModuleState,
   physics: PhysicsModuleState,
   network: GameNetworkState,
-  controller: InputController,
+  input: GameInputModule,
+  thirdroom: ThirdRoomModuleState,
   rig: RemoteNode,
   grabbingNode: RemoteNode
 ) {
   let heldEntity = GrabComponent.grabbedEntity[rig.eid];
   let heldOffset = GrabComponent.heldOffset[rig.eid];
 
-  const grabBtn = controller.actionStates.get("Grab") as ButtonActionState;
-  const primaryTrigger = controller.actionStates.get("primaryTrigger") as ButtonActionState;
-  const secondaryTrigger = controller.actionStates.get("secondaryTrigger") as ButtonActionState;
-  const throwBtn = controller.actionStates.get("Throw") as ButtonActionState;
+  const grabBtn = input.actionStates.get("Grab") as ButtonActionState;
+  const primaryTrigger = input.actionStates.get("primaryTrigger") as ButtonActionState;
+  const secondaryTrigger = input.actionStates.get("secondaryTrigger") as ButtonActionState;
+  const throwBtn = input.actionStates.get("Throw") as ButtonActionState;
 
   const grabPressed = grabBtn.pressed || primaryTrigger.held || secondaryTrigger.held;
   const grabReleased = grabBtn.released || primaryTrigger.released || secondaryTrigger.released;
@@ -655,11 +606,11 @@ function updateGrabThrow(
         if (grabPressed) {
           if (Interactable.type[node.eid] === InteractableType.Grabbable) {
             playOneShotAudio(ctx, interaction.clickEmitter?.sources[0] as RemoteAudioSource);
-            const ownedEnts = network.authoritative ? networkedQuery(ctx.world) : ownedNetworkedQuery(ctx.world);
-            if (ownedEnts.length > interaction.maxObjCap && !hasComponent(ctx.world, Owned, node.eid)) {
+            const ownedEnts = ownedNetworkedQuery(ctx.world);
+            if (ownedEnts.length > thirdroom.maxObjectCap && !hasComponent(ctx.world, Owned, node.eid)) {
               // do nothing if we hit the max obj cap
               ctx.sendMessage(Thread.Main, {
-                type: ObjectCapReachedMessageType,
+                type: ThirdRoomMessageType.ObjectCapReached,
               });
             } else {
               // otherwise attempt to take ownership
@@ -733,7 +684,7 @@ function updateGrabThrow(
 
   if (heldNode) {
     // move held point upon scrolling
-    const [, scrollY] = controller.actionStates.get("Scroll") as vec2;
+    const [, scrollY] = input.actionStates.get("Scroll") as vec2;
     if (scrollY !== 0) {
       heldOffset -= scrollY / 1000;
     }
@@ -767,10 +718,10 @@ function updateGrabThrow(
 
 function updateGrabThrowXR(
   ctx: GameState,
-  interaction: InteractionModuleState,
   physics: PhysicsModuleState,
   network: GameNetworkState,
-  controller: InputController,
+  controller: GameInputModule,
+  thirdroom: ThirdRoomModuleState,
   rig: RemoteNode,
   grabbingNode: RemoteNode,
   hand: XRHandedness
@@ -803,8 +754,8 @@ function updateGrabThrowXR(
 
     if (hit.toi <= Interactable.interactionDistance[focusedNode.eid]) {
       if (squeezeState.held && Interactable.type[focusedNode.eid] === InteractableType.Grabbable) {
-        const ownedEnts = network.authoritative ? networkedQuery(ctx.world) : ownedNetworkedQuery(ctx.world);
-        if (ownedEnts.length > interaction.maxObjCap && !hasComponent(ctx.world, Owned, focusedNode.eid)) {
+        const ownedEnts = ownedNetworkedQuery(ctx.world);
+        if (ownedEnts.length > thirdroom.maxObjectCap && !hasComponent(ctx.world, Owned, focusedNode.eid)) {
           // do nothing if we hit the max obj cap
           // TODO: websgui
           // ctx.sendMessage(Thread.Main, {

@@ -9,18 +9,20 @@ export enum ThirdRoomMessageType {
   WorldLoadError = "world-load-error",
   PrintThreadState = "print-thread-state",
   PrintResources = "print-resources",
-  GLTFViewerLoadGLTF = "gltf-viewer-load-gltf",
-  GLTFViewerLoaded = "gltf-viewer-loaded",
-  GLTFViewerLoadError = "gltf-viewer-load-error",
   ReticleFocus = "reticle-focus",
   FindResourceRetainers = "find-resource-retainers",
   SetActionBarItems = "set-action-bar-items",
+  SetObjectCap = "set-object-cap",
+  ObjectCapReached = "object-cap-reached",
+  ReloadWorld = "reload-world",
+  ReloadedWorld = "reloaded-world",
+  ReloadWorldError = "reload-world-error",
 }
 
 export interface EnterWorldMessage {
   type: ThirdRoomMessageType.EnterWorld;
   id: number;
-  localPeerId: string;
+  localPeerId?: string;
 }
 
 export interface EnteredWorldMessage {
@@ -34,6 +36,24 @@ export interface EnterWorldErrorMessage {
   error: string;
 }
 
+export interface ReloadWorldMessage {
+  type: ThirdRoomMessageType.ReloadWorld;
+  id: number;
+  environmentUrl: string;
+  options?: LoadWorldOptions;
+}
+
+export interface ReloadedWorldMessage {
+  type: ThirdRoomMessageType.ReloadedWorld;
+  id: number;
+}
+
+export interface ReloadWorldErrorMessage {
+  type: ThirdRoomMessageType.ReloadWorldError;
+  id: number;
+  error: string;
+}
+
 export interface ExitWorldMessage {
   type: ThirdRoomMessageType.ExitWorld;
 }
@@ -42,11 +62,17 @@ export interface ExitedWorldMessage {
   type: ThirdRoomMessageType.ExitedWorld;
 }
 
+export interface LoadWorldOptions {
+  environmentScriptUrl?: string;
+  maxObjectCap?: number;
+  fileMap?: Map<string, string>;
+}
+
 export interface LoadWorldMessage {
   type: ThirdRoomMessageType.LoadWorld;
   id: number;
-  url: string;
-  scriptUrl: string;
+  environmentUrl: string;
+  options?: LoadWorldOptions;
 }
 
 export interface WorldLoadedMessage {
@@ -70,23 +96,6 @@ export interface PrintResourcesMessage {
   type: ThirdRoomMessageType.PrintResources;
 }
 
-export interface GLTFViewerLoadGLTFMessage {
-  type: ThirdRoomMessageType.GLTFViewerLoadGLTF;
-  url: string;
-  scriptUrl: string;
-  fileMap: Map<string, string>;
-}
-
-export interface GLTFViewerLoadedMessage {
-  type: ThirdRoomMessageType.GLTFViewerLoaded;
-  url: string;
-}
-
-export interface GLTFViewerLoadErrorMessage {
-  type: ThirdRoomMessageType.GLTFViewerLoadError;
-  error: string;
-}
-
 export interface FindResourceRetainersMessage {
   type: ThirdRoomMessageType.FindResourceRetainers;
   resourceId: number;
@@ -102,4 +111,12 @@ export interface ActionBarItem {
 export interface SetActionBarItemsMessage {
   type: ThirdRoomMessageType.SetActionBarItems;
   actionBarItems: ActionBarItem[];
+}
+
+export interface ObjectCapReachedMessage {
+  type: ThirdRoomMessageType.ObjectCapReached;
+}
+export interface SetObjectCapMessage {
+  type: ThirdRoomMessageType.SetObjectCap;
+  value: number;
 }

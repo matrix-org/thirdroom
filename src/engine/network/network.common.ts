@@ -24,7 +24,6 @@ export interface InitializeNetworkStateMessage extends Message<NetworkMessageTyp
   incomingUnreliableRingBuffer: NetworkRingBuffer;
   outgoingReliableRingBuffer: NetworkRingBuffer;
   outgoingUnreliableRingBuffer: NetworkRingBuffer;
-  authoritative: boolean;
 }
 
 // Game -> Main

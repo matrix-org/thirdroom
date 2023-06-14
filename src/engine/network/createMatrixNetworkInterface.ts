@@ -1,9 +1,20 @@
-import { Client, GroupCall, Member, PowerLevels, SubscriptionHandle } from "@thirdroom/hydrogen-view-sdk";
+import {
+  CallIntent,
+  Client,
+  GroupCall,
+  LocalMedia,
+  Member,
+  Platform,
+  Room,
+  Session,
+  SubscriptionHandle,
+} from "@thirdroom/hydrogen-view-sdk";
 
 import { exitWorld } from "../../plugins/thirdroom/thirdroom.main";
 import { setLocalMediaStream } from "../audio/audio.main";
 import { IMainThreadContext } from "../MainThread";
 import { addPeer, disconnect, hasPeer, removePeer, setHost } from "./network.main";
+import { getRoomCall } from "../../ui/utils/matrixUtils";
 
 export interface MatrixNetworkInterface {
   dispose: () => void;
@@ -36,15 +47,44 @@ function getReliableHost(groupCall: GroupCall): Member | undefined {
   return sortedMembers[0];
 }
 
+const getWorldGroupCall = (session: Session, world: Room) => getRoomCall(session.callHandler.calls, world.id);
+
 export async function createMatrixNetworkInterface(
   ctx: IMainThreadContext,
   client: Client,
-  powerLevels: PowerLevels,
-  groupCall: GroupCall
+  platform: Platform,
+  world: Room
 ): Promise<MatrixNetworkInterface> {
-  if (!client.session) {
+  const session = client.session;
+
+  if (!session) {
     throw new Error("You must initialize the client session before creating the network interface");
   }
+
+  let groupCall = getWorldGroupCall(session, world);
+
+  if (!groupCall) {
+    groupCall = await session.callHandler.createCall(world.id, "m.voice", "World Call", CallIntent.Room);
+  }
+
+  let stream;
+  try {
+    stream = await platform.mediaDevices.getMediaTracks(true, false);
+  } catch (err) {
+    console.error(err);
+  }
+  const localMedia = stream
+    ? new LocalMedia().withUserMedia(stream).withDataChannel({})
+    : new LocalMedia().withDataChannel({});
+
+  await groupCall.join(localMedia);
+
+  // Mute after connecting based on user preference
+  if (groupCall.muteSettings?.microphone === false && localStorage.getItem("microphone") !== "true") {
+    groupCall.setMuted(groupCall.muteSettings.toggleMicrophone());
+  }
+
+  setLocalMediaStream(ctx, groupCall.localMedia?.userMedia);
 
   // TODO: should peer ids be keyed like the call ids? (userId, deviceId, sessionId)?
   // Or maybe just (userId, deviceId)?
@@ -52,12 +92,12 @@ export async function createMatrixNetworkInterface(
 
   let unsubscibeMembersObservable: SubscriptionHandle | undefined;
 
-  const userId = client.session.userId;
+  const userId = session.userId;
 
-  const initialHostId = await getInitialHost(userId);
-  await joinWorld(userId, initialHostId === userId);
+  const initialHostId = await getInitialHost(groupCall, userId);
+  await joinWorld(groupCall, userId, initialHostId === userId);
 
-  function getInitialHost(userId: string): Promise<string> {
+  function getInitialHost(groupCall: GroupCall, userId: string): Promise<string> {
     // Of the all group call members find the one whose member event is oldest
     // If the member has multiple devices get the device with the lowest device index
     // Wait for that member to be connected and return their user id
@@ -116,18 +156,18 @@ export async function createMatrixNetworkInterface(
     });
   }
 
-  async function joinWorld(userId: string, isHost: boolean) {
+  async function joinWorld(groupCall: GroupCall, userId: string, isHost: boolean) {
     if (isHost) setHost(ctx, userId);
 
     unsubscibeMembersObservable = groupCall.members.subscribe({
       onAdd(_key, member) {
         if (member.isConnected && member.dataChannel) {
-          updateHost(userId);
+          updateHost(groupCall, userId);
           addPeer(ctx, member.userId, member.dataChannel, member.remoteMedia?.userMedia);
         }
       },
       onRemove(_key, member) {
-        updateHost(userId);
+        updateHost(groupCall, userId);
         removePeer(ctx, member.userId);
       },
       onReset() {
@@ -135,7 +175,7 @@ export async function createMatrixNetworkInterface(
       },
       onUpdate(_key, member) {
         if (member.isConnected && member.dataChannel && !hasPeer(ctx, member.userId)) {
-          updateHost(userId);
+          updateHost(groupCall, userId);
           addPeer(ctx, member.userId, member.dataChannel, member.remoteMedia?.userMedia);
         }
       },
@@ -148,7 +188,7 @@ export async function createMatrixNetworkInterface(
     }
   }
 
-  function updateHost(userId: string) {
+  function updateHost(groupCall: GroupCall, userId: string) {
     // Of the connected members find the one whose member event is oldest
     // If the member has multiple devices get the device with the lowest device index
 
@@ -174,7 +214,9 @@ export async function createMatrixNetworkInterface(
         unsubscibeMembersObservable();
       }
 
-      groupCall.leave();
+      if (groupCall) {
+        groupCall.leave();
+      }
     },
   };
 }

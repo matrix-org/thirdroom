@@ -4,11 +4,10 @@ import { mat4, vec3, quat } from "gl-matrix";
 import { Vector3 } from "three";
 
 import { playOneShotAudio } from "../../engine/audio/audio.game";
-import { MAX_OBJECT_CAP } from "../../engine/config.common";
 import { GameState } from "../../engine/GameTypes";
 import { createNodeFromGLTFURI } from "../../engine/gltf/gltf.game";
 import { createSphereMesh } from "../../engine/mesh/mesh.game";
-import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
+import { defineModule, getModule, Thread } from "../../engine/module/module.common";
 import { ownedNetworkedQuery } from "../../engine/network/network.game";
 import { Networked, Owned } from "../../engine/network/NetworkComponents";
 import { dynamicObjectCollisionGroups } from "../../engine/physics/CollisionGroups";
@@ -32,14 +31,14 @@ import { AudioEmitterType, InteractableType, MaterialType } from "../../engine/r
 import { createDisposables } from "../../engine/utils/createDisposables";
 import randomRange from "../../engine/utils/randomRange";
 import { addInteractableComponent } from "../interaction/interaction.game";
-import { ObjectCapReachedMessageType, SetObjectCapMessage, SetObjectCapMessageType } from "./spawnables.common";
 import { getRotationNoAlloc } from "../../engine/utils/getRotationNoAlloc";
+import { ThirdRoomModule } from "../thirdroom/thirdroom.game";
+import { ThirdRoomMessageType } from "../thirdroom/thirdroom.common";
 
 const { abs, floor, random } = Math;
 
 type SpawnablesModuleState = {
   hitAudioEmitters: Map<number, RemoteAudioEmitter>;
-  maxObjCap: number;
 };
 
 export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
@@ -47,7 +46,6 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
   create() {
     return {
       hitAudioEmitters: new Map(),
-      maxObjCap: MAX_OBJECT_CAP,
     };
   },
   init(ctx) {
@@ -203,10 +201,7 @@ export const SpawnablesModule = defineModule<GameState, SpawnablesModuleState>({
       }
     });
 
-    return createDisposables([
-      registerMessageHandler(ctx, SetObjectCapMessageType, onSetObjectCap),
-      disposeCollisionHandler,
-    ]);
+    return createDisposables([disposeCollisionHandler]);
   },
 });
 
@@ -305,11 +300,6 @@ function createCrate(
   return node;
 }
 
-function onSetObjectCap(ctx: GameState, message: SetObjectCapMessage) {
-  const module = getModule(ctx, SpawnablesModule);
-  module.maxObjCap = message.value;
-}
-
 const THROW_FORCE = 10;
 
 const _direction = vec3.create();
@@ -318,13 +308,13 @@ const _spawnWorldQuat = quat.create();
 
 // Returns false if the object exceeded the object cap
 export function spawnPrefab(ctx: GameState, spawnFrom: RemoteNode, prefabId: string, isXR: boolean): boolean {
-  const { maxObjCap } = getModule(ctx, SpawnablesModule);
+  const { maxObjectCap } = getModule(ctx, ThirdRoomModule);
 
   // bounce out of the function if we hit the max object cap
   const ownedEnts = ownedNetworkedQuery(ctx.world);
-  if (ownedEnts.length > maxObjCap) {
+  if (ownedEnts.length > maxObjectCap) {
     ctx.sendMessage(Thread.Main, {
-      type: ObjectCapReachedMessageType,
+      type: ThirdRoomMessageType.ObjectCapReached,
     });
     // TODO: send this message to the other clients
     // TODO: add two configs: max objects per client and max objects per room

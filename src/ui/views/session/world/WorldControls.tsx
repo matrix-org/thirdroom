@@ -15,7 +15,7 @@ import CrossIC from "../../../../../res/ic/cross.svg";
 import HelpIC from "../../../../../res/ic/help.svg";
 import XRIC from "../../../../../res/ic/xr.svg";
 import { Text } from "../../../atoms/text/Text";
-import { NametagsEnableMessage, NametagsEnableMessageType } from "../../../../plugins/nametags/nametags.common";
+import { NametagsEnableMessage, NametagsEnableMessageType } from "../../../../engine/player/nametags.common";
 import { Thread } from "../../../../engine/module/module.common";
 import { useMainThreadContext } from "../../../hooks/useMainThread";
 import { HeaderTitle } from "../../../atoms/header/HeaderTitle";
