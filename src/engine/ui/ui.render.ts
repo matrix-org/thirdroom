@@ -11,22 +11,18 @@ import initYoga, {
   Justify,
 } from "yoga-wasm-web";
 import yogaUrl from "yoga-wasm-web/dist/yoga.wasm?url";
-import { CanvasTexture, DoubleSide, Material, Mesh, MeshBasicMaterial, PlaneGeometry, Texture } from "three";
-import { Scene } from "three";
 import { vec3 } from "gl-matrix";
 
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import { RenderContext } from "../renderer/renderer.render";
 import {
   RenderImage,
-  RenderNode,
   RenderUIButton,
   RenderUICanvas,
   RenderUIElement,
   RenderUIText,
 } from "../resource/resource.render";
 import { createDisposables } from "../utils/createDisposables";
-import { updateTransformFromNode } from "../node/node.render";
 import {
   UIButtonFocusMessage,
   UIButtonPressMessage,
@@ -36,7 +32,7 @@ import {
   WebSGUIMessage,
 } from "./ui.common";
 import { getLocalResource } from "../resource/resource.render";
-import { RenderImageDataType } from "../utils/textures";
+import { RenderImageDataType } from "../renderer/textures";
 import { LoadStatus } from "../resource/resource.common";
 import { FlexEdge } from "../resource/schema";
 
@@ -68,7 +64,7 @@ export const WebSGUIModule = defineModule<RenderContext, UIModuleState>({
   },
 });
 
-export function traverseUIElements(
+function traverseUIElements(
   node: RenderUIElement,
   callback: (child: RenderUIElement, index: number) => boolean | void
 ) {
@@ -327,60 +323,21 @@ function drawCanvas(
   drawNode(ctx2d, loadingImages, loadingText, uiCanvas.root);
 }
 
-export function updateNodeUICanvas(ctx: RenderContext, scene: Scene, node: RenderNode) {
+export function updateUICanvas(ctx: RenderContext, uiCanvas: RenderUICanvas) {
   const { yoga, loadingImages, loadingText } = getModule(ctx, WebSGUIModule);
-
-  const currentUICanvasResourceId = node.currentUICanvasResourceId;
-  const nextUICanvasResourceId = node.uiCanvas?.eid || 0;
-
-  // if uiCanvas changed
-  if (currentUICanvasResourceId !== nextUICanvasResourceId && node.uiCanvas) {
-    if (node.uiCanvasMesh) {
-      scene.remove(node.uiCanvasMesh);
-      node.uiCanvasMesh.geometry.dispose();
-      (node.uiCanvasMesh.material as MeshBasicMaterial & { map: Texture }).map.dispose();
-      (node.uiCanvasMesh.material as Material).dispose();
-      node.uiCanvasMesh = undefined;
-    }
-  }
-
-  node.currentUICanvasResourceId = nextUICanvasResourceId;
-
-  if (!node.uiCanvas || !node.uiCanvas.root) {
-    return;
-  }
-
-  // create
-
-  const uiCanvas = node.uiCanvas;
-
-  if (!node.uiCanvasMesh || !uiCanvas.canvas) {
-    uiCanvas.canvas = new OffscreenCanvas(uiCanvas.width, uiCanvas.height);
-    uiCanvas.canvasTexture = new CanvasTexture(uiCanvas.canvas);
-    uiCanvas.ctx2d = uiCanvas.canvas.getContext("2d") as OffscreenCanvasRenderingContext2D;
-
-    node.uiCanvasMesh = new Mesh(
-      new PlaneGeometry(uiCanvas.size[0], uiCanvas.size[1]),
-      new MeshBasicMaterial({ map: uiCanvas.canvasTexture, transparent: true, side: DoubleSide })
-    );
-
-    scene.add(node.uiCanvasMesh);
-  }
-
-  // update
 
   if (uiCanvas.redraw > uiCanvas.lastRedraw) {
     const ctx2d = uiCanvas.ctx2d!;
     updateCanvasLayout(ctx2d, yoga, uiCanvas);
     drawCanvas(ctx2d, uiCanvas, loadingImages, loadingText);
-    (node.uiCanvasMesh.material as MeshBasicMaterial & { map: Texture }).map.needsUpdate = true;
 
     // only stop rendering when all images have loaded
     if (loadingImages.size === 0 && loadingText.size === 0) {
       uiCanvas.lastRedraw = uiCanvas.redraw;
     }
+
+    return true;
   }
 
-  // update the canvas mesh transform with the node's
-  updateTransformFromNode(ctx, node, node.uiCanvasMesh);
+  return false;
 }

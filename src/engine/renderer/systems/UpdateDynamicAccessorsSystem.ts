@@ -1,6 +1,9 @@
-import { RenderAccessor } from "../resource/resource.render";
+import { getModule } from "../../module/module.common";
+import { RenderContext, RendererModule } from "../renderer.render";
 
-export function updateDynamicAccessors(dynamicAccessors: RenderAccessor[]) {
+export function UpdateDynamicAccessorsSystem(ctx: RenderContext) {
+  const { dynamicAccessors } = getModule(ctx, RendererModule);
+
   for (let i = 0; i < dynamicAccessors.length; i++) {
     const accessor = dynamicAccessors[i];
 

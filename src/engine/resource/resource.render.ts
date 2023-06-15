@@ -41,13 +41,13 @@ import {
   MaterialCacheEntry,
   patchMaterial,
   PrimitiveMaterial,
-} from "../material/material.render";
-import { PrimitiveObject3D, MeshPrimitiveAttributeToThreeAttribute } from "../mesh/mesh.render";
+} from "../renderer/material";
+import { PrimitiveObject3D, MeshPrimitiveAttributeToThreeAttribute } from "../renderer/mesh";
 import { getModule } from "../module/module.common";
-import { ReflectionProbe } from "../reflection-probe/ReflectionProbe";
+import { ReflectionProbe } from "../renderer/ReflectionProbe";
 import { RendererModule, RenderContext } from "../renderer/renderer.render";
 import { removeUndefinedProperties } from "../utils/removeUndefinedProperties";
-import { RenderImageData, RenderImageDataType } from "../utils/textures";
+import { RenderImageData, RenderImageDataType } from "../renderer/textures";
 import { toTrianglesDrawMode } from "../utils/toTrianglesDrawMode";
 import { defineLocalResourceClass } from "./LocalResourceClass";
 import { createLocalResourceModule, LoadStatus } from "./resource.common";

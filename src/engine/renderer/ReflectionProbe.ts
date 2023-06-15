@@ -1,7 +1,7 @@
 import { Box3, Object3D, Vector3 } from "three";
 
-import { updateTransformFromNode } from "../node/node.render";
-import { RenderContext } from "../renderer/renderer.render";
+import { updateTransformFromNode } from "./node";
+import { RenderContext } from "./renderer.render";
 import { RenderNode, RenderReflectionProbe } from "../resource/resource.render";
 
 export class ReflectionProbe extends Object3D {

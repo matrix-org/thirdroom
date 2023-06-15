@@ -1,7 +1,7 @@
-import { Box3, Scene, Vector3, Texture, InstancedMesh, Matrix4, WebGLArrayRenderTarget, Event, Vector2 } from "three";
+import { Box3, Vector3, Texture, InstancedMesh, Matrix4, WebGLArrayRenderTarget, Event, Vector2 } from "three";
 
 import { getModule } from "../module/module.common";
-import { RendererModule, RendererModuleState, RenderContext } from "../renderer/renderer.render";
+import { RendererModule, RendererModuleState, RenderContext } from "./renderer.render";
 import { LoadStatus } from "../resource/resource.common";
 import { getLocalResources, RenderNode, RenderScene } from "../resource/resource.render";
 import { createPool, obtainFromPool, releaseToPool } from "../utils/Pool";
@@ -23,41 +23,6 @@ function getReflectionProbes(ctx: RenderContext): ReflectionProbe[] {
   }
 
   return tempReflectionProbes;
-}
-
-export function updateNodeReflectionProbe(ctx: RenderContext, scene: Scene, node: RenderNode) {
-  const currentReflectionProbeResourceId = node.currentReflectionProbeResourceId;
-  const nextReflectionProbeResourceId = node.reflectionProbe?.eid || 0;
-
-  if (nextReflectionProbeResourceId !== currentReflectionProbeResourceId && node.reflectionProbeObject) {
-    scene.remove(node.reflectionProbeObject);
-    node.reflectionProbeObject = undefined;
-  }
-
-  node.currentReflectionProbeResourceId = nextReflectionProbeResourceId;
-
-  if (!node.reflectionProbe) {
-    return;
-  }
-
-  if (!node.reflectionProbeObject) {
-    const reflectionProbeObject = new ReflectionProbe(node.reflectionProbe);
-    node.reflectionProbeObject = reflectionProbeObject;
-    scene.add(reflectionProbeObject);
-  }
-
-  node.reflectionProbeObject.update(ctx, node);
-}
-
-export function updateSceneReflectionProbe(ctx: RenderContext, scene: RenderScene) {
-  const currentReflectionProbeResourceId = scene.currentReflectionProbeResourceId;
-  const nextReflectionProbeResourceId = scene.reflectionProbe?.eid || 0;
-
-  if (nextReflectionProbeResourceId !== currentReflectionProbeResourceId) {
-    scene.reflectionProbeNeedsUpdate = true;
-  }
-
-  scene.currentReflectionProbeResourceId = nextReflectionProbeResourceId;
 }
 
 const reflectionProbeMapRenderTargets = new WeakMap<Texture, WebGLArrayRenderTarget>();

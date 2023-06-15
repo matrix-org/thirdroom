@@ -9,7 +9,7 @@ import { getModule, Thread } from "../module/module.common";
 import { EnableMatrixMaterialMessage, RendererMessageType, XRMode } from "../renderer/renderer.common";
 import { getXRMode } from "../renderer/renderer.game";
 import { RemoteImage } from "../resource/RemoteResources";
-import { getRemoteImageUrl } from "../utils/textures";
+import { getRemoteImageUrl } from "../utils/getRemoteImageUrl";
 import {
   readList,
   readResourceRef,

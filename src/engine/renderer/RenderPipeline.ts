@@ -20,7 +20,7 @@ import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPa
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass";
 import { GammaCorrectionShader } from "three/examples/jsm/shaders/GammaCorrectionShader";
 
-import { Layer } from "../node/node.common";
+import { Layer } from "../common/Layers";
 import { RenderQuality } from "./renderer.common";
 
 const QualityMSAA = {

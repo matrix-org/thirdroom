@@ -11,6 +11,7 @@ import {
   Vector2,
 } from "three";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader";
+import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader";
 
 import {
   ConsumerThreadContext,
@@ -20,7 +21,6 @@ import {
   Thread,
 } from "../module/module.common";
 import { RenderAccessor, RenderNode, RenderWorld } from "../resource/resource.render";
-import { updateActiveSceneResource, updateWorldVisibility } from "../scene/scene.render";
 import { createDisposables } from "../utils/createDisposables";
 import {
   CanvasResizeMessage,
@@ -34,19 +34,12 @@ import {
   XRMode,
   XRSessionModeToXRMode,
 } from "./renderer.common";
-import { updateLocalNodeResources, updateNodesFromXRPoses } from "../node/node.render";
 import { ResourceId } from "../resource/resource.common";
 import { RenderPipeline } from "./RenderPipeline";
-import patchShaderChunks from "../material/patchShaderChunks";
-import { updateNodeReflections, updateReflectionProbeTextureArray } from "../reflection-probe/reflection-probe.render";
-import { CameraType } from "../resource/schema";
-import { MatrixMaterial } from "../material/MatrixMaterial";
-import { ArrayBufferKTX2Loader, initKTX2Loader, updateImageResources, updateTextureResources } from "../utils/textures";
-import { updateTileRenderers } from "../tiles-renderer/tiles-renderer.render";
-import { InputModule } from "../input/input.render";
-import { updateDynamicAccessors } from "../accessor/accessor.render";
-import { EditorModule } from "../editor/editor.render";
-import { HologramMaterial } from "../material/HologramMaterial";
+import patchShaderChunks from "./patchShaderChunks";
+import { MatrixMaterial } from "./MatrixMaterial";
+import { HologramMaterial } from "./HologramMaterial";
+import { ArrayBufferKTX2Loader } from "./ArrayBufferKTX2Loader";
 
 export interface RenderContext extends ConsumerThreadContext {
   canvas?: HTMLCanvasElement;
@@ -158,7 +151,9 @@ export const RendererModule = defineModule<RenderContext, RendererModuleState>({
     const imageBitmapLoader = new ImageBitmapLoader();
     const matrixMaterial = await MatrixMaterial.load(imageBitmapLoader);
 
-    const ktx2Loader = await initKTX2Loader("/basis/", renderer);
+    const ktx2Loader = new KTX2Loader().setTranscoderPath("/basis/").detectSupport(renderer) as ArrayBufferKTX2Loader;
+
+    await ktx2Loader.init();
 
     const scene = new Scene();
     const xrAvatarRoot = new Object3D();
@@ -237,74 +232,6 @@ function onEnterXR(ctx: RenderContext, { session, mode }: EnterXRMessage) {
 function onExitXR(ctx: RenderContext) {
   const { xrMode } = getModule(ctx, RendererModule);
   Atomics.store(xrMode, 0, XRMode.None);
-}
-
-export function RendererSystem(ctx: RenderContext) {
-  const rendererModule = getModule(ctx, RendererModule);
-  const inputModule = getModule(ctx, InputModule);
-  const { needsResize, canvasWidth, canvasHeight, renderPipeline, tileRendererNodes, dynamicAccessors } =
-    rendererModule;
-
-  const activeScene = ctx.worldResource.environment?.publicScene;
-  const activeCameraNode = ctx.worldResource.activeCameraNode;
-
-  // TODO: Remove this
-  if (activeScene?.eid !== rendererModule.prevSceneResource) {
-    rendererModule.enableMatrixMaterial = false;
-  }
-
-  if (
-    activeCameraNode &&
-    activeCameraNode.cameraObject &&
-    activeCameraNode.camera &&
-    (needsResize || rendererModule.prevCameraResource !== activeCameraNode.eid)
-  ) {
-    if (
-      "isPerspectiveCamera" in activeCameraNode.cameraObject &&
-      activeCameraNode.camera.type === CameraType.Perspective
-    ) {
-      if (activeCameraNode.camera.aspectRatio === 0) {
-        activeCameraNode.cameraObject.aspect = canvasWidth / canvasHeight;
-      }
-    }
-
-    activeCameraNode.cameraObject.updateProjectionMatrix();
-
-    renderPipeline.setSize(canvasWidth, canvasHeight);
-    rendererModule.needsResize = false;
-    rendererModule.prevCameraResource = activeCameraNode.eid;
-    rendererModule.prevSceneResource = activeScene?.eid;
-  }
-
-  const { editorLoaded } = getModule(ctx, EditorModule);
-
-  updateImageResources(ctx);
-  updateTextureResources(ctx);
-  updateDynamicAccessors(dynamicAccessors);
-  updateWorldVisibility(ctx, editorLoaded);
-  updateActiveSceneResource(ctx, activeScene);
-  updateLocalNodeResources(ctx, rendererModule, editorLoaded);
-  updateTileRenderers(ctx, tileRendererNodes, activeCameraNode);
-  updateReflectionProbeTextureArray(ctx, activeScene);
-  updateNodeReflections(ctx, activeScene, rendererModule);
-  updateNodesFromXRPoses(ctx, rendererModule, inputModule);
-
-  if (activeScene && activeCameraNode && activeCameraNode.cameraObject) {
-    renderPipeline.render(rendererModule.scene, activeCameraNode.cameraObject, ctx.dt);
-  }
-
-  for (let i = rendererModule.sceneRenderedRequests.length - 1; i >= 0; i--) {
-    const request = rendererModule.sceneRenderedRequests[i];
-
-    if (activeScene && activeScene.eid === request.sceneResourceId && --request.frames <= 0) {
-      ctx.sendMessage(Thread.Game, {
-        type: RendererMessageType.SceneRenderedNotification,
-        id: request.id,
-      });
-
-      rendererModule.sceneRenderedRequests.splice(i, 1);
-    }
-  }
 }
 
 function onEnableMatrixMaterial(ctx: RenderContext, message: EnableMatrixMaterialMessage) {

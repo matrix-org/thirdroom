@@ -1,17 +1,11 @@
 import { mat4 } from "gl-matrix";
 import { Matrix4, Object3D, Quaternion, Vector3 } from "three";
 
-import { updateNodeCamera } from "../camera/camera.render";
 import { clamp } from "../component/math";
 import { tickRate } from "../config.common";
 import { RenderInputModule } from "../input/input.render";
-import { updateNodeLight } from "../light/light.render";
-import { updateNodeMesh } from "../mesh/mesh.render";
-import { updateNodeReflectionProbe } from "../reflection-probe/reflection-probe.render";
-import { RendererModuleState, RenderContext } from "../renderer/renderer.render";
-import { getLocalResources, RenderNode } from "../resource/resource.render";
-import { updateNodeTilesRenderer } from "../tiles-renderer/tiles-renderer.render";
-import { updateNodeUICanvas } from "../ui/ui.render";
+import { RendererModuleState, RenderContext } from "./renderer.render";
+import { RenderNode } from "../resource/resource.render";
 
 const tempMatrix4 = new Matrix4();
 const tempPosition = new Vector3();
@@ -57,39 +51,6 @@ export function setTransformFromNode(
 
   object3D.visible = node.object3DVisible;
   object3D.layers.mask = node.layers;
-}
-
-export function updateLocalNodeResources(
-  ctx: RenderContext,
-  rendererModule: RendererModuleState,
-  forceUpdate: boolean
-) {
-  const nodes = getLocalResources(ctx, RenderNode);
-
-  const scene = rendererModule.scene;
-
-  for (let i = 0; i < nodes.length; i++) {
-    const node = nodes[i];
-
-    if (forceUpdate) {
-      node.needsUpdate = true;
-    }
-
-    const needsUpdate = node.needsUpdate || !node.isStatic;
-
-    if (!needsUpdate) {
-      continue;
-    }
-
-    updateNodeCamera(ctx, scene, node);
-    updateNodeLight(ctx, scene, node);
-    updateNodeReflectionProbe(ctx, scene, node);
-    updateNodeMesh(ctx, node);
-    updateNodeTilesRenderer(ctx, scene, node);
-    updateNodeUICanvas(ctx, scene, node);
-
-    node.needsUpdate = node.isStatic ? false : needsUpdate;
-  }
 }
 
 export function updateNodesFromXRPoses(

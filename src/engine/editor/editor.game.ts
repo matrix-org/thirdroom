@@ -39,7 +39,7 @@ import {
   ObjectBufferView,
 } from "../allocator/ObjectBufferView";
 import { NOOP } from "../config.common";
-import { addLayer, Layer, removeLayer } from "../node/node.common";
+import { addLayer, Layer, removeLayer } from "../common/Layers";
 import { getRemoteResource, RemoteResourceTypes, tryGetRemoteResource } from "../resource/resource.game";
 import { RemoteNode } from "../resource/RemoteResources";
 import { disableActionMap, enableActionMap } from "../input/ActionMappingSystem";
