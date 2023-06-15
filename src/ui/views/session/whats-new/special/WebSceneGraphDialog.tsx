@@ -16,9 +16,8 @@ export function WebSceneGraphDialog({ open, requestClose }: WebSceneGraphDialogP
             Web Scene Graph
           </Text>
           <Text variant="b3">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras et facilisis ex. Sed eget pellentesque mi.
-            Pellentesque ultrices molestie ligula, eu finibus risus rhoncus vel. Praesent ac malesuada neque. Sed
-            malesuada tempor ultrices. In blandit metus quis tincidunt vehicula.
+            Welcome to the Web Scene Graph tutorial! This tutorial will walk you through the basics of the Web Scene
+            Graph API and how to use it to build your own 3D experiences.
           </Text>
         </div>
         <div style={{ maxWidth: 225, margin: "auto" }} className="flex flex-column items-center gap-sm text-center">
