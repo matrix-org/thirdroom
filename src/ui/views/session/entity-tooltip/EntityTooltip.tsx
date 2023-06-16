@@ -4,19 +4,15 @@ import { Icon } from "../../../atoms/icon/Icon";
 import { Dots } from "../../../atoms/loading/Dots";
 import { Text } from "../../../atoms/text/Text";
 import { InteractionState } from "../../../hooks/useWorldInteraction";
+import { IInteractionProcess } from "../world/WorldInteraction";
 import "./EntityTooltip.css";
-
-export interface IPortalProcess {
-  joining?: boolean;
-  error?: Error;
-}
 
 interface EntityTooltipProps {
   activeEntity: InteractionState;
-  portalProcess: IPortalProcess;
+  interactionProcess: IInteractionProcess;
 }
 
-export function EntityTooltip({ activeEntity, portalProcess }: EntityTooltipProps) {
+export function EntityTooltip({ activeEntity, interactionProcess }: EntityTooltipProps) {
   return (
     <div className="EntityTooltip">
       {activeEntity.interactableType === InteractableType.Player && (
@@ -101,24 +97,49 @@ export function EntityTooltip({ activeEntity, portalProcess }: EntityTooltipProp
       )}
       {activeEntity.interactableType === InteractableType.Portal && (
         <>
-          {portalProcess.joining && <Dots color="world" size="sm" />}
+          {interactionProcess.loading && <Dots color="world" size="sm" />}
           <Text weight="bold" color="world">
-            {portalProcess.joining ? "Joining portal" : "Portal"}
+            {interactionProcess.loading ? "Joining portal" : "Portal"}
           </Text>
           <div className="flex flex-column gap-xxs">
             <Text variant="b3" color="world">
               {activeEntity.name}
             </Text>
-            {portalProcess.error && (
+            {interactionProcess.error && (
               <Text variant="b3" color="world">
-                {portalProcess.error.message ?? "Unknown error joining portal."}
+                {interactionProcess.error.message ?? "Unknown error joining portal."}
               </Text>
             )}
-            {!portalProcess.joining && (
+            {!interactionProcess.loading && (
               <Text variant="b3" color="world">
                 <span className="EntityTooltip__boxedKey">E</span> /
                 <Icon src={MouseIC} size="sm" className="EntityTooltip__mouseIcon" color="world" />
                 <span> Enter World</span>
+              </Text>
+            )}
+          </div>
+        </>
+      )}
+      {activeEntity.interactableType === InteractableType.Screenshare && (
+        <>
+          {interactionProcess.loading && <Dots color="world" size="sm" />}
+          <Text weight="bold" color="world">
+            {interactionProcess.loading ? "Sharing screen" : "Share screen"}
+          </Text>
+          <div className="flex flex-column gap-xxs">
+            <Text variant="b3" color="world">
+              {activeEntity.name}
+            </Text>
+            {interactionProcess.error && (
+              <Text variant="b3" color="world">
+                {`Failed to share screen: ${interactionProcess.error.message}`}
+              </Text>
+            )}
+            {!interactionProcess.loading && (
+              <Text variant="b3" color="world">
+                <span className="EntityTooltip__boxedKey">E</span> /
+                <Icon src={MouseIC} size="sm" className="EntityTooltip__mouseIcon" color="world" />
+                <span> Share your screen</span>
               </Text>
             )}
           </div>

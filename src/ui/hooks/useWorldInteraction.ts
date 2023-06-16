@@ -68,6 +68,16 @@ export function useWorldInteraction(
         });
         return;
       }
+
+      if (interactableType === InteractableType.Screenshare) {
+        interactionCallback({
+          interactableType,
+          action,
+          name: "Screenshare",
+          peerId: message.peerId,
+          held: false,
+        });
+      }
     };
 
     const onExitedWorld = (ctx: IMainThreadContext, message: ExitedWorldMessage) => {

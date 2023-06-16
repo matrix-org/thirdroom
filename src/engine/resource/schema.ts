@@ -454,6 +454,7 @@ export enum InteractableType {
   Player = 3,
   Portal = 4,
   UI = 5,
+  Screenshare = 6,
 }
 
 export const InteractableResource = defineResource("interactable", ResourceType.Interactable, {
