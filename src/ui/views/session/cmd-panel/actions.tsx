@@ -21,9 +21,10 @@ import CrossIC from "../../../../../res/ic/cross.svg";
 import { togglePhysicsDebug } from "../../../../plugins/thirdroom/thirdroom.main";
 import { useDisableInput } from "../../../hooks/useDisableInput";
 
-enum ActionSection {
+export enum ActionSection {
   Global = "Global",
   World = "World",
+  Editor = "Editor",
 }
 
 export const useUserProfileAction = () => {
@@ -236,7 +237,7 @@ export const useToggleEditorAction = (
         name: "Toggle Editor",
         shortcut: ["`"],
         keywords: "editor",
-        section: ActionSection.World,
+        section: ActionSection.Editor,
         icon: undefined,
         subtitle: undefined,
         perform: () => {

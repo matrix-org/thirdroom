@@ -66,6 +66,7 @@
     "meshoptimizer": "^0.18.1",
     "monaco-editor": "^0.36.1",
     "monaco-themes": "^0.4.3",
+    "monaco-vim": "^0.4.0",
     "murmurhash-js": "^1.0.0",
     "optipng-js": "^0.1.2",
     "react": "^17.0.2",

@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAtom } from "jotai";
 import { BlobHandle, Room } from "@thirdroom/hydrogen-view-sdk";
 import Editor, { Monaco, OnChange, useMonaco } from "@monaco-editor/react";
 import { editor as MonacoEditor } from "monaco-editor";
+import { VimMode, initVimMode } from "monaco-vim";
 import { useDrop } from "react-dnd";
+import { useRegisterActions } from "kbar";
 
 import { Button } from "../../../atoms/button/Button";
 import { Dots } from "../../../atoms/loading/Dots";
@@ -24,8 +26,10 @@ import { DnDItemTypes, NodeDragItem } from "./HierarchyPanel";
 import { MainThreadResource, getLocalResource } from "../../../../engine/resource/resource.main";
 import { useMainThreadContext } from "../../../hooks/useMainThread";
 import { camelizeVariableName } from "../../../utils/common";
+import { ActionSection } from "../cmd-panel/actions";
 
 const MONACO_THEME_KEY = "monaco_theme";
+const VIM_MODE_KEY = "vim_mode";
 
 export function ScriptEditor({ room }: { room: Room }) {
   const { session, platform } = useHydrogen(true);
@@ -40,12 +44,15 @@ export function ScriptEditor({ room }: { room: Room }) {
 
   // component state
   const [editorTheme, setEditorTheme] = useLocalStorage<"light" | "vs-dark">(MONACO_THEME_KEY, "light");
+  const [vimModeSetting, setVimModeSetting] = useLocalStorage(VIM_MODE_KEY, false);
   const [reloading, setReloading] = useState(false);
   const [saved, setSavedState] = useState(true);
   const [showResetModal, setShowResetModal] = useState(false);
 
   const monaco = useMonaco();
   const editorRef = useRef<MonacoEditor.IStandaloneCodeEditor | null>(null);
+  const vimModeRef = useRef<VimMode | null>(null);
+
   /**
    *  Set saved to true if active script is equal to persisted script
    */
@@ -174,6 +181,46 @@ export function ScriptEditor({ room }: { room: Room }) {
     monaco.languages.typescript.javascriptDefaults.addExtraLib(websgTypes, "websg.d.ts");
   }
 
+  function setVimMode(newVimModeEnabled: boolean) {
+    if (editorRef.current) {
+      if (newVimModeEnabled) {
+        vimModeRef.current = initVimMode(editorRef.current, document.getElementById("ScriptEditor__statusBar"));
+      } else if (vimModeRef.current) {
+        vimModeRef.current.dispose();
+      }
+    }
+  }
+
+  function handleEditorMount(editor: MonacoEditor.IStandaloneCodeEditor) {
+    editorRef.current = editor;
+    setVimMode(vimModeSetting);
+  }
+
+  const toggleVimMode = useCallback(() => {
+    const newVimModeEnabled = !vimModeSetting;
+    setVimModeSetting(newVimModeEnabled);
+    setVimMode(newVimModeEnabled);
+  }, [vimModeSetting, setVimModeSetting]);
+
+  // Register vim mode toggle in kbar menu only while script editor is mounted
+  useRegisterActions(
+    [
+      {
+        id: "vim-mode",
+        name: "Toggle Vim Mode",
+        keywords: "vim mode",
+        section: ActionSection.Editor,
+        icon: undefined,
+        subtitle: undefined,
+        perform: () => {
+          toggleVimMode();
+        },
+        parent: undefined,
+      },
+    ],
+    [toggleVimMode]
+  );
+
   return (
     <>
       <AlertDialog
@@ -217,7 +264,7 @@ export function ScriptEditor({ room }: { room: Room }) {
             value={activeScriptSource}
             onChange={handleEditorChange as OnChange}
             beforeMount={configureMonaco}
-            onMount={(editor) => (editorRef.current = editor)}
+            onMount={handleEditorMount}
             theme={editorTheme}
           />
           <div className="ScriptEditor__themeBtn">
@@ -238,6 +285,7 @@ export function ScriptEditor({ room }: { room: Room }) {
             </div>
           )}
         </div>
+        <div id="ScriptEditor__statusBar" className="ScriptEditor__footer shrink-0 gap-sm" />
       </div>
     </>
   );
