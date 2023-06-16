@@ -1,5 +1,4 @@
 import type { StorybookConfig } from "@storybook/react-vite";
-import { mergeConfig } from "vite";
 
 const EXCLUDED_VITE_PLUGIN = ["vite-plugin-mpa-router", "vite-plugin-service-worker"];
 
@@ -17,7 +16,6 @@ const config: StorybookConfig = {
     autodocs: "tag",
   },
   async viteFinal(config) {
-    console.log(config);
     return {
       ...config,
       appType: undefined,

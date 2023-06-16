@@ -131,7 +131,6 @@
     "postcss-preset-env": "^8.0.1",
     "postinstall-postinstall": "^2.1.0",
     "prettier": "^2.6.1",
-    "prop-types": "^15.8.1",
     "storybook": "^7.0.20",
     "stylelint": "^15.2.0",
     "stylelint-config-prettier": "^9.0.3",
