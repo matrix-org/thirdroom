@@ -16,6 +16,7 @@ const config: StorybookConfig = {
   },
   async viteFinal(config) {
     return mergeConfig(config, {
+      appType: undefined,
       base: "/storybook",
       test: undefined,
     });
