@@ -1,3 +1,4 @@
+import React from "react";
 import "@fontsource/inter/variable.css";
 import "@fontsource/noto-serif/latin.css";
 import "../src/ui/App.css";
