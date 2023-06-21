@@ -22,7 +22,6 @@ import {
 } from "../../../src/engine/allocator/CursorView";
 import { mockGameState } from "../mocks";
 import { getModule } from "../../../src/engine/module/module.common";
-import { RigidBody } from "../../../src/engine/physics/physics.game";
 import { addPrefabComponent } from "../../../src/engine/prefab/prefab.game";
 import {
   serializeTransformSnapshot,
@@ -39,10 +38,12 @@ import {
   deserializeDeletes,
 } from "../../../src/engine/network/serialization.game";
 import { toBinaryString } from "../../../src/engine/utils/toBinaryString";
-import { RemoteNode } from "../../../src/engine/resource/RemoteResources";
+import { RemotePhysicsBody, RemoteNode } from "../../../src/engine/resource/RemoteResources";
+import { PhysicsModule, addPhysicsBody } from "../../../src/engine/physics/physics.game";
+import { PhysicsBodyType } from "../../../src/engine/resource/schema";
 
 const clearComponentData = () => {
-  new Uint8Array(RigidBody.velocity[0].buffer).fill(0);
+  new Uint8Array(Networked.velocity[0].buffer).fill(0);
   new Uint8Array(Networked.position[0].buffer).fill(0);
   new Uint8Array(Networked.velocity[0].buffer).fill(0);
   new Uint8Array(Networked.quaternion[0].buffer).fill(0);
@@ -78,11 +79,21 @@ describe("Network Tests", () => {
       const writer = createCursorView();
       const state = mockGameState();
       const node = new RemoteNode(state.resourceManager);
+      const physics = getModule(state, PhysicsModule);
+
+      addPhysicsBody(
+        state.world,
+        physics,
+        node,
+        new RemotePhysicsBody(state.resourceManager, {
+          type: PhysicsBodyType.Rigid,
+        })
+      );
 
       node.position.set([1, 2, 3]);
       node.quaternion.set([4, 5, 6, 1]);
 
-      const velocity = RigidBody.velocity[node.eid];
+      const velocity = node.physicsBody!.velocity;
       velocity.set([4, 5, 6]);
 
       serializeTransformSnapshot(writer, node);
@@ -124,11 +135,22 @@ describe("Network Tests", () => {
       const node = new RemoteNode(state.resourceManager);
       const eid = node.eid;
 
+      const physics = getModule(state, PhysicsModule);
+
+      addPhysicsBody(
+        state.world,
+        physics,
+        node,
+        new RemotePhysicsBody(state.resourceManager, {
+          type: PhysicsBodyType.Rigid,
+        })
+      );
+
       node.position.set([1, 2, 3]);
       node.quaternion.set([7, 8, 9, 10]);
 
       const position = node.position;
-      const velocity = RigidBody.velocity[eid];
+      const velocity = node.physicsBody!.velocity;
       const quaternion = node.quaternion;
       velocity.set([4, 5, 6]);
 
@@ -159,6 +181,18 @@ describe("Network Tests", () => {
       const writer = createCursorView();
       const state = mockGameState();
       const node = new RemoteNode(state.resourceManager);
+
+      const physics = getModule(state, PhysicsModule);
+
+      addPhysicsBody(
+        state.world,
+        physics,
+        node,
+        new RemotePhysicsBody(state.resourceManager, {
+          type: PhysicsBodyType.Rigid,
+        })
+      );
+
       node.position.set([1, 2, 3]);
       node.quaternion.set([4, 5, 6, 7]);
 
@@ -195,6 +229,17 @@ describe("Network Tests", () => {
       const state = mockGameState();
 
       const node = new RemoteNode(state.resourceManager);
+
+      const physics = getModule(state, PhysicsModule);
+
+      addPhysicsBody(
+        state.world,
+        physics,
+        node,
+        new RemotePhysicsBody(state.resourceManager, {
+          type: PhysicsBodyType.Rigid,
+        })
+      );
 
       node.position.set([0, 2, 0]);
       node.quaternion.set([4, 0, 6, 0]);
@@ -234,6 +279,17 @@ describe("Network Tests", () => {
       const node = new RemoteNode(state.resourceManager);
       const eid = node.eid;
 
+      const physics = getModule(state, PhysicsModule);
+
+      addPhysicsBody(
+        state.world,
+        physics,
+        node,
+        new RemotePhysicsBody(state.resourceManager, {
+          type: PhysicsBodyType.Rigid,
+        })
+      );
+
       node.position.set([1, 2, 3]);
       node.quaternion.set([4, 5, 6, 7]);
 
@@ -261,6 +317,16 @@ describe("Network Tests", () => {
 
       const node = new RemoteNode(state.resourceManager);
       const eid = node.eid;
+      const physics = getModule(state, PhysicsModule);
+
+      addPhysicsBody(
+        state.world,
+        physics,
+        node,
+        new RemotePhysicsBody(state.resourceManager, {
+          type: PhysicsBodyType.Rigid,
+        })
+      );
 
       node.position.set([0, 2, 0]);
       node.quaternion.set([4, 0, 6, 0]);
@@ -289,15 +355,26 @@ describe("Network Tests", () => {
     it("should #serializeUpdatesSnapshot()", () => {
       const writer = createCursorView();
       const state = mockGameState();
+      const physics = getModule(state, PhysicsModule);
 
       const nodes = Array(3)
         .fill(0)
         .map(() => {
           const node = new RemoteNode(state.resourceManager);
           const eid = node.eid;
+
+          addPhysicsBody(
+            state.world,
+            physics,
+            node,
+            new RemotePhysicsBody(state.resourceManager, {
+              type: PhysicsBodyType.Rigid,
+            })
+          );
+
           node.position.set([1, 2, 3]);
           node.quaternion.set([4, 5, 6, 7]);
-          RigidBody.velocity[eid].set([1, 2, 3]);
+          node.physicsBody?.velocity.set([1, 2, 3]);
           addComponent(state.world, Networked, eid);
           Networked.networkId[eid] = eid;
           addComponent(state.world, Owned, eid);
@@ -320,7 +397,7 @@ describe("Network Tests", () => {
         strictEqual(position[1], readFloat32(reader));
         strictEqual(position[2], readFloat32(reader));
 
-        const velocity = RigidBody.velocity[node.eid];
+        const velocity = node.physicsBody!.velocity;
         strictEqual(velocity[0], readFloat32(reader));
         strictEqual(velocity[1], readFloat32(reader));
         strictEqual(velocity[2], readFloat32(reader));
@@ -345,6 +422,17 @@ describe("Network Tests", () => {
         .map(() => {
           const node = new RemoteNode(state.resourceManager);
           const eid = node.eid;
+          const physics = getModule(state, PhysicsModule);
+
+          addPhysicsBody(
+            state.world,
+            physics,
+            node,
+            new RemotePhysicsBody(state.resourceManager, {
+              type: PhysicsBodyType.Rigid,
+            })
+          );
+
           node.position.set([1, 2, 3]);
           node.quaternion.set([4, 5, 6, 7]);
           addComponent(state.world, Networked, eid);
@@ -388,6 +476,17 @@ describe("Network Tests", () => {
         .map(() => {
           const node = new RemoteNode(state.resourceManager);
           const eid = node.eid;
+          const physics = getModule(state, PhysicsModule);
+
+          addPhysicsBody(
+            state.world,
+            physics,
+            node,
+            new RemotePhysicsBody(state.resourceManager, {
+              type: PhysicsBodyType.Rigid,
+            })
+          );
+
           node.position.set([1, 2, 3]);
           node.quaternion.set([4, 5, 6, 7]);
           addComponent(state.world, Networked, eid);
@@ -433,6 +532,17 @@ describe("Network Tests", () => {
         .map(() => {
           const node = new RemoteNode(state.resourceManager);
           const eid = node.eid;
+          const physics = getModule(state, PhysicsModule);
+
+          addPhysicsBody(
+            state.world,
+            physics,
+            node,
+            new RemotePhysicsBody(state.resourceManager, {
+              type: PhysicsBodyType.Rigid,
+            })
+          );
+
           node.position.set([1, 2, 3]);
           node.quaternion.set([4, 5, 6, 7]);
           addComponent(state.world, Networked, eid);

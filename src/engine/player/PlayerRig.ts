@@ -13,7 +13,7 @@ import { getModule } from "../module/module.common";
 import { GameNetworkState, associatePeerWithEntity, NetworkModule, setLocalPeerId } from "../network/network.game";
 import { Owned, Networked } from "../network/NetworkComponents";
 import { playerCollisionGroups } from "../physics/CollisionGroups";
-import { addRigidBody, Kinematic, PhysicsModule, PhysicsModuleState } from "../physics/physics.game";
+import { addPhysicsBody, addPhysicsCollider, PhysicsModule, PhysicsModuleState } from "../physics/physics.game";
 import { createPrefabEntity, PrefabType, registerPrefab } from "../prefab/prefab.game";
 import {
   RemoteNode,
@@ -22,9 +22,18 @@ import {
   RemoteAudioData,
   RemoteAudioEmitter,
   RemoteAudioSource,
+  RemoteCollider,
+  RemotePhysicsBody,
 } from "../resource/RemoteResources";
 import { getRemoteResource } from "../resource/resource.game";
-import { InteractableType, MaterialType, MaterialAlphaMode, AudioEmitterType } from "../resource/schema";
+import {
+  InteractableType,
+  MaterialType,
+  MaterialAlphaMode,
+  AudioEmitterType,
+  PhysicsBodyType,
+  ColliderType,
+} from "../resource/schema";
 import { spawnEntity } from "../utils/spawnEntity";
 import { teleportEntity } from "../utils/teleportEntity";
 import { addCameraRig, CameraRigType } from "./CameraRig";
@@ -68,20 +77,27 @@ export function registerPlayerPrefabs(ctx: GameContext) {
 
       addCameraRig(ctx, container, CameraRigType.PointerLock, [0, AVATAR_HEIGHT - AVATAR_CAMERA_OFFSET, 0]);
 
-      const rigidBodyDesc = RAPIER.RigidBodyDesc.kinematicPositionBased();
+      addPhysicsCollider(
+        ctx.world,
+        container,
+        new RemoteCollider(ctx.resourceManager, {
+          type: ColliderType.Capsule,
+          height: AVATAR_CAPSULE_HEIGHT + 0.15,
+          radius: AVATAR_CAPSULE_RADIUS,
+          activeEvents: RAPIER.ActiveEvents.COLLISION_EVENTS,
+          collisionGroups: playerCollisionGroups,
+          offset: [0, AVATAR_CAPSULE_HEIGHT - 0.15, 0],
+        })
+      );
 
-      addComponent(ctx.world, Kinematic, container.eid);
-
-      const rigidBody = physics.physicsWorld.createRigidBody(rigidBodyDesc);
-
-      const colliderDesc = RAPIER.ColliderDesc.capsule(AVATAR_CAPSULE_HEIGHT / 2, AVATAR_CAPSULE_RADIUS)
-        .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS)
-        .setCollisionGroups(playerCollisionGroups)
-        .setTranslation(0, AVATAR_CAPSULE_HEIGHT - 0.1, 0);
-
-      physics.physicsWorld.createCollider(colliderDesc, rigidBody);
-
-      addRigidBody(ctx, container, rigidBody);
+      addPhysicsBody(
+        ctx.world,
+        physics,
+        container,
+        new RemotePhysicsBody(ctx.resourceManager, {
+          type: PhysicsBodyType.Kinematic,
+        })
+      );
 
       addInteractableComponent(ctx, physics, container, InteractableType.Player);
 

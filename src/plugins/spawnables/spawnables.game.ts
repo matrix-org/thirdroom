@@ -1,7 +1,6 @@
 import RAPIER from "@dimforge/rapier3d-compat";
 import { addComponent } from "bitecs";
 import { mat4, vec3, quat } from "gl-matrix";
-import { Vector3 } from "three";
 
 import { playOneShotAudio } from "../../engine/audio/audio.game";
 import { GameContext } from "../../engine/GameTypes";
@@ -12,11 +11,12 @@ import { ownedNetworkedQuery } from "../../engine/network/network.game";
 import { Networked, Owned } from "../../engine/network/NetworkComponents";
 import { dynamicObjectCollisionGroups } from "../../engine/physics/CollisionGroups";
 import {
-  addRigidBody,
+  addPhysicsBody,
+  addPhysicsCollider,
+  applyTransformToRigidBody,
   PhysicsModule,
   PhysicsModuleState,
   registerCollisionHandler,
-  RigidBody,
 } from "../../engine/physics/physics.game";
 import { createPrefabEntity, PrefabType, registerPrefab } from "../../engine/prefab/prefab.game";
 import {
@@ -24,10 +24,18 @@ import {
   RemoteAudioData,
   RemoteAudioEmitter,
   RemoteAudioSource,
+  RemoteCollider,
   RemoteMaterial,
   RemoteNode,
+  RemotePhysicsBody,
 } from "../../engine/resource/RemoteResources";
-import { AudioEmitterType, InteractableType, MaterialType } from "../../engine/resource/schema";
+import {
+  AudioEmitterType,
+  ColliderType,
+  InteractableType,
+  MaterialType,
+  PhysicsBodyType,
+} from "../../engine/resource/schema";
 import { createDisposables } from "../../engine/utils/createDisposables";
 import randomRange from "../../engine/utils/randomRange";
 import { addInteractableComponent } from "../interaction/interaction.game";
@@ -218,21 +226,26 @@ function createBall(
     mesh: createSphereMesh(ctx, size, material),
   });
 
-  const physicsWorld = physics.physicsWorld;
+  addPhysicsCollider(
+    ctx.world,
+    node,
+    new RemoteCollider(ctx.resourceManager, {
+      type: ColliderType.Sphere,
+      radius: size / 2,
+      restitution: 1,
+      density: 1,
+    })
+  );
 
-  const rigidBodyDesc = kinematic ? RAPIER.RigidBodyDesc.kinematicPositionBased() : RAPIER.RigidBodyDesc.dynamic();
+  addPhysicsBody(
+    ctx.world,
+    physics,
+    node,
+    new RemotePhysicsBody(ctx.resourceManager, {
+      type: kinematic ? PhysicsBodyType.Kinematic : PhysicsBodyType.Rigid,
+    })
+  );
 
-  const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
-
-  const colliderDesc = RAPIER.ColliderDesc.ball(size / 2)
-    .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS)
-    .setCollisionGroups(dynamicObjectCollisionGroups)
-    .setRestitution(1)
-    .setDensity(1);
-
-  physicsWorld.createCollider(colliderDesc, rigidBody);
-
-  addRigidBody(ctx, node, rigidBody);
   addInteractableComponent(ctx, physics, node, InteractableType.Grabbable);
 
   const audioEmitter = new RemoteAudioEmitter(ctx.resourceManager, {
@@ -261,11 +274,7 @@ function createCrate(
   crateAudioData: RemoteAudioData,
   kinematic = false
 ) {
-  const { physicsWorld } = physics;
-
   const node = createNodeFromGLTFURI(ctx, "/gltf/sci_fi_crate.glb");
-
-  const halfSize = size / 2;
 
   node.scale.set([size, size, size]);
 
@@ -284,26 +293,32 @@ function createCrate(
 
   module.hitAudioEmitters.set(node.eid, audioEmitter);
 
-  const rigidBodyDesc = kinematic ? RAPIER.RigidBodyDesc.kinematicPositionBased() : RAPIER.RigidBodyDesc.dynamic();
+  addPhysicsCollider(
+    ctx.world,
+    node,
+    new RemoteCollider(ctx.resourceManager, {
+      type: ColliderType.Box,
+      size: [size, size, size],
+      activeEvents: RAPIER.ActiveEvents.COLLISION_EVENTS,
+      collisionGroups: dynamicObjectCollisionGroups,
+    })
+  );
 
-  const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
-
-  const colliderDesc = RAPIER.ColliderDesc.cuboid(halfSize, halfSize, halfSize)
-    .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS)
-    .setCollisionGroups(dynamicObjectCollisionGroups);
-
-  physicsWorld.createCollider(colliderDesc, rigidBody);
-
-  addRigidBody(ctx, node, rigidBody);
+  addPhysicsBody(
+    ctx.world,
+    physics,
+    node,
+    new RemotePhysicsBody(ctx.resourceManager, {
+      type: kinematic ? PhysicsBodyType.Kinematic : PhysicsBodyType.Rigid,
+    })
+  );
 
   addInteractableComponent(ctx, physics, node, InteractableType.Grabbable);
+
   return node;
 }
 
-const THROW_FORCE = 10;
-
 const _direction = vec3.create();
-const _impulse = new Vector3();
 const _spawnWorldQuat = quat.create();
 
 // Returns false if the object exceeded the object cap
@@ -335,23 +350,16 @@ export function spawnPrefab(ctx: GameContext, spawnFrom: RemoteNode, prefabId: s
 
   // place object at direction
   vec3.add(prefab.position, prefab.position, direction);
+  prefab.quaternion.set(_spawnWorldQuat);
 
-  const throwForce = isXR ? THROW_FORCE / 33 : THROW_FORCE;
-
-  vec3.scale(direction, direction, throwForce);
-
-  _impulse.fromArray(direction);
-
-  const body = RigidBody.store.get(eid);
+  const body = prefab.physicsBody?.body;
 
   if (!body) {
-    console.warn("could not find RigidBody for spawned entity " + eid);
+    console.warn("could not find physics body for spawned entity " + eid);
     return true;
   }
 
-  prefab.quaternion.set(_spawnWorldQuat);
-
-  body.applyImpulse(_impulse, true);
+  applyTransformToRigidBody(body, prefab);
 
   const privateScene = ctx.worldResource.environment?.privateScene;
 

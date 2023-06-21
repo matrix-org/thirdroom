@@ -46,7 +46,6 @@ import {
   RemoteMesh,
   RemoteMeshPrimitive,
   RemoteNode,
-  RemotePhysicsBody,
   RemoteScene,
   RemoteSkin,
   RemoteTexture,
@@ -55,6 +54,7 @@ import {
   RemoteUIElement,
   RemoteUIText,
   removeObjectFromWorld,
+  RemotePhysicsBody,
 } from "../resource/RemoteResources";
 import { addChild, removeChild, traverse } from "../component/transform";
 import {
@@ -89,13 +89,7 @@ import {
   writeUint32,
 } from "../allocator/CursorView";
 import { AccessorComponentTypeToTypedArray, AccessorTypeToElementSize } from "../accessor/accessor.common";
-import {
-  addNodePhysicsBody,
-  PhysicsModule,
-  registerCollisionHandler,
-  removeRigidBody,
-  RigidBody,
-} from "../physics/physics.game";
+import { addPhysicsBody, PhysicsModule, registerCollisionHandler, removePhysicsBody } from "../physics/physics.game";
 import { getModule } from "../module/module.common";
 import { createMesh } from "../mesh/mesh.game";
 import { addInteractableComponent } from "../../plugins/interaction/interaction.game";
@@ -2073,8 +2067,8 @@ export function createWebSGModule(ctx: GameContext, wasmCtx: WASMModuleContext) 
           return -1;
         }
 
-        if (hasComponent(ctx.world, RigidBody, node.eid)) {
-          console.error("WebSG: node already has a rigid body.");
+        if (hasComponent(ctx.world, RemotePhysicsBody, node.eid)) {
+          console.error("WebSG: node already has a physics body.");
           return -1;
         }
 
@@ -2086,15 +2080,18 @@ export function createWebSGModule(ctx: GameContext, wasmCtx: WASMModuleContext) 
         const angularVelocity = readFloat32Array(wasmCtx.cursorView, 3);
         const inertiaTensor = readFloat32Array(wasmCtx.cursorView, 9);
 
-        node.physicsBody = new RemotePhysicsBody(wasmCtx.resourceManager, {
-          type,
-          mass,
-          linearVelocity,
-          angularVelocity,
-          inertiaTensor,
-        });
-
-        addNodePhysicsBody(ctx, node);
+        addPhysicsBody(
+          ctx.world,
+          physics,
+          node,
+          new RemotePhysicsBody(wasmCtx.resourceManager, {
+            type,
+            mass,
+            linearVelocity,
+            angularVelocity,
+            inertiaTensor,
+          })
+        );
 
         return 0;
       } catch (error) {
@@ -2109,14 +2106,13 @@ export function createWebSGModule(ctx: GameContext, wasmCtx: WASMModuleContext) 
         return -1;
       }
 
-      node.physicsBody = undefined;
-      removeRigidBody(ctx.world, node.eid);
+      removePhysicsBody(ctx.world, node);
 
       return 0;
     },
     node_has_physics_body(nodeId: number) {
       const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
-      return node && hasComponent(ctx.world, RigidBody, node.eid) ? 1 : 0;
+      return node && hasComponent(ctx.world, RemotePhysicsBody, node.eid) ? 1 : 0;
     },
     physics_body_apply_impulse(nodeId: number, impulsePtr: number) {
       const node = getScriptResource(wasmCtx, RemoteNode, nodeId);
@@ -2130,7 +2126,7 @@ export function createWebSGModule(ctx: GameContext, wasmCtx: WASMModuleContext) 
       tempRapierVec3.y = readFloat32(wasmCtx.cursorView);
       tempRapierVec3.z = readFloat32(wasmCtx.cursorView);
 
-      const body = RigidBody.store.get(node.eid);
+      const body = node.physicsBody?.body;
 
       if (!body) {
         return -1;

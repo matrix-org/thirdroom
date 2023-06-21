@@ -12,7 +12,6 @@ import { GameInputModule, InputModule } from "../input/input.game";
 import { defineModule, getModule } from "../module/module.common";
 import { tryGetRemoteResource } from "../resource/resource.game";
 import { RemoteNode } from "../resource/RemoteResources";
-import { RigidBody } from "../physics/physics.game";
 import { getRotationNoAlloc } from "../utils/getRotationNoAlloc";
 
 type FlyCharacterControllerModuleState = {};
@@ -124,10 +123,10 @@ export function FlyControllerSystem(ctx: GameContext) {
     const playerRigEid = ents[i];
     const playerRig = tryGetRemoteResource<RemoteNode>(ctx, playerRigEid);
     const camera = getCamera(ctx, playerRig);
-    const body = RigidBody.store.get(playerRigEid);
+    const body = playerRig.physicsBody?.body;
 
     if (!body) {
-      throw new Error("rigidbody not found on eid " + playerRigEid);
+      throw new Error("Physics body not found on eid " + playerRigEid);
     }
 
     applyFlyControls(ctx, body, input, playerRig, camera);

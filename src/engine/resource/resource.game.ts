@@ -353,10 +353,6 @@ export function removeResourceRef(ctx: GameContext, resourceId: ResourceId): boo
   // removal all components from the entity so that all relevant exit queries are hit
   removeAllEntityComponents(ctx.world, resourceId);
 
-  if (resourceInfo.dispose) {
-    resourceInfo.dispose();
-  }
-
   resourceModule.disposedResourcesQueue.push(resourceId);
 
   resourceModule.resourceInfos.delete(resourceId);
@@ -385,6 +381,7 @@ export function removeResourceRef(ctx: GameContext, resourceId: ResourceId): boo
     }
 
     resource.removeResourceRefs();
+    resource.dispose();
   }
 
   return true;

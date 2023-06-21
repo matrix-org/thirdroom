@@ -27,7 +27,7 @@ import {
   grabShapeCastCollisionGroups,
   removeCollisionGroupMembership,
 } from "../../engine/physics/CollisionGroups";
-import { PhysicsModule, PhysicsModuleState, RigidBody } from "../../engine/physics/physics.game";
+import { PhysicsModule, PhysicsModuleState } from "../../engine/physics/physics.game";
 import { Prefab } from "../../engine/prefab/prefab.game";
 import { addResourceRef, getRemoteResource, tryGetRemoteResource } from "../../engine/resource/resource.game";
 import {
@@ -569,7 +569,12 @@ function updateGrabThrow(
 
     // fire!
     _impulse.fromArray(direction);
-    RigidBody.store.get(heldEntity)?.applyImpulse(_impulse, true);
+    const heldNode = getRemoteResource<RemoteNode>(ctx, heldEntity);
+    if (!heldNode || !heldNode.physicsBody || !heldNode.physicsBody.body) {
+      throw new Error(`No physics body found on entity ${heldEntity}`);
+    }
+
+    heldNode.physicsBody.body.applyImpulse(_impulse, true);
 
     if (ourPlayer) {
       sendInteractionMessage(ctx, InteractableAction.Release, heldEntity);
@@ -707,7 +712,7 @@ function updateGrabThrow(
 
     vec3.scale(target, target, HELD_MOVE_SPEED - heldOffset / 2);
 
-    const body = RigidBody.store.get(heldEntity);
+    const body = heldNode.physicsBody?.body;
     if (body) {
       body.setLinvel(_impulse.fromArray(target), true);
       body.setAngvel(zero, true);
@@ -824,7 +829,7 @@ function updateGrabThrowXR(
 
     vec3.scale(target, target, HELD_MOVE_SPEED * 2);
 
-    const body = RigidBody.store.get(focusedEntity);
+    const body = focusedNode.physicsBody?.body;
     if (body) {
       body.setLinvel(_impulse.fromArray(target), true);
       body.setAngvel(zero, true);
@@ -917,16 +922,16 @@ export function addInteractableComponent(
 
   node.interactable = new RemoteInteractable(ctx.resourceManager, { type: interactableType });
 
-  const rigidBody = RigidBody.store.get(eid);
-  if (!rigidBody) {
+  const body = (node as RemoteNode).physicsBody?.body;
+  if (!body) {
     console.warn(
       `Adding interactable component to entity "${eid}" without a RigidBody component. This entity will not be interactable.`
     );
     return;
   }
 
-  for (let i = 0; i < rigidBody.numColliders(); i++) {
-    const collider = rigidBody.collider(i);
+  for (let i = 0; i < body.numColliders(); i++) {
+    const collider = body.collider(i);
 
     let collisionGroups = collider.collisionGroups();
 
@@ -941,16 +946,16 @@ export function addInteractableComponent(
 export function removeInteractableComponent(ctx: GameContext, physics: PhysicsModuleState, node: RemoteNode) {
   removeComponent(ctx.world, Interactable, node.eid);
 
-  const rigidBody = RigidBody.store.get(node.eid);
-  if (!rigidBody) {
+  const body = node.physicsBody?.body;
+  if (!body) {
     console.warn(
-      `Adding interactable component to entity "${node.name}" without a RigidBody component. This entity will not be interactable.`
+      `Removing interactable component from entity "${node.name}" without a physics body. This entity will not be interactable.`
     );
     return;
   }
 
-  for (let i = 0; i < rigidBody.numColliders(); i++) {
-    const collider = rigidBody.collider(i);
+  for (let i = 0; i < body.numColliders(); i++) {
+    const collider = body.collider(i);
 
     let collisionGroups = collider.collisionGroups();
 

@@ -4,7 +4,6 @@ import { sliceCursorView, CursorView, writeUint32, readUint32, createCursorView 
 import { NOOP } from "../config.common";
 import { GameContext } from "../GameTypes";
 import { getModule } from "../module/module.common";
-import { RigidBody } from "../physics/physics.game";
 import { getPrefabTemplate, Prefab } from "../prefab/prefab.game";
 import { getRemoteResource } from "../resource/resource.game";
 import { addObjectToWorld, RemoteNode, removeObjectFromWorld } from "../resource/RemoteResources";
@@ -13,6 +12,7 @@ import { Networked, Owned } from "./NetworkComponents";
 import { NetworkAction } from "./NetworkAction";
 import { broadcastReliable } from "./outbound.game";
 import { writeMetadata } from "./serialization.game";
+import { applyTransformToRigidBody } from "../physics/physics.game";
 
 // const messageView = createCursorView(new ArrayBuffer(Uint32Array.BYTES_PER_ELEMENT * 3));
 const messageView = createCursorView(new ArrayBuffer(Uint32Array.BYTES_PER_ELEMENT * 30));
@@ -37,17 +37,17 @@ export const deserializeRemoveOwnership = (ctx: GameContext, cv: CursorView) => 
   }
 };
 
-export const takeOwnership = (ctx: GameContext, network: GameNetworkState, node: RemoteNode): number => {
-  const eid = node.eid;
+export const takeOwnership = (ctx: GameContext, network: GameNetworkState, oldNode: RemoteNode): number => {
+  const eid = oldNode.eid;
   if (
     hasComponent(ctx.world, Prefab, eid) &&
     hasComponent(ctx.world, Networked, eid) &&
     !hasComponent(ctx.world, Owned, eid)
   ) {
-    removeObjectFromWorld(ctx, node);
+    removeObjectFromWorld(ctx, oldNode);
 
     // send message to remove on other side
-    broadcastReliable(ctx, network, createRemoveOwnershipMessage(ctx, node.eid));
+    broadcastReliable(ctx, network, createRemoveOwnershipMessage(ctx, oldNode.eid));
 
     const prefabName = Prefab.get(eid);
     if (!prefabName) throw new Error("could not take ownership, prefab name not found: " + prefabName);
@@ -58,12 +58,15 @@ export const takeOwnership = (ctx: GameContext, network: GameNetworkState, node:
     addComponent(ctx.world, Owned, newNode.eid);
     addComponent(ctx.world, Networked, newNode.eid);
 
-    const body = RigidBody.store.get(eid);
-    if (!body) throw new Error("rigidbody not found for eid: " + eid);
+    const body = newNode.physicsBody?.body;
+    if (!body) throw new Error("Physics body not found for eid: " + eid);
 
-    newNode.position.set(node.position);
-    newNode.scale.set(node.scale);
-    newNode.quaternion.set(node.quaternion);
+    newNode.position.set(oldNode.position);
+    newNode.scale.set(oldNode.scale);
+    newNode.quaternion.set(oldNode.quaternion);
+    newNode.skipLerp = 10;
+
+    applyTransformToRigidBody(body, newNode);
 
     addObjectToWorld(ctx, newNode);
 

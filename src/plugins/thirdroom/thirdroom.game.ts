@@ -34,14 +34,19 @@ import {
   ReloadWorldErrorMessage,
 } from "./thirdroom.common";
 import { GLTFResource, loadDefaultGLTFScene, loadGLTF } from "../../engine/gltf/gltf.game";
-import { addRigidBody, PhysicsModule, registerCollisionHandler } from "../../engine/physics/physics.game";
+import {
+  addPhysicsBody,
+  addPhysicsCollider,
+  PhysicsModule,
+  registerCollisionHandler,
+} from "../../engine/physics/physics.game";
 import { boundsCheckCollisionGroups } from "../../engine/physics/CollisionGroups";
 import { Player } from "../../engine/player/Player";
 import { enableActionMap } from "../../engine/input/ActionMappingSystem";
 import { InputModule } from "../../engine/input/input.game";
 import { spawnEntity } from "../../engine/utils/spawnEntity";
 import { addScriptComponent, loadScript, Script } from "../../engine/scripting/scripting.game";
-import { SamplerMapping } from "../../engine/resource/schema";
+import { ColliderType, PhysicsBodyType, SamplerMapping } from "../../engine/resource/schema";
 import {
   ResourceModule,
   getRemoteResource,
@@ -49,6 +54,7 @@ import {
   createRemoteResourceManager,
 } from "../../engine/resource/resource.game";
 import {
+  RemoteCollider,
   RemoteEnvironment,
   RemoteImage,
   RemoteNode,
@@ -57,6 +63,7 @@ import {
   RemoteScene,
   RemoteTexture,
   removeObjectFromWorld,
+  RemotePhysicsBody,
 } from "../../engine/resource/RemoteResources";
 import { findResourceRetainerRoots, findResourceRetainers } from "../../engine/resource/findResourceRetainers";
 import { RemoteResource } from "../../engine/resource/RemoteResourceClass";
@@ -142,23 +149,40 @@ export const ThirdRoomModule = defineModule<GameContext, ThirdRoomModuleState>({
     registerPlayerPrefabs(ctx);
 
     // create out of bounds floor check
-    const { physicsWorld } = getModule(ctx, PhysicsModule);
-    const rigidBody = physicsWorld.createRigidBody(RAPIER.RigidBodyDesc.fixed());
+    const physics = getModule(ctx, PhysicsModule);
     const size = 10000;
-    const colliderDesc = RAPIER.ColliderDesc.cuboid(size, 50, size)
-      .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS)
-      .setCollisionGroups(boundsCheckCollisionGroups);
-    physicsWorld.createCollider(colliderDesc, rigidBody);
-    rigidBody.setTranslation(new RAPIER.Vector3(size / 2, -150, size / 2), true);
-    const oobCollider = new RemoteNode(ctx.resourceManager, {
-      name: "Out of Bounds Collider",
+    const oobFloor = new RemoteNode(ctx.resourceManager, {
+      name: "Out of Bounds Floor",
     });
-    addRigidBody(ctx, oobCollider, rigidBody);
-    addChild(ctx.worldResource.persistentScene, oobCollider);
+
+    oobFloor.position.set([size / 2, -150, size / 2]);
+
+    addPhysicsCollider(
+      ctx.world,
+      oobFloor,
+      new RemoteCollider(ctx.resourceManager, {
+        type: ColliderType.Box,
+        size: [size, 50, size],
+        activeEvents: RAPIER.ActiveEvents.COLLISION_EVENTS,
+        collisionGroups: boundsCheckCollisionGroups,
+      })
+    );
+
+    addPhysicsBody(
+      ctx.world,
+      physics,
+      oobFloor,
+      new RemotePhysicsBody(ctx.resourceManager, {
+        type: PhysicsBodyType.Static,
+      })
+    );
+
+    addChild(ctx.worldResource.persistentScene, oobFloor);
 
     const disposeCollisionHandler = registerCollisionHandler(ctx, (eid1, eid2, handle1, handle2, started) => {
-      const objectEid = handle1 !== rigidBody.handle ? eid1 : handle2 !== rigidBody.handle ? eid2 : undefined;
-      const floorHandle = handle1 === rigidBody.handle ? handle1 : handle2 === rigidBody.handle ? handle2 : undefined;
+      const floorBody = oobFloor.physicsBody!.body!;
+      const objectEid = handle1 !== floorBody.handle ? eid1 : handle2 !== floorBody.handle ? eid2 : undefined;
+      const floorHandle = handle1 === floorBody.handle ? handle1 : handle2 === floorBody.handle ? handle2 : undefined;
 
       if (floorHandle === undefined || objectEid === undefined || !started) {
         return;

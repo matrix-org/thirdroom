@@ -37,6 +37,7 @@ export const mockPostMessageTarget = () => ({
 });
 
 export const mockPhysicsState = () => ({
+  handleToEid: new Map(),
   physicsWorld: {
     createRigidBody: (body: RAPIER.RigidBodyDesc) => ({
       handle: 0,

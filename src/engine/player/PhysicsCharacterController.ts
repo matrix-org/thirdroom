@@ -8,7 +8,7 @@ import { ActionMap, ActionType, BindingType, ButtonActionState } from "../input/
 import { InputModule } from "../input/input.game";
 import { defineModule, getModule } from "../module/module.common";
 import { playerShapeCastCollisionGroups } from "../physics/CollisionGroups";
-import { PhysicsModule, RigidBody } from "../physics/physics.game";
+import { PhysicsModule } from "../physics/physics.game";
 import { tryGetRemoteResource } from "../resource/resource.game";
 import { RemoteNode } from "../resource/RemoteResources";
 import { ourPlayerQuery } from "./Player";
@@ -140,7 +140,7 @@ export const PhysicsCharacterControllerSystem = (ctx: GameContext) => {
 
   const rig = tryGetRemoteResource<RemoteNode>(ctx, eid);
 
-  const body = RigidBody.store.get(rig.eid);
+  const body = rig.physicsBody?.body;
   if (!body) {
     return;
   }

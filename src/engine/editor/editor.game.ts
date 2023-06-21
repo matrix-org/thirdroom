@@ -45,7 +45,6 @@ import { RemoteNode } from "../resource/RemoteResources";
 import { disableActionMap, enableActionMap } from "../input/ActionMappingSystem";
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "../input/ActionMap";
 import { InputModule } from "../input/input.game";
-import { RigidBody } from "../physics/physics.game";
 import { flyControlsQuery } from "../player/FlyCharacterController";
 import { getCamera } from "../player/getCamera";
 
@@ -303,10 +302,10 @@ export function EditorStateSystem(ctx: GameContext) {
         const playerRig = tryGetRemoteResource<RemoteNode>(ctx, playerRigEid);
         getCamera(ctx, playerRig);
 
-        const body = RigidBody.store.get(playerRigEid);
+        const body = playerRig.physicsBody?.body;
 
         if (!body) {
-          throw new Error("rigidbody not found on eid " + playerRigEid);
+          throw new Error("Physics body not found on eid " + playerRigEid);
         }
         // TODO: Place camera near active entity on `F` key press.
         // moveCharacterToAnchor(ctx, body, anchorEntity, playerRig, camera);

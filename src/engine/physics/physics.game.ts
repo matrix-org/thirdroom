@@ -1,23 +1,12 @@
 import { vec3, mat4, quat } from "gl-matrix";
-import {
-  defineComponent,
-  defineQuery,
-  addComponent,
-  removeComponent,
-  enterQuery,
-  exitQuery,
-  Types,
-  hasComponent,
-} from "bitecs";
+import { defineComponent, addComponent, removeComponent, hasComponent } from "bitecs";
 import RAPIER, { RigidBody as RapierRigidBody, RigidBodyDesc } from "@dimforge/rapier3d-compat";
 import { Quaternion, Vector3 } from "three";
 
 import { GameContext, World } from "../GameTypes";
-import { defineMapComponent } from "../ecs/MapComponent";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
-import { addResourceRef, getRemoteResource, removeResourceRef } from "../resource/resource.game";
-import { RemoteMesh, RemoteMeshPrimitive, RemoteNode } from "../resource/RemoteResources";
-import { maxEntities } from "../config.common";
+import { getRemoteResource } from "../resource/resource.game";
+import { RemoteCollider, RemoteNode, RemotePhysicsBody, physicsBodyQuery } from "../resource/RemoteResources";
 import { ColliderType, MeshPrimitiveAttributeIndex, PhysicsBodyType } from "../resource/schema";
 import { getAccessorArrayView, scaleVec3Array } from "../accessor/accessor.common";
 import { updateMatrixWorld } from "../component/transform";
@@ -82,25 +71,14 @@ function onTogglePhysicsDebug(ctx: GameContext) {
   const physicsModule = getModule(ctx, PhysicsModule);
   physicsModule.debugRender = !physicsModule.debugRender;
 }
+// data flows from transform->body
+export const KinematicBody = defineComponent();
 
-const RigidBodySoA = defineComponent(
-  {
-    velocity: [Types.f32, 3],
-    meshResourceId: Types.ui32,
-    primitiveResourceId: Types.ui32,
-  },
-  maxEntities
-);
+// data flows from body->transform
+export const RigidBody = defineComponent();
 
-// data flows from rigidbody->transform
-export const RigidBody = defineMapComponent<RapierRigidBody, typeof RigidBodySoA>(RigidBodySoA);
-
-export const rigidBodyQuery = defineQuery([RigidBody]);
-export const enteredRigidBodyQuery = enterQuery(rigidBodyQuery);
-export const exitedRigidBodyQuery = exitQuery(rigidBodyQuery);
-
-// data flows from transform->rigidbody
-export const Kinematic = defineComponent();
+// daata doesn't change
+export const StaticBody = defineComponent();
 
 const _v = new Vector3();
 const _q = new Quaternion();
@@ -134,57 +112,8 @@ const applyRigidBodyToTransform = (body: RapierRigidBody, node: RemoteNode) => {
 
 export function PhysicsSystem(ctx: GameContext) {
   const { world, dt } = ctx;
-  const physicsModule = getModule(ctx, PhysicsModule);
-
-  const { physicsWorld, handleToEid, eventQueue, collisionHandlers, debugRender } = physicsModule;
-
-  // apply transform to rigidbody for new physics entities
-  const entered = enteredRigidBodyQuery(world);
-  for (let i = 0; i < entered.length; i++) {
-    const eid = entered[i];
-
-    const body = RigidBody.store.get(eid);
-    const node = getRemoteResource<RemoteNode>(ctx, eid);
-
-    if (body && node) {
-      if (body.bodyType() !== RAPIER.RigidBodyType.Fixed) {
-        applyTransformToRigidBody(body, node);
-      }
-
-      const colliderCount = body.numColliders();
-
-      for (let i = 0; i < colliderCount; i++) {
-        const collider = body.collider(i);
-        handleToEid.set(collider.handle, eid);
-      }
-    }
-  }
-
-  // remove rigidbody from physics world
-  const exited = exitedRigidBodyQuery(world);
-  for (let i = 0; i < exited.length; i++) {
-    const eid = exited[i];
-    const body = RigidBody.store.get(eid);
-    if (body) {
-      const colliderCount = body.numColliders();
-
-      for (let i = 0; i < colliderCount; i++) {
-        const collider = body.collider(i);
-        handleToEid.delete(collider.handle);
-      }
-
-      physicsWorld.removeRigidBody(body);
-      RigidBody.store.delete(eid);
-
-      if (RigidBody.meshResourceId[eid]) {
-        removeResourceRef(ctx, RigidBody.meshResourceId[eid]);
-      }
-
-      if (RigidBody.primitiveResourceId[eid]) {
-        removeResourceRef(ctx, RigidBody.primitiveResourceId[eid]);
-      }
-    }
-  }
+  const physics = getModule(ctx, PhysicsModule);
+  const { physicsWorld, handleToEid, eventQueue, collisionHandlers, debugRender } = physics;
 
   physicsWorld.timestep = dt;
   physicsWorld.step(eventQueue);
@@ -203,22 +132,22 @@ export function PhysicsSystem(ctx: GameContext) {
   });
 
   // apply rigidbody to transform for regular physics entities
-  const physicsEntities = rigidBodyQuery(world);
+  const physicsEntities = physicsBodyQuery(world);
   for (let i = 0; i < physicsEntities.length; i++) {
     const eid = physicsEntities[i];
-    const body = RigidBody.store.get(eid);
     const node = getRemoteResource<RemoteNode>(ctx, eid);
 
-    if (!node || !body) {
+    if (!node || !node.physicsBody?.body) {
       continue;
     }
 
+    const body = node.physicsBody.body;
     const bodyType = body.bodyType();
 
     if (bodyType !== RAPIER.RigidBodyType.Fixed) {
       // sync velocity
       const linvel = body.linvel();
-      const velocity = RigidBody.velocity[eid];
+      const velocity = node.physicsBody!.velocity;
       velocity[0] = linvel.x;
       velocity[1] = linvel.y;
       velocity[2] = linvel.z;
@@ -243,7 +172,7 @@ export function PhysicsSystem(ctx: GameContext) {
   if (debugRender) {
     const buffers = physicsWorld.debugRender();
 
-    if (!physicsModule.debugRenderTripleBuffer) {
+    if (!physics.debugRenderTripleBuffer) {
       // Allow for double the number of vertices at the start.
       const initialSize = (buffers.vertices.length / 3) * 2;
 
@@ -255,7 +184,7 @@ export function PhysicsSystem(ctx: GameContext) {
 
       const tripleBuffer = createObjectTripleBuffer(physicsDebugRenderSchema, ctx.gameToRenderTripleBufferFlags);
 
-      physicsModule.debugRenderTripleBuffer = tripleBuffer;
+      physics.debugRenderTripleBuffer = tripleBuffer;
 
       ctx.sendMessage<PhysicsEnableDebugRenderMessage>(Thread.Render, {
         type: PhysicsMessageType.PhysicsEnableDebugRender,
@@ -263,15 +192,15 @@ export function PhysicsSystem(ctx: GameContext) {
       });
     }
 
-    const writeView = getWriteObjectBufferView(physicsModule.debugRenderTripleBuffer);
+    const writeView = getWriteObjectBufferView(physics.debugRenderTripleBuffer);
     writeView.size[0] = buffers.vertices.length / 3;
     writeView.vertices.set(buffers.vertices);
     writeView.colors.set(buffers.colors);
-  } else if (physicsModule.debugRenderTripleBuffer) {
+  } else if (physics.debugRenderTripleBuffer) {
     ctx.sendMessage<PhysicsDisableDebugRenderMessage>(Thread.Render, {
       type: PhysicsMessageType.PhysicsDisableDebugRender,
     });
-    physicsModule.debugRenderTripleBuffer = undefined;
+    physics.debugRenderTripleBuffer = undefined;
   }
 }
 
@@ -321,6 +250,11 @@ export function createNodeColliderDescriptions(node: RemoteNode): RAPIER.Collide
 
         hullDesc.setSensor(collider.isTrigger);
 
+        if (collider.activeEvents) hullDesc.setActiveEvents(collider.activeEvents);
+        if (collider.collisionGroups) hullDesc.setCollisionGroups(collider.collisionGroups);
+        if (collider.restitution) hullDesc.setRestitution(collider.restitution);
+        if (collider.density) hullDesc.setDensity(collider.density);
+
         descriptions.push(hullDesc);
       } else {
         let indices: Uint32Array;
@@ -340,6 +274,11 @@ export function createNodeColliderDescriptions(node: RemoteNode): RAPIER.Collide
         const meshDesc = RAPIER.ColliderDesc.trimesh(positions, indices);
 
         meshDesc.setSensor(collider.isTrigger);
+
+        if (collider.activeEvents) meshDesc.setActiveEvents(collider.activeEvents);
+        if (collider.collisionGroups) meshDesc.setCollisionGroups(collider.collisionGroups);
+        if (collider.restitution) meshDesc.setRestitution(collider.restitution);
+        if (collider.density) meshDesc.setDensity(collider.density);
 
         descriptions.push(meshDesc);
       }
@@ -362,6 +301,11 @@ export function createNodeColliderDescriptions(node: RemoteNode): RAPIER.Collide
 
     desc.setSensor(collider.isTrigger);
 
+    if (collider.activeEvents) desc.setActiveEvents(collider.activeEvents);
+    if (collider.collisionGroups) desc.setCollisionGroups(collider.collisionGroups);
+    if (collider.restitution) desc.setRestitution(collider.restitution);
+    if (collider.density) desc.setDensity(collider.density);
+
     descriptions.push(desc);
   }
 
@@ -371,23 +315,40 @@ export function createNodeColliderDescriptions(node: RemoteNode): RAPIER.Collide
 const tempPosition = vec3.create();
 const tempRotation = quat.create();
 
-export function addNodePhysicsBody(ctx: GameContext, node: RemoteNode) {
-  const physicsBody = node.physicsBody;
+export function addPhysicsCollider(world: World, node: RemoteNode, physicsCollider: RemoteCollider) {
+  node.collider = physicsCollider;
+  addComponent(world, RemoteCollider, node.eid);
+}
 
-  if (!physicsBody) {
-    throw new Error("Node does not have a physics body");
-  }
+export function removePhysicsCollider(world: World, node: RemoteNode) {
+  node.collider = undefined;
+  removeComponent(world, RemoteCollider, node.eid);
+}
 
-  const { physicsWorld } = getModule(ctx, PhysicsModule);
+export function addPhysicsBody(
+  world: World,
+  physics: PhysicsModuleState,
+  node: RemoteNode,
+  physicsBody: RemotePhysicsBody
+) {
+  const { physicsWorld, handleToEid } = physics;
+
+  node.physicsBody = physicsBody;
+  addComponent(world, RemotePhysicsBody, node.eid);
+
+  updateMatrixWorld(node);
 
   let rigidBodyDesc: RigidBodyDesc;
 
   if (physicsBody.type == PhysicsBodyType.Static) {
     rigidBodyDesc = RAPIER.RigidBodyDesc.fixed();
+    addComponent(world, StaticBody, node.eid);
   } else if (physicsBody.type == PhysicsBodyType.Kinematic) {
     rigidBodyDesc = RAPIER.RigidBodyDesc.kinematicPositionBased();
+    addComponent(world, KinematicBody, node.eid);
   } else if (physicsBody.type == PhysicsBodyType.Rigid) {
     rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic();
+    addComponent(world, RigidBody, node.eid);
 
     rigidBodyDesc.setLinvel(
       physicsBody.linearVelocity[0],
@@ -402,35 +363,53 @@ export function addNodePhysicsBody(ctx: GameContext, node: RemoteNode) {
     throw new Error(`Unsupported physics body type: "${physicsBody.type}"`);
   }
 
-  const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
+  const body = physicsWorld.createRigidBody(rigidBodyDesc);
+
+  node.physicsBody.body = body;
+
+  handleToEid.set(body.handle, node.eid);
 
   if (node.collider) {
     const colliderDescriptions = createNodeColliderDescriptions(node);
 
     for (const colliderDesc of colliderDescriptions) {
       if (physicsBody.type == PhysicsBodyType.Static) {
+        colliderDesc.setCollisionGroups(staticRigidBodyCollisionGroups);
+
         const worldMatrix = node.worldMatrix;
         mat4.getTranslation(tempPosition, worldMatrix);
+        vec3.add(tempPosition, tempPosition, node.collider.offset);
         getRotationNoAlloc(tempRotation, worldMatrix);
         colliderDesc.setTranslation(tempPosition[0], tempPosition[1], tempPosition[2]);
         colliderDesc.setRotation(
           new RAPIER.Quaternion(tempRotation[0], tempRotation[1], tempRotation[2], tempRotation[3])
         );
-        colliderDesc.setCollisionGroups(staticRigidBodyCollisionGroups);
       } else if (physicsBody.type === PhysicsBodyType.Rigid) {
         colliderDesc.setCollisionGroups(dynamicObjectCollisionGroups);
       } else if (physicsBody.type === PhysicsBodyType.Kinematic) {
         colliderDesc.setCollisionGroups(staticRigidBodyCollisionGroups);
+
+        const offset = node.collider.offset;
+        colliderDesc.setTranslation(offset[0], offset[1], offset[2]);
       }
 
+      if (node.collider.activeEvents) colliderDesc.setActiveEvents(node.collider.activeEvents);
+      if (node.collider.collisionGroups) colliderDesc.setCollisionGroups(node.collider.collisionGroups);
+      if (node.collider.restitution) colliderDesc.setRestitution(node.collider.restitution);
+      if (node.collider.density) colliderDesc.setDensity(node.collider.density);
+
       colliderDesc.setMass(physicsBody.mass || 1);
-      physicsWorld.createCollider(colliderDesc, rigidBody);
+
+      const collider = physicsWorld.createCollider(colliderDesc, body);
+      handleToEid.set(collider.handle, node.eid);
     }
   }
 
   let curChild = node.firstChild;
 
   while (curChild) {
+    updateMatrixWorld(curChild);
+
     if (curChild.collider) {
       const colliderDescriptions = createNodeColliderDescriptions(curChild);
 
@@ -438,13 +417,16 @@ export function addNodePhysicsBody(ctx: GameContext, node: RemoteNode) {
         if (physicsBody.type == PhysicsBodyType.Static) {
           const worldMatrix = node.worldMatrix;
           mat4.getTranslation(tempPosition, worldMatrix);
+          vec3.add(tempPosition, tempPosition, curChild.collider.offset);
           getRotationNoAlloc(tempRotation, worldMatrix);
           colliderDesc.setTranslation(tempPosition[0], tempPosition[1], tempPosition[2]);
           colliderDesc.setRotation(
             new RAPIER.Quaternion(tempRotation[0], tempRotation[1], tempRotation[2], tempRotation[3])
           );
         } else {
-          colliderDesc.setTranslation(curChild.position[0], curChild.position[1], curChild.position[2]);
+          vec3.copy(tempPosition, curChild.position);
+          vec3.add(tempPosition, tempPosition, curChild.collider.offset);
+          colliderDesc.setTranslation(tempPosition[0], tempPosition[1], tempPosition[2]);
           colliderDesc.setRotation(
             new RAPIER.Quaternion(
               curChild.quaternion[0],
@@ -457,40 +439,24 @@ export function addNodePhysicsBody(ctx: GameContext, node: RemoteNode) {
 
         colliderDesc.setMass(physicsBody.mass || 1);
         colliderDesc.setCollisionGroups(staticRigidBodyCollisionGroups);
-        physicsWorld.createCollider(colliderDesc, rigidBody);
+
+        if (curChild.collider.activeEvents) colliderDesc.setActiveEvents(curChild.collider.activeEvents);
+        if (curChild.collider.collisionGroups) colliderDesc.setCollisionGroups(curChild.collider.collisionGroups);
+        if (curChild.collider.restitution) colliderDesc.setRestitution(curChild.collider.restitution);
+        if (curChild.collider.density) colliderDesc.setDensity(curChild.collider.density);
+
+        const collider = physicsWorld.createCollider(colliderDesc, body);
+        handleToEid.set(collider.handle, curChild.eid);
       }
     }
 
     curChild = curChild.nextSibling;
   }
-
-  addRigidBody(ctx, node, rigidBody);
 }
 
-export function addRigidBody(
-  ctx: GameContext,
-  node: RemoteNode,
-  rigidBody: RapierRigidBody,
-  meshResource?: RemoteMesh,
-  primitiveResource?: RemoteMeshPrimitive
-) {
-  addComponent(ctx.world, RigidBody, node.eid);
-  RigidBody.store.set(node.eid, rigidBody);
-
-  if (meshResource) {
-    addResourceRef(ctx, meshResource.eid);
-    RigidBody.meshResourceId[node.eid] = meshResource.eid;
-  }
-
-  if (primitiveResource) {
-    addResourceRef(ctx, primitiveResource.eid);
-    RigidBody.primitiveResourceId[node.eid] = primitiveResource.eid;
-  }
-}
-
-export function removeRigidBody(world: World, eid: number) {
-  removeComponent(world, RigidBody, eid);
-  RigidBody.store.delete(eid);
+export function removePhysicsBody(world: World, node: RemoteNode) {
+  node.physicsBody = undefined;
+  removeComponent(world, RemotePhysicsBody, node.eid);
 }
 
 export function registerCollisionHandler(ctx: GameContext, handler: CollisionHandler) {

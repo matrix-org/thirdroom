@@ -100,6 +100,13 @@ function defineProp<S extends Schema>(
           return this.f32Views[index][offset];
         },
       });
+    } else if (prop.type === "i32") {
+      Object.defineProperty(LocalResourceClass.prototype, propName, {
+        get(this: LocalResource) {
+          const index = this.manager.readBufferIndex;
+          return this.u32Views[index][offset] | 0; // bitwise OR of 0 converts int from unsigned to signed
+        },
+      });
     } else {
       Object.defineProperty(LocalResourceClass.prototype, propName, {
         get(this: LocalResource) {

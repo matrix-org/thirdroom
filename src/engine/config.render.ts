@@ -15,7 +15,7 @@ import { StatsModule, RenderThreadStatsSystem } from "./stats/stats.render";
 import { WebSGUIModule } from "./ui/ui.render";
 import { ResizeViewportSystem } from "./renderer/systems/ResizeViewportSystem";
 import { LoadImageResourcesSystem } from "./renderer/systems/LoadImageResourcesSystem";
-import { LoadTextureResourcesSystem } from "./renderer/systems/LoadTExtureResourcesSystem";
+import { LoadTextureResourcesSystem } from "./renderer/systems/LoadTextureResourcesSystem";
 import { UpdateDynamicAccessorsSystem } from "./renderer/systems/UpdateDynamicAccessorsSystem";
 import { UpdateWorldVisibilitySystem } from "./renderer/systems/UpdateWorldVisibilitySystem";
 import { UpdateActiveSceneResourceSystem } from "./renderer/systems/UpdateActiveSceneResourceSystem";

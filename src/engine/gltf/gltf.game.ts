@@ -78,7 +78,7 @@ import {
 } from "../resource/RemoteResources";
 import { addPortalComponent } from "../../plugins/portals/portals.game";
 import { getModule } from "../module/module.common";
-import { addNodePhysicsBody, addRigidBody, PhysicsModule } from "../physics/physics.game";
+import { addPhysicsBody, PhysicsModule } from "../physics/physics.game";
 import { getAccessorArrayView, vec3ArrayTransformMat4 } from "../accessor/accessor.common";
 import { staticRigidBodyCollisionGroups } from "../physics/CollisionGroups";
 import { CharacterControllerType, SceneCharacterControllerComponent } from "../player/CharacterController";
@@ -87,6 +87,7 @@ import { AnimationComponent, BoneComponent } from "../animation/animation.game";
 import { RemoteResource } from "../resource/RemoteResourceClass";
 import { getRotationNoAlloc } from "../utils/getRotationNoAlloc";
 import { TypedArray32 } from "../utils/typedarray";
+import { addResourceRef } from "../resource/resource.game";
 
 /**
  * GLTFResource stores references to all of the resources loaded from a glTF file.
@@ -896,7 +897,27 @@ function addTrimeshFromMesh(loaderCtx: GLTFLoaderContext, node: RemoteNode, mesh
 
     const primitiveNode = new RemoteNode(loaderCtx.resource.manager);
     addChild(node, primitiveNode);
-    addRigidBody(loaderCtx.ctx, primitiveNode, rigidBody, mesh, primitive);
+
+    const physics = getModule(loaderCtx.ctx, PhysicsModule);
+    addPhysicsBody(
+      loaderCtx.ctx.world,
+      physics,
+      primitiveNode,
+      new RemotePhysicsBody(loaderCtx.resource.manager, {
+        type: PhysicsBodyType.Static,
+        mass: 1,
+      })
+    );
+
+    if (mesh) {
+      addResourceRef(loaderCtx.ctx, mesh.eid);
+      primitiveNode.physicsBody!.mesh = mesh;
+    }
+
+    if (primitive) {
+      addResourceRef(loaderCtx.ctx, primitive.eid);
+      primitiveNode.physicsBody!.primitive = primitive;
+    }
   }
 }
 
@@ -939,6 +960,8 @@ const loadGLTFCollider = createCachedSubresourceLoader(
 );
 
 function loadDefaultGLTFPhysicsBody(loaderCtx: GLTFLoaderContext, node: RemoteNode) {
+  const physics = getModule(loaderCtx.ctx, PhysicsModule);
+
   let parentIsPhysicsBody = false;
 
   if (node.parent) {
@@ -956,11 +979,15 @@ function loadDefaultGLTFPhysicsBody(loaderCtx: GLTFLoaderContext, node: RemoteNo
   }
 
   if (!parentIsPhysicsBody) {
-    node.physicsBody = new RemotePhysicsBody(loaderCtx.resource.manager, {
-      type: PhysicsBodyType.Static,
-      mass: 1,
-    });
-    addNodePhysicsBody(loaderCtx.ctx, node);
+    addPhysicsBody(
+      loaderCtx.ctx.world,
+      physics,
+      node,
+      new RemotePhysicsBody(loaderCtx.resource.manager, {
+        type: PhysicsBodyType.Static,
+        mass: 1,
+      })
+    );
   }
 }
 
@@ -977,14 +1004,19 @@ function loadGLTFPhysicsBody(loaderCtx: GLTFLoaderContext, node: RemoteNode, phy
     throw new Error(`Unknown physics body type ${physicsBodyDef.type}`);
   }
 
-  node.physicsBody = new RemotePhysicsBody(loaderCtx.resource.manager, {
-    type,
-    mass: physicsBodyDef.mass,
-    linearVelocity: physicsBodyDef.linearVelocity,
-    angularVelocity: physicsBodyDef.angularVelocity,
-    inertiaTensor: physicsBodyDef.inertiaTensor,
-  });
-  addNodePhysicsBody(loaderCtx.ctx, node);
+  const physics = getModule(loaderCtx.ctx, PhysicsModule);
+  addPhysicsBody(
+    loaderCtx.ctx.world,
+    physics,
+    node,
+    new RemotePhysicsBody(loaderCtx.resource.manager, {
+      type,
+      mass: physicsBodyDef.mass,
+      linearVelocity: physicsBodyDef.linearVelocity,
+      angularVelocity: physicsBodyDef.angularVelocity,
+      inertiaTensor: physicsBodyDef.inertiaTensor,
+    })
+  );
 }
 
 function loadGLTFTilesRenderer({ resource }: GLTFLoaderContext, node: RemoteNode, extension: GLTFTilesRenderer) {

@@ -27,6 +27,7 @@ import {
   EDGE_RIGHT,
   EDGE_BOTTOM,
 } from "yoga-wasm-web";
+import * as RAPIER from "@dimforge/rapier3d-compat";
 
 import { defineResource, PropType } from "./ResourceDefinition";
 
@@ -644,6 +645,11 @@ export enum ColliderType {
 export const ColliderResource = defineResource("collider", ResourceType.Collider, {
   name: PropType.string({ default: "Collider", script: true }),
   type: PropType.enum(ColliderType, { required: true, mutable: false }),
+  activeEvents: PropType.enum(RAPIER.ActiveEvents, { default: 0, mutable: false }),
+  collisionGroups: PropType.u32({ mutable: false }),
+  offset: PropType.vec3({ mutable: false }),
+  restitution: PropType.f32({ mutable: false }),
+  density: PropType.f32({ mutable: false }),
   isTrigger: PropType.bool({ mutable: false }),
   size: PropType.vec3({ mutable: false }),
   radius: PropType.f32({ mutable: false }),

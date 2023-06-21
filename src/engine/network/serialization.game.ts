@@ -28,7 +28,6 @@ import {
 import { NOOP } from "../config.common";
 import { GameContext } from "../GameTypes";
 import { getModule } from "../module/module.common";
-import { RigidBody } from "../physics/physics.game";
 import { Prefab, createPrefabEntity } from "../prefab/prefab.game";
 import { checkBitflag } from "../utils/checkBitflag";
 import {
@@ -87,14 +86,12 @@ export const readMetadata = (v: CursorView, out = _out) => {
 /* Transform serialization */
 
 export const serializeTransformSnapshot = (v: CursorView, node: RemoteNode) => {
-  const eid = node.eid;
-
   const position = node.position;
   writeFloat32(v, position[0]);
   writeFloat32(v, position[1]);
   writeFloat32(v, position[2]);
 
-  const velocity = RigidBody.velocity[eid];
+  const velocity = node.physicsBody!.velocity;
   writeFloat32(v, velocity[0]);
   writeFloat32(v, velocity[1]);
   writeFloat32(v, velocity[2]);
@@ -175,7 +172,7 @@ export const serializeTransformChanged = (v: CursorView, node: RemoteNode) => {
   changeMask |= writePropIfChanged(v, position, 1) ? 1 << b++ : b++ && 0;
   changeMask |= writePropIfChanged(v, position, 2) ? 1 << b++ : b++ && 0;
 
-  const velocity = RigidBody.velocity[node.eid];
+  const velocity = node.physicsBody!.velocity;
   changeMask |= writePropIfChanged(v, velocity, 0) ? 1 << b++ : b++ && 0;
   changeMask |= writePropIfChanged(v, velocity, 1) ? 1 << b++ : b++ && 0;
   changeMask |= writePropIfChanged(v, velocity, 2) ? 1 << b++ : b++ && 0;
@@ -341,13 +338,9 @@ export function deserializeUpdatesSnapshot(ctx: GameContext, v: CursorView) {
   for (let i = 0; i < count; i++) {
     const nid = readUint32(v);
     const eid = network.networkIdToEntityId.get(nid) || NOOP;
-    const node = eid ? getRemoteResource<RemoteNode>(ctx, eid) : undefined;
+    const node = getRemoteResource<RemoteNode>(ctx, eid);
 
     deserializeTransformSnapshot(network, v, nid, node);
-
-    if (node && node.skipLerp) {
-      node.skipLerp = 10;
-    }
   }
 }
 
@@ -385,7 +378,7 @@ export function deserializeUpdatesChanged(ctx: GameContext, v: CursorView) {
       console.warn(`could not deserialize update for non-existent entity for networkId ${nid}`);
     }
 
-    const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
+    const node = getRemoteResource<RemoteNode>(ctx, eid);
     deserializeTransformChanged(v, nid, node);
   }
 }

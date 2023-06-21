@@ -1,11 +1,6 @@
-import RAPIER from "@dimforge/rapier3d-compat";
 import { BufferGeometry, BoxGeometry, SphereGeometry, TubeGeometry, Curve, Vector3 } from "three";
 
-import { addInteractableComponent } from "../../plugins/interaction/interaction.game";
 import { GameContext } from "../GameTypes";
-import { getModule } from "../module/module.common";
-import { dynamicObjectCollisionGroups } from "../physics/CollisionGroups";
-import { PhysicsModule, addRigidBody } from "../physics/physics.game";
 import {
   RemoteAccessor,
   RemoteBuffer,
@@ -19,7 +14,6 @@ import {
   AccessorComponentType,
   AccessorType,
   MaterialType,
-  InteractableType,
   MeshPrimitiveAttributeIndex,
   MaterialAlphaMode,
 } from "../resource/schema";
@@ -135,34 +129,6 @@ export function createLine(ctx: GameContext, length = 10, thickness = 0.2) {
   });
   return node;
 }
-
-export const createPhysicsCube = (
-  ctx: GameContext,
-  size: number,
-  material?: RemoteMaterial,
-  remote = false
-): RemoteNode => {
-  const physics = getModule(ctx, PhysicsModule);
-  const { physicsWorld } = physics;
-  const node = new RemoteNode(ctx.resourceManager, {
-    mesh: createCubeMesh(ctx, size, material),
-  });
-
-  const rigidBodyDesc = remote ? RAPIER.RigidBodyDesc.kinematicPositionBased() : RAPIER.RigidBodyDesc.dynamic();
-  const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
-
-  const colliderDesc = RAPIER.ColliderDesc.cuboid(size / 2, size / 2, size / 2)
-    .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS)
-    .setCollisionGroups(dynamicObjectCollisionGroups);
-
-  physicsWorld.createCollider(colliderDesc, rigidBody);
-
-  addRigidBody(ctx, node, rigidBody);
-
-  addInteractableComponent(ctx, physics, node, InteractableType.Grabbable);
-
-  return node;
-};
 
 export const createSimpleCube = (ctx: GameContext, size: number, material?: RemoteMaterial) => {
   return new RemoteNode(ctx.resourceManager, {

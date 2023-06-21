@@ -8,7 +8,7 @@ import { enableActionMap } from "../input/ActionMappingSystem";
 import { ActionMap, ActionState, ActionType, BindingType, ButtonActionState } from "../input/ActionMap";
 import { InputModule } from "../input/input.game";
 import { defineModule, getModule } from "../module/module.common";
-import { PhysicsModule, PhysicsModuleState, RigidBody } from "../physics/physics.game";
+import { PhysicsModule, PhysicsModuleState } from "../physics/physics.game";
 import { tryGetRemoteResource } from "../resource/resource.game";
 import { RemoteNode } from "../resource/RemoteResources";
 import { playOneShotAudio } from "../audio/audio.game";
@@ -305,7 +305,7 @@ export const KinematicCharacterControllerSystem = (ctx: GameContext) => {
   for (let i = 0; i < rigs.length; i++) {
     const eid = rigs[i];
     const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
-    const body = RigidBody.store.get(eid);
+    const body = node.physicsBody?.body;
 
     if (!body) {
       console.warn("skipping kinematic controller - rigidbody not found on eid " + eid);

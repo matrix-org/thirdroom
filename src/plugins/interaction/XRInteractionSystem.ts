@@ -9,9 +9,9 @@ import { GameContext } from "../../engine/GameTypes";
 import { InputModule } from "../../engine/input/input.game";
 import { getModule } from "../../engine/module/module.common";
 import { grabShapeCastCollisionGroups } from "../../engine/physics/CollisionGroups";
-import { PhysicsModule, RigidBody } from "../../engine/physics/physics.game";
+import { PhysicsModule } from "../../engine/physics/physics.game";
 import { RemoteNode } from "../../engine/resource/RemoteResources";
-import { tryGetRemoteResource } from "../../engine/resource/resource.game";
+import { getRemoteResource, tryGetRemoteResource } from "../../engine/resource/resource.game";
 import { getRotationNoAlloc } from "../../engine/utils/getRotationNoAlloc";
 
 export enum RaycastShape {
@@ -106,6 +106,7 @@ export function XRInteractionSystem(ctx: GameContext) {
 export function addXRRaycaster(ctx: GameContext, eid: number, hand: XRHandedness) {
   addComponent(ctx.world, XRRaycaster, eid);
   const ourPlayer = ourPlayerQuery(ctx.world)[0];
+  const node = getRemoteResource<RemoteNode>(ctx, ourPlayer);
   XRRaycaster.set(eid, {
     hand,
     maxToi: 10,
@@ -113,7 +114,7 @@ export function addXRRaycaster(ctx: GameContext, eid: number, hand: XRHandedness
     action: "",
     ray: new RAPIER.Ray(new RAPIER.Vector3(0, 0, 0), new RAPIER.Vector3(0, 0, 0)),
     filterGroups: grabShapeCastCollisionGroups,
-    filterExcludeRigidBody: RigidBody.store.get(ourPlayer),
+    filterExcludeRigidBody: node?.physicsBody?.body,
   });
 }
 
