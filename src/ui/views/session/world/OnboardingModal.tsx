@@ -26,6 +26,7 @@ export function OnboardingModal({ open, world, requestClose }: OnboardingModalPr
   const { platform } = useHydrogen(true);
   const [screenNo, setScreenNo] = useState(1);
   const lastScreenNo = 2;
+  const screens = [1, 2];
 
   return (
     <Modal open={open} className="OnboardingModal" size="sm">
@@ -74,7 +75,13 @@ export function OnboardingModal({ open, world, requestClose }: OnboardingModalPr
                 <></>
               )
             }
-            center={<PaginationDot max={lastScreenNo} value={screenNo} />}
+            center={
+              <div className="flex gap-xxs">
+                {screens.map((sNo) => (
+                  <PaginationDot onClick={() => setScreenNo(sNo)} key={sNo} active={sNo === screenNo} />
+                ))}
+              </div>
+            }
             right={
               <>
                 {lastScreenNo === screenNo && <Button onClick={requestClose}>Finish</Button>}
