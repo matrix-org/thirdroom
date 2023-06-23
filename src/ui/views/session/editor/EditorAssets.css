@@ -1,0 +1,12 @@
+.EditorAssets {
+  background-color: var(--bg-surface);
+  border-radius: var(--br-xs);
+  box-shadow: var(--bg-surface);
+  overflow: hidden;
+}
+
+.EditorAssets__drawer {
+  max-width: 200px;
+  width: 100%;
+  border-right: 1px solid var(--bg-surface-border);
+}

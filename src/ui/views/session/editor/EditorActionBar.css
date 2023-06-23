@@ -1,9 +1,10 @@
 .EditorActionBar {
+  margin: auto;
   padding: var(--sp-xs);
   background-color: var(--bg-surface);
   box-shadow: var(--bs-surface);
   border-radius: var(--br-xs);
-  overflow: none;
+  overflow: hidden;
 }
 
 .EditorActionBar__plusBtn {

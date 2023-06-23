@@ -13,6 +13,8 @@ import { editorAtom, EditorMode, editorModeAtom } from "../../../state/editor";
 import { ScriptEditor } from "./ScriptEditor";
 import { EditorToolbar } from "./EditorToolbar";
 import { useEvent } from "../../../hooks/useEvent";
+import { EditorActionBar } from "./EditorActionBar";
+import { EditorAssets } from "./EditorAssets";
 
 export function EditorView({ room }: { room?: Room }) {
   const treeViewRef = useRef<TreeViewRefApi>(null);
@@ -76,8 +78,14 @@ export function EditorView({ room }: { room?: Room }) {
             <div className="EditorView__leftPanel grow">
               <HierarchyPanel scene={scene} resources={resources} treeViewRef={treeViewRef} />
             </div>
-            <div className="EditorView__centerPanel grow flex justify-center items-start">
+            <div className="EditorView__centerPanel grow flex flex-column gap-md">
               {editorMode === EditorMode.ScriptEditor && room && <ScriptEditor room={room} />}
+              {editorMode === EditorMode.SceneEditor && (
+                <>
+                  <EditorAssets requestClose={() => false} />
+                  <EditorActionBar />
+                </>
+              )}
             </div>
             {(editorMode === EditorMode.SceneEditor || editorMode === EditorMode.SceneInspector) && (
               <div className="EditorView__rightPanel grow">
