@@ -25,6 +25,15 @@
   height: var(--th-sm);
 }
 
+.Thumbnail--xs {
+  width: var(--th-xs);
+  height: var(--th-xs);
+}
+
+.Thumbnail--xxs {
+  width: var(--th-xxs);
+  height: var(--th-xxs);
+}
 .Thumbnail--outlined::after {
   content: "";
   position: absolute;
