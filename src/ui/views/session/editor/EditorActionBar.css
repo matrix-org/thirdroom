@@ -1,0 +1,15 @@
+.EditorActionBar {
+  padding: var(--sp-xs);
+  background-color: var(--bg-surface);
+  box-shadow: var(--bs-surface);
+  border-radius: var(--br-xs);
+  overflow: none;
+}
+
+.EditorActionBar__plusBtn {
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+  background-color: var(--bg-primary);
+  position: absolute;
+}
