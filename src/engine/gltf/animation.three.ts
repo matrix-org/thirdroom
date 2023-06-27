@@ -15,7 +15,7 @@ import {
   KeyframeTrack,
 } from "three";
 
-import { getAccessorArrayView } from "../accessor/accessor.common";
+import { getAccessorArrayView } from "../common/accessor";
 import { RemoteAnimation } from "../resource/RemoteResources";
 import { AnimationSamplerInterpolation, AnimationChannelTargetPath } from "../resource/schema";
 import { GLTFLoaderContext } from "./gltf.game";

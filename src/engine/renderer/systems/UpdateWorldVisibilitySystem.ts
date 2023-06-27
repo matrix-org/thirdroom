@@ -1,14 +1,13 @@
-import { EditorModule } from "../../editor/editor.render";
 import { getModule } from "../../module/module.common";
-import { getLocalResources, RenderNode, RenderScene } from "../../resource/resource.render";
-import { RenderContext } from "../renderer.render";
+import { getLocalResources, RenderNode, RenderScene } from "../RenderResources";
+import { RenderContext, RendererModule } from "../renderer.render";
 
 export function UpdateWorldVisibilitySystem(ctx: RenderContext) {
   const nodes = getLocalResources(ctx, RenderNode);
-  const { editorLoaded } = getModule(ctx, EditorModule);
+  const { nodeOptimizationsEnabled } = getModule(ctx, RendererModule);
 
   // Don't do isStatic optimization if the editor is loaded
-  const ignoreStatic = editorLoaded;
+  const ignoreStatic = !nodeOptimizationsEnabled;
 
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i];

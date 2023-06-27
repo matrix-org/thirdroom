@@ -17,7 +17,7 @@ import {
   writeFloat32,
   writeUint32,
 } from "../allocator/CursorView";
-import { InputComponentState } from "./input.common";
+import { InputComponentState } from "../input/input.common";
 
 export interface InputRingBuffer extends RingBuffer<Float32ArrayConstructor> {
   buffer: ArrayBuffer;
@@ -31,7 +31,7 @@ export const RING_BUFFER_MAX = 1024 * numElements;
 
 const BYTE_LENGTH = numElements * Float32Array.BYTES_PER_ELEMENT;
 
-export function createInputRingBuffer(capacity?: number): InputRingBuffer {
+export function createInputRingBuffer(capacity: number = RING_BUFFER_MAX): InputRingBuffer {
   const ringBuffer = createRingBuffer(Float32Array, capacity);
   const buffer = new ArrayBuffer(BYTE_LENGTH);
   const array = new Uint8Array(buffer);

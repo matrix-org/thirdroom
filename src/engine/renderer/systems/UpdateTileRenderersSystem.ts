@@ -1,6 +1,6 @@
-import { getModule } from "../module/module.common";
-import { updateTransformFromNode } from "./node";
-import { RendererModule, RenderContext } from "./renderer.render";
+import { getModule } from "../../module/module.common";
+import { updateTransformFromNode } from "../node";
+import { RendererModule, RenderContext } from "../renderer.render";
 
 export function UpdateTileRenderersSystem(ctx: RenderContext) {
   const { needsResize, renderer, tileRendererNodes } = getModule(ctx, RendererModule);

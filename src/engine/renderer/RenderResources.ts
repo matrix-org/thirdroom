@@ -29,11 +29,7 @@ import {
   Material,
 } from "three";
 
-import {
-  AccessorComponentTypeToTypedArray,
-  AccessorTypeToElementSize,
-  getAccessorArrayView,
-} from "../accessor/accessor.common";
+import { AccessorComponentTypeToTypedArray, AccessorTypeToElementSize, getAccessorArrayView } from "../common/accessor";
 import {
   findCachedMaterial,
   getDefaultMaterialForMeshPrimitive,
@@ -41,16 +37,16 @@ import {
   MaterialCacheEntry,
   patchMaterial,
   PrimitiveMaterial,
-} from "../renderer/material";
-import { PrimitiveObject3D, MeshPrimitiveAttributeToThreeAttribute } from "../renderer/mesh";
+} from "./materials";
+import { PrimitiveObject3D, MeshPrimitiveAttributeToThreeAttribute } from "./mesh";
 import { getModule } from "../module/module.common";
-import { ReflectionProbe } from "../renderer/ReflectionProbe";
-import { RendererModule, RenderContext } from "../renderer/renderer.render";
+import { ReflectionProbe } from "./ReflectionProbe";
+import { RendererModule, RenderContext } from "./renderer.render";
 import { removeUndefinedProperties } from "../utils/removeUndefinedProperties";
-import { RenderImageData, RenderImageDataType } from "../renderer/textures";
-import { toTrianglesDrawMode } from "../utils/toTrianglesDrawMode";
-import { defineLocalResourceClass } from "./LocalResourceClass";
-import { createLocalResourceModule, LoadStatus } from "./resource.common";
+import { RenderImageData, RenderImageDataType } from "./textures";
+import { toTrianglesDrawMode } from "./utils/toTrianglesDrawMode";
+import { defineLocalResourceClass } from "../resource/LocalResourceClass";
+import { createLocalResourceModule, LoadStatus } from "../resource/resource.common";
 import {
   SamplerResource,
   LightResource,
@@ -93,7 +89,7 @@ import {
   UIImageResource,
   ColliderResource,
   PhysicsBodyResource,
-} from "./schema";
+} from "../resource/schema";
 
 export class RenderNametag extends defineLocalResourceClass(NametagResource) {}
 
@@ -289,8 +285,6 @@ export class RenderMaterial extends defineLocalResourceClass(MaterialResource) {
               transmissionMap: this.transmissionTexture?.texture,
             })
           );
-
-          console.log("physical material", physicalMaterial);
 
           const map = physicalMaterial.map;
           if (map) {

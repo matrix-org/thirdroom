@@ -3,7 +3,7 @@ import { Color } from "three";
 import { getModule } from "../../module/module.common";
 import { RendererModule, RenderContext } from "../renderer.render";
 import { LoadStatus } from "../../resource/resource.common";
-import { RenderScene } from "../../resource/resource.render";
+import { RenderScene } from "../RenderResources";
 
 const blackBackground = new Color(0x000000);
 

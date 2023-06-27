@@ -3,20 +3,18 @@ import { BufferGeometry, DynamicDrawUsage, Float32BufferAttribute, LineBasicMate
 import { getReadObjectBufferView } from "../../allocator/ObjectBufferView";
 import { getModule } from "../../module/module.common";
 import { RendererModule, RenderContext } from "../renderer.render";
-import { PhysicsModule } from "../../physics/physics.render";
 
 export function PhysicsDebugRenderSystem(ctx: RenderContext) {
-  const physicsModule = getModule(ctx, PhysicsModule);
   const renderModule = getModule(ctx, RendererModule);
 
-  if (physicsModule.debugRender && physicsModule.debugRenderTripleBuffer) {
-    const { vertices, colors, size } = getReadObjectBufferView(physicsModule.debugRenderTripleBuffer);
+  if (renderModule.debugRender && renderModule.debugRenderTripleBuffer) {
+    const { vertices, colors, size } = getReadObjectBufferView(renderModule.debugRenderTripleBuffer);
 
     let geometry: BufferGeometry;
     let positionAttribute: Float32BufferAttribute;
     let colorAttribute: Float32BufferAttribute;
 
-    if (!physicsModule.debugLines) {
+    if (!renderModule.debugLines) {
       geometry = new BufferGeometry();
 
       positionAttribute = new Float32BufferAttribute(vertices, 3);
@@ -27,17 +25,17 @@ export function PhysicsDebugRenderSystem(ctx: RenderContext) {
       colorAttribute.usage = DynamicDrawUsage;
       geometry.setAttribute("color", colorAttribute);
 
-      physicsModule.debugLines = new LineSegments(
+      renderModule.debugLines = new LineSegments(
         geometry,
         new LineBasicMaterial({ color: 0xffffff, vertexColors: true })
       );
-      physicsModule.debugLines.frustumCulled = false;
+      renderModule.debugLines.frustumCulled = false;
 
-      renderModule.scene.add(physicsModule.debugLines);
+      renderModule.scene.add(renderModule.debugLines);
     } else {
-      geometry = physicsModule.debugLines.geometry;
-      positionAttribute = physicsModule.debugLines.geometry.getAttribute("position") as Float32BufferAttribute;
-      colorAttribute = physicsModule.debugLines.geometry.getAttribute("color") as Float32BufferAttribute;
+      geometry = renderModule.debugLines.geometry;
+      positionAttribute = renderModule.debugLines.geometry.getAttribute("position") as Float32BufferAttribute;
+      colorAttribute = renderModule.debugLines.geometry.getAttribute("color") as Float32BufferAttribute;
     }
 
     geometry.setDrawRange(0, size[0]);
@@ -45,9 +43,9 @@ export function PhysicsDebugRenderSystem(ctx: RenderContext) {
     positionAttribute.needsUpdate = true;
     colorAttribute.copyArray(colors);
     colorAttribute.needsUpdate = true;
-  } else if (physicsModule.debugLines) {
-    renderModule.scene.remove(physicsModule.debugLines);
-    physicsModule.debugLines.geometry.dispose();
-    physicsModule.debugLines = undefined;
+  } else if (renderModule.debugLines) {
+    renderModule.scene.remove(renderModule.debugLines);
+    renderModule.debugLines.geometry.dispose();
+    renderModule.debugLines = undefined;
   }
 }

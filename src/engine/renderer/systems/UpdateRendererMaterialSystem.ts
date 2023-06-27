@@ -1,9 +1,9 @@
 import { Texture, DoubleSide, FrontSide, MeshPhysicalMaterial } from "three";
 
 import { RenderContext } from "../renderer.render";
-import { getLocalResources, RenderMaterial, RenderTexture } from "../../resource/resource.render";
+import { getLocalResources, RenderMaterial, RenderTexture } from "../RenderResources";
 import { MaterialAlphaMode } from "../../resource/schema";
-import { PrimitiveMaterial } from "../material";
+import { PrimitiveMaterial } from "../materials";
 
 type TextureKeys<Mat extends PrimitiveMaterial> = {
   [Key in keyof Mat]: Mat[Key] extends Texture | null ? Key : never;

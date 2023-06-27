@@ -6,13 +6,13 @@ import { getReadObjectBufferView } from "../../engine/allocator/ObjectBufferView
 import { ourPlayerQuery } from "../../engine/player/Player";
 import { setFromLocalMatrix } from "../../engine/component/transform";
 import { GameContext } from "../../engine/GameTypes";
-import { InputModule } from "../../engine/input/input.game";
 import { getModule } from "../../engine/module/module.common";
 import { grabShapeCastCollisionGroups } from "../../engine/physics/CollisionGroups";
 import { PhysicsModule } from "../../engine/physics/physics.game";
 import { RemoteNode } from "../../engine/resource/RemoteResources";
 import { getRemoteResource, tryGetRemoteResource } from "../../engine/resource/resource.game";
 import { getRotationNoAlloc } from "../../engine/utils/getRotationNoAlloc";
+import { RendererModule } from "../../engine/renderer/renderer.game";
 
 export enum RaycastShape {
   Line,
@@ -44,7 +44,7 @@ const _rayPoseRotation = quat.create();
 const _rayDirection = vec3.create();
 
 export function XRInteractionSystem(ctx: GameContext) {
-  const { xrInputSourcesByHand } = getModule(ctx, InputModule);
+  const { xrInputSourcesByHand } = getModule(ctx, RendererModule);
   const { physicsWorld, handleToEid } = getModule(ctx, PhysicsModule);
 
   const entities = interactionRaycasterQuery(ctx.world);

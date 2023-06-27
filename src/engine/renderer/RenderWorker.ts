@@ -1,10 +1,10 @@
-import { InitializeRenderWorkerMessage, WorkerMessageType } from "./WorkerMessage";
-import { Message, registerModules, SingleConsumerThreadSharedState, Thread } from "./module/module.common";
+import { InitializeRenderWorkerMessage, WorkerMessageType } from "../WorkerMessage";
+import { Message, registerModules, SingleConsumerThreadSharedState, Thread } from "../module/module.common";
 import renderConfig from "./config.render";
-import { RenderContext, startRenderLoop } from "./renderer/renderer.render";
-import { MockMessageChannel, MockWorkerMessageChannel, MockMessagePort } from "./module/MockMessageChannel";
-import { getLocalResources, RenderWorld, ResourceLoaderSystem } from "./resource/resource.render";
-import { waitUntil } from "./utils/waitUntil";
+import { RenderContext, startRenderLoop } from "./renderer.render";
+import { MockMessageChannel, MockWorkerMessageChannel, MockMessagePort } from "../module/MockMessageChannel";
+import { getLocalResources, RenderWorld, ResourceLoaderSystem } from "./RenderResources";
+import { waitUntil } from "../utils/waitUntil";
 
 // TODO: Figure out how to import this type without polluting global scope and causing issues with Window
 type DedicatedWorkerGlobalScope = any;

@@ -79,7 +79,7 @@ import {
 import { addPortalComponent } from "../../plugins/portals/portals.game";
 import { getModule } from "../module/module.common";
 import { addPhysicsBody, PhysicsModule } from "../physics/physics.game";
-import { getAccessorArrayView, vec3ArrayTransformMat4 } from "../accessor/accessor.common";
+import { getAccessorArrayView, vec3ArrayTransformMat4 } from "../common/accessor";
 import { staticRigidBodyCollisionGroups } from "../physics/CollisionGroups";
 import { CharacterControllerType, SceneCharacterControllerComponent } from "../player/CharacterController";
 import { loadGLTFAnimationClip } from "./animation.three";

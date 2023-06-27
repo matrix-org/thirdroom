@@ -3,7 +3,7 @@ import { mat4, vec3 } from "gl-matrix";
 import { radToDeg } from "three/src/math/MathUtils";
 
 import { addChild } from "../../engine/component/transform";
-import { getForwardVector, getPitch, getYaw } from "../../engine/component/math";
+import { getForwardVector, getPitch, getYaw } from "../common/math";
 import { GameContext } from "../../engine/GameTypes";
 import { defineModule, getModule, registerMessageHandler } from "../../engine/module/module.common";
 import { projectPerspective } from "../../engine/camera/camera.game";

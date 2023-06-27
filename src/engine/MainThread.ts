@@ -19,6 +19,7 @@ import {
   RenderQuality,
   RenderQualitySetting,
 } from "./renderer/renderer.common";
+import { createInputRingBuffer, InputRingBuffer } from "./common/InputRingBuffer";
 
 export interface MainContext extends ConsumerThreadContext {
   useOffscreenCanvas: boolean;
@@ -33,6 +34,7 @@ export interface MainContext extends ConsumerThreadContext {
   dt: number;
   elapsed: number;
   quality: RenderQuality;
+  inputRingBuffer: InputRingBuffer;
 }
 
 export type MainThreadSystem = (ctx: MainContext) => void;
@@ -114,6 +116,8 @@ export async function MainThread(canvas: HTMLCanvasElement) {
         update: () => {},
       };
 
+  const inputRingBuffer = createInputRingBuffer();
+
   const gameWorker = new GameWorker();
   const renderWorker = await initRenderWorker(canvas, gameWorker, useOffscreenCanvas, singleConsumerThreadSharedState);
   const interWorkerMessageChannel = new MessageChannel();
@@ -152,6 +156,7 @@ export async function MainThread(canvas: HTMLCanvasElement) {
     tick: 0,
     singleConsumerThreadSharedState,
     quality,
+    inputRingBuffer,
   };
 
   function onWorkerMessage(event: MessageEvent) {
@@ -271,7 +276,7 @@ async function initRenderWorker(
     return new RenderWorker();
   } else {
     console.info("Browser does not support OffscreenCanvas, rendering on main thread.");
-    const { default: initRenderWorkerOnMainThread } = await import("./RenderWorker");
+    const { default: initRenderWorkerOnMainThread } = await import("./renderer/RenderWorker");
     return initRenderWorkerOnMainThread(canvas, gameWorker, singleConsumerThreadSharedState!);
   }
 }

@@ -36,26 +36,23 @@ import {
   Vector3,
 } from "three";
 
-import { EditorModule } from "../../editor/editor.render";
-import { GLTFMesh } from "../../gltf/GLTF";
 import { getModule } from "../../module/module.common";
-import { getLocalResources, RenderLightMap, RenderMeshPrimitive, RenderNode } from "../../resource/resource.render";
+import { getLocalResources, RenderLightMap, RenderMesh, RenderMeshPrimitive, RenderNode } from "../RenderResources";
 import { CameraType, InstancedMeshAttributeIndex, LightType, MeshPrimitiveMode } from "../../resource/schema";
-import { updateUICanvas } from "../../ui/ui.render";
-import { HologramMaterial } from "../HologramMaterial";
-import { MatrixMaterial } from "../MatrixMaterial";
+import { updateUICanvas } from "../ui";
+import { HologramMaterial } from "../materials/HologramMaterial";
+import { MatrixMaterial } from "../materials/MatrixMaterial";
 import { MeshPrimitiveAttributeToThreeAttribute, PrimitiveObject3D } from "../mesh";
 import { setTransformFromNode, updateTransformFromNode } from "../node";
 import { ReflectionProbe } from "../ReflectionProbe";
 import { RenderContext, RendererModule } from "../renderer.render";
 
 export function UpdateNodeResourcesSystem(ctx: RenderContext) {
-  const { scene } = getModule(ctx, RendererModule);
-  const { editorLoaded } = getModule(ctx, EditorModule);
+  const { scene, nodeOptimizationsEnabled } = getModule(ctx, RendererModule);
   const nodes = getLocalResources(ctx, RenderNode);
 
   // Force update if the editor is loaded
-  const forceUpdate = editorLoaded;
+  const forceUpdate = !nodeOptimizationsEnabled;
 
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i];
@@ -312,7 +309,7 @@ function updateNodeMesh(ctx: RenderContext, node: RenderNode) {
 
     for (let i = 0; i < primitives.length; i++) {
       const primitive = primitives[i];
-      const obj = createMeshPrimitiveObject(ctx, node, primitive);
+      const obj = createMeshPrimitiveObject(ctx, node, node.mesh, primitive);
       meshPrimitiveObjects.push(obj);
       rendererModule.scene.add(obj);
     }
@@ -377,6 +374,7 @@ const tempMatrix4 = new Matrix4();
 function createMeshPrimitiveObject(
   ctx: RenderContext,
   node: RenderNode,
+  renderMesh: RenderMesh,
   primitive: RenderMeshPrimitive
 ): PrimitiveObject3D {
   const rendererModule = getModule(ctx, RendererModule);
@@ -411,7 +409,7 @@ function createMeshPrimitiveObject(
             }
 
             bones.push(bone);
-            setTransformFromNode(ctx, jointNode, bone);
+            setTransformFromNode(jointNode, bone);
 
             const inverseMatrix = new Matrix4();
 
@@ -433,7 +431,7 @@ function createMeshPrimitiveObject(
       // TODO: figure out why frustum culling of skinned meshes is affected by the pitch of the camera
       sm.frustumCulled = false;
 
-      setTransformFromNode(ctx, node, mesh);
+      setTransformFromNode(node, mesh);
 
       sm.bind(skin.skeleton, sm.matrixWorld);
 
@@ -444,7 +442,7 @@ function createMeshPrimitiveObject(
       }
 
       if (Object.keys(sm.geometry.morphAttributes).length > 0) {
-        updateMorphTargets(sm, primitive as unknown as GLTFMesh);
+        updateMorphTargets(sm, renderMesh);
       }
     } else if (instancedMesh) {
       let count = 0;
@@ -637,14 +635,15 @@ function createMeshPrimitiveObject(
   return object;
 }
 
-function updateMorphTargets(mesh: Mesh, gltfMesh: GLTFMesh) {
+function updateMorphTargets(mesh: Mesh, renderMesh: RenderMesh) {
   mesh.updateMorphTargets();
 
-  if (gltfMesh.weights !== undefined && mesh.morphTargetInfluences) {
-    for (let i = 0, il = gltfMesh.weights.length; i < il; i++) {
-      mesh.morphTargetInfluences[i] = gltfMesh.weights[i];
-    }
-  }
+  // TODO: support mesh weights
+  // if (mesh.morphTargetInfluences) {
+  //   for (let i = 0, il = renderMesh.weights.length; i < il; i++) {
+  //     mesh.morphTargetInfluences[i] = renderMesh.weights[i];
+  //   }
+  // }
 }
 
 function updateNodeTilesRenderer(ctx: RenderContext, scene: Scene, node: RenderNode) {

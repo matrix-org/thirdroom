@@ -1,7 +1,7 @@
 import { MainContext } from "../../engine/MainThread";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
 import { NetworkModule } from "../../engine/network/network.main";
-import { PhysicsMessageType, TogglePhysicsDebugMessage } from "../../engine/physics/physics.common";
+import { printRenderThreadState, togglePhysicsDebug } from "../../engine/renderer/renderer.main";
 import { createDisposables } from "../../engine/utils/createDisposables";
 import { createDeferred } from "../../engine/utils/Deferred";
 import { registerThirdroomGlobalFn } from "../../engine/utils/registerThirdroomGlobal";
@@ -44,9 +44,7 @@ export const ThirdroomModule = defineModule<MainContext, ThirdRoomModuleState>({
         type: ThirdRoomMessageType.PrintThreadState,
       });
 
-      ctx.sendMessage<PrintThreadStateMessage>(Thread.Render, {
-        type: ThirdRoomMessageType.PrintThreadState,
-      });
+      printRenderThreadState(ctx);
 
       console.log(Thread.Main, ctx);
     });
@@ -65,9 +63,7 @@ export const ThirdroomModule = defineModule<MainContext, ThirdRoomModuleState>({
     });
 
     registerThirdroomGlobalFn("togglePhysicsDebug", () => {
-      ctx.sendMessage<TogglePhysicsDebugMessage>(Thread.Game, {
-        type: PhysicsMessageType.TogglePhysicsDebug,
-      });
+      togglePhysicsDebug(ctx);
     });
 
     return createDisposables([
@@ -205,12 +201,6 @@ export function reloadWorld(ctx: MainContext, environmentUrl: string, options: L
 export function exitWorld(context: MainContext) {
   context.sendMessage(Thread.Game, {
     type: ThirdRoomMessageType.ExitWorld,
-  });
-}
-
-export function togglePhysicsDebug(ctx: MainContext) {
-  ctx.sendMessage<TogglePhysicsDebugMessage>(Thread.Game, {
-    type: PhysicsMessageType.TogglePhysicsDebug,
   });
 }
 

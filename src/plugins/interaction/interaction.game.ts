@@ -45,11 +45,15 @@ import { PortalComponent } from "../portals/portals.game";
 import { InteractableAction, InteractionMessage, InteractionMessageType } from "./interaction.common";
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
 import { XRAvatarRig } from "../../engine/input/WebXRAvatarRigSystem";
-import { UICanvasFocusMessage, UICanvasPressMessage, WebSGUIMessage } from "../../engine/ui/ui.common";
 import { getRotationNoAlloc } from "../../engine/utils/getRotationNoAlloc";
 import { PlayerModule } from "../../engine/player/Player.game";
 import { ZoomComponent, orbitAnchorQuery, OrbitAnchor } from "../../engine/player/CameraRig";
-import { GameRendererModuleState, RendererModule } from "../../engine/renderer/renderer.game";
+import {
+  GameRendererModuleState,
+  notifyUICanvasFocus,
+  notifyUICanvasPressed,
+  RendererModule,
+} from "../../engine/renderer/renderer.game";
 import { getCamera } from "../../engine/player/getCamera";
 import { ThirdRoomMessageType } from "../thirdroom/thirdroom.common";
 import { ThirdRoomModule, ThirdRoomModuleState } from "../thirdroom/thirdroom.game";
@@ -838,24 +842,6 @@ function updateGrabThrowXR(
   } else {
     grabbingNode.visible = true;
   }
-}
-
-function notifyUICanvasPressed(ctx: GameContext, hitPoint: vec3, node: RemoteNode) {
-  const uiCanvas = node.uiCanvas;
-  ctx.sendMessage<UICanvasPressMessage>(Thread.Render, {
-    type: WebSGUIMessage.CanvasPress,
-    hitPoint,
-    uiCanvasEid: uiCanvas!.eid,
-  });
-}
-
-function notifyUICanvasFocus(ctx: GameContext, hitPoint: vec3, node: RemoteNode) {
-  const uiCanvas = node.uiCanvas;
-  ctx.sendMessage<UICanvasFocusMessage>(Thread.Render, {
-    type: WebSGUIMessage.CanvasFocus,
-    hitPoint,
-    uiCanvasEid: uiCanvas!.eid,
-  });
 }
 
 export function sendInteractionMessage(ctx: GameContext, action: InteractableAction, eid = NOOP) {

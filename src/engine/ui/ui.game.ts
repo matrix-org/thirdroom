@@ -22,9 +22,14 @@ import {
 import { tryGetRemoteResource } from "../resource/resource.game";
 import { ColliderType, InteractableType, PhysicsBodyType } from "../resource/schema";
 import { createDisposables } from "../utils/createDisposables";
-import { UIButtonFocusMessage, UIButtonPressMessage, UIButtonUnfocusMessage, WebSGUIMessage } from "./ui.common";
 import { InteractableAction } from "../../plugins/interaction/interaction.common";
 import { playOneShotAudio } from "../audio/audio.game";
+import {
+  RendererMessageType,
+  UIButtonFocusMessage,
+  UIButtonPressMessage,
+  UIButtonUnfocusMessage,
+} from "../renderer/renderer.common";
 
 export const WebSGUIModule = defineModule<GameContext, {}>({
   name: "GameWebSGUI",
@@ -33,17 +38,17 @@ export const WebSGUIModule = defineModule<GameContext, {}>({
   },
   async init(ctx: GameContext) {
     return createDisposables([
-      registerMessageHandler(ctx, WebSGUIMessage.ButtonPress, (ctx, message: UIButtonPressMessage) => {
+      registerMessageHandler(ctx, RendererMessageType.UIButtonPress, (ctx, message: UIButtonPressMessage) => {
         const button = tryGetRemoteResource<RemoteUIButton>(ctx, message.buttonEid);
         button.interactable!.pressed = true;
         button.interactable!.held = true;
         const interaction = getModule(ctx, InteractionModule);
         playOneShotAudio(ctx, interaction.clickEmitter?.sources[0] as RemoteAudioSource);
       }),
-      registerMessageHandler(ctx, WebSGUIMessage.ButtonFocus, (ctx, message: UIButtonFocusMessage) => {
+      registerMessageHandler(ctx, RendererMessageType.UIButtonFocus, (ctx, message: UIButtonFocusMessage) => {
         sendInteractionMessage(ctx, InteractableAction.Focus, message.buttonEid);
       }),
-      registerMessageHandler(ctx, WebSGUIMessage.ButtonUnfocus, (ctx, message: UIButtonUnfocusMessage) => {
+      registerMessageHandler(ctx, RendererMessageType.UIButtonUnfocus, (ctx, message: UIButtonUnfocusMessage) => {
         sendInteractionMessage(ctx, InteractableAction.Unfocus);
       }),
     ]);

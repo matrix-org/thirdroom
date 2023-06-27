@@ -47,6 +47,7 @@ import { ActionMap, ActionType, BindingType, ButtonActionState } from "../input/
 import { InputModule } from "../input/input.game";
 import { flyControlsQuery } from "../player/FlyCharacterController";
 import { getCamera } from "../player/getCamera";
+import { setRenderNodeOptimizationsEnabled } from "../renderer/renderer.game";
 
 /*********
  * Types *
@@ -145,6 +146,8 @@ export function onLoadEditor(ctx: GameContext) {
   editor.editorLoaded = true;
   ctx.editorLoaded = true;
 
+  setRenderNodeOptimizationsEnabled(ctx, false);
+
   ctx.sendMessage<EditorLoadedMessage>(Thread.Main, {
     type: EditorMessageType.EditorLoaded,
     activeEntity: editor.activeEntity,
@@ -156,6 +159,7 @@ export function onDisposeEditor(ctx: GameContext) {
   const editor = getModule(ctx, EditorModule);
   editor.editorLoaded = true;
   ctx.editorLoaded = false;
+  setRenderNodeOptimizationsEnabled(ctx, true);
 }
 
 function onSetSelectedEntity(ctx: GameContext, message: SetSelectedEntityMessage) {

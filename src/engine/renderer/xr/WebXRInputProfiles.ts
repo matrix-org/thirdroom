@@ -26,8 +26,8 @@
  *
  */
 
-import { clamp } from "../utils/interpolation";
-import { InputComponentState } from "./input.common";
+import { clamp } from "../../utils/interpolation";
+import { InputComponentState, XRInputComponentId } from "../../input/input.common";
 
 export enum XRInputComponentState {
   Default = "default",
@@ -74,24 +74,6 @@ export interface XRInputComponent {
   rootNodeName: string; // componentId.replace(/-/g, '_')
   visualResponses: { [key: string]: XRInputVisualResponse };
   touchPointNodeName?: string;
-}
-
-export enum XRInputComponentId {
-  FaceButton = "face-button",
-  XRStandardTrigger = "xr-standard-trigger",
-  XRStandardSqueeze = "xr-standard-squeeze",
-  XRStandardThumbstick = "xr-standard-thumbstick",
-  XRStandardTouchpad = "xr-standard-touchpad",
-  Grasp = "grasp",
-  Touchpad = "touchpad",
-  Touchscreen = "touchscreen",
-  XButton = "x-button",
-  YButton = "y-button",
-  AButton = "a-button",
-  BButton = "b-button",
-  Bumper = "bumper",
-  Thumbrest = "thumbrest",
-  Menu = "menu",
 }
 
 export interface XRInputLayout {

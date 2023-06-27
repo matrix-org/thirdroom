@@ -1,18 +1,6 @@
 export enum Stats {
-  fps,
-  frameTime,
-  frameDuration,
   gameTime,
   gameDuration,
-  frame,
-  staleFrames,
-  drawCalls,
-  programs,
-  geometries,
-  textures,
-  triangles,
-  points,
-  lines,
 }
 
 export interface StatsBuffer {

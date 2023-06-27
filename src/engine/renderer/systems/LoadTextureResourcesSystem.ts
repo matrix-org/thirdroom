@@ -28,7 +28,7 @@ import { RGBE } from "three/examples/jsm/loaders/RGBELoader";
 
 import { getModule } from "../../module/module.common";
 import { LoadStatus } from "../../resource/resource.common";
-import { getLocalResources, RenderTexture } from "../../resource/resource.render";
+import { getLocalResources, RenderTexture } from "../RenderResources";
 import { SamplerMagFilter, SamplerMapping, SamplerMinFilter, SamplerWrap, TextureFormat } from "../../resource/schema";
 import { ImageFileExtensions, ImageMimeTypes, RenderImageData, RenderImageDataType } from "../textures";
 import { ArrayBufferKTX2Loader } from "../ArrayBufferKTX2Loader";

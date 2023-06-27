@@ -4,7 +4,7 @@ import { vec3, quat, vec2, mat4, glMatrix as glm } from "gl-matrix";
 import { InteractableAction } from "../../plugins/interaction/interaction.common";
 import { sendInteractionMessage } from "../../plugins/interaction/interaction.game";
 import { createRemotePerspectiveCamera } from "../camera/camera.game";
-import { Axes } from "../component/math";
+import { Axes } from "../common/math";
 import { addChild } from "../component/transform";
 import { GameContext, World } from "../GameTypes";
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "../input/ActionMap";

@@ -4,7 +4,7 @@ import { vec3 } from "gl-matrix";
 import { AnimationAction, AnimationMixer, Bone, Object3D, Quaternion, Vector3 } from "three";
 import { radToDeg } from "three/src/math/MathUtils";
 
-import { getForwardVector, getPitch, getRightVector, getYaw } from "../component/math";
+import { getForwardVector, getPitch, getRightVector, getYaw } from "../common/math";
 import { maxEntities } from "../config.common";
 import { GameContext } from "../GameTypes";
 import { getModule } from "../module/module.common";

@@ -1,11 +1,6 @@
-import { getDefaultMaterialForMeshPrimitive } from "../material";
+import { getDefaultMaterialForMeshPrimitive } from "../materials";
 import { RenderContext } from "../renderer.render";
-import {
-  getLocalResource,
-  getLocalResources,
-  RenderMaterial,
-  RenderMeshPrimitive,
-} from "../../resource/resource.render";
+import { getLocalResource, getLocalResources, RenderMaterial, RenderMeshPrimitive } from "../RenderResources";
 
 /* Updates */
 
@@ -27,7 +22,6 @@ export function UpdateRendererMeshPrimitivesSystem(ctx: RenderContext) {
       }
 
       meshPrimitive.materialObj = newMaterialObj;
-      console.log(newMaterialObj);
     }
 
     if (

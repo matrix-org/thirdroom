@@ -88,7 +88,7 @@ import {
   writeInt32,
   writeUint32,
 } from "../allocator/CursorView";
-import { AccessorComponentTypeToTypedArray, AccessorTypeToElementSize } from "../accessor/accessor.common";
+import { AccessorComponentTypeToTypedArray, AccessorTypeToElementSize } from "../common/accessor";
 import { addPhysicsBody, PhysicsModule, registerCollisionHandler, removePhysicsBody } from "../physics/physics.game";
 import { getModule } from "../module/module.common";
 import { createMesh } from "../mesh/mesh.game";

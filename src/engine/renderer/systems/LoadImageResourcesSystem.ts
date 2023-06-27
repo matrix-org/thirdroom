@@ -4,8 +4,8 @@ import { RGBE, RGBELoader } from "three/examples/jsm/loaders/RGBELoader";
 
 import { getModule } from "../../module/module.common";
 import { LoadStatus } from "../../resource/resource.common";
-import { getLocalResources } from "../../resource/resource.render";
-import { RenderImage } from "../../resource/resource.render";
+import { getLocalResources } from "../RenderResources";
+import { RenderImage } from "../RenderResources";
 import { toArrayBuffer } from "../../utils/arraybuffer";
 import { ImageMimeTypes, RenderImageData, RenderImageDataType } from "../textures";
 import { ArrayBufferKTX2Loader, KTX2TranscodeResult } from "../ArrayBufferKTX2Loader";

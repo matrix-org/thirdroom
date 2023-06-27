@@ -11,10 +11,10 @@ import {
   Vector3,
 } from "three";
 
-import { getModule } from "../module/module.common";
-import { RendererModule, RenderContext } from "./renderer.render";
-import { RenderMaterial, RenderMeshPrimitive } from "../resource/resource.render";
-import { MeshPrimitiveAttributeIndex, MeshPrimitiveMode } from "../resource/schema";
+import { getModule } from "../../module/module.common";
+import { RendererModule, RenderContext } from "../renderer.render";
+import { RenderMaterial, RenderMeshPrimitive } from "../RenderResources";
+import { MeshPrimitiveAttributeIndex, MeshPrimitiveMode } from "../../resource/schema";
 import { MatrixMaterial } from "./MatrixMaterial";
 
 export type PrimitiveUnlitMaterial = MeshBasicMaterial | LineBasicMaterial | PointsMaterial;

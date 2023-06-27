@@ -1,137 +1,18 @@
-import { Box3, Vector3, Texture, InstancedMesh, Matrix4, WebGLArrayRenderTarget, Event, Vector2 } from "three";
+import { Vector3, InstancedMesh, Box3, Matrix4 } from "three";
 
-import { getModule } from "../module/module.common";
-import { RendererModule, RendererModuleState, RenderContext } from "./renderer.render";
-import { LoadStatus } from "../resource/resource.common";
-import { getLocalResources, RenderNode, RenderScene } from "../resource/resource.render";
-import { createPool, obtainFromPool, releaseToPool } from "../utils/Pool";
-import { ReflectionProbe } from "./ReflectionProbe";
-
-const tempReflectionProbes: ReflectionProbe[] = [];
-
-function getReflectionProbes(ctx: RenderContext): ReflectionProbe[] {
-  const nodes = getLocalResources(ctx, RenderNode);
-
-  tempReflectionProbes.length = 0;
-
-  for (let i = 0; i < nodes.length; i++) {
-    const node = nodes[i];
-
-    if (node.reflectionProbeObject) {
-      tempReflectionProbes.push(node.reflectionProbeObject);
-    }
-  }
-
-  return tempReflectionProbes;
-}
-
-const reflectionProbeMapRenderTargets = new WeakMap<Texture, WebGLArrayRenderTarget>();
-
-export function updateReflectionProbeTextureArray(ctx: RenderContext, scene: RenderScene | undefined) {
-  if (!scene) {
-    return;
-  }
-
-  const rendererModule = getModule(ctx, RendererModule);
-
-  const reflectionProbes = getReflectionProbes(ctx);
-
-  let needsUpdate = scene.reflectionProbeNeedsUpdate;
-
-  if (!needsUpdate) {
-    for (let i = 0; i < reflectionProbes.length; i++) {
-      if (reflectionProbes[i].needsUpdate) {
-        needsUpdate = true;
-        break;
-      }
-    }
-  }
-
-  // Only update reflection probe texture array if the reflection probes changed
-  if (needsUpdate) {
-    let useRGBM = false;
-    const reflectionProbeTextures: Texture[] = [];
-
-    // Add the scene reflection probe to the texture array
-    if (
-      scene.reflectionProbe?.reflectionProbeTexture?.loadStatus === LoadStatus.Loaded &&
-      scene.reflectionProbe.reflectionProbeTexture.texture
-    ) {
-      if (scene.reflectionProbe.reflectionProbeTexture.rgbm) {
-        useRGBM = true;
-      }
-
-      scene.reflectionProbe.textureArrayIndex = reflectionProbeTextures.length;
-      scene.reflectionProbeNeedsUpdate = false;
-      reflectionProbeTextures.push(scene.reflectionProbe.reflectionProbeTexture.texture);
-    }
-
-    // Add each node reflection probe to the texture array array
-    for (const reflectionProbe of reflectionProbes) {
-      const reflectionProbeTexture = reflectionProbe.resource.reflectionProbeTexture;
-
-      if (!reflectionProbeTexture) {
-        throw new Error("Reflection probe texture not yet loaded");
-      }
-
-      if (reflectionProbeTexture.loadStatus === LoadStatus.Loaded && reflectionProbeTexture.texture) {
-        reflectionProbe.resource.textureArrayIndex = reflectionProbeTextures.length;
-        reflectionProbe.needsUpdate = false;
-        reflectionProbeTextures.push(reflectionProbeTexture.texture);
-
-        if (reflectionProbeTexture.rgbm) {
-          useRGBM = true;
-        }
-      }
-    }
-
-    if (rendererModule.reflectionProbesMap) {
-      // Dispose of the previous WebGLArrayRenderTarget
-      rendererModule.reflectionProbesMap.dispose();
-    }
-
-    if (reflectionProbeTextures.length > 0) {
-      const hdrDecodeParams = useRGBM ? new Vector2(34.49, 2.2) : null;
-
-      const renderTarget = (rendererModule.pmremGenerator as any).fromEquirectangularArray(
-        reflectionProbeTextures,
-        hdrDecodeParams
-      );
-      reflectionProbeMapRenderTargets.set(renderTarget.texture, renderTarget);
-      rendererModule.reflectionProbesMap = renderTarget.texture;
-
-      const onReflectionProbeTextureDisposed = (event: Event) => {
-        const texture = event.target as Texture;
-
-        const renderTarget = reflectionProbeMapRenderTargets.get(texture);
-
-        if (renderTarget) {
-          reflectionProbeMapRenderTargets.delete(texture);
-          // Ensure render target is disposed when the texture is disposed.
-          renderTarget.dispose();
-        }
-
-        texture.removeEventListener("dispose", onReflectionProbeTextureDisposed);
-      };
-
-      renderTarget.texture.addEventListener("dispose", onReflectionProbeTextureDisposed);
-      rendererModule.pmremGenerator.dispose(); // Dispose of the extra render target and materials
-    } else {
-      rendererModule.reflectionProbesMap = null;
-    }
-  }
-}
+import { RenderContext } from "../renderer.render";
+import { getLocalResources, RenderNode, RenderScene } from "../RenderResources";
+import { createPool, obtainFromPool, releaseToPool } from "../../utils/Pool";
+import { getReflectionProbes, ReflectionProbe } from "../ReflectionProbe";
 
 const boundingBox = new Box3();
 const boundingBoxSize = new Vector3();
 const instanceWorldMatrix = new Matrix4();
 const instanceReflectionProbeParams = new Vector3();
 
-export function updateNodeReflections(
-  ctx: RenderContext,
-  scene: RenderScene | undefined,
-  rendererModule: RendererModuleState
-) {
+export function UpdateNodeReflectionsSystem(ctx: RenderContext) {
+  const scene = ctx.worldResource.environment?.publicScene;
+
   if (!scene) {
     return;
   }

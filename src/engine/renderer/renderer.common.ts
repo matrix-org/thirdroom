@@ -1,7 +1,13 @@
+import { vec3 } from "gl-matrix";
+
+import { defineObjectBufferSchema, ObjectTripleBuffer } from "../allocator/ObjectBufferView";
+import { InputRingBuffer } from "../common/InputRingBuffer";
+import { XRInputLayout } from "./xr/WebXRInputProfiles";
+
 export const rendererModuleName = "renderer";
 
 export enum RendererMessageType {
-  InitializeCanvas = "renderer-initialize-canvas",
+  InitializeRenderer = "renderer-initialize-canvas",
   InitializeRendererTripleBuffers = "initialize-renderer-triple-buffers",
   NotifySceneRendered = "renderer-notify-scene-renderer",
   SceneRenderedNotification = "renderer-scene-rendered-notification",
@@ -9,14 +15,28 @@ export enum RendererMessageType {
   EnableMatrixMaterial = "enable-matrix-material",
   EnterXR = "enter-xr",
   InitializeGameRendererTripleBuffer = "initialize-game-renderer-triple-buffer",
+  TogglePhysicsDebug = "toggle-physics-debug",
+  PhysicsEnableDebugRender = "physics-enable-debug-render",
+  PhysicsDisableDebugRender = "physics-disable-debug-render",
+  SetNodeOptimizationsEnabled = "set-node-optimizations-enabled",
+  PrintRenderThreadState = "print-render-thread-state",
+  UICanvasPress = "ui-canvas-press",
+  UICanvasFocus = "ui-canvas-focus",
+  UIButtonPress = "ui-button-press",
+  UIButtonFocus = "ui-button-focus",
+  UIButtonUnfocus = "ui-button-unfocus",
+  UpdateXRInputSources = "update-xr-input-sources",
+  SetXRReferenceSpace = "set-xr-reference-space",
 }
 
-export interface InitializeCanvasMessage {
+export interface InitializeRendererMessage {
   supportedXRSessionModes: XRSessionMode[] | false;
   canvasTarget?: OffscreenCanvas;
   initialCanvasWidth: number;
   initialCanvasHeight: number;
   quality: RenderQuality;
+  statsBuffer: RenderStatsBuffer;
+  inputRingBuffer: InputRingBuffer;
 }
 
 export interface NotifySceneRendererMessage {
@@ -42,10 +62,67 @@ export interface EnableMatrixMaterialMessage {
   enabled: boolean;
 }
 
+export type PhysicsDebugRenderTripleBuffer = ObjectTripleBuffer<{
+  size: [Uint32ArrayConstructor, number];
+  vertices: [Float32ArrayConstructor, number];
+  colors: [Float32ArrayConstructor, number];
+}>;
+
+export interface TogglePhysicsDebugMessage {
+  type: RendererMessageType.TogglePhysicsDebug;
+}
+
+export interface PhysicsEnableDebugRenderMessage {
+  type: RendererMessageType.PhysicsEnableDebugRender;
+  tripleBuffer: PhysicsDebugRenderTripleBuffer;
+}
+
+export interface PhysicsDisableDebugRenderMessage {
+  type: RendererMessageType.PhysicsDisableDebugRender;
+}
+
+export interface SetNodeOptimizationsEnabledMessage {
+  type: RendererMessageType.SetNodeOptimizationsEnabled;
+  enabled: boolean;
+}
+
+export interface PrintRenderThreadStateMessage {
+  type: RendererMessageType.PrintRenderThreadState;
+}
+
+export interface UICanvasPressMessage {
+  type: RendererMessageType.UICanvasPress;
+  uiCanvasEid: number;
+  hitPoint: vec3;
+}
+
+export interface UICanvasFocusMessage {
+  type: RendererMessageType.UICanvasFocus;
+  uiCanvasEid: number;
+  hitPoint: vec3;
+}
+
+export interface UIButtonPressMessage {
+  type: RendererMessageType.UIButtonPress;
+  buttonEid: number;
+}
+export interface UIButtonFocusMessage {
+  type: RendererMessageType.UIButtonFocus;
+  buttonEid: number;
+}
+export interface UIButtonUnfocusMessage {
+  type: RendererMessageType.UIButtonUnfocus;
+}
+
 export interface EnterXRMessage {
   type: RendererMessageType.EnterXR;
   session: XRSession;
   mode: XRSessionMode;
+}
+
+export interface SetXRReferenceSpaceMessage {
+  type: RendererMessageType.SetXRReferenceSpace;
+  hand: XRHandedness;
 }
 
 export enum XRMode {
@@ -116,3 +193,59 @@ export const RenderQualityToSetting = {
   [RenderQuality.High]: RenderQualitySetting.High,
   [RenderQuality.Ultra]: RenderQualitySetting.Ultra,
 };
+
+export enum RenderStats {
+  fps,
+  frameTime,
+  frameDuration,
+  frame,
+  staleFrames,
+  drawCalls,
+  programs,
+  geometries,
+  textures,
+  triangles,
+  points,
+  lines,
+}
+
+export interface RenderStatsBuffer {
+  buffer: SharedArrayBuffer;
+  f32: Float32Array;
+  u32: Uint32Array;
+}
+
+export const RenderStatNames = Object.keys(RenderStats).filter((v) => isNaN(+v));
+
+export const XRCameraPoseSchema = defineObjectBufferSchema({
+  matrix: [Float32Array, 16],
+});
+export const XRControllerPosesSchema = defineObjectBufferSchema({
+  rayPose: [Float32Array, 16],
+  gripPose: [Float32Array, 16],
+});
+
+// https://www.w3.org/TR/webxr-hand-input-1/#skeleton-joints
+export const XRHandPosesSchema = defineObjectBufferSchema({
+  matrices: [Float32Array, 25, 16],
+  radii: [Float32Array, 25],
+});
+
+export type XRCameraPoseTripleBuffer = ObjectTripleBuffer<typeof XRCameraPoseSchema>;
+export type XRControllerPosesTripleBuffer = ObjectTripleBuffer<typeof XRControllerPosesSchema>;
+export type XRHandPosesTripleBuffer = ObjectTripleBuffer<typeof XRHandPosesSchema>;
+
+export interface SharedXRInputSource {
+  id: number;
+  handedness: XRHandedness;
+  layout: XRInputLayout;
+  cameraPose: XRCameraPoseTripleBuffer;
+  controllerPoses: XRControllerPosesTripleBuffer;
+  handPoses?: XRHandPosesTripleBuffer;
+}
+
+export interface UpdateXRInputSourcesMessage {
+  type: RendererMessageType.UpdateXRInputSources;
+  added: SharedXRInputSource[];
+  removed: number[];
+}

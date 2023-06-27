@@ -12,7 +12,7 @@ import { Checkbox } from "../../../atoms/checkbox/Checkbox";
 import { getLocalResources, MainNode } from "../../../../engine/resource/resource.main";
 import { useMainThreadContext } from "../../../hooks/useMainThread";
 import { setProperty, setRefArrayProperty, setRefProperty } from "../../../../engine/editor/editor.main";
-import { setEulerFromQuaternion, setQuaternionFromEuler } from "../../../../engine/component/math";
+import { setEulerFromQuaternion, setQuaternionFromEuler } from "../../../../engine/common/math";
 import { Icon } from "../../../atoms/icon/Icon";
 import CircleIC from "../../../../../res/ic/circle.svg";
 import ArrowBackIC from "../../../../../res/ic/arrow-back.svg";

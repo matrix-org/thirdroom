@@ -2,11 +2,13 @@ import { availableRead } from "@thirdroom/ringbuffer";
 
 import { GameContext } from "../GameTypes";
 import { getModule } from "../module/module.common";
-import { InputComponentId, InputComponentState, SharedXRInputSource, XRInputComponentIdToName } from "./input.common";
-import { dequeueInputRingBuffer } from "./InputRingBuffer";
+import { InputComponentId, InputComponentState, XRInputComponentId } from "./input.common";
+import { dequeueInputRingBuffer } from "../common/InputRingBuffer";
 import { InputModule } from "./input.game";
 import { checkBitflag } from "../utils/checkBitflag";
 import { Keys } from "./KeyCodes";
+import { SharedXRInputSource } from "../renderer/renderer.common";
+import { RendererModule } from "../renderer/renderer.game";
 
 const out: InputComponentState = {
   inputSourceId: 0,
@@ -25,7 +27,8 @@ const out: InputComponentState = {
  * an item in the ring buffer.
  */
 export function UpdateRawInputSystem(ctx: GameContext) {
-  const { inputRingBuffer, raw, xrInputSources, xrPrimaryHand } = getModule(ctx, InputModule);
+  const { inputRingBuffer, raw } = getModule(ctx, InputModule);
+  const { xrInputSources, xrPrimaryHand } = getModule(ctx, RendererModule);
 
   while (availableRead(inputRingBuffer)) {
     dequeueInputRingBuffer(inputRingBuffer, out);
@@ -116,6 +119,24 @@ function applyMouseScroll(raw: { [path: string]: number }, o: InputComponentStat
 function applyKeyboardButton(raw: { [path: string]: number }, o: InputComponentState) {
   raw[`Keyboard/${Keys[out.state]}`] = o.button;
 }
+
+const XRInputComponentIdToName: { [key: number]: XRInputComponentId } = {
+  [InputComponentId.XRFaceButton]: XRInputComponentId.FaceButton,
+  [InputComponentId.XRStandardTrigger]: XRInputComponentId.XRStandardTrigger,
+  [InputComponentId.XRStandardSqueeze]: XRInputComponentId.XRStandardSqueeze,
+  [InputComponentId.XRStandardThumbstick]: XRInputComponentId.XRStandardThumbstick,
+  [InputComponentId.XRStandardTouchpad]: XRInputComponentId.XRStandardTouchpad,
+  [InputComponentId.XRHandGrasp]: XRInputComponentId.Grasp,
+  [InputComponentId.XRTouchpad]: XRInputComponentId.Touchpad,
+  [InputComponentId.XRTouchscreen]: XRInputComponentId.Touchscreen,
+  [InputComponentId.XRXButton]: XRInputComponentId.XButton,
+  [InputComponentId.XRYButton]: XRInputComponentId.YButton,
+  [InputComponentId.XRAButton]: XRInputComponentId.AButton,
+  [InputComponentId.XRBButton]: XRInputComponentId.BButton,
+  [InputComponentId.XRBumper]: XRInputComponentId.Bumper,
+  [InputComponentId.XRThumbrest]: XRInputComponentId.Thumbrest,
+  [InputComponentId.XRMenu]: XRInputComponentId.Menu,
+};
 
 function applyXRButton(
   raw: { [path: string]: number },

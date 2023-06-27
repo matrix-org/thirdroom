@@ -4,33 +4,20 @@ import RAPIER, { RigidBody as RapierRigidBody, RigidBodyDesc } from "@dimforge/r
 import { Quaternion, Vector3 } from "three";
 
 import { GameContext, World } from "../GameTypes";
-import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
+import { defineModule, getModule } from "../module/module.common";
 import { getRemoteResource } from "../resource/resource.game";
 import { RemoteCollider, RemoteNode, RemotePhysicsBody, physicsBodyQuery } from "../resource/RemoteResources";
 import { ColliderType, MeshPrimitiveAttributeIndex, PhysicsBodyType } from "../resource/schema";
-import { getAccessorArrayView, scaleVec3Array } from "../accessor/accessor.common";
+import { getAccessorArrayView, scaleVec3Array } from "../common/accessor";
 import { updateMatrixWorld } from "../component/transform";
 import { Player } from "../player/Player";
-import {
-  PhysicsDebugRenderTripleBuffer,
-  PhysicsDisableDebugRenderMessage,
-  PhysicsEnableDebugRenderMessage,
-  PhysicsMessageType,
-} from "./physics.common";
-import {
-  createObjectTripleBuffer,
-  defineObjectBufferSchema,
-  getWriteObjectBufferView,
-} from "../allocator/ObjectBufferView";
-import { createDisposables } from "../utils/createDisposables";
 import { getRotationNoAlloc } from "../utils/getRotationNoAlloc";
 import { dynamicObjectCollisionGroups, staticRigidBodyCollisionGroups } from "./CollisionGroups";
+import { updatePhysicsDebugBuffers } from "../renderer/renderer.game";
 
 export type CollisionHandler = (eid1: number, eid2: number, handle1: number, handle2: number, started: boolean) => void;
 
 export interface PhysicsModuleState {
-  debugRender: boolean;
-  debugRenderTripleBuffer?: PhysicsDebugRenderTripleBuffer;
   physicsWorld: RAPIER.World;
   eventQueue: RAPIER.EventQueue;
   handleToEid: Map<number, number>;
@@ -50,8 +37,6 @@ export const PhysicsModule = defineModule<GameContext, PhysicsModuleState>({
     const eventQueue = new RAPIER.EventQueue(true);
 
     return {
-      debugRender: false,
-      debugRenderTripleBuffer: undefined,
       physicsWorld,
       eventQueue,
       handleToEid,
@@ -60,17 +45,9 @@ export const PhysicsModule = defineModule<GameContext, PhysicsModuleState>({
       eidTocharacterController: new Map<number, RAPIER.KinematicCharacterController>(),
     };
   },
-  init(ctx) {
-    return createDisposables([
-      registerMessageHandler(ctx, PhysicsMessageType.TogglePhysicsDebug, onTogglePhysicsDebug),
-    ]);
-  },
+  init(ctx) {},
 });
 
-function onTogglePhysicsDebug(ctx: GameContext) {
-  const physicsModule = getModule(ctx, PhysicsModule);
-  physicsModule.debugRender = !physicsModule.debugRender;
-}
 // data flows from transform->body
 export const KinematicBody = defineComponent();
 
@@ -113,7 +90,7 @@ const applyRigidBodyToTransform = (body: RapierRigidBody, node: RemoteNode) => {
 export function PhysicsSystem(ctx: GameContext) {
   const { world, dt } = ctx;
   const physics = getModule(ctx, PhysicsModule);
-  const { physicsWorld, handleToEid, eventQueue, collisionHandlers, debugRender } = physics;
+  const { physicsWorld, handleToEid, eventQueue, collisionHandlers } = physics;
 
   physicsWorld.timestep = dt;
   physicsWorld.step(eventQueue);
@@ -169,39 +146,7 @@ export function PhysicsSystem(ctx: GameContext) {
     }
   }
 
-  if (debugRender) {
-    const buffers = physicsWorld.debugRender();
-
-    if (!physics.debugRenderTripleBuffer) {
-      // Allow for double the number of vertices at the start.
-      const initialSize = (buffers.vertices.length / 3) * 2;
-
-      const physicsDebugRenderSchema = defineObjectBufferSchema({
-        size: [Uint32Array, 1],
-        vertices: [Float32Array, initialSize * 3],
-        colors: [Float32Array, initialSize * 4],
-      });
-
-      const tripleBuffer = createObjectTripleBuffer(physicsDebugRenderSchema, ctx.gameToRenderTripleBufferFlags);
-
-      physics.debugRenderTripleBuffer = tripleBuffer;
-
-      ctx.sendMessage<PhysicsEnableDebugRenderMessage>(Thread.Render, {
-        type: PhysicsMessageType.PhysicsEnableDebugRender,
-        tripleBuffer,
-      });
-    }
-
-    const writeView = getWriteObjectBufferView(physics.debugRenderTripleBuffer);
-    writeView.size[0] = buffers.vertices.length / 3;
-    writeView.vertices.set(buffers.vertices);
-    writeView.colors.set(buffers.colors);
-  } else if (physics.debugRenderTripleBuffer) {
-    ctx.sendMessage<PhysicsDisableDebugRenderMessage>(Thread.Render, {
-      type: PhysicsMessageType.PhysicsDisableDebugRender,
-    });
-    physics.debugRenderTripleBuffer = undefined;
-  }
+  updatePhysicsDebugBuffers(ctx, () => physicsWorld.debugRender());
 }
 
 const tempScale = vec3.create();

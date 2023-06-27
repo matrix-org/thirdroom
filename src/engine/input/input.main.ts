@@ -2,17 +2,8 @@ import { MainContext } from "../MainThread";
 import { defineModule, getModule, Thread } from "../module/module.common";
 import { codeToKeyCode } from "./KeyCodes";
 import { PlayerModule } from "../player/Player.main";
-import {
-  InitializeInputStateMessage,
-  InputComponentId,
-  InputMessageType,
-  InputSourceId,
-  screenSpaceMouseCoordsSchema,
-  ScreenSpaceMouseCoordsTripleBuffer,
-} from "./input.common";
-import { createInputRingBuffer, enqueueInputRingBuffer, InputRingBuffer, RING_BUFFER_MAX } from "./InputRingBuffer";
-import { createObjectTripleBuffer, getWriteObjectBufferView } from "../allocator/ObjectBufferView";
-import { ndcX, ndcY } from "../utils/cords";
+import { InitializeInputStateMessage, InputComponentId, InputMessageType, InputSourceId } from "./input.common";
+import { enqueueInputRingBuffer, InputRingBuffer } from "../common/InputRingBuffer";
 import { EditorModule } from "../editor/editor.main";
 
 /*********
@@ -23,7 +14,6 @@ export interface MainInputModule {
   nextStackId: number;
   disableInputStack: number[];
   inputRingBuffer: InputRingBuffer;
-  screenSpaceMouseCoords: ScreenSpaceMouseCoordsTripleBuffer;
 }
 
 /******************
@@ -32,30 +22,15 @@ export interface MainInputModule {
 
 export const InputModule = defineModule<MainContext, MainInputModule>({
   name: "input",
-  create(ctx, { sendMessage }) {
-    // TODO: optimize memory
-    const inputRingBuffer = createInputRingBuffer(RING_BUFFER_MAX);
-
-    const screenSpaceMouseCoords = createObjectTripleBuffer(
-      screenSpaceMouseCoordsSchema,
-      ctx.mainToGameTripleBufferFlags
-    );
-
+  create({ inputRingBuffer }, { sendMessage }) {
     sendMessage<InitializeInputStateMessage>(Thread.Game, InputMessageType.InitializeInputState, {
       inputRingBuffer,
-      screenSpaceMouseCoords,
-    });
-
-    sendMessage<InitializeInputStateMessage>(Thread.Render, InputMessageType.InitializeInputState, {
-      inputRingBuffer,
-      screenSpaceMouseCoords,
     });
 
     return {
       nextStackId: 0,
       disableInputStack: [],
       inputRingBuffer,
-      screenSpaceMouseCoords,
     };
   },
   init(ctx) {
@@ -149,9 +124,6 @@ export const InputModule = defineModule<MainContext, MainInputModule>({
     }
 
     function onMouseMove({ movementX, movementY, clientX, clientY }: MouseEvent) {
-      const writeView = getWriteObjectBufferView(inputModule.screenSpaceMouseCoords);
-      writeView.coords[0] = ndcX(clientX, canvas.clientWidth);
-      writeView.coords[1] = ndcY(clientY, canvas.clientHeight);
       enqueue(InputSourceId.Mouse, InputComponentId.MouseMovement, 0, movementX, movementY, clientX, clientY, 0);
     }
 
