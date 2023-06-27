@@ -93,6 +93,8 @@
   --th-lg: 250px;
   --th-md: 200px;
   --th-sm: 150px;
+  --th-xs: 118px;
+  --th-xxs: 64px;
 
   /* border radius */
   --br-lg: 16px;

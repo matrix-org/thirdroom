@@ -38,6 +38,12 @@ export default function ThumbnailStories() {
           <ThumbnailImg src={LogoSvg} alt="My thumbnail" />
         </Thumbnail>
       </ThumbnailBadgeWrapper>
+      <Thumbnail size="xs">
+        <ThumbnailImg src={LogoSvg} alt="My thumbnail" />
+      </Thumbnail>
+      <Thumbnail size="xxs">
+        <ThumbnailImg src={LogoSvg} alt="My thumbnail" />
+      </Thumbnail>
     </div>
   );
 }

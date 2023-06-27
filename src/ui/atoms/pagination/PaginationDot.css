@@ -1,16 +1,10 @@
 .PaginationDot {
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
-  gap: var(--sp-xxs);
-}
-
-.PaginationDot__item {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   background-color: var(--bg-surface-border);
+  cursor: pointer;
 }
-.PaginationDot__item--active {
+.PaginationDot--active {
   background-color: var(--bg-primary);
 }

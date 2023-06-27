@@ -1,22 +1,20 @@
 import classNames from "classnames";
+import { ButtonHTMLAttributes, forwardRef } from "react";
 
 import "./PaginationDot.css";
 
-interface PaginationDotProps {
+type PaginationDotProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   className?: string;
-  max: number;
-  value: number;
-}
+  active?: boolean;
+};
 
-export function PaginationDot({ className, max, value }: PaginationDotProps) {
-  return (
-    <div className={classNames("PaginationDot", className)}>
-      {Array.from({ length: max }).map((item, index) => (
-        <span
-          key={index}
-          className={classNames("PaginationDot__item", { "PaginationDot__item--active": index + 1 === value })}
-        />
-      ))}
-    </div>
-  );
-}
+export const PaginationDot = forwardRef<HTMLButtonElement, PaginationDotProps>(
+  ({ type, className, active, ...props }: PaginationDotProps, ref) => (
+    <button
+      type={type ?? "button"}
+      className={classNames("PaginationDot", { "PaginationDot--active": active })}
+      {...props}
+      ref={ref}
+    />
+  )
+);
