@@ -1,10 +1,15 @@
+import { Meta } from "@storybook/react";
+
 import { Tooltip } from "./Tooltip";
 import { IconButton } from "../button/IconButton";
 import HomeIC from "../../../../res/ic/home.svg";
 
-export const title = "Tooltip";
+export default {
+  title: "Tooltip",
+  component: Tooltip,
+} as Meta<typeof Tooltip>;
 
-export default function TooltopStories() {
+export function TooltipStories() {
   return (
     <div className="flex">
       <Tooltip content="Home" side="left">

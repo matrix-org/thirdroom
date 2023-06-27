@@ -1,10 +1,14 @@
 import { useState } from "react";
+import { Meta } from "@storybook/react";
 
 import { ColorInput } from "./ColorInput";
 
-export const title = "ColorInput";
+export default {
+  title: "ColorInput",
+  component: ColorInput,
+} as Meta<typeof ColorInput>;
 
-export default function ColorInputStories() {
+export function ColorInputStories() {
   const [rgb, setRGB] = useState(new Float32Array(3));
   const [rgba, setRGBA] = useState(new Float32Array(4));
 

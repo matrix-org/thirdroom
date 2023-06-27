@@ -1,8 +1,13 @@
+import { Meta } from "@storybook/react";
+
 import { Switch } from "./Switch";
 
-export const title = "Switch";
+export default {
+  title: "Switch",
+  component: Switch,
+} as Meta<typeof Switch>;
 
-export default function SwitchStories() {
+export function SwitchStories() {
   return (
     <div className="flex">
       <Switch onCheckedChange={(v) => console.log(v)} />

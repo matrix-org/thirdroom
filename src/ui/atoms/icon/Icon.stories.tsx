@@ -1,9 +1,14 @@
+import { Meta } from "@storybook/react";
+
 import { Icon } from "./Icon";
 import HomeIC from "../../../../res/ic/home.svg";
 
-export const title = "Icon";
+export default {
+  title: "Icon",
+  component: Icon,
+} as Meta<typeof Icon>;
 
-export default function IconStories() {
+export function IconStories() {
   return (
     <div className="flex">
       <Icon color="surface" size="xl" src={HomeIC} />

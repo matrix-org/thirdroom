@@ -9,7 +9,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build && npm run docs:build",
+    "build": "tsc && vite build && npm run docs:build && npm run build-storybook",
     "build:scripting-runtime": "./src/engine/scripting/emscripten/build.sh",
     "build:examples": "./examples/build.sh",
     "typecheck": "tsc --noEmit",
@@ -23,7 +23,9 @@
     "docs:dev": "npm run docs:build-api && vitepress dev docs",
     "docs:build": "npm run docs:build-api && vitepress build docs",
     "docs:preview": "vitepress preview docs",
-    "docs:build-api": "typedoc"
+    "docs:build-api": "typedoc",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build -o dist/storybook"
   },
   "dependencies": {
     "3d-tiles-renderer": "https://github.com/matrix-org/3DTilesRendererJS.git#v0.3.9-patch",
@@ -80,6 +82,14 @@
     "yoga-wasm-web": "^0.3.3"
   },
   "devDependencies": {
+    "@storybook/addon-essentials": "^7.0.20",
+    "@storybook/addon-interactions": "^7.0.20",
+    "@storybook/addon-links": "^7.0.20",
+    "@storybook/blocks": "^7.0.20",
+    "@storybook/builder-vite": "^7.0.21",
+    "@storybook/react": "^7.0.20",
+    "@storybook/react-vite": "^7.0.20",
+    "@storybook/testing-library": "^0.0.14-next.2",
     "@testing-library/jest-dom": "^5.16.4",
     "@testing-library/react-hooks": "^8.0.0",
     "@types/babel__core": "^7.1.19",
@@ -113,6 +123,7 @@
     "eslint-plugin-matrix-org": "^1.1.0",
     "eslint-plugin-react": "^7.29.4",
     "eslint-plugin-react-hooks": "^4.4.0",
+    "eslint-plugin-storybook": "^0.6.12",
     "eslint-plugin-unicorn": "^46.0.0",
     "husky": "^8.0.3",
     "jsdom": "^21.1.0",
@@ -120,6 +131,7 @@
     "postcss-preset-env": "^8.0.1",
     "postinstall-postinstall": "^2.1.0",
     "prettier": "^2.6.1",
+    "storybook": "^7.0.20",
     "stylelint": "^15.2.0",
     "stylelint-config-prettier": "^9.0.3",
     "stylelint-config-standard": "^30.0.1",

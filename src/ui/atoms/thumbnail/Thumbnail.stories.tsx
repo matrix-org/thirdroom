@@ -1,3 +1,5 @@
+import { Meta } from "@storybook/react";
+
 import { Thumbnail } from "./Thumbnail";
 import { ThumbnailHover } from "./ThumbnailHover";
 import { ThumbnailImg } from "./ThumbnailImg";
@@ -8,9 +10,12 @@ import { Text } from "../text/Text";
 import LogoSvg from "../../../../res/svg/logo.svg";
 import AddIC from "../../../../res/ic/add.svg";
 
-export const title = "Thumbnail";
+export default {
+  title: "Thumbnail",
+  component: Thumbnail,
+} as Meta<typeof Thumbnail>;
 
-export default function ThumbnailStories() {
+export function ThumbnailStories() {
   return (
     <div className="flex items-start">
       <Thumbnail>

@@ -1,8 +1,13 @@
+import { Meta } from "@storybook/react";
+
 import { Text } from "./Text";
 
-export const title = "Text";
+export default {
+  title: "Text",
+  component: Text,
+} as Meta<typeof Text>;
 
-export default function TextStories() {
+export function TextStories() {
   return (
     <div className="flex flex-wrap">
       <div>
