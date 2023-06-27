@@ -13,13 +13,13 @@ import { GameNetworkState, NetworkModule } from "./network.game";
 import { Networked, Owned } from "./NetworkComponents";
 import { NetworkAction } from "./NetworkAction";
 import { broadcastReliable } from "./outbound.game";
-import { writeMetadata, NetPipeData } from "./serialization.game";
+import { writeMetadata } from "./serialization.game";
 
 // const messageView = createCursorView(new ArrayBuffer(Uint32Array.BYTES_PER_ELEMENT * 3));
 const messageView = createCursorView(new ArrayBuffer(Uint32Array.BYTES_PER_ELEMENT * 30));
 
 export const createRemoveOwnershipMessage = (ctx: GameState, eid: number) => {
-  writeMetadata(NetworkAction.RemoveOwnershipMessage)([ctx, messageView]);
+  writeMetadata(messageView, NetworkAction.RemoveOwnershipMessage);
   serializeRemoveOwnership(messageView, eid);
   return sliceCursorView(messageView);
 };
@@ -28,8 +28,7 @@ export const serializeRemoveOwnership = (cv: CursorView, eid: number) => {
   writeUint32(cv, Networked.networkId[eid]);
 };
 
-export const deserializeRemoveOwnership = (input: NetPipeData) => {
-  const [ctx, cv] = input;
+export const deserializeRemoveOwnership = (ctx: GameState, cv: CursorView) => {
   const network = getModule(ctx, NetworkModule);
   const nid = readUint32(cv);
   const eid = network.networkIdToEntityId.get(nid);

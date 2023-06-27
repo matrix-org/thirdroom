@@ -7,13 +7,14 @@ import {
   sliceCursorView,
   writeArrayBuffer as cursorWriteArrayBuffer,
   writeInt32,
+  CursorView,
 } from "../allocator/CursorView";
 import { GameState } from "../GameTypes";
 import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
 import { GameNetworkState, NetworkModule } from "./network.game";
 import { NetworkAction } from "./NetworkAction";
 import { broadcastReliable, sendReliable, sendUnreliable } from "./outbound.game";
-import { NetPipeData, writeMetadata } from "./serialization.game";
+import { writeMetadata } from "./serialization.game";
 import { writeUint32, readUint32 } from "../allocator/CursorView";
 import { registerInboundMessageHandler } from "./inbound.game";
 import {
@@ -41,11 +42,11 @@ export const WebSGNetworkModule = defineModule<GameState, {}>({
   },
   init(ctx: GameState) {
     const network = getModule(ctx, NetworkModule);
-    registerInboundMessageHandler(network, NetworkAction.BinaryScriptMessage, (data) =>
-      deserializeScriptMessage(data, true)
+    registerInboundMessageHandler(network, NetworkAction.BinaryScriptMessage, (ctx, v, peerId) =>
+      deserializeScriptMessage(ctx, v, peerId, true)
     );
-    registerInboundMessageHandler(network, NetworkAction.StringScriptMessage, (data) =>
-      deserializeScriptMessage(data, false)
+    registerInboundMessageHandler(network, NetworkAction.StringScriptMessage, (ctx, v, peerId) =>
+      deserializeScriptMessage(ctx, v, peerId, true)
     );
 
     return createDisposables([
@@ -653,22 +654,17 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
 const messageView = createCursorView(new ArrayBuffer(10000));
 
 function createScriptMessage(ctx: GameState, packet: ArrayBuffer, binary: boolean) {
-  const data: NetPipeData = [ctx, messageView, ""];
-  writeMetadata(binary ? NetworkAction.BinaryScriptMessage : NetworkAction.StringScriptMessage)(data);
-  serializeScriptMessage(data, packet);
+  writeMetadata(messageView, binary ? NetworkAction.BinaryScriptMessage : NetworkAction.StringScriptMessage);
+  serializeScriptMessage(messageView, packet);
   return sliceCursorView(messageView);
 }
 
-function serializeScriptMessage(data: NetPipeData, packet: ArrayBuffer) {
-  const [, v] = data;
+function serializeScriptMessage(v: CursorView, packet: ArrayBuffer) {
   writeUint32(v, packet.byteLength);
   cursorWriteArrayBuffer(v, packet);
-  return data;
 }
 
-function deserializeScriptMessage(data: NetPipeData, binary: boolean) {
-  const [ctx, v, peerId] = data;
-
+function deserializeScriptMessage(ctx: GameState, v: CursorView, peerId: string, binary: boolean) {
   const len = readUint32(v);
   const packet = readArrayBuffer(v, len);
 
