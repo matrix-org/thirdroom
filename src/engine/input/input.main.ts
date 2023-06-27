@@ -1,6 +1,7 @@
 import { IMainThreadContext } from "../MainThread";
 import { defineModule, getModule, Thread } from "../module/module.common";
 import { codeToKeyCode } from "./KeyCodes";
+import { PlayerModule } from "../player/Player.main";
 import {
   InitializeInputStateMessage,
   InputComponentId,
@@ -9,8 +10,7 @@ import {
   screenSpaceMouseCoordsSchema,
   ScreenSpaceMouseCoordsTripleBuffer,
 } from "./input.common";
-import { createInputRingBuffer, enqueueInputRingBuffer, InputRingBuffer, RING_BUFFER_MAX } from "./RingBuffer";
-import { CameraRigModule } from "../../plugins/camera/CameraRig.main";
+import { createInputRingBuffer, enqueueInputRingBuffer, InputRingBuffer, RING_BUFFER_MAX } from "./InputRingBuffer";
 import { createObjectTripleBuffer, getWriteObjectBufferView } from "../allocator/ObjectBufferView";
 import { ndcX, ndcY } from "../utils/cords";
 import { EditorModule } from "../editor/editor.main";
@@ -62,7 +62,7 @@ export const InputModule = defineModule<IMainThreadContext, MainInputModule>({
     const editorModule = getModule(ctx, EditorModule);
     const inputModule = getModule(ctx, InputModule);
     const { inputRingBuffer: irb } = inputModule;
-    const camRigModule = getModule(ctx, CameraRigModule);
+    const camRigModule = getModule(ctx, PlayerModule);
     const { canvas } = ctx;
 
     const lastKeyMap: { [key: string]: boolean } = {};

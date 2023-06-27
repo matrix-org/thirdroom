@@ -1,9 +1,9 @@
 import { addComponent, defineQuery, exitQuery, hasComponent, Not, removeComponent } from "bitecs";
 import { mat4, quat, vec3 } from "gl-matrix";
 
-import { FlyControls } from "../../plugins/FlyCharacterController";
+import { FlyControls } from "../player/FlyCharacterController";
 import { addXRRaycaster } from "../../plugins/interaction/XRInteractionSystem";
-import { KinematicControls } from "../../plugins/KinematicCharacterController";
+import { KinematicControls } from "../player/KinematicCharacterController";
 import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 import { addChild, removeChild, setFromLocalMatrix, updateMatrixWorld } from "../component/transform";
 import { GameState, World } from "../GameTypes";
@@ -23,8 +23,8 @@ import { Networked, Owned } from "../network/NetworkComponents";
 import { broadcastReliable } from "../network/outbound.game";
 import { createInformXRModeMessage } from "../network/serialization.game";
 import { NetworkModule } from "../network/network.game";
-import { XRHeadComponent, XRControllerComponent } from "../../plugins/thirdroom/thirdroom.game";
-import { AvatarRef } from "../../plugins/avatars/components";
+import { XRHeadComponent, XRControllerComponent } from "../player/PlayerRig";
+import { AvatarRef } from "../player/components";
 
 export interface XRAvatarRig {
   prevLeftAssetPath?: string;
@@ -201,7 +201,6 @@ export const ARActionMap: ActionMap = {
           path: "XRInputSource/left/xr-standard-thumbstick/button",
         },
       ],
-      // networked: true,
     },
     {
       id: "reset-reference-space-right",
@@ -213,26 +212,21 @@ export const ARActionMap: ActionMap = {
           path: "XRInputSource/right/xr-standard-thumbstick/button",
         },
       ],
-      // networked: true,
     },
   ],
 };
 
 export function SetWebXRReferenceSpaceSystem(ctx: GameState) {
-  const { activeController } = getModule(ctx, InputModule);
+  const { actionStates } = getModule(ctx, InputModule);
 
   const xrMode = getXRMode(ctx);
 
   const sceneSupportsAR = ctx.worldResource.environment?.publicScene.supportsAR || false;
 
   if (xrMode === XRMode.ImmersiveAR && sceneSupportsAR) {
-    const resetReferenceSpaceLeft = activeController.actionStates.get(
-      ARActions.ResetReferenceSpaceLeft
-    ) as ButtonActionState;
+    const resetReferenceSpaceLeft = actionStates.get(ARActions.ResetReferenceSpaceLeft) as ButtonActionState;
 
-    const resetReferenceSpaceRight = activeController.actionStates.get(
-      ARActions.ResetReferenceSpaceRight
-    ) as ButtonActionState;
+    const resetReferenceSpaceRight = actionStates.get(ARActions.ResetReferenceSpaceRight) as ButtonActionState;
 
     let hand: XRHandedness | undefined;
 

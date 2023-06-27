@@ -1,12 +1,10 @@
-import { getCamera } from "../../engine/camera/camera.game";
+import { ourPlayerQuery } from "../../engine/player/Player";
 import { GameState } from "../../engine/GameTypes";
 import { ActionMap, ActionDefinition, ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
-import { InputModule } from "../../engine/input/input.game";
-import { InputController, inputControllerQuery, tryGetInputController } from "../../engine/input/InputController";
+import { GameInputModule, InputModule } from "../../engine/input/input.game";
 import { XRAvatarRig } from "../../engine/input/WebXRAvatarRigSystem";
 import { getModule, Thread } from "../../engine/module/module.common";
-import { isHost } from "../../engine/network/network.common";
-import { NetworkModule } from "../../engine/network/network.game";
+import { getCamera } from "../../engine/player/getCamera";
 import { RemoteNode } from "../../engine/resource/RemoteResources";
 import { tryGetRemoteResource } from "../../engine/resource/resource.game";
 import { ScriptComponent, scriptQuery } from "../../engine/scripting/scripting.game";
@@ -30,7 +28,6 @@ for (let i = 0; i < 10; i++) {
         path: `Keyboard/Digit${i}`,
       },
     ],
-    networked: true,
   };
 
   if (i === 1) {
@@ -43,7 +40,7 @@ for (let i = 0; i < 10; i++) {
   actionBarMap.actionDefs.push(actionDef);
 }
 
-const defaultActionBarItems: ActionBarItem[] = [
+export const defaultActionBarItems: ActionBarItem[] = [
   {
     id: "small-crate",
     label: "Small Crate",
@@ -96,12 +93,11 @@ export function setDefaultActionBarItems(ctx: GameState) {
 
 export function ActionBarSystem(ctx: GameState) {
   const input = getModule(ctx, InputModule);
-  const network = getModule(ctx, NetworkModule);
   const { actionBarItems } = getModule(ctx, ThirdRoomModule);
 
   const scripts = scriptQuery(ctx.world);
 
-  processPressedActionBarActions(actionBarItems, input.activeController, (actionBarItem) => {
+  processPressedActionBarActions(actionBarItems, input, (actionBarItem) => {
     for (let i = 0; i < scripts.length; i++) {
       const script = ScriptComponent.get(scripts[i]);
 
@@ -117,20 +113,13 @@ export function ActionBarSystem(ctx: GameState) {
     }
   });
 
-  if (network.authoritative && !isHost(network)) {
-    return;
-  }
+  const eid = ourPlayerQuery(ctx.world)[0];
 
-  const inputControllers = inputControllerQuery(ctx.world);
-
-  for (let i = 0; i < inputControllers.length; i++) {
-    const eid = inputControllers[i];
-
+  if (eid) {
     const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
-    const controller = tryGetInputController(input, eid);
     const xr = XRAvatarRig.get(eid);
 
-    processPressedActionBarActions(actionBarItems, controller, (actionBarItem) => {
+    processPressedActionBarActions(actionBarItems, input, (actionBarItem) => {
       if (actionBarItem.spawnable !== true) {
         return;
       }
@@ -151,12 +140,12 @@ export function ActionBarSystem(ctx: GameState) {
 
 function processPressedActionBarActions(
   actionBarItems: ActionBarItem[],
-  controller: InputController,
+  input: GameInputModule,
   callback: (item: ActionBarItem) => boolean | void
 ) {
   for (let i = 0; i < actionBarMap.actionDefs.length; i++) {
     const actionDef = actionBarMap.actionDefs[i];
-    const action = controller.actionStates.get(actionDef.path) as ButtonActionState | undefined;
+    const action = input.actionStates.get(actionDef.path) as ButtonActionState | undefined;
 
     if (action?.pressed) {
       const itemIndex = i === 0 ? 9 : i - 1;

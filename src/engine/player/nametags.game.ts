@@ -9,7 +9,7 @@ import { defineModule, getModule, registerMessageHandler } from "../../engine/mo
 import { projectPerspective } from "../../engine/camera/camera.game";
 import { RendererModule } from "../../engine/renderer/renderer.game";
 import { NametagsEnableMessage, NametagsEnableMessageType } from "./nametags.common";
-import { ourPlayerQuery } from "../../engine/component/Player";
+import { ourPlayerQuery } from "../../engine/player/Player";
 import { getRemoteResource, tryGetRemoteResource } from "../../engine/resource/resource.game";
 import { RemoteNametag, RemoteNode } from "../../engine/resource/RemoteResources";
 

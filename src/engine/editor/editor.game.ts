@@ -45,9 +45,9 @@ import { RemoteNode } from "../resource/RemoteResources";
 import { disableActionMap, enableActionMap } from "../input/ActionMappingSystem";
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "../input/ActionMap";
 import { InputModule } from "../input/input.game";
-import { flyControlsQuery } from "../../plugins/FlyCharacterController";
-import { getCamera } from "../camera/camera.game";
 import { RigidBody } from "../physics/physics.game";
+import { flyControlsQuery } from "../player/FlyCharacterController";
+import { getCamera } from "../player/getCamera";
 
 /*********
  * Types *
@@ -75,7 +75,6 @@ const editorActionMap: ActionMap = {
           path: "Keyboard/KeyF",
         },
       ],
-      networked: true,
     },
   ],
 };
@@ -106,7 +105,7 @@ export const EditorModule = defineModule<GameState, EditorModuleState>({
   init(ctx) {
     const input = getModule(ctx, InputModule);
 
-    enableActionMap(input.activeController, editorActionMap);
+    enableActionMap(input, editorActionMap);
 
     const dispose = createDisposables([
       registerMessageHandler(ctx, EditorMessageType.LoadEditor, onLoadEditor),
@@ -122,7 +121,7 @@ export const EditorModule = defineModule<GameState, EditorModuleState>({
       registerMessageHandler(ctx, EditorMessageType.SetRefArrayProperty, onSetRefArrayProperty),
     ]);
     return () => {
-      disableActionMap(input.activeController, editorActionMap);
+      disableActionMap(input, editorActionMap);
       dispose();
     };
   },
@@ -288,8 +287,8 @@ export function EditorStateSystem(ctx: GameState) {
     return;
   }
 
-  const { activeController } = getModule(ctx, InputModule);
-  const anchorBtn = activeController.actionStates.get("anchorCamera") as ButtonActionState;
+  const { actionStates } = getModule(ctx, InputModule);
+  const anchorBtn = actionStates.get("anchorCamera") as ButtonActionState;
 
   const anchorCameraToActiveEntity = anchorBtn.pressed;
   if (anchorCameraToActiveEntity && editor.activeEntity) {

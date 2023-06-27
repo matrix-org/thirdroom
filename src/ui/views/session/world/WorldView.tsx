@@ -18,14 +18,13 @@ import { useToast } from "../../../hooks/useToast";
 import { useHydrogen } from "../../../hooks/useHydrogen";
 import { IMainThreadContext } from "../../../../engine/MainThread";
 import { createDisposables } from "../../../../engine/utils/createDisposables";
-import { ObjectCapReachedMessage, ObjectCapReachedMessageType } from "../../../../plugins/spawnables/spawnables.common";
 import { useCalls } from "../../../hooks/useCalls";
 import { useRoomCall } from "../../../hooks/useRoomCall";
 import { useWebXRSession } from "../../../hooks/useWebXRSession";
 import { worldChatVisibilityAtom } from "../../../state/worldChatVisibility";
 import { overlayVisibilityAtom } from "../../../state/overlayVisibility";
 import { worldAtom } from "../../../state/world";
-import { CameraRigModule } from "../../../../plugins/camera/CameraRig.main";
+import { PlayerModule } from "../../../../engine/player/Player.main";
 import { HotbarControls, WorldControls } from "./WorldControls";
 import { WorldOnboarding } from "./WorldOnboarding";
 import { useLocalStorage } from "../../../hooks/useLocalStorage";
@@ -44,6 +43,7 @@ import { inputFocused } from "../../../utils/common";
 import { useDisableInput } from "../../../hooks/useDisableInput";
 import { editorEnabledAtom } from "../../../state/editor";
 import { usePowerLevels } from "../../../hooks/usePowerLevels";
+import { ObjectCapReachedMessage, ThirdRoomMessageType } from "../../../../plugins/thirdroom/thirdroom.common";
 
 const SHOW_NAMES_STORE = "showNames";
 interface WorldViewProps {
@@ -65,7 +65,7 @@ export function WorldView({ world }: WorldViewProps) {
 
   const { toastShown, toastContent, showToast } = useToast();
 
-  const camRigModule = getModule(mainThread, CameraRigModule);
+  const camRigModule = getModule(mainThread, PlayerModule);
   const [showNames, setShowNames] = useLocalStorage(SHOW_NAMES_STORE, true);
   const { isWebXRSupported, enterXR, isPresenting } = useWebXRSession();
 
@@ -83,7 +83,7 @@ export function WorldView({ world }: WorldViewProps) {
     };
 
     const disposables = createDisposables([
-      registerMessageHandler(mainThread, ObjectCapReachedMessageType, onObjectCapReached),
+      registerMessageHandler(mainThread, ThirdRoomMessageType.ObjectCapReached, onObjectCapReached),
     ]);
     return () => {
       disposables();

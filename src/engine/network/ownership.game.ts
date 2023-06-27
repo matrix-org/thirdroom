@@ -6,7 +6,6 @@ import { GameState } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import { RigidBody } from "../physics/physics.game";
 import { getPrefabTemplate, Prefab } from "../prefab/prefab.game";
-import { isHost } from "./network.common";
 import { getRemoteResource } from "../resource/resource.game";
 import { addObjectToWorld, RemoteNode, removeObjectFromWorld } from "../resource/RemoteResources";
 import { GameNetworkState, NetworkModule } from "./network.game";
@@ -40,9 +39,7 @@ export const deserializeRemoveOwnership = (ctx: GameState, cv: CursorView) => {
 
 export const takeOwnership = (ctx: GameState, network: GameNetworkState, node: RemoteNode): number => {
   const eid = node.eid;
-  if (network.authoritative && !isHost(network)) {
-    // TODO: when Authored component is implemented, add Owned component here
-  } else if (
+  if (
     hasComponent(ctx.world, Prefab, eid) &&
     hasComponent(ctx.world, Networked, eid) &&
     !hasComponent(ctx.world, Owned, eid)

@@ -18,6 +18,10 @@ import {
   FindResourceRetainersMessage,
   SetActionBarItemsMessage,
   ActionBarItem,
+  LoadWorldOptions,
+  ReloadWorldMessage,
+  ReloadWorldErrorMessage,
+  ReloadedWorldMessage,
 } from "./thirdroom.common";
 
 interface ThirdRoomModuleState {
@@ -72,7 +76,7 @@ export const ThirdroomModule = defineModule<IMainThreadContext, ThirdRoomModuleS
   },
 });
 
-export async function loadWorld(ctx: IMainThreadContext, url: string, scriptUrl: string) {
+export async function loadWorld(ctx: IMainThreadContext, environmentUrl: string, options: LoadWorldOptions) {
   const thirdroom = getModule(ctx, ThirdroomModule);
   const loadingEnvironment = createDeferred(false);
 
@@ -106,13 +110,13 @@ export async function loadWorld(ctx: IMainThreadContext, url: string, scriptUrl:
     registerMessageHandler(ctx, ThirdRoomMessageType.WorldLoadError, onLoadWorldError),
   ]);
 
-  thirdroom.environmentUrl = url;
+  thirdroom.environmentUrl = environmentUrl;
 
   ctx.sendMessage<LoadWorldMessage>(Thread.Game, {
     type: ThirdRoomMessageType.LoadWorld,
     id,
-    url,
-    scriptUrl,
+    environmentUrl,
+    options,
   });
 
   return loadingEnvironment.promise;
@@ -157,6 +161,45 @@ export function enterWorld(ctx: IMainThreadContext, localPeerId: string) {
   });
 
   return enteringWorld.promise;
+}
+
+export function reloadWorld(ctx: IMainThreadContext, environmentUrl: string, options: LoadWorldOptions) {
+  const thirdroom = getModule(ctx, ThirdroomModule);
+  const reloadingWorld = createDeferred(false);
+
+  const id = thirdroom.messageId++;
+
+  // eslint-disable-next-line prefer-const
+  let disposeHandlers: () => void;
+
+  const onReloadedWorld = (ctx: IMainThreadContext, message: ReloadedWorldMessage) => {
+    if (message.id === id) {
+      reloadingWorld.resolve(undefined);
+      disposeHandlers();
+    }
+  };
+
+  const onReloadWorldError = (ctx: IMainThreadContext, message: ReloadWorldErrorMessage) => {
+    console.log(`error`, message);
+    if (message.id === id) {
+      reloadingWorld.reject(new Error(message.error));
+      disposeHandlers();
+    }
+  };
+
+  disposeHandlers = createDisposables([
+    registerMessageHandler(ctx, ThirdRoomMessageType.ReloadedWorld, onReloadedWorld),
+    registerMessageHandler(ctx, ThirdRoomMessageType.ReloadWorldError, onReloadWorldError),
+  ]);
+
+  ctx.sendMessage<ReloadWorldMessage>(Thread.Game, {
+    type: ThirdRoomMessageType.ReloadWorld,
+    id,
+    environmentUrl,
+    options,
+  });
+
+  return reloadingWorld.promise;
 }
 
 export function exitWorld(context: IMainThreadContext) {

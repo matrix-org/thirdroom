@@ -2,10 +2,7 @@ import { availableRead } from "@thirdroom/ringbuffer";
 
 import { createCursorView, CursorView } from "../allocator/CursorView";
 import { GameState } from "../GameTypes";
-import { InputModule } from "../input/input.game";
 import { getModule } from "../module/module.common";
-import { trimHistory } from "../utils/Historian";
-import { isHost } from "./network.common";
 import { GameNetworkState, NetworkModule, ownedPlayerQuery } from "./network.game";
 import { NetworkAction } from "./NetworkAction";
 import { dequeueNetworkRingBuffer } from "./RingBuffer";
@@ -13,20 +10,10 @@ import { readMetadata } from "./serialization.game";
 
 const processNetworkMessage = (ctx: GameState, peerId: string, msg: ArrayBuffer) => {
   const network = getModule(ctx, NetworkModule);
-  const input = getModule(ctx, InputModule);
-  const controller = input.activeController;
 
   const cursorView = createCursorView(msg);
 
   const { type: messageType, elapsed, inputTick } = readMetadata(cursorView);
-
-  // trim off all inputs since the most recent host-processed input tick
-  if (network.authoritative && !isHost(network) && inputTick) {
-    // trim history up to this last received input tick
-    trimHistory(controller.outbound, inputTick);
-    // trigger input prediction
-    (controller as any).needsUpdate = true;
-  }
 
   const historian = network.peerIdToHistorian.get(peerId);
 

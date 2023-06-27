@@ -69,7 +69,8 @@ export function ScriptingSystem(ctx: GameState) {
 export async function loadScript(
   ctx: GameState,
   resourceManager: RemoteResourceManager,
-  scriptUrl: string
+  scriptUrl: string,
+  signal?: AbortSignal
 ): Promise<Script> {
   const memory = new WebAssembly.Memory({ initial: 1024, maximum: 1024 });
 
@@ -87,7 +88,7 @@ export async function loadScript(
 
   let wasmBuffer: ArrayBuffer | undefined;
 
-  const response = await fetch(scriptUrl);
+  const response = await fetch(scriptUrl, { signal });
 
   const contentType = response.headers.get("content-type");
 
@@ -98,7 +99,7 @@ export async function loadScript(
       contentType.startsWith("text/javascript")
     ) {
       const scriptSource = await response.text();
-      const jsWASMResponse = await fetch(scriptingRuntimeWASMUrl);
+      const jsWASMResponse = await fetch(scriptingRuntimeWASMUrl, { signal });
       wasmBuffer = await jsWASMResponse.arrayBuffer();
       wasmCtx.encodedJSSource = wasmCtx.textEncoder.encode(scriptSource);
     } else if (contentType === "application/wasm") {
@@ -186,7 +187,7 @@ export async function loadScript(
       }
 
       if (this.state !== ScriptState.Initialized) {
-        throw new Error("initialize() can only be called from the Initialized state");
+        throw new Error("loaded() can only be called from the Initialized state");
       }
 
       if (websgLoad) {
@@ -207,7 +208,7 @@ export async function loadScript(
       }
 
       if (this.state !== ScriptState.Loaded) {
-        throw new Error("initialize() can only be called from the Loaded state");
+        throw new Error("entered() can only be called from the Loaded state");
       }
 
       if (websgEnter) {
@@ -280,14 +281,13 @@ export async function loadScript(
       }
     },
     dispose() {
+      console.trace("script disposed");
       disposeThirdroomModule();
       disposeWebSGModule();
       disposeMatrixModule();
       disposeNetworkModule();
     },
   };
-
-  script.initialize();
 
   return script;
 }
