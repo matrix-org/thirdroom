@@ -1,9 +1,14 @@
+import { Meta } from "@storybook/react";
+
 import { Scroll } from "./Scroll";
 import { Text } from "../text/Text";
 
-export const title = "Scroll";
+export default {
+  title: "Scroll",
+  component: Scroll,
+} as Meta<typeof Scroll>;
 
-export default function ScrollStories() {
+export function ScrollStories() {
   return (
     <div className="flex" style={{ border: "1px solid red" }}>
       <div style={{ height: "300px", width: "300px", background: "white" }}>

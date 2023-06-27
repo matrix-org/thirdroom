@@ -1,3 +1,5 @@
+import { Meta } from "@storybook/react";
+
 import { Window } from "./Window";
 import { Header } from "../../../atoms/header/Header";
 import { HeaderTitle } from "../../../atoms/header/HeaderTitle";
@@ -12,9 +14,12 @@ import ExploreIC from "../../../../../res/ic/explore.svg";
 import "./Window.css";
 import { Button } from "../../../atoms/button/Button";
 
-export const title = "Window";
+export default {
+  title: "Window",
+  component: Window,
+} as Meta<typeof Window>;
 
-export default function WindowStories() {
+export function WindowStories() {
   return (
     <div style={{ height: "500px" }}>
       <Window>

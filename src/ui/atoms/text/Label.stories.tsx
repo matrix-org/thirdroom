@@ -1,8 +1,13 @@
+import { Meta } from "@storybook/react";
+
 import { Label } from "./Label";
 
-export const title = "Label";
+export default {
+  title: "Label",
+  component: Label,
+} as Meta<typeof Label>;
 
-export default function LabelStories() {
+export function LabelStories() {
   return (
     <div className="flex flex-column">
       <Label>My input label</Label>

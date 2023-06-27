@@ -1,8 +1,12 @@
 import { useState } from "react";
+import { Meta } from "@storybook/react";
 
 import { MultiSelectInput } from "./MultiSelectInput";
 
-export const title = "MultiSelectInput";
+export default {
+  title: "MultiSelectInput",
+  component: MultiSelectInput,
+} as Meta<typeof MultiSelectInput>;
 
 const options = [
   {
@@ -30,7 +34,7 @@ const options = [
     label: "Option 6",
   },
 ];
-export default function MultiSelectInputStories() {
+export function MultiSelectInputStories() {
   const [selected, setSelected] = useState([options[0]]);
 
   console.log(selected);

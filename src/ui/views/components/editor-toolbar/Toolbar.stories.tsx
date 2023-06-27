@@ -1,3 +1,5 @@
+import { Meta } from "@storybook/react";
+
 import { Icon } from "../../../atoms/icon/Icon";
 import { ToolbarButton, ToolbarButtonGroup, ToolbarButtonDivider } from "./ToolbarButton";
 import ExploreIC from "../../../../../res/ic/explore.svg";
@@ -5,9 +7,12 @@ import ChevronBottomIC from "../../../../../res/ic/chevron-bottom.svg";
 import MenuIC from "../../../../../res/ic/menu.svg";
 import { Toolbar, ToolbarItemGroup } from "./Toolbar";
 
-export const title = "Toolbar";
+export default {
+  title: "Toolbar",
+  component: Toolbar,
+} as Meta<typeof Toolbar>;
 
-export default function ToolbarStories() {
+export function ToolbarStories() {
   return (
     <div style={{ padding: "var(--sp-md)", backgroundColor: "var(--bg-surface)" }}>
       <Toolbar

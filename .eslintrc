@@ -1,6 +1,6 @@
 {
   "plugins": ["matrix-org"],
-  "extends": ["plugin:matrix-org/typescript", "plugin:matrix-org/react", "prettier"],
+  "extends": ["plugin:matrix-org/typescript", "plugin:matrix-org/react", "plugin:storybook/recommended", "prettier"],
   "parserOptions": {
     "project": ["./tsconfig.json", "./packages/*/tsconfig.json"]
   },

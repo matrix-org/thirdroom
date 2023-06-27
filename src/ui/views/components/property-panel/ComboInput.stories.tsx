@@ -1,8 +1,12 @@
 import { useState } from "react";
+import { Meta } from "@storybook/react";
 
 import { ComboInput } from "./ComboInput";
 
-export const title = "ComboInput";
+export default {
+  title: "ComboInput",
+  component: ComboInput,
+} as Meta<typeof ComboInput>;
 
 const options = [
   {
@@ -30,7 +34,7 @@ const options = [
     label: "Option 6",
   },
 ];
-export default function ComboInputStories() {
+export function ComboInputStories() {
   const [selected, setSelected] = useState(options[0]);
 
   console.log(selected);

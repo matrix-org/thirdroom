@@ -1,10 +1,15 @@
+import { Meta } from "@storybook/react";
+
 import { Button } from "./Button";
 import { Icon } from "../icon/Icon";
 import HomeIC from "../../../../res/ic/home.svg";
 
-export const title = "Button";
+export default {
+  title: "Button",
+  component: Button,
+} as Meta<typeof Button>;
 
-export default function ButtonStories() {
+export function ButtonStories() {
   return (
     <div className="flex flex-wrap">
       <div>

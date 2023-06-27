@@ -1,3 +1,5 @@
+import { Meta } from "@storybook/react";
+
 import { CategoryHeader } from "./CategoryHeader";
 import { IconButton } from "../../../atoms/button/IconButton";
 import { Icon } from "../../../atoms/icon/Icon";
@@ -6,9 +8,12 @@ import ChevronRightIC from "../../../../../res/ic/chevron-right.svg";
 import AddIC from "../../../../../res/ic/add.svg";
 import MoreHorizontalIC from "../../../../../res/ic/more-horizontal.svg";
 
-export const title = "CategoryHeader";
+export default {
+  title: "CategoryHeader",
+  component: CategoryHeader,
+} as Meta<typeof CategoryHeader>;
 
-export default function CategoryHeaderStories() {
+export function CategoryHeaderStories() {
   const icon = <Icon src={StarIC} size="sm" color="surface" />;
   const icon1 = <Icon src={ChevronRightIC} size="sm" color="surface" />;
 
