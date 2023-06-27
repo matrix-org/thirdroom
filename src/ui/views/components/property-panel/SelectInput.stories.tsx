@@ -1,8 +1,12 @@
 import { useState } from "react";
+import { Meta } from "@storybook/react";
 
 import { SelectInput } from "./SelectInput";
 
-export const title = "SelectInput";
+export default {
+  title: "SelectInput",
+  component: SelectInput,
+} as Meta<typeof SelectInput>;
 
 const options = [
   {
@@ -30,7 +34,7 @@ const options = [
     label: "Option 6",
   },
 ];
-export default function SelectInputStories() {
+export function SelectInputStories() {
   const [selected, setSelected] = useState(options[0].value);
 
   return (

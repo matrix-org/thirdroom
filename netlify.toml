@@ -18,6 +18,11 @@
   status = 200
 
 [[redirects]]
+  from = "/storybook"
+  to = "/storybook/index.html"
+  status = 200
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200

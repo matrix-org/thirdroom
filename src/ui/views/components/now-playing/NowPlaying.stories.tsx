@@ -1,3 +1,5 @@
+import { Meta } from "@storybook/react";
+
 import { NowPlaying } from "./NowPlaying";
 import { NowPlayingTitle } from "./NowPlayingTitle";
 import { NowPlayingStatus } from "./NowPlayingStatus";
@@ -10,9 +12,12 @@ import LogoutIC from "../../../../../res/ic/logout.svg";
 import MoreHorizontalIC from "../../../../../res/ic/more-horizontal.svg";
 import InfoIC from "../../../../../res/ic/info.svg";
 
-export const title = "NowPlaying";
+export default {
+  title: "NowPlaying",
+  component: NowPlaying,
+} as Meta<typeof NowPlaying>;
 
-export default function NowPlayingStories() {
+export function NowPlayingStories() {
   return (
     <div style={{ backgroundColor: "white", maxWidth: "380px" }}>
       <NowPlaying

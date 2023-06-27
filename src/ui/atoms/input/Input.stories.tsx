@@ -1,11 +1,16 @@
+import { Meta } from "@storybook/react";
+
 import { Input } from "./Input";
 import { Icon } from "../icon/Icon";
 import { Text } from "../text/Text";
 import SearchIC from "../../../../res/ic/search.svg";
 
-export const title = "Input";
+export default {
+  title: "Input",
+  component: Input,
+} as Meta<typeof Input>;
 
-export default function InputStories() {
+export function InputStories() {
   return (
     <div className="flex flex-column gap-xs" style={{ backgroundColor: "white", padding: "8px", maxWidth: "380px" }}>
       <Input placeholder="ex: John Doe" inputSize="lg" />

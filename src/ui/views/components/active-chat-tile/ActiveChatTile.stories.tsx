@@ -1,9 +1,14 @@
+import { Meta } from "@storybook/react";
+
 import { ActiveChatTile } from "./ActiveChatTile";
 import { Avatar } from "../../../atoms/avatar/Avatar";
 
-export const title = "ActiveChatTile";
+export default {
+  title: "ActiveChatTile",
+  component: ActiveChatTile,
+} as Meta<typeof ActiveChatTile>;
 
-export default function ActiveChatTileStories() {
+export function ActiveChatTileStories() {
   return (
     <div style={{ maxWidth: "380px" }}>
       <ActiveChatTile

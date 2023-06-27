@@ -1,10 +1,15 @@
+import { Meta } from "@storybook/react";
+
 import { DropdownMenu } from "./DropdownMenu";
 import { DropdownMenuItem } from "./DropdownMenuItem";
 import { Button } from "../button/Button";
 
-export const title = "DropdownMenu";
+export default {
+  title: "DropdownMenu",
+  component: DropdownMenu,
+} as Meta<typeof DropdownMenu>;
 
-export default function DropdownMenuStories() {
+export function DropdownMenuStories() {
   return (
     <div>
       <DropdownMenu
