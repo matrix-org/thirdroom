@@ -1,10 +1,15 @@
+import { Meta } from "@storybook/react";
+
 import { Avatar } from "../../../atoms/avatar/Avatar";
 import { Button } from "../../../atoms/button/Button";
 import { RoomPreviewCard } from "./RoomPreviewCard";
 
-export const title = "RoomPreviewCard";
+export default {
+  title: "RoomPreviewCard",
+  component: RoomPreviewCard,
+} as Meta<typeof RoomPreviewCard>;
 
-export default function RoomPreviewCardStories() {
+export function RoomPreviewCardStories() {
   return (
     <div>
       <RoomPreviewCard

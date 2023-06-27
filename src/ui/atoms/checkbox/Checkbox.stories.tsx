@@ -1,8 +1,13 @@
+import { Meta } from "@storybook/react";
+
 import { Checkbox } from "./Checkbox";
 
-export const title = "Checkbox";
+export default {
+  title: "Checkbox",
+  component: Checkbox,
+} as Meta<typeof Checkbox>;
 
-export default function CheckboxStories() {
+export function CheckboxStories() {
   return (
     <div className="flex">
       <Checkbox onCheckedChange={(v) => console.log(v)} />

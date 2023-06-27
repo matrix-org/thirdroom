@@ -1,3 +1,5 @@
+import { Meta } from "@storybook/react";
+
 import { RoomTile } from "./RoomTile";
 import { RoomTilePlaying } from "./RoomTilePlaying";
 import { RoomTileTitle } from "./RoomTileTitle";
@@ -11,9 +13,12 @@ import { IconButton } from "../../../atoms/button/IconButton";
 import NotificationIC from "../../../../../res/ic/notification.svg";
 import MoreHorizontalIC from "../../../../../res/ic/more-horizontal.svg";
 
-export const title = "RoomTile";
+export default {
+  title: "RoomTile",
+  component: RoomTile,
+} as Meta<typeof RoomTile>;
 
-export default function RoomTileStories() {
+export function RoomTileStories() {
   return (
     <div style={{ backgroundColor: "white", maxWidth: "380px" }}>
       <RoomTile

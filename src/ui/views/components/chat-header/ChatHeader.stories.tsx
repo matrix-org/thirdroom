@@ -1,12 +1,17 @@
+import { Meta } from "@storybook/react";
+
 import { ChatHeader } from "./ChatHeader";
 import { Avatar } from "../../../atoms/avatar/Avatar";
 import { IconButton } from "../../../atoms/button/IconButton";
 import CrossIC from "../../../../../res/ic/cross.svg";
 import MinusIC from "../../../../../res/ic/minus.svg";
 
-export const title = "ChatHeader";
+export default {
+  title: "ChatHeader",
+  component: ChatHeader,
+} as Meta<typeof ChatHeader>;
 
-export default function ChatHeaderStories() {
+export function ChatHeaderStories() {
   return (
     <div style={{ backgroundColor: "white", maxWidth: "500px" }}>
       <ChatHeader

@@ -1,4 +1,4 @@
-import { lazy, ReactNode, Suspense, useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Route, Routes } from "react-router-dom";
 import { useFocusVisible } from "@react-aria/interactions";
 import { serviceWorkerFile } from "virtual:vite-plugin-service-worker";
@@ -30,23 +30,6 @@ function FocusOutlineManager() {
     document.body.style.setProperty("--focus-outline", isFocusVisible ? "var(--tc-surface) solid 2px" : "none");
   }, [isFocusVisible]);
   return <></>;
-}
-
-let storybookRoute: ReactNode = null;
-
-if (import.meta.env.VITE_NETLIFY_DEPLOY_CONTEXT !== "production") {
-  const Storybook = lazy(() => import("./storybook/Storybook"));
-
-  storybookRoute = (
-    <Route
-      path="/storybook"
-      element={
-        <Suspense fallback="Loading...">
-          <Storybook />
-        </Suspense>
-      }
-    />
-  );
 }
 
 const LandingPage = lazy(() => import("./site/LandingPage"));
@@ -147,7 +130,6 @@ export function App() {
             </Suspense>
           }
         />
-        {storybookRoute}
         <Route path="*" element={<PageNotFound />} />
       </SentryRoutes>
     </JotaiProvider>
