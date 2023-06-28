@@ -1,0 +1,6 @@
+.AttributionCard {
+  padding: var(--sp-xs);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--bg-surface-border);
+  border-radius: var(--br-lg);
+}
