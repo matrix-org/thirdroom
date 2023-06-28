@@ -15,6 +15,7 @@ import { EditorToolbar } from "./EditorToolbar";
 import { useEvent } from "../../../hooks/useEvent";
 import { EditorActionBar } from "./EditorActionBar";
 import { EditorAssets } from "./EditorAssets";
+import { AssetUploadModal } from "./AssetUploadModal";
 
 export function EditorView({ room }: { room?: Room }) {
   const treeViewRef = useRef<TreeViewRefApi>(null);
@@ -84,6 +85,7 @@ export function EditorView({ room }: { room?: Room }) {
                 <>
                   <EditorAssets requestClose={() => false} />
                   <EditorActionBar />
+                  <AssetUploadModal />
                 </>
               )}
             </div>
