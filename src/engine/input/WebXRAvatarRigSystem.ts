@@ -75,8 +75,8 @@ export function WebXRAvatarRigSystem(ctx: GameContext) {
   const sceneSupportsAR = ctx.worldResource.environment?.publicScene.supportsAR || false;
   const rigs = xrAvatarRigQuery(ctx.world);
 
-  for (let i = 0; i < removedInputSources.length; i++) {
-    const inputSource = removedInputSources[i];
+  while (removedInputSources.length) {
+    const inputSource = removedInputSources.shift()!;
 
     const ourPlayer = ourPlayerQuery(ctx.world)[0];
     const xrRig = XRAvatarRig.get(ourPlayer);
