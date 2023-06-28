@@ -71,6 +71,8 @@ export function LoadTextureResourcesSystem(ctx: RenderContext) {
           }
 
           _renderTexture.loadStatus = LoadStatus.Error;
+
+          console.error("Error loading texture", error);
         });
     }
   }

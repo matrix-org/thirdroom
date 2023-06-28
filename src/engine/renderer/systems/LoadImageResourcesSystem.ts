@@ -7,7 +7,7 @@ import { LoadStatus } from "../../resource/resource.common";
 import { getLocalResources } from "../RenderResources";
 import { RenderImage } from "../RenderResources";
 import { toArrayBuffer } from "../../utils/arraybuffer";
-import { ImageMimeTypes, RenderImageData, RenderImageDataType } from "../textures";
+import { ImageFileExtensions, ImageMimeTypes, RenderImageData, RenderImageDataType } from "../textures";
 import { ArrayBufferKTX2Loader, KTX2TranscodeResult } from "../ArrayBufferKTX2Loader";
 import { RenderContext, RendererModule, RendererModuleState } from "../renderer.render";
 
@@ -47,6 +47,8 @@ export function LoadImageResourcesSystem(ctx: RenderContext) {
           }
 
           _renderImage.loadStatus = LoadStatus.Error;
+
+          console.error("Error loading image", error);
         });
     }
   }
@@ -77,11 +79,11 @@ async function loadRenderImageData(
     const uri = renderImage.uri;
     const response = await fetch(uri, { signal });
 
-    if (uri.endsWith(ImageMimeTypes.HDR)) {
+    if (uri.endsWith(ImageFileExtensions.HDR)) {
       const buffer = await response.arrayBuffer();
       const data = loadRGBEFromArrayBuffer(rgbeLoader, buffer);
       return { type: RenderImageDataType.RGBE, data };
-    } else if (uri.endsWith(ImageMimeTypes.KTX2)) {
+    } else if (uri.endsWith(ImageFileExtensions.KTX2)) {
       const buffer = await response.arrayBuffer();
       // TODO: RenderImage should only store image data and not textures
       const data = await loadKTX2DataFromArrayBuffer(ktx2Loader, buffer);
