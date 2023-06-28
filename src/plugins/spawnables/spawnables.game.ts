@@ -298,7 +298,7 @@ function createCrate(
     node,
     new RemoteCollider(ctx.resourceManager, {
       type: ColliderType.Box,
-      size: [size, size, size],
+      size: [1, 1, 1],
       activeEvents: RAPIER.ActiveEvents.COLLISION_EVENTS,
       collisionGroups: dynamicObjectCollisionGroups,
     })
