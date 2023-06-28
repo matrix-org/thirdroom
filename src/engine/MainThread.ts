@@ -272,7 +272,7 @@ async function initRenderWorker(
 ): Promise<Worker | MockMessagePort> {
   if (useOffscreenCanvas) {
     console.info("Browser supports OffscreenCanvas, rendering in WebWorker.");
-    const { default: RenderWorker } = await import("./RenderWorker?worker");
+    const { default: RenderWorker } = await import("./renderer/RenderWorker?worker");
     return new RenderWorker();
   } else {
     console.info("Browser does not support OffscreenCanvas, rendering on main thread.");
