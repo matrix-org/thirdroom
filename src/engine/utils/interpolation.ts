@@ -1,6 +1,7 @@
+import { clamp } from "../common/math";
+
 export const lerp = (x: number, y: number, a: number) => x * (1 - a) + y * a;
-export const clamp = (min: number, max: number, a: number) => Math.min(max, Math.max(min, a));
-export const invlerp = (x: number, y: number, a: number) => clamp(0, 1, (a - x) / (y - x));
+export const invlerp = (x: number, y: number, a: number) => clamp((a - x) / (y - x), 0, 1);
 export const range = (x1: number, y1: number, x2: number, y2: number, a: number) => lerp(x2, y2, invlerp(x1, y1, a));
 
 // src: https://en.wikipedia.org/wiki/Smoothstep

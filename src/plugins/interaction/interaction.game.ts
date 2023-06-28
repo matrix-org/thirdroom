@@ -40,7 +40,6 @@ import {
   removeObjectFromWorld,
 } from "../../engine/resource/RemoteResources";
 import { AudioEmitterType, InteractableType } from "../../engine/resource/schema";
-import { clamp } from "../../engine/utils/interpolation";
 import { PortalComponent } from "../portals/portals.game";
 import { InteractableAction, InteractionMessage, InteractionMessageType } from "./interaction.common";
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
@@ -57,6 +56,7 @@ import {
 import { getCamera } from "../../engine/player/getCamera";
 import { ThirdRoomMessageType } from "../thirdroom/thirdroom.common";
 import { ThirdRoomModule, ThirdRoomModuleState } from "../thirdroom/thirdroom.game";
+import { clamp } from "../../engine/common/math";
 
 // TODO: importing from spawnables.game in this file induces a runtime error
 // import { SpawnablesModule } from "../spawnables/spawnables.game";
@@ -697,7 +697,7 @@ function updateGrabThrow(
     if (scrollY !== 0) {
       heldOffset -= scrollY / 1000;
     }
-    GrabComponent.heldOffset[rig.eid] = clamp(MIN_HELD_DISTANCE, MAX_HELD_DISTANCE, heldOffset);
+    GrabComponent.heldOffset[rig.eid] = clamp(heldOffset, MIN_HELD_DISTANCE, MAX_HELD_DISTANCE);
 
     const heldPosition = heldNode.position;
 

@@ -15,10 +15,10 @@ import {
   removeEntityFromHistorian,
 } from "./Historian";
 import { addEntityHistory, syncWithHistorian } from "./InterpolationBuffer";
-import { clamp } from "../utils/interpolation";
 import { getRemoteResource } from "../resource/resource.game";
 import { RemoteNode } from "../resource/RemoteResources";
 import { OurPlayer } from "../player/Player";
+import { clamp } from "../common/math";
 
 export const remoteEntityQuery = defineQuery([Networked, Not(Owned), Not(OurPlayer)]);
 
@@ -217,7 +217,7 @@ function preprocessHistorians(ctx: GameContext, network: GameNetworkState) {
 
     const ratio = (targetTime - fromTime) / (toTime - fromTime);
 
-    historian.fractionOfTimePassed = clamp(0, 1, ratio);
+    historian.fractionOfTimePassed = clamp(ratio, 0, 1);
   }
 }
 
