@@ -1,10 +1,14 @@
 import { useState } from "react";
+import { Meta } from "@storybook/react";
 
 import { VectorInput } from "./VectorInput";
 
-export const title = "VectorInput";
+export default {
+  title: "VectorInput",
+  component: VectorInput,
+} as Meta<typeof VectorInput>;
 
-export default function VectorInputStories() {
+export function VectorInputStories() {
   const [v3, setV3] = useState(new Float32Array(3));
   const [v2, setV2] = useState(new Float32Array(2));
 

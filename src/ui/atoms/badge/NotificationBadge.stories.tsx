@@ -1,8 +1,13 @@
+import { Meta } from "@storybook/react";
+
 import { NotificationBadge } from "./NotificationBadge";
 
-export const title = "NotificationBadge";
+export default {
+  title: "NotificationBadge",
+  component: NotificationBadge,
+} as Meta<typeof NotificationBadge>;
 
-export default function NotificationBadgeStories() {
+export const NotificationBadgeStories = () => {
   return (
     <div className="flex">
       <NotificationBadge />
@@ -11,4 +16,4 @@ export default function NotificationBadgeStories() {
       <NotificationBadge content="99+" variant="danger" />
     </div>
   );
-}
+};

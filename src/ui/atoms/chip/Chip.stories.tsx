@@ -1,10 +1,15 @@
+import { Meta } from "@storybook/react";
+
 import { Chip } from "./Chip";
 import { Text } from "../text/Text";
 import { Avatar } from "../avatar/Avatar";
 
-export const title = "Chip";
+export default {
+  title: "Chip",
+  component: Chip,
+} as Meta<typeof Chip>;
 
-export default function ChipStories() {
+export function ChipStories() {
   return (
     <div>
       <Chip>

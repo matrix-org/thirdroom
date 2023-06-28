@@ -1,12 +1,17 @@
+import { Meta } from "@storybook/react";
+
 import { SettingTile } from "./SettingTile";
 import { Label } from "../../../atoms/text/Label";
 import { IconButton } from "../../../atoms/button/IconButton";
 import { Input } from "../../../atoms/input/Input";
 import InfoIC from "../../../../../res/ic/info.svg";
 
-export const title = "SettingTile";
+export default {
+  title: "SettingTile",
+  component: SettingTile,
+} as Meta<typeof SettingTile>;
 
-export default function SettingTileStories() {
+export function SettingTileStories() {
   return (
     <div style={{ backgroundColor: "white", width: "380px", padding: "8px" }}>
       <SettingTile

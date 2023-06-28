@@ -1,12 +1,17 @@
+import { Meta } from "@storybook/react";
+
 import { Avatar } from "./Avatar";
 import { AvatarPile } from "./AvatarPile";
 import { AvatarBadgeWrapper } from "./AvatarBadgeWrapper";
 import { AvatarOutline } from "./AvatarOutline";
 import { StatusBadge } from "../badge/StatusBadge";
 
-export const title = "Avatar";
+export default {
+  title: "Avatar",
+  component: Avatar,
+} as Meta<typeof Avatar>;
 
-export default function AvatarStories() {
+export const AvatarStories = () => {
   const imgSrc = "https://cdn.britannica.com/92/80592-050-86EF29F3/Mouflon-ram.jpg";
 
   return (
@@ -104,4 +109,4 @@ export default function AvatarStories() {
       </div>
     </div>
   );
-}
+};

@@ -15,7 +15,6 @@ import BackHandIC from "../../../../../res/ic/back-hand.svg";
 import OpenWithIC from "../../../../../res/ic/open-with.svg";
 import AutoRenewIC from "../../../../../res/ic/auto-renew.svg";
 import ResizeIC from "../../../../../res/ic/resize.svg";
-import WebAssetIC from "../../../../../res/ic/web-asset.svg";
 import LanguageIC from "../../../../../res/ic/language.svg";
 import ActivityZoneIC from "../../../../../res/ic/activity-zone.svg";
 import MyLocationIC from "../../../../../res/ic/my-location.svg";
@@ -409,25 +408,18 @@ export function EditorToolbar() {
               <TransformModeSwitcher />
             </ToolbarItemGroup>
           )}
+          {editorMode === EditorMode.SceneEditor && (
+            <ToolbarItemGroup>
+              <TransformOrientationSwitcher />
+              <TransformPivotSwitcher />
+              <TransformSnapping />
+              <GridToggle />
+            </ToolbarItemGroup>
+          )}
         </>
-      }
-      center={
-        editorMode === EditorMode.SceneEditor && (
-          <ToolbarItemGroup>
-            <TransformOrientationSwitcher />
-            <TransformPivotSwitcher />
-            <TransformSnapping />
-            <GridToggle />
-          </ToolbarItemGroup>
-        )
       }
       right={
         <ToolbarItemGroup>
-          {editorMode === EditorMode.SceneEditor && (
-            <ToolbarButton before={<Icon src={WebAssetIC} size="sm" />} outlined>
-              Asset Panel
-            </ToolbarButton>
-          )}
           <EditorCmdK />
         </ToolbarItemGroup>
       }

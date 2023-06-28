@@ -1,10 +1,15 @@
+import { Meta } from "@storybook/react";
+
 import { Avatar } from "../../../atoms/avatar/Avatar";
 import { Text } from "../../../atoms/text/Text";
 import { MemberTile } from "./MemberTile";
 
-export const title = "MemberTile";
+export default {
+  title: "MemberTile",
+  component: MemberTile,
+} as Meta<typeof MemberTile>;
 
-export default function MemberTileStories() {
+export function MemberTileStories() {
   return (
     <div>
       <MemberTile

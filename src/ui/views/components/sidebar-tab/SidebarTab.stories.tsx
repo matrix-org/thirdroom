@@ -1,11 +1,16 @@
+import { Meta } from "@storybook/react";
+
 import { SidebarTab } from "./SidebarTab";
 import PlanetIC from "../../../../../res/ic/planet.svg";
 import ExploreIC from "../../../../../res/ic/explore.svg";
 import AddIC from "../../../../../res/ic/add.svg";
 
-export const title = "SidebarTab";
+export default {
+  title: "SidebarTab",
+  component: SidebarTab,
+} as Meta<typeof SidebarTab>;
 
-export default function SidebarTabStories() {
+export function SidebarTabStories() {
   return (
     <div className="flex" style={{ backgroundColor: "white", maxWidth: "380px" }}>
       <SidebarTab onClick={() => console.log("clicked")} name="Home" iconSrc={AddIC} />

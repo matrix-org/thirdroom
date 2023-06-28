@@ -1,8 +1,13 @@
+import { Meta } from "@storybook/react";
+
 import { Progress } from "./Progress";
 
-export const title = "Progress";
+export default {
+  title: "Progress",
+  component: Progress,
+} as Meta<typeof Progress>;
 
-export default function ProgressStories() {
+export function ProgressStories() {
   return (
     <div className="flex flex-column gap-md">
       <Progress value={30} max={100} />

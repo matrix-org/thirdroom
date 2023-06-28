@@ -1,11 +1,16 @@
+import { Meta } from "@storybook/react";
+
 import { Modal } from "./Modal";
 import { ModalContent } from "./ModalContent";
 import { ModalAside } from "./ModalAside";
 import { Button } from "../button/Button";
 
-export const title = "Modal";
+export default {
+  title: "Modal",
+  component: Modal,
+} as Meta<typeof Modal>;
 
-export default function ModalStories() {
+export function ModalStories() {
   return (
     <div>
       <Modal trigger={<Button>Open modal</Button>}>

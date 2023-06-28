@@ -1,8 +1,13 @@
+import { Meta } from "@storybook/react";
+
 import { Kbd } from "./Kbd";
 
-export const title = "Kbd";
+export default {
+  title: "Kbd",
+  component: Kbd,
+} as Meta<typeof Kbd>;
 
-export default function KbdStories() {
+export function KbdStories() {
   return (
     <div className="flex items-center gap-md">
       <Kbd size="xs">S</Kbd>

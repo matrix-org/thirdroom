@@ -73,17 +73,14 @@ export function EditorView({ room }: { room?: Room }) {
             <EditorToolbar />
           </div>
           <div className="grow flex gap-xs">
-            <div className="EditorView__leftPanel grow">
-              <HierarchyPanel scene={scene} resources={resources} treeViewRef={treeViewRef} />
-            </div>
             <div className="EditorView__centerPanel grow flex justify-center items-start">
               {editorMode === EditorMode.ScriptEditor && room && <ScriptEditor room={room} />}
             </div>
-            {(editorMode === EditorMode.SceneEditor || editorMode === EditorMode.SceneInspector) && (
-              <div className="EditorView__rightPanel grow">
-                {typeof resource === "object" && <PropertiesPanel resource={resource} />}
-              </div>
-            )}
+            <div className="EditorView__rightPanel grow flex flex-column gap-xs">
+              <HierarchyPanel scene={scene} resources={resources} treeViewRef={treeViewRef} />
+              {(editorMode === EditorMode.SceneEditor || editorMode === EditorMode.SceneInspector) &&
+                typeof resource === "object" && <PropertiesPanel resource={resource} />}
+            </div>
           </div>
         </>
       )}
