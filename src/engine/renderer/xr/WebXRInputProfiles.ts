@@ -26,7 +26,7 @@
  *
  */
 
-import { clamp } from "../../utils/interpolation";
+import { clamp } from "../../common/math";
 import { InputComponentState, XRInputComponentId } from "../../input/input.common";
 
 export enum XRInputComponentState {
@@ -232,7 +232,7 @@ export function updateComponentValuesFromGamepad(
 
   if (gamepadIndices.button !== undefined && gamepad.buttons.length > gamepadIndices.button) {
     const gamepadButton = gamepad.buttons[gamepadIndices.button];
-    const button = clamp(0, 1, gamepadButton.value);
+    const button = clamp(gamepadButton.value, 0, 1);
 
     if (gamepadButton.pressed || button === 1) {
       state = XRInputComponentStateValue.Pressed;
@@ -247,7 +247,7 @@ export function updateComponentValuesFromGamepad(
 
   if (gamepadIndices.xAxis !== undefined && gamepad.axes.length > gamepadIndices.xAxis) {
     const gamepadAxis = gamepad.axes[gamepadIndices.xAxis];
-    const xAxis = clamp(-1, 1, gamepadAxis);
+    const xAxis = clamp(gamepadAxis, -1, 1);
 
     if (state === XRInputComponentStateValue.Default && Math.abs(xAxis) > AXIS_TOUCH_THRESHOLD) {
       state = XRInputComponentStateValue.Touched;
