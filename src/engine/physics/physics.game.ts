@@ -5,8 +5,14 @@ import { Quaternion, Vector3 } from "three";
 
 import { GameContext, World } from "../GameTypes";
 import { defineModule, getModule } from "../module/module.common";
-import { getRemoteResource } from "../resource/resource.game";
-import { RemoteCollider, RemoteNode, RemotePhysicsBody, physicsBodyQuery } from "../resource/RemoteResources";
+import { getRemoteResource, tryGetRemoteResource } from "../resource/resource.game";
+import {
+  RemoteCollider,
+  RemoteNode,
+  RemotePhysicsBody,
+  enteredPhysicsBodyQuery,
+  physicsBodyQuery,
+} from "../resource/RemoteResources";
 import { ColliderType, MeshPrimitiveAttributeIndex, PhysicsBodyType } from "../resource/schema";
 import { getAccessorArrayView, scaleVec3Array } from "../common/accessor";
 import { updateMatrixWorld } from "../component/transform";
@@ -107,6 +113,17 @@ export function PhysicsSystem(ctx: GameContext) {
       collisionHandler(eid1, eid2, handle1, handle2, started);
     }
   });
+
+  const entered = enteredPhysicsBodyQuery(ctx.world);
+  for (let i = 0; i < entered.length; i++) {
+    const eid = entered[i];
+    const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
+    const body = node.physicsBody?.body;
+
+    if (body && body.bodyType() !== RAPIER.RigidBodyType.Fixed) {
+      applyTransformToRigidBody(body, node);
+    }
+  }
 
   // apply rigidbody to transform for regular physics entities
   const physicsEntities = physicsBodyQuery(world);
