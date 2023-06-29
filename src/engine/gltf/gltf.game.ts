@@ -5,7 +5,7 @@ import { AnimationAction, AnimationClip, AnimationMixer, Bone, Group, Object3D, 
 
 import { SpawnPoint } from "../component/SpawnPoint";
 import { addChild, traverse, updateMatrix, updateMatrixWorld } from "../component/transform";
-import { GameState, RemoteResourceManager, World } from "../GameTypes";
+import { GameContext, RemoteResourceManager, World } from "../GameTypes";
 import resolveURL from "../utils/resolveURL";
 import {
   GLTFRoot,
@@ -78,8 +78,8 @@ import {
 } from "../resource/RemoteResources";
 import { addPortalComponent } from "../../plugins/portals/portals.game";
 import { getModule } from "../module/module.common";
-import { addNodePhysicsBody, addRigidBody, PhysicsModule } from "../physics/physics.game";
-import { getAccessorArrayView, vec3ArrayTransformMat4 } from "../accessor/accessor.common";
+import { addPhysicsBody, PhysicsModule } from "../physics/physics.game";
+import { getAccessorArrayView, vec3ArrayTransformMat4 } from "../common/accessor";
 import { staticRigidBodyCollisionGroups } from "../physics/CollisionGroups";
 import { CharacterControllerType, SceneCharacterControllerComponent } from "../player/CharacterController";
 import { loadGLTFAnimationClip } from "./animation.three";
@@ -87,6 +87,7 @@ import { AnimationComponent, BoneComponent } from "../animation/animation.game";
 import { RemoteResource } from "../resource/RemoteResourceClass";
 import { getRotationNoAlloc } from "../utils/getRotationNoAlloc";
 import { TypedArray32 } from "../utils/typedarray";
+import { addResourceRef } from "../resource/resource.game";
 
 /**
  * GLTFResource stores references to all of the resources loaded from a glTF file.
@@ -144,7 +145,7 @@ export interface LoadGLTFOptions {
 /**
  * Load a GLTFResource from a .gltf or .glb uri
  */
-export async function loadGLTF(ctx: GameState, uri: string, options?: LoadGLTFOptions): Promise<GLTFResource> {
+export async function loadGLTF(ctx: GameContext, uri: string, options?: LoadGLTFOptions): Promise<GLTFResource> {
   const url = new URL(uri, self.location.href);
 
   const resourceManager = options?.resourceManager || ctx.resourceManager;
@@ -208,7 +209,7 @@ function addGLTFResourceComponent(world: World, eid: number, resource: GLTFResou
 const gltfResourceQuery = defineQuery([GLTFResourceComponent]);
 const gltfResourceExitQuery = exitQuery(gltfResourceQuery);
 
-export function GLTFResourceDisposalSystem(ctx: GameState) {
+export function GLTFResourceDisposalSystem(ctx: GameContext) {
   const entities = gltfResourceExitQuery(ctx.world);
 
   for (let i = 0; i < entities.length; i++) {
@@ -222,14 +223,14 @@ export function GLTFResourceDisposalSystem(ctx: GameState) {
   }
 }
 
-export function createNodeFromGLTFURI(ctx: GameState, uri: string): RemoteNode {
+export function createNodeFromGLTFURI(ctx: GameContext, uri: string): RemoteNode {
   const node = new RemoteNode(ctx.resourceManager);
   loadGLTF(ctx, uri).then((resource) => loadDefaultGLTFScene(ctx, resource, { existingNode: node }));
   return node;
 }
 
 export function loadDefaultGLTFScene(
-  ctx: GameState,
+  ctx: GameContext,
   resource: GLTFResource,
   options?: GLTFSceneOptions & GLTFLoaderOptions
 ) {
@@ -250,7 +251,7 @@ const GLB_HEADER_BYTE_LENGTH = 12;
 const GLB_MAGIC = 0x46546c67; // "glTF" in ASCII
 
 async function loadGLTFResource(
-  ctx: GameState,
+  ctx: GameContext,
   resourceManager: RemoteResourceManager,
   url: string,
   options?: LoadGLTFOptions
@@ -291,7 +292,7 @@ const ChunkType = {
 const CHUNK_HEADER_BYTE_LENGTH = 8;
 
 async function loadGLTFBinary(
-  ctx: GameState,
+  ctx: GameContext,
   resourceManager: RemoteResourceManager,
   buffer: ArrayBuffer,
   url: string,
@@ -333,7 +334,7 @@ async function loadGLTFBinary(
 }
 
 async function loadGLTFJSON(
-  ctx: GameState,
+  ctx: GameContext,
   resourceManager: RemoteResourceManager,
   json: unknown,
   url: string,
@@ -409,7 +410,7 @@ export interface GLTFLoaderOptions {
  * tempCache is only used for resources that are referenced when building this hierarchy
  */
 export type GLTFLoaderContext = {
-  ctx: GameState;
+  ctx: GameContext;
   resource: GLTFResource;
   nodeIndexMap: Map<RemoteNode, number>;
   nodeMap: Map<number, RemoteNode>;
@@ -420,7 +421,7 @@ export type GLTFLoaderContext = {
 } & GLTFLoaderOptions;
 
 const createGLTFLoaderContext = (
-  ctx: GameState,
+  ctx: GameContext,
   resource: GLTFResource,
   options?: GLTFLoaderOptions
 ): GLTFLoaderContext => ({
@@ -896,7 +897,27 @@ function addTrimeshFromMesh(loaderCtx: GLTFLoaderContext, node: RemoteNode, mesh
 
     const primitiveNode = new RemoteNode(loaderCtx.resource.manager);
     addChild(node, primitiveNode);
-    addRigidBody(loaderCtx.ctx, primitiveNode, rigidBody, mesh, primitive);
+
+    const physics = getModule(loaderCtx.ctx, PhysicsModule);
+    addPhysicsBody(
+      loaderCtx.ctx.world,
+      physics,
+      primitiveNode,
+      new RemotePhysicsBody(loaderCtx.resource.manager, {
+        type: PhysicsBodyType.Static,
+        mass: 1,
+      })
+    );
+
+    if (mesh) {
+      addResourceRef(loaderCtx.ctx, mesh.eid);
+      primitiveNode.physicsBody!.mesh = mesh;
+    }
+
+    if (primitive) {
+      addResourceRef(loaderCtx.ctx, primitive.eid);
+      primitiveNode.physicsBody!.primitive = primitive;
+    }
   }
 }
 
@@ -939,6 +960,8 @@ const loadGLTFCollider = createCachedSubresourceLoader(
 );
 
 function loadDefaultGLTFPhysicsBody(loaderCtx: GLTFLoaderContext, node: RemoteNode) {
+  const physics = getModule(loaderCtx.ctx, PhysicsModule);
+
   let parentIsPhysicsBody = false;
 
   if (node.parent) {
@@ -956,11 +979,15 @@ function loadDefaultGLTFPhysicsBody(loaderCtx: GLTFLoaderContext, node: RemoteNo
   }
 
   if (!parentIsPhysicsBody) {
-    node.physicsBody = new RemotePhysicsBody(loaderCtx.resource.manager, {
-      type: PhysicsBodyType.Static,
-      mass: 1,
-    });
-    addNodePhysicsBody(loaderCtx.ctx, node);
+    addPhysicsBody(
+      loaderCtx.ctx.world,
+      physics,
+      node,
+      new RemotePhysicsBody(loaderCtx.resource.manager, {
+        type: PhysicsBodyType.Static,
+        mass: 1,
+      })
+    );
   }
 }
 
@@ -977,14 +1004,19 @@ function loadGLTFPhysicsBody(loaderCtx: GLTFLoaderContext, node: RemoteNode, phy
     throw new Error(`Unknown physics body type ${physicsBodyDef.type}`);
   }
 
-  node.physicsBody = new RemotePhysicsBody(loaderCtx.resource.manager, {
-    type,
-    mass: physicsBodyDef.mass,
-    linearVelocity: physicsBodyDef.linearVelocity,
-    angularVelocity: physicsBodyDef.angularVelocity,
-    inertiaTensor: physicsBodyDef.inertiaTensor,
-  });
-  addNodePhysicsBody(loaderCtx.ctx, node);
+  const physics = getModule(loaderCtx.ctx, PhysicsModule);
+  addPhysicsBody(
+    loaderCtx.ctx.world,
+    physics,
+    node,
+    new RemotePhysicsBody(loaderCtx.resource.manager, {
+      type,
+      mass: physicsBodyDef.mass,
+      linearVelocity: physicsBodyDef.linearVelocity,
+      angularVelocity: physicsBodyDef.angularVelocity,
+      inertiaTensor: physicsBodyDef.inertiaTensor,
+    })
+  );
 }
 
 function loadGLTFTilesRenderer({ resource }: GLTFLoaderContext, node: RemoteNode, extension: GLTFTilesRenderer) {

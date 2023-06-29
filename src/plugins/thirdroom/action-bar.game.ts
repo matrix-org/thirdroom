@@ -1,5 +1,5 @@
 import { ourPlayerQuery } from "../../engine/player/Player";
-import { GameState } from "../../engine/GameTypes";
+import { GameContext } from "../../engine/GameTypes";
 import { ActionMap, ActionDefinition, ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
 import { GameInputModule, InputModule } from "../../engine/input/input.game";
 import { XRAvatarRig } from "../../engine/input/WebXRAvatarRigSystem";
@@ -79,7 +79,7 @@ export const defaultActionBarItems: ActionBarItem[] = [
   },
 ];
 
-export function setDefaultActionBarItems(ctx: GameState) {
+export function setDefaultActionBarItems(ctx: GameContext) {
   const thirdroom = getModule(ctx, ThirdRoomModule);
 
   thirdroom.actionBarItems.length = 0;
@@ -91,7 +91,7 @@ export function setDefaultActionBarItems(ctx: GameState) {
   });
 }
 
-export function ActionBarSystem(ctx: GameState) {
+export function ActionBarSystem(ctx: GameContext) {
   const input = getModule(ctx, InputModule);
   const { actionBarItems } = getModule(ctx, ThirdRoomModule);
 

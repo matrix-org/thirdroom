@@ -6,25 +6,29 @@ import { addXRRaycaster } from "../../plugins/interaction/XRInteractionSystem";
 import { KinematicControls } from "../player/KinematicCharacterController";
 import { getReadObjectBufferView } from "../allocator/ObjectBufferView";
 import { addChild, removeChild, setFromLocalMatrix, updateMatrixWorld } from "../component/transform";
-import { GameState, World } from "../GameTypes";
+import { GameContext, World } from "../GameTypes";
 import { createNodeFromGLTFURI } from "../gltf/gltf.game";
-import { XRMode } from "../renderer/renderer.common";
+import {
+  RendererMessageType,
+  SetXRReferenceSpaceMessage,
+  SharedXRInputSource,
+  XRMode,
+} from "../renderer/renderer.common";
 import { getXRMode, RendererModule } from "../renderer/renderer.game";
 import { getModule, Thread } from "../module/module.common";
 import { createPrefabEntity } from "../prefab/prefab.game";
-import { addObjectToWorld, RemoteNode } from "../resource/RemoteResources";
+import { addObjectToWorld, RemoteNode, removeObjectFromWorld } from "../resource/RemoteResources";
 import { getRemoteResource, tryGetRemoteResource } from "../resource/resource.game";
 import { teleportEntity } from "../utils/teleportEntity";
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "./ActionMap";
-import { InputMessageType, SharedXRInputSource, SetXRReferenceSpaceMessage } from "./input.common";
 import { InputModule } from "./input.game";
-import { XRInputHandedness } from "./WebXRInputProfiles";
 import { Networked, Owned } from "../network/NetworkComponents";
 import { broadcastReliable } from "../network/outbound.game";
 import { createInformXRModeMessage } from "../network/serialization.game";
 import { NetworkModule } from "../network/network.game";
 import { XRHeadComponent, XRControllerComponent } from "../player/PlayerRig";
 import { AvatarRef } from "../player/components";
+import { ourPlayerQuery } from "../player/Player";
 
 export interface XRAvatarRig {
   prevLeftAssetPath?: string;
@@ -63,13 +67,41 @@ const remoteAvatarQuery = defineQuery([Networked, Not(Owned), AvatarRef]);
 const _v = vec3.create();
 const _q = quat.create();
 
-export function WebXRAvatarRigSystem(ctx: GameState) {
+export function WebXRAvatarRigSystem(ctx: GameContext) {
   const rendererModule = getModule(ctx, RendererModule);
-  const { xrInputSourcesByHand } = getModule(ctx, InputModule);
+  const { xrInputSourcesByHand, removedInputSources } = rendererModule;
   const network = getModule(ctx, NetworkModule);
   const ourXRMode = getXRMode(ctx);
   const sceneSupportsAR = ctx.worldResource.environment?.publicScene.supportsAR || false;
   const rigs = xrAvatarRigQuery(ctx.world);
+
+  while (removedInputSources.length) {
+    const inputSource = removedInputSources.shift()!;
+
+    const ourPlayer = ourPlayerQuery(ctx.world)[0];
+    const xrRig = XRAvatarRig.get(ourPlayer);
+
+    if (xrRig) {
+      if (inputSource.handedness === "left") {
+        if (xrRig.leftControllerEid) removeObjectFromWorld(ctx, tryGetRemoteResource(ctx, xrRig.leftControllerEid));
+        if (xrRig.leftNetworkedEid) removeObjectFromWorld(ctx, tryGetRemoteResource(ctx, xrRig.leftNetworkedEid));
+        if (xrRig.leftRayNetworkedEid) removeObjectFromWorld(ctx, tryGetRemoteResource(ctx, xrRig.leftRayNetworkedEid));
+
+        xrRig.leftControllerEid = 0;
+        xrRig.leftNetworkedEid = 0;
+        xrRig.leftRayNetworkedEid = 0;
+      } else if (inputSource.handedness === "right") {
+        if (xrRig.rightControllerEid) removeObjectFromWorld(ctx, tryGetRemoteResource(ctx, xrRig.rightControllerEid));
+        if (xrRig.rightNetworkedEid) removeObjectFromWorld(ctx, tryGetRemoteResource(ctx, xrRig.rightNetworkedEid));
+        if (xrRig.rightRayNetworkedEid)
+          removeObjectFromWorld(ctx, tryGetRemoteResource(ctx, xrRig.rightRayNetworkedEid));
+
+        xrRig.rightControllerEid = 0;
+        xrRig.rightNetworkedEid = 0;
+        xrRig.rightRayNetworkedEid = 0;
+      }
+    }
+  }
 
   if (ourXRMode !== rendererModule.prevXRMode) {
     rendererModule.prevXRMode = ourXRMode;
@@ -216,7 +248,7 @@ export const ARActionMap: ActionMap = {
   ],
 };
 
-export function SetWebXRReferenceSpaceSystem(ctx: GameState) {
+export function SetWebXRReferenceSpaceSystem(ctx: GameContext) {
   const { actionStates } = getModule(ctx, InputModule);
 
   const xrMode = getXRMode(ctx);
@@ -240,7 +272,7 @@ export function SetWebXRReferenceSpaceSystem(ctx: GameState) {
 
     if (hand) {
       ctx.sendMessage<SetXRReferenceSpaceMessage>(Thread.Render, {
-        type: InputMessageType.SetXRReferenceSpace,
+        type: RendererMessageType.SetXRReferenceSpace,
         hand,
       });
     }
@@ -248,7 +280,7 @@ export function SetWebXRReferenceSpaceSystem(ctx: GameState) {
 }
 
 function updateXRController(
-  ctx: GameState,
+  ctx: GameContext,
   xrInputSourcesByHand: Map<XRHandedness, SharedXRInputSource>,
   rigNode: RemoteNode,
   rig: XRAvatarRig,
@@ -305,7 +337,7 @@ function updateXRController(
 
       addObjectToWorld(ctx, networkedController);
 
-      if (hand === XRInputHandedness.Left) {
+      if (hand === "left") {
         rig.leftControllerEid = controllerNode.eid;
         rig.prevLeftAssetPath = assetPath;
         ctx.worldResource.activeLeftControllerNode = controllerNode;
@@ -313,7 +345,7 @@ function updateXRController(
         rig.leftNetworkedEid = networkedController.eid;
         rig.leftRayEid = rayNode.eid;
         rig.leftRayNetworkedEid = networkedRayNode.eid;
-      } else if (hand === XRInputHandedness.Right) {
+      } else if (hand === "right") {
         rig.rightControllerEid = controllerNode.eid;
         rig.prevRightAssetPath = assetPath;
         ctx.worldResource.activeRightControllerNode = controllerNode;
@@ -327,7 +359,7 @@ function updateXRController(
     setFromLocalMatrix(controllerNode, controllerPoses.gripPose);
 
     // take controller node world matrices and copy to networked ents
-    if (rig.leftNetworkedEid && hand === XRInputHandedness.Left) {
+    if (rig.leftNetworkedEid && hand === "left") {
       const node = tryGetRemoteResource<RemoteNode>(ctx, rig.leftNetworkedEid);
       updateMatrixWorld(node);
       setFromLocalMatrix(node, controllerNode.worldMatrix);
@@ -336,7 +368,7 @@ function updateXRController(
       const networkedRay = tryGetRemoteResource<RemoteNode>(ctx, rig.leftRayNetworkedEid!);
       setFromLocalMatrix(networkedRay, ray.worldMatrix);
     }
-    if (rig.rightNetworkedEid && hand === XRInputHandedness.Right) {
+    if (rig.rightNetworkedEid && hand === "right") {
       const node = tryGetRemoteResource<RemoteNode>(ctx, rig.rightNetworkedEid);
       updateMatrixWorld(node);
       setFromLocalMatrix(node, controllerNode.worldMatrix);
@@ -354,7 +386,7 @@ function updateXRController(
 const _m = mat4.create();
 
 function updateXRCamera(
-  ctx: GameState,
+  ctx: GameContext,
   rigNode: RemoteNode,
   xrRig: XRAvatarRig,
   xrInputSourcesByHand: Map<XRHandedness, SharedXRInputSource>

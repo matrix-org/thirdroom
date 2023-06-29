@@ -6,7 +6,7 @@ import {
   rewindCursorView,
   skipUint32,
 } from "../allocator/CursorView";
-import { GameState, RemoteResourceManager } from "../GameTypes";
+import { GameContext, RemoteResourceManager } from "../GameTypes";
 import { IRemoteResourceClass, RemoteResourceConstructor } from "../resource/RemoteResourceClass";
 import { getRemoteResources } from "../resource/resource.game";
 import { toSharedArrayBuffer } from "../utils/arraybuffer";
@@ -188,7 +188,7 @@ export function getScriptResource<T extends RemoteResourceConstructor>(
 }
 
 export function getScriptResourceByName<T extends RemoteResourceConstructor>(
-  ctx: GameState,
+  ctx: GameContext,
   wasmCtx: WASMModuleContext,
   resourceConstructor: T,
   name: string
@@ -209,7 +209,7 @@ export function getScriptResourceByName<T extends RemoteResourceConstructor>(
 }
 
 export function getScriptResourceByNamePtr<T extends RemoteResourceConstructor>(
-  ctx: GameState,
+  ctx: GameContext,
   wasmCtx: WASMModuleContext,
   resourceConstructor: T,
   namePtr: number,

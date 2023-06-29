@@ -54,7 +54,7 @@ import { vec3, mat4, quat } from "gl-matrix";
 import EventEmitter from "events";
 import { availableRead } from "@thirdroom/ringbuffer";
 
-import { IMainThreadContext } from "../MainThread";
+import { MainContext } from "../MainThread";
 import { defineModule, getModule, Thread } from "../module/module.common";
 import {
   getLocalResource,
@@ -115,7 +115,7 @@ export interface MainAudioModule {
  * Initialization *
  *****************/
 
-export const AudioModule = defineModule<IMainThreadContext, MainAudioModule>({
+export const AudioModule = defineModule<MainContext, MainAudioModule>({
   name: "audio",
   async create(ctx, { sendMessage }) {
     const audioContext = new AudioContext();
@@ -190,7 +190,7 @@ export const AudioModule = defineModule<IMainThreadContext, MainAudioModule>({
  * Systems *
  **********/
 
-export function MainThreadAudioSystem(ctx: IMainThreadContext) {
+export function MainThreadAudioSystem(ctx: MainContext) {
   const audioModule = getModule(ctx, AudioModule);
   updateAudioDatas(ctx, audioModule);
   updateAudioSources(ctx, audioModule);
@@ -202,7 +202,7 @@ export function MainThreadAudioSystem(ctx: IMainThreadContext) {
 
 const _frequencyData = new Uint8Array(FREQ_BIN_COUNT);
 const _timeData = new Uint8Array(FREQ_BIN_COUNT);
-function updateAudioAnalyser(ctx: IMainThreadContext, audioModule: MainAudioModule) {
+function updateAudioAnalyser(ctx: MainContext, audioModule: MainAudioModule) {
   const audioAnalyser = getWriteObjectBufferView(audioModule.analyserTripleBuffer);
 
   audioModule.analyser.getByteFrequencyData(_frequencyData);
@@ -283,7 +283,7 @@ async function loadAudioData(
   }
 }
 
-function updateNodeAudioEmitters(ctx: IMainThreadContext, audioModule: MainAudioModule) {
+function updateNodeAudioEmitters(ctx: MainContext, audioModule: MainAudioModule) {
   const nodes = getLocalResources(ctx, MainNode);
 
   for (let i = 0; i < nodes.length; i++) {
@@ -300,7 +300,7 @@ function updateNodeAudioEmitters(ctx: IMainThreadContext, audioModule: MainAudio
   }
 }
 
-function updateAudioDatas(ctx: IMainThreadContext, audioModule: MainAudioModule) {
+function updateAudioDatas(ctx: MainContext, audioModule: MainAudioModule) {
   const audioDatas = getLocalResources(ctx, MainAudioData);
 
   for (let i = 0; i < audioDatas.length; i++) {
@@ -339,7 +339,7 @@ function updateAudioDatas(ctx: IMainThreadContext, audioModule: MainAudioModule)
   }
 }
 
-function updateAudioSources(ctx: IMainThreadContext, audioModule: MainAudioModule) {
+function updateAudioSources(ctx: MainContext, audioModule: MainAudioModule) {
   const localAudioSources = getLocalResources(ctx, MainAudioSource);
 
   for (let i = 0; i < localAudioSources.length; i++) {
@@ -415,7 +415,7 @@ function updateAudioSources(ctx: IMainThreadContext, audioModule: MainAudioModul
   }
 }
 
-function processAudioPlaybackRingBuffer(ctx: IMainThreadContext, audioModule: MainAudioModule) {
+function processAudioPlaybackRingBuffer(ctx: MainContext, audioModule: MainAudioModule) {
   const { audioPlaybackRingBuffer, audioPlaybackQueue } = audioModule;
 
   while (availableRead(audioPlaybackRingBuffer)) {
@@ -600,7 +600,7 @@ function findSource(sources: MainAudioSource[], sourceEid: number) {
   return undefined;
 }
 
-function updateAudioEmitters(ctx: IMainThreadContext, audioModule: MainAudioModule) {
+function updateAudioEmitters(ctx: MainContext, audioModule: MainAudioModule) {
   const localAudioEmitters = getLocalResources(ctx, MainAudioEmitter);
 
   for (let i = 0; i < localAudioEmitters.length; i++) {
@@ -658,7 +658,7 @@ const tempRotation = quat.create();
 const tempOrientation = vec3.create();
 const up = vec3.fromValues(0, 1, 0);
 
-function setAudioListenerTransform(ctx: IMainThreadContext, audioModule: MainAudioModule, worldMatrix: Float32Array) {
+function setAudioListenerTransform(ctx: MainContext, audioModule: MainAudioModule, worldMatrix: Float32Array) {
   mat4.getTranslation(tempPosition, worldMatrix);
 
   if (isNaN(tempPosition[0])) {
@@ -697,7 +697,7 @@ const AudioEmitterDistanceModelMap: { [key: number]: DistanceModelType } = {
 
 const RAD2DEG = 180 / Math.PI;
 
-export function updateNodeAudioEmitter(ctx: IMainThreadContext, audioModule: MainAudioModule, node: MainNode) {
+export function updateNodeAudioEmitter(ctx: MainContext, audioModule: MainAudioModule, node: MainNode) {
   const currentAudioEmitterResourceId = node.currentAudioEmitterResourceId;
   const nextAudioEmitterResourceId = node.audioEmitter?.eid || 0;
 
@@ -792,7 +792,7 @@ export const setPeerMediaStream = (
   audioState.mediaStreams.set(peerId, mediaStream);
 };
 
-export function setLocalMediaStream(ctx: IMainThreadContext, mediaStream: MediaStream | undefined) {
+export function setLocalMediaStream(ctx: MainContext, mediaStream: MediaStream | undefined) {
   const audioModule = getModule(ctx, AudioModule);
 
   if (mediaStream) {

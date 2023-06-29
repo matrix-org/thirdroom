@@ -1,6 +1,6 @@
 import { addComponent, defineQuery, exitQuery } from "bitecs";
 
-import { GameState, World } from "../GameTypes";
+import { GameContext, World } from "../GameTypes";
 import { defineModule, getModule } from "../module/module.common";
 import { RemoteNode } from "../resource/RemoteResources";
 
@@ -8,7 +8,7 @@ interface PrefabModuleState {
   prefabTemplateMap: Map<string, PrefabTemplate>;
 }
 
-export const PrefabModule = defineModule<GameState, PrefabModuleState>({
+export const PrefabModule = defineModule<GameContext, PrefabModuleState>({
   name: "prefab",
   create() {
     return {
@@ -28,25 +28,25 @@ export enum PrefabType {
 export interface PrefabTemplate {
   name: string;
   type: PrefabType;
-  create: (ctx: GameState, options?: any) => RemoteNode;
-  delete?: (ctx: GameState) => number;
-  serialize?: (ctx: GameState) => number;
-  deserialize?: (ctx: GameState) => number;
+  create: (ctx: GameContext, options?: any) => RemoteNode;
+  delete?: (ctx: GameContext) => number;
+  serialize?: (ctx: GameContext) => number;
+  deserialize?: (ctx: GameContext) => number;
 }
 
 export const Prefab: Map<number, string> = new Map();
 
-export function registerPrefab(state: GameState, template: PrefabTemplate) {
-  const prefabModule = getModule(state, PrefabModule);
+export function registerPrefab(ctx: GameContext, template: PrefabTemplate) {
+  const prefabModule = getModule(ctx, PrefabModule);
   if (prefabModule.prefabTemplateMap.has(template.name)) {
     console.warn("warning: overwriting existing prefab", template.name);
   }
   prefabModule.prefabTemplateMap.set(template.name, template);
   const create = template.create;
 
-  template.create = (ctx: GameState, options = {}) => {
+  template.create = (ctx: GameContext, options = {}) => {
     const node = create(ctx, options);
-    addPrefabComponent(state.world, node.eid, template.name);
+    addPrefabComponent(ctx.world, node.eid, template.name);
     return node;
   };
 }
@@ -54,8 +54,8 @@ export function registerPrefab(state: GameState, template: PrefabTemplate) {
 const prefabQuery = defineQuery([Prefab]);
 const removedPrefabQuery = exitQuery(prefabQuery);
 
-export function PrefabDisposalSystem(state: GameState) {
-  const removed = removedPrefabQuery(state.world);
+export function PrefabDisposalSystem(ctx: GameContext) {
+  const removed = removedPrefabQuery(ctx.world);
 
   for (let i = 0; i < removed.length; i++) {
     const eid = removed[i];
@@ -63,8 +63,8 @@ export function PrefabDisposalSystem(state: GameState) {
   }
 }
 
-export function getPrefabTemplate(state: GameState, name: string) {
-  const prefabModule = getModule(state, PrefabModule);
+export function getPrefabTemplate(ctx: GameContext, name: string) {
+  const prefabModule = getModule(ctx, PrefabModule);
 
   const template = prefabModule.prefabTemplateMap.get(name);
   if (!template) throw new Error("could not find template for prefab name: " + name);
@@ -72,15 +72,15 @@ export function getPrefabTemplate(state: GameState, name: string) {
   return template;
 }
 
-export const createPrefabEntity = (state: GameState, prefab: string, options = {}): RemoteNode => {
-  const prefabModule = getModule(state, PrefabModule);
+export const createPrefabEntity = (ctx: GameContext, prefab: string, options = {}): RemoteNode => {
+  const prefabModule = getModule(ctx, PrefabModule);
   const create = prefabModule.prefabTemplateMap.get(prefab)?.create;
 
   if (!create) {
     throw new Error(`Could not find prefab "${prefab}"`);
   }
 
-  return create(state, options);
+  return create(ctx, options);
 };
 
 export const addPrefabComponent = (world: World, eid: number, prefab: string) => {

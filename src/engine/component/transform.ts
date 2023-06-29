@@ -1,9 +1,9 @@
 import { vec3, quat, mat4 } from "gl-matrix";
 
-import { GameState } from "../GameTypes";
+import { GameContext } from "../GameTypes";
 import { ResourceType } from "../resource/schema";
 import { RemoteNode, RemoteScene } from "../resource/RemoteResources";
-import { defaultUp, tempVec3, tempMat4, tempQuat } from "./math";
+import { defaultUp, tempVec3, tempMat4, tempQuat } from "../common/math";
 import { getRotationNoAlloc } from "../utils/getRotationNoAlloc";
 
 export function getLastChild(parent: RemoteNode | RemoteScene): RemoteNode | undefined {
@@ -267,7 +267,7 @@ export function* getChildren(node: RemoteNode | RemoteScene): Generator<RemoteNo
   return undefined;
 }
 
-export function UpdateMatrixWorldSystem(ctx: GameState) {
+export function UpdateMatrixWorldSystem(ctx: GameContext) {
   if (ctx.worldResource.environment) {
     updateMatrixWorld(ctx.worldResource.environment.privateScene);
     updateMatrixWorld(ctx.worldResource.environment.publicScene);

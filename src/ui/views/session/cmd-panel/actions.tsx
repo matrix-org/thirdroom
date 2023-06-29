@@ -18,8 +18,8 @@ import { manageMuteRequest, MicExceptionDialog, useMuteButton } from "../../comp
 import { MemberListDialog } from "../dialogs/MemberListDialog";
 import { ShortcutUI } from "../world/ShortcutUI";
 import CrossIC from "../../../../../res/ic/cross.svg";
-import { togglePhysicsDebug } from "../../../../plugins/thirdroom/thirdroom.main";
 import { useDisableInput } from "../../../hooks/useDisableInput";
+import { togglePhysicsDebug } from "../../../../engine/renderer/renderer.main";
 
 enum ActionSection {
   Global = "Global",

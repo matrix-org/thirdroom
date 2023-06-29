@@ -6,42 +6,49 @@ import {
   InteractionModule,
   sendInteractionMessage,
 } from "../../plugins/interaction/interaction.game";
-import { GameState } from "../GameTypes";
+import { GameContext } from "../GameTypes";
 import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
 import { dynamicObjectCollisionGroups } from "../physics/CollisionGroups";
-import { addRigidBody, PhysicsModuleState } from "../physics/physics.game";
+import { addPhysicsBody, addPhysicsCollider, PhysicsModuleState } from "../physics/physics.game";
 import {
   RemoteAudioSource,
+  RemoteCollider,
   RemoteNode,
   RemoteUIButton,
   RemoteUICanvas,
   RemoteUIElement,
+  RemotePhysicsBody,
 } from "../resource/RemoteResources";
 import { tryGetRemoteResource } from "../resource/resource.game";
-import { InteractableType } from "../resource/schema";
+import { ColliderType, InteractableType, PhysicsBodyType } from "../resource/schema";
 import { createDisposables } from "../utils/createDisposables";
-import { UIButtonFocusMessage, UIButtonPressMessage, UIButtonUnfocusMessage, WebSGUIMessage } from "./ui.common";
 import { InteractableAction } from "../../plugins/interaction/interaction.common";
 import { playOneShotAudio } from "../audio/audio.game";
+import {
+  RendererMessageType,
+  UIButtonFocusMessage,
+  UIButtonPressMessage,
+  UIButtonUnfocusMessage,
+} from "../renderer/renderer.common";
 
-export const WebSGUIModule = defineModule<GameState, {}>({
+export const WebSGUIModule = defineModule<GameContext, {}>({
   name: "GameWebSGUI",
   create: async () => {
     return {};
   },
-  async init(ctx: GameState) {
+  async init(ctx: GameContext) {
     return createDisposables([
-      registerMessageHandler(ctx, WebSGUIMessage.ButtonPress, (ctx, message: UIButtonPressMessage) => {
+      registerMessageHandler(ctx, RendererMessageType.UIButtonPress, (ctx, message: UIButtonPressMessage) => {
         const button = tryGetRemoteResource<RemoteUIButton>(ctx, message.buttonEid);
         button.interactable!.pressed = true;
         button.interactable!.held = true;
         const interaction = getModule(ctx, InteractionModule);
         playOneShotAudio(ctx, interaction.clickEmitter?.sources[0] as RemoteAudioSource);
       }),
-      registerMessageHandler(ctx, WebSGUIMessage.ButtonFocus, (ctx, message: UIButtonFocusMessage) => {
+      registerMessageHandler(ctx, RendererMessageType.UIButtonFocus, (ctx, message: UIButtonFocusMessage) => {
         sendInteractionMessage(ctx, InteractableAction.Focus, message.buttonEid);
       }),
-      registerMessageHandler(ctx, WebSGUIMessage.ButtonUnfocus, (ctx, message: UIButtonUnfocusMessage) => {
+      registerMessageHandler(ctx, RendererMessageType.UIButtonUnfocus, (ctx, message: UIButtonUnfocusMessage) => {
         sendInteractionMessage(ctx, InteractableAction.Unfocus);
       }),
     ]);
@@ -49,7 +56,7 @@ export const WebSGUIModule = defineModule<GameState, {}>({
 });
 
 export function createUICanvasNode(
-  ctx: GameState,
+  ctx: GameContext,
   physics: PhysicsModuleState,
   size: vec2,
   width: number,
@@ -70,13 +77,25 @@ export function createUICanvasNode(
   const node = new RemoteNode(ctx.resourceManager, { uiCanvas });
 
   // add rigidbody for interactable UI
-  const rigidBodyDesc = RAPIER.RigidBodyDesc.kinematicPositionBased();
-  const rigidBody = physics.physicsWorld.createRigidBody(rigidBodyDesc);
-  const colliderDesc = RAPIER.ColliderDesc.cuboid(size[0] / 2, size[1] / 2, 0.01)
-    .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS)
-    .setCollisionGroups(dynamicObjectCollisionGroups);
-  physics.physicsWorld.createCollider(colliderDesc, rigidBody);
-  addRigidBody(ctx, node, rigidBody);
+  addPhysicsCollider(
+    ctx.world,
+    node,
+    new RemoteCollider(ctx.resourceManager, {
+      type: ColliderType.Box,
+      activeEvents: RAPIER.ActiveEvents.COLLISION_EVENTS,
+      collisionGroups: dynamicObjectCollisionGroups,
+      size: [size[0], size[1], 0.01],
+    })
+  );
+
+  addPhysicsBody(
+    ctx.world,
+    physics,
+    node,
+    new RemotePhysicsBody(ctx.resourceManager, {
+      type: PhysicsBodyType.Kinematic,
+    })
+  );
 
   addInteractableComponent(ctx, physics, node, InteractableType.UI);
 
@@ -105,18 +124,30 @@ function removeUIElementFromLinkedList(parent: RemoteUIElement, child: RemoteUIE
   }
 }
 
-export function initNodeUICanvas(ctx: GameState, physics: PhysicsModuleState, node: RemoteNode) {
+export function initNodeUICanvas(ctx: GameContext, physics: PhysicsModuleState, node: RemoteNode) {
   const { size } = node.uiCanvas!;
 
   // setup collider
-  const rigidBodyDesc = RAPIER.RigidBodyDesc.kinematicPositionBased();
-  const rigidBody = physics.physicsWorld.createRigidBody(rigidBodyDesc);
-  const colliderDesc = RAPIER.ColliderDesc.cuboid(size[0] / 2, size[1] / 2, 0.01)
-    .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS)
-    .setCollisionGroups(dynamicObjectCollisionGroups);
-  physics.physicsWorld.createCollider(colliderDesc, rigidBody);
+  addPhysicsCollider(
+    ctx.world,
+    node,
+    new RemoteCollider(ctx.resourceManager, {
+      type: ColliderType.Box,
+      size: [size[0], size[1], 0.02],
+      activeEvents: RAPIER.ActiveEvents.COLLISION_EVENTS,
+      collisionGroups: dynamicObjectCollisionGroups,
+    })
+  );
 
-  addRigidBody(ctx, node, rigidBody);
+  addPhysicsBody(
+    ctx.world,
+    physics,
+    node,
+    new RemotePhysicsBody(ctx.resourceManager, {
+      type: PhysicsBodyType.Kinematic,
+    })
+  );
+
   addInteractableComponent(ctx, physics, node, InteractableType.UI);
 }
 

@@ -15,7 +15,7 @@ import {
   //EditorSelectionSystem,
   EditorStateSystem,
 } from "./editor/editor.game";
-import { GameState } from "./GameTypes";
+import { GameContext } from "./GameTypes";
 import { RendererModule } from "./renderer/renderer.game";
 import { SpawnablesModule } from "../plugins/spawnables/spawnables.game";
 import {
@@ -56,7 +56,7 @@ import { ActionBarSystem } from "../plugins/thirdroom/action-bar.game";
 import { EnableCharacterControllerSystem } from "./player/CharacterController";
 import { CameraRigSystem } from "./player/CameraRig";
 
-export default defineConfig<GameState>({
+export default defineConfig<GameContext>({
   modules: [
     PrefabModule,
     ResourceModule,

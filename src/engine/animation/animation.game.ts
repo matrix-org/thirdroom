@@ -1,15 +1,14 @@
 import RAPIER, { Capsule } from "@dimforge/rapier3d-compat";
-import { defineQuery, exitQuery, hasComponent } from "bitecs";
+import { defineQuery, exitQuery } from "bitecs";
 import { vec3 } from "gl-matrix";
 import { AnimationAction, AnimationMixer, Bone, Object3D, Quaternion, Vector3 } from "three";
 import { radToDeg } from "three/src/math/MathUtils";
 
-import { getForwardVector, getPitch, getRightVector, getYaw } from "../component/math";
+import { getForwardVector, getPitch, getRightVector, getYaw } from "../common/math";
 import { maxEntities } from "../config.common";
-import { GameState } from "../GameTypes";
+import { GameContext } from "../GameTypes";
 import { getModule } from "../module/module.common";
-import { Networked, Owned } from "../network/NetworkComponents";
-import { PhysicsModule, PhysicsModuleState, RigidBody } from "../physics/physics.game";
+import { PhysicsModule, PhysicsModuleState } from "../physics/physics.game";
 import { getRemoteResource, removeResourceRef } from "../resource/resource.game";
 import { RemoteAnimation, RemoteNode } from "../resource/RemoteResources";
 import { playerShapeCastCollisionGroups } from "../physics/CollisionGroups";
@@ -45,14 +44,13 @@ const exitAnimationQuery = exitQuery(animationQuery);
 const boneQuery = defineQuery([BoneComponent]);
 const exitBoneQuery = exitQuery(boneQuery);
 
-export function AnimationSystem(ctx: GameState) {
+export function AnimationSystem(ctx: GameContext) {
   disposeAnimations(ctx);
   disposeBones(ctx);
   processAnimations(ctx);
   syncBones(ctx);
 }
 
-const _vel = vec3.create();
 const _forward = vec3.create();
 const _right = vec3.create();
 
@@ -72,7 +70,7 @@ const shapeCastPosition = new Vector3();
 const shapeCastRotation = new Quaternion();
 const _obj = new Object3D();
 
-const isGrounded = (ctx: GameState, physicsWorld: RAPIER.World, body: RAPIER.RigidBody) => {
+const isGrounded = (ctx: GameContext, physicsWorld: RAPIER.World, body: RAPIER.RigidBody) => {
   shapeCastPosition.copy(body.translation() as Vector3).add(shapeTranslationOffset);
   shapeCastRotation.copy(_obj.quaternion).multiply(shapeRotationOffset);
 
@@ -92,7 +90,7 @@ const isGrounded = (ctx: GameState, physicsWorld: RAPIER.World, body: RAPIER.Rig
   return isGrounded;
 };
 
-function processAnimations(ctx: GameState) {
+function processAnimations(ctx: GameContext) {
   const physics = getModule(ctx, PhysicsModule);
   const ents = animationQuery(ctx.world);
   for (let i = 0; i < ents.length; i++) {
@@ -108,14 +106,14 @@ function processAnimations(ctx: GameState) {
       continue;
     }
 
-    const rigidBody = RigidBody.store.get(parent.eid);
+    const body = parent.physicsBody?.body;
 
-    if (animation && rigidBody) {
+    if (animation && body) {
       // collectively fade all animations out each frame
       reduceClipActionWeights(animation.actions, fadeOutAmount * ctx.dt);
 
       // select actions to play based on velocity
-      const actionsToPlay = getClipActionsUsingVelocity(ctx, physics, parent, rigidBody, animation);
+      const actionsToPlay = getClipActionsUsingVelocity(ctx, physics, parent, body, animation);
       // synchronize selected clip action times
       synchronizeClipActions(actionsToPlay);
       // fade in selected animations
@@ -127,7 +125,7 @@ function processAnimations(ctx: GameState) {
   return ctx;
 }
 
-function syncBones(ctx: GameState) {
+function syncBones(ctx: GameContext) {
   // sync bone positions
   const bones = boneQuery(ctx.world);
   for (let i = 0; i < bones.length; i++) {
@@ -180,29 +178,30 @@ function increaseClipActionWeights(actions: AnimationAction[], amount: number) {
 }
 
 function getClipActionsUsingVelocity(
-  ctx: GameState,
+  ctx: GameContext,
   physics: PhysicsModuleState,
   node: RemoteNode,
-  rigidBody: RAPIER.RigidBody,
+  body: RAPIER.RigidBody,
   animation: IAnimationComponent
 ): AnimationAction[] {
   const eid = node.eid;
   const quaternion = node.quaternion;
 
-  // if remote object, take velocity from Networked component
-  // otherwise, take velocity from entity's RigidBody
-  const remote = hasComponent(ctx.world, Networked, eid) && !hasComponent(ctx.world, Owned, eid);
-  const linvel = remote ? new Vector3().fromArray(Networked.velocity[eid]) : rigidBody.linvel();
-  const vel = remote ? vec3.copy(_vel, Networked.velocity[eid]) : vec3.set(_vel, linvel.x, linvel.y, linvel.z);
-  const totalSpeed = linvel.x ** 2 + linvel.z ** 2;
+  if (!node.physicsBody) {
+    throw new Error(`Physics body not found on node ${node.eid}`);
+  }
+
+  const linvel = node.physicsBody.velocity;
+
+  const totalSpeed = linvel[0] ** 2 + linvel[2] ** 2;
 
   const pitch = getPitch(quaternion);
   const roll = getYaw(quaternion);
   const forward = getForwardVector(_forward, pitch, roll);
   const right = getRightVector(_right, roll);
 
-  const angle = radToDeg(vec3.angle(vel, forward));
-  const angle2 = radToDeg(vec3.angle(vel, right));
+  const angle = radToDeg(vec3.angle(linvel, forward));
+  const angle2 = radToDeg(vec3.angle(linvel, right));
 
   const movingForward = angle < 50;
   const movingBackward = angle > 120;
@@ -217,12 +216,12 @@ function getClipActionsUsingVelocity(
     lastYrot[eid] = yRot;
   }
 
-  const jumping = !isGrounded(ctx, physics.physicsWorld, rigidBody);
+  const jumping = !isGrounded(ctx, physics.physicsWorld, body);
 
   // choose clip based on velocity
   const actions: AnimationAction[] = [];
 
-  if (linvel.y < -20) {
+  if (linvel[1] < -20) {
     actions.push(animation.actionMap.get(AnimationClipType.Fall2)!);
   } else if (jumping) {
     actions.push(animation.actionMap.get(AnimationClipType.Fall1)!);
@@ -279,7 +278,7 @@ function getClipActionsUsingVelocity(
   return actions;
 }
 
-function disposeAnimations(ctx: GameState) {
+function disposeAnimations(ctx: GameContext) {
   const entities = exitAnimationQuery(ctx.world);
 
   for (let i = 0; i < entities.length; i++) {
@@ -296,7 +295,7 @@ function disposeAnimations(ctx: GameState) {
   }
 }
 
-function disposeBones(ctx: GameState) {
+function disposeBones(ctx: GameContext) {
   const entities = exitBoneQuery(ctx.world);
 
   for (let i = 0; i < entities.length; i++) {

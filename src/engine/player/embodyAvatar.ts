@@ -1,7 +1,7 @@
 import { removeComponent, addComponent } from "bitecs";
 
 import { removeInteractableComponent } from "../../plugins/interaction/interaction.game";
-import { GameState } from "../GameTypes";
+import { GameContext } from "../GameTypes";
 import { GameInputModule } from "../input/input.game";
 import { addXRAvatarRig } from "../input/WebXRAvatarRigSystem";
 import { PhysicsModuleState } from "../physics/physics.game";
@@ -13,7 +13,7 @@ import { getNametag, NametagAnchor } from "./nametags.game";
 import { OurPlayer } from "./Player";
 
 // TODO: move this to a plugin (along with InformPlayerNetworkId OR register another hook into InformPlayerNetworkId)
-export function embodyAvatar(ctx: GameState, physics: PhysicsModuleState, input: GameInputModule, node: RemoteNode) {
+export function embodyAvatar(ctx: GameContext, physics: PhysicsModuleState, input: GameInputModule, node: RemoteNode) {
   // remove the nametag
   try {
     const nametag = getNametag(ctx, node);

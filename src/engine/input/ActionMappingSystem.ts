@@ -1,6 +1,6 @@
 import { vec2 } from "gl-matrix";
 
-import { GameState } from "../GameTypes";
+import { GameContext } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import { ActionBindingTypes, ActionMap, ActionState, ActionType, BindingType, ButtonActionState } from "./ActionMap";
 import { GameInputModule, InputModule } from "./input.game";
@@ -16,12 +16,6 @@ function defineActionType<A>(actionDef: A): A {
 
 export const ActionTypesToBindings = {
   [ActionType.Button]: defineActionType({
-    /**
-     * binary format
-     * pressed:   0b001
-     * released:  0b010
-     * held:      0b100
-     */
     create: () => ({ pressed: false, released: false, held: false }),
     reduce: (input: GameInputModule, bindings: ActionBindingTypes[], state: ButtonActionState) => {
       // TODO: In WebXR the pressed/release state doesn't work correctly.
@@ -35,10 +29,6 @@ export const ActionTypesToBindings = {
           down = down || !!input.raw[binding.path];
         }
       }
-
-      // TODO: only send changed actions (current change detection does not send the zeroed out states)
-      // const changed =
-      //   pressed !== actionState.pressed || released !== actionState.released || held !== actionState.held;
 
       state.pressed = !state.held && down;
       state.released = state.held && !down;
@@ -62,8 +52,6 @@ export const ActionTypesToBindings = {
           if (binding.y) {
             y = input.raw[binding.y] || 0;
           }
-
-          // const changed = rawX ? rawX !== actionState[0] : false || rawY ? rawY !== actionState[1] : false;
         } else if (binding.type === BindingType.DirectionalButtons) {
           if (input.raw[binding.up]) {
             y += 1;
@@ -80,8 +68,6 @@ export const ActionTypesToBindings = {
           if (input.raw[binding.right]) {
             x += 1;
           }
-
-          // const changed = x !== actionState[0] || y !== actionState[1];
         }
 
         if (x !== 0 || y !== 0) {
@@ -95,7 +81,7 @@ export const ActionTypesToBindings = {
   }),
 };
 
-export function ActionMappingSystem(ctx: GameState) {
+export function ActionMappingSystem(ctx: GameContext) {
   const input = getModule(ctx, InputModule);
 
   // Note not optimized at all

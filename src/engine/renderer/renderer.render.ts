@@ -9,8 +9,12 @@ import {
   Object3D,
   NoToneMapping,
   Vector2,
+  LineSegments,
 } from "three";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader";
+import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader";
+import initYoga, { Yoga } from "yoga-wasm-web";
+import yogaUrl from "yoga-wasm-web/dist/yoga.wasm?url";
 
 import {
   ConsumerThreadContext,
@@ -19,42 +23,73 @@ import {
   registerMessageHandler,
   Thread,
 } from "../module/module.common";
-import { RenderAccessor, RenderNode, RenderWorld } from "../resource/resource.render";
-import { updateActiveSceneResource, updateWorldVisibility } from "../scene/scene.render";
+import {
+  getLocalResource,
+  RenderAccessor,
+  RenderImage,
+  RenderNode,
+  RenderUICanvas,
+  RenderUIText,
+  RenderWorld,
+} from "./RenderResources";
 import { createDisposables } from "../utils/createDisposables";
 import {
   CanvasResizeMessage,
   EnableMatrixMaterialMessage,
   EnterXRMessage,
-  InitializeCanvasMessage,
+  InitializeRendererMessage,
   NotifySceneRendererMessage,
+  PhysicsDebugRenderTripleBuffer,
+  PhysicsEnableDebugRenderMessage,
   RendererMessageType,
   rendererModuleName,
   RenderQuality,
+  SetNodeOptimizationsEnabledMessage,
+  SetXRReferenceSpaceMessage,
+  SharedXRInputSource,
+  UIButtonFocusMessage,
+  UIButtonPressMessage,
+  UIButtonUnfocusMessage,
+  UICanvasFocusMessage,
+  UICanvasPressMessage,
+  UpdateXRInputSourcesMessage,
+  XRCameraPoseSchema,
+  XRCameraPoseTripleBuffer,
+  XRControllerPosesSchema,
+  XRControllerPosesTripleBuffer,
+  XRHandPosesSchema,
+  XRHandPosesTripleBuffer,
   XRMode,
   XRSessionModeToXRMode,
 } from "./renderer.common";
-import { updateLocalNodeResources, updateNodesFromXRPoses } from "../node/node.render";
 import { ResourceId } from "../resource/resource.common";
 import { RenderPipeline } from "./RenderPipeline";
-import patchShaderChunks from "../material/patchShaderChunks";
-import { updateNodeReflections, updateReflectionProbeTextureArray } from "../reflection-probe/reflection-probe.render";
-import { CameraType } from "../resource/schema";
-import { MatrixMaterial } from "../material/MatrixMaterial";
-import { ArrayBufferKTX2Loader, initKTX2Loader, updateImageResources, updateTextureResources } from "../utils/textures";
-import { updateTileRenderers } from "../tiles-renderer/tiles-renderer.render";
-import { InputModule } from "../input/input.render";
-import { updateDynamicAccessors } from "../accessor/accessor.render";
-import { EditorModule } from "../editor/editor.render";
-import { HologramMaterial } from "../material/HologramMaterial";
+import patchShaderChunks from "./materials/patchShaderChunks";
+import { MatrixMaterial } from "./materials/MatrixMaterial";
+import { HologramMaterial } from "./materials/HologramMaterial";
+import { ArrayBufferKTX2Loader } from "./ArrayBufferKTX2Loader";
+import { findHitButton } from "./ui";
+import { StatsBuffer } from "../stats/stats.common";
+import { XRInputLayout, XRInputProfileManager } from "./xr/WebXRInputProfiles";
+import { InputRingBuffer } from "../common/InputRingBuffer";
+import { createObjectTripleBuffer } from "../allocator/ObjectBufferView";
+import { InputSourceId } from "../input/input.common";
 
-export interface RenderThreadState extends ConsumerThreadContext {
+export interface RenderContext extends ConsumerThreadContext {
   canvas?: HTMLCanvasElement;
   elapsed: number;
   dt: number;
   gameToRenderTripleBufferFlags: Uint8Array;
   renderToGameTripleBufferFlags: Uint8Array;
   worldResource: RenderWorld;
+}
+
+export interface XRInputSourceItem {
+  id: number;
+  inputSource: XRInputSource;
+  layout: XRInputLayout;
+  controllerPoses: XRControllerPosesTripleBuffer;
+  handPoses?: XRHandPosesTripleBuffer;
 }
 
 export interface RendererModuleState {
@@ -79,6 +114,25 @@ export interface RendererModuleState {
   dynamicAccessors: RenderAccessor[];
   xrMode: Uint8Array;
   quality: RenderQuality;
+  debugRender: boolean;
+  debugRenderTripleBuffer?: PhysicsDebugRenderTripleBuffer;
+  debugLines?: LineSegments;
+  nodeOptimizationsEnabled: boolean;
+  loadingImages: Set<RenderImage>;
+  loadingText: Set<RenderUIText>;
+  yoga: Yoga;
+  statsBuffer: StatsBuffer;
+  staleFrameCounter: number;
+  staleTripleBufferCounter: number;
+  inputSourceItems: XRInputSourceItem[];
+  inputRingBuffer: InputRingBuffer;
+  inputProfileManager: XRInputProfileManager;
+  cameraPose?: XRViewerPose;
+  cameraPoseTripleBuffer: XRCameraPoseTripleBuffer;
+  leftControllerPose?: XRPose;
+  rightControllerPose?: XRPose;
+  updateReferenceSpaceHand?: XRHandedness;
+  originalReferenceSpace?: XRReferenceSpace;
 }
 
 // TODO: Add multiviewStereo to three types once https://github.com/mrdoob/three.js/pull/24048 is merged.
@@ -88,11 +142,18 @@ declare module "three" {
   }
 }
 
-export const RendererModule = defineModule<RenderThreadState, RendererModuleState>({
+export const RendererModule = defineModule<RenderContext, RendererModuleState>({
   name: rendererModuleName,
   async create(ctx, { waitForMessage, sendMessage }) {
-    const { canvasTarget, initialCanvasHeight, initialCanvasWidth, supportedXRSessionModes, quality } =
-      await waitForMessage<InitializeCanvasMessage>(Thread.Main, RendererMessageType.InitializeCanvas);
+    const {
+      canvasTarget,
+      initialCanvasHeight,
+      initialCanvasWidth,
+      supportedXRSessionModes,
+      quality,
+      statsBuffer,
+      inputRingBuffer,
+    } = await waitForMessage<InitializeRendererMessage>(Thread.Main, RendererMessageType.InitializeRenderer);
 
     patchShaderChunks();
 
@@ -158,11 +219,20 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
     const imageBitmapLoader = new ImageBitmapLoader();
     const matrixMaterial = await MatrixMaterial.load(imageBitmapLoader);
 
-    const ktx2Loader = await initKTX2Loader("/basis/", renderer);
+    const ktx2Loader = new KTX2Loader().setTranscoderPath("/basis/").detectSupport(renderer) as ArrayBufferKTX2Loader;
+
+    await ktx2Loader.init();
+
+    const yogaWasm = await fetch(yogaUrl);
+    const yogaWasmBuffer = await yogaWasm.arrayBuffer();
+    const yoga = await initYoga(yogaWasmBuffer);
 
     const scene = new Scene();
     const xrAvatarRoot = new Object3D();
     scene.add(xrAvatarRoot);
+
+    const inputProfilesBasePath = new URL("/webxr-input-profiles", location.href);
+    const cameraPoseTripleBuffer = createObjectTripleBuffer(XRCameraPoseSchema, ctx.renderToGameTripleBufferFlags);
 
     return {
       needsResize: true,
@@ -185,24 +255,147 @@ export const RendererModule = defineModule<RenderThreadState, RendererModuleStat
       dynamicAccessors: [],
       xrMode,
       quality,
+      debugRender: false,
+      nodeOptimizationsEnabled: true,
+      yoga,
+      loadingImages: new Set(),
+      // HACK: figure out why sometimes text.value is undefined
+      loadingText: new Set(),
+      statsBuffer,
+      staleFrameCounter: 0,
+      staleTripleBufferCounter: 0,
+      inputProfileManager: new XRInputProfileManager(inputProfilesBasePath.href),
+      inputSourceItems: [],
+      inputRingBuffer,
+      cameraPoseTripleBuffer,
     };
   },
   init(ctx) {
+    const { renderer, inputSourceItems, inputProfileManager, cameraPoseTripleBuffer } = getModule(ctx, RendererModule);
+
+    let nextInputSourceId = Object.keys(InputSourceId).length;
+
+    async function onXRInputSourcesChanged(event: XRInputSourceChangeEvent) {
+      try {
+        const items = await Promise.all(
+          Array.from(event.added).map((inputSource) =>
+            createXRInputSourceItem(ctx, inputProfileManager, nextInputSourceId++, inputSource)
+          )
+        );
+
+        inputSourceItems.push(...items);
+
+        const added: SharedXRInputSource[] = items.map(({ id, inputSource, layout, controllerPoses, handPoses }) => ({
+          id,
+          handedness: inputSource.handedness,
+          layout,
+          cameraPose: cameraPoseTripleBuffer,
+          controllerPoses,
+          handPoses,
+        }));
+
+        const removed: number[] = [];
+
+        for (const inputSource of event.removed) {
+          const index = inputSourceItems.findIndex((item) => item.inputSource === inputSource);
+
+          if (index !== -1) {
+            removed.push(inputSourceItems[index].id);
+            inputSourceItems.splice(index, 1);
+          }
+        }
+
+        ctx.sendMessage<UpdateXRInputSourcesMessage>(Thread.Game, {
+          type: RendererMessageType.UpdateXRInputSources,
+          added,
+          removed,
+        });
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    async function onXRSessionStart() {
+      try {
+        const session = renderer.xr.getSession();
+
+        if (session) {
+          const items = await Promise.all(
+            Array.from(session.inputSources).map((inputSource) =>
+              createXRInputSourceItem(ctx, inputProfileManager, nextInputSourceId++, inputSource)
+            )
+          );
+
+          inputSourceItems.push(...items);
+
+          const added: SharedXRInputSource[] = items.map(({ id, inputSource, layout, controllerPoses, handPoses }) => ({
+            id,
+            handedness: inputSource.handedness,
+            layout,
+            cameraPose: cameraPoseTripleBuffer,
+            controllerPoses,
+            handPoses,
+          }));
+
+          ctx.sendMessage<UpdateXRInputSourcesMessage>(Thread.Game, {
+            type: RendererMessageType.UpdateXRInputSources,
+            added,
+            removed: [],
+          });
+
+          session.addEventListener("inputsourceschange", onXRInputSourcesChanged);
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    function onXRSessionEnd() {
+      const rendererModule = getModule(ctx, RendererModule);
+      const removed = inputSourceItems.map((source) => source.id);
+
+      ctx.sendMessage<UpdateXRInputSourcesMessage>(Thread.Game, {
+        type: RendererMessageType.UpdateXRInputSources,
+        added: [],
+        removed,
+      });
+
+      inputSourceItems.length = 0;
+
+      rendererModule.originalReferenceSpace = undefined;
+    }
+
+    renderer.xr.addEventListener("sessionstart", onXRSessionStart);
+    renderer.xr.addEventListener("sessionend", onXRSessionEnd);
+
+    const disposeSessionHandlers = () => {
+      renderer.xr.removeEventListener("sessionstart", onXRSessionStart);
+      renderer.xr.removeEventListener("sessionend", onXRSessionEnd);
+    };
+
     return createDisposables([
       registerMessageHandler(ctx, RendererMessageType.CanvasResize, onResize),
       registerMessageHandler(ctx, RendererMessageType.NotifySceneRendered, onNotifySceneRendered),
       registerMessageHandler(ctx, RendererMessageType.EnableMatrixMaterial, onEnableMatrixMaterial),
       registerMessageHandler(ctx, RendererMessageType.EnterXR, onEnterXR),
+      registerMessageHandler(ctx, RendererMessageType.PhysicsEnableDebugRender, onEnableDebugRender),
+      registerMessageHandler(ctx, RendererMessageType.PhysicsDisableDebugRender, onDisableDebugRender),
+      registerMessageHandler(ctx, RendererMessageType.SetNodeOptimizationsEnabled, onSetNodeOptimizationsEnabled),
+      registerMessageHandler(ctx, RendererMessageType.PrintRenderThreadState, onPrintRenderThreadState),
+      registerMessageHandler(ctx, RendererMessageType.UICanvasPress, onUICanvasPressed),
+      registerMessageHandler(ctx, RendererMessageType.UICanvasFocus, onUICanvasFocused),
+      registerMessageHandler(ctx, RendererMessageType.SetXRReferenceSpace, onSetXRReferenceSpace),
+      disposeSessionHandlers,
     ]);
   },
 });
 
-export function startRenderLoop(state: RenderThreadState) {
-  const { renderer } = getModule(state, RendererModule);
-  renderer.setAnimationLoop(() => onUpdate(state));
+export function startRenderLoop(ctx: RenderContext) {
+  const { renderer } = getModule(ctx, RendererModule);
+  renderer.setAnimationLoop(() => onUpdate(ctx));
 }
 
-function onUpdate(ctx: RenderThreadState) {
+function onUpdate(ctx: RenderContext) {
   const now = performance.now();
   ctx.dt = (now - ctx.elapsed) / 1000;
   ctx.elapsed = now;
@@ -216,98 +409,120 @@ function onUpdate(ctx: RenderThreadState) {
   }
 }
 
-function onResize(state: RenderThreadState, { canvasWidth, canvasHeight }: CanvasResizeMessage) {
-  const renderer = getModule(state, RendererModule);
+function onResize(ctx: RenderContext, { canvasWidth, canvasHeight }: CanvasResizeMessage) {
+  const renderer = getModule(ctx, RendererModule);
   renderer.needsResize = true;
   renderer.canvasWidth = canvasWidth;
   renderer.canvasHeight = canvasHeight;
 }
 
-function onNotifySceneRendered(ctx: RenderThreadState, { id, sceneResourceId, frames }: NotifySceneRendererMessage) {
+function onNotifySceneRendered(ctx: RenderContext, { id, sceneResourceId, frames }: NotifySceneRendererMessage) {
   const renderer = getModule(ctx, RendererModule);
   renderer.sceneRenderedRequests.push({ id, sceneResourceId, frames });
 }
 
-function onEnterXR(ctx: RenderThreadState, { session, mode }: EnterXRMessage) {
+function onEnterXR(ctx: RenderContext, { session, mode }: EnterXRMessage) {
   const { renderer, xrMode } = getModule(ctx, RendererModule);
   renderer.xr.setSession(session as unknown as any);
   Atomics.store(xrMode, 0, XRSessionModeToXRMode[mode] || XRMode.None);
 }
 
-function onExitXR(ctx: RenderThreadState) {
+function onExitXR(ctx: RenderContext) {
   const { xrMode } = getModule(ctx, RendererModule);
   Atomics.store(xrMode, 0, XRMode.None);
 }
 
-export function RendererSystem(ctx: RenderThreadState) {
-  const rendererModule = getModule(ctx, RendererModule);
-  const inputModule = getModule(ctx, InputModule);
-  const { needsResize, canvasWidth, canvasHeight, renderPipeline, tileRendererNodes, dynamicAccessors } =
-    rendererModule;
-
-  const activeScene = ctx.worldResource.environment?.publicScene;
-  const activeCameraNode = ctx.worldResource.activeCameraNode;
-
-  // TODO: Remove this
-  if (activeScene?.eid !== rendererModule.prevSceneResource) {
-    rendererModule.enableMatrixMaterial = false;
-  }
-
-  if (
-    activeCameraNode &&
-    activeCameraNode.cameraObject &&
-    activeCameraNode.camera &&
-    (needsResize || rendererModule.prevCameraResource !== activeCameraNode.eid)
-  ) {
-    if (
-      "isPerspectiveCamera" in activeCameraNode.cameraObject &&
-      activeCameraNode.camera.type === CameraType.Perspective
-    ) {
-      if (activeCameraNode.camera.aspectRatio === 0) {
-        activeCameraNode.cameraObject.aspect = canvasWidth / canvasHeight;
-      }
-    }
-
-    activeCameraNode.cameraObject.updateProjectionMatrix();
-
-    renderPipeline.setSize(canvasWidth, canvasHeight);
-    rendererModule.needsResize = false;
-    rendererModule.prevCameraResource = activeCameraNode.eid;
-    rendererModule.prevSceneResource = activeScene?.eid;
-  }
-
-  const { editorLoaded } = getModule(ctx, EditorModule);
-
-  updateImageResources(ctx);
-  updateTextureResources(ctx);
-  updateDynamicAccessors(dynamicAccessors);
-  updateWorldVisibility(ctx, editorLoaded);
-  updateActiveSceneResource(ctx, activeScene);
-  updateLocalNodeResources(ctx, rendererModule, editorLoaded);
-  updateTileRenderers(ctx, tileRendererNodes, activeCameraNode);
-  updateReflectionProbeTextureArray(ctx, activeScene);
-  updateNodeReflections(ctx, activeScene, rendererModule);
-  updateNodesFromXRPoses(ctx, rendererModule, inputModule);
-
-  if (activeScene && activeCameraNode && activeCameraNode.cameraObject) {
-    renderPipeline.render(rendererModule.scene, activeCameraNode.cameraObject, ctx.dt);
-  }
-
-  for (let i = rendererModule.sceneRenderedRequests.length - 1; i >= 0; i--) {
-    const request = rendererModule.sceneRenderedRequests[i];
-
-    if (activeScene && activeScene.eid === request.sceneResourceId && --request.frames <= 0) {
-      ctx.sendMessage(Thread.Game, {
-        type: RendererMessageType.SceneRenderedNotification,
-        id: request.id,
-      });
-
-      rendererModule.sceneRenderedRequests.splice(i, 1);
-    }
-  }
-}
-
-function onEnableMatrixMaterial(ctx: RenderThreadState, message: EnableMatrixMaterialMessage) {
+function onEnableMatrixMaterial(ctx: RenderContext, message: EnableMatrixMaterialMessage) {
   const renderer = getModule(ctx, RendererModule);
   renderer.enableMatrixMaterial = message.enabled;
+}
+
+function onEnableDebugRender(ctx: RenderContext, { tripleBuffer }: PhysicsEnableDebugRenderMessage) {
+  const physicsModule = getModule(ctx, RendererModule);
+  physicsModule.debugRender = true;
+  physicsModule.debugRenderTripleBuffer = tripleBuffer;
+}
+
+function onDisableDebugRender(ctx: RenderContext) {
+  const physicsModule = getModule(ctx, RendererModule);
+  physicsModule.debugRender = false;
+  physicsModule.debugRenderTripleBuffer = undefined;
+}
+
+function onSetNodeOptimizationsEnabled(ctx: RenderContext, { enabled }: SetNodeOptimizationsEnabledMessage) {
+  const renderer = getModule(ctx, RendererModule);
+  renderer.nodeOptimizationsEnabled = enabled;
+}
+
+function onPrintRenderThreadState(ctx: RenderContext) {
+  console.log(Thread.Render, ctx);
+}
+
+function onUICanvasFocused(ctx: RenderContext, message: UICanvasFocusMessage): void {
+  const uiCanvas = getLocalResource<RenderUICanvas>(ctx, message.uiCanvasEid);
+  if (!uiCanvas) {
+    console.warn("Could not find UI canvas for eid", message.uiCanvasEid);
+    return;
+  }
+
+  const button = findHitButton(uiCanvas, message.hitPoint);
+  if (!button) {
+    ctx.sendMessage<UIButtonUnfocusMessage>(Thread.Game, {
+      type: RendererMessageType.UIButtonUnfocus,
+    });
+    return;
+  }
+
+  ctx.sendMessage<UIButtonFocusMessage>(Thread.Game, {
+    type: RendererMessageType.UIButtonFocus,
+    buttonEid: button.eid,
+  });
+}
+
+function onUICanvasPressed(ctx: RenderContext, message: UICanvasPressMessage): void {
+  const uiCanvas = getLocalResource<RenderUICanvas>(ctx, message.uiCanvasEid);
+  if (!uiCanvas) {
+    console.warn("Could not find UI canvas for eid", message.uiCanvasEid);
+    return;
+  }
+
+  const button = findHitButton(uiCanvas, message.hitPoint);
+  if (!button) return;
+
+  ctx.sendMessage<UIButtonPressMessage>(Thread.Game, {
+    type: RendererMessageType.UIButtonPress,
+    buttonEid: button.eid,
+  });
+}
+
+function onSetXRReferenceSpace(ctx: RenderContext, message: SetXRReferenceSpaceMessage) {
+  const rendererModule = getModule(ctx, RendererModule);
+  rendererModule.updateReferenceSpaceHand = message.hand;
+}
+
+async function createXRInputSourceItem(
+  ctx: RenderContext,
+  inputProfileManager: XRInputProfileManager,
+  id: number,
+  inputSource: XRInputSource
+): Promise<XRInputSourceItem> {
+  const profile = await inputProfileManager.fetchProfile(inputSource);
+
+  const layout = profile.layouts[inputSource.handedness];
+
+  if (!layout) {
+    throw new Error(`No "${inputSource.handedness}" layout found for WebXR controller ${profile.profileId}`);
+  }
+
+  const assetPath = inputProfileManager.resolveAssetPath(`${profile.profileId}/${layout.assetPath}`);
+
+  const modifiedLayout = { ...layout, assetPath };
+
+  return {
+    id,
+    inputSource,
+    layout: modifiedLayout,
+    controllerPoses: createObjectTripleBuffer(XRControllerPosesSchema, ctx.renderToGameTripleBufferFlags),
+    handPoses: inputSource.hand && createObjectTripleBuffer(XRHandPosesSchema, ctx.renderToGameTripleBufferFlags),
+  };
 }

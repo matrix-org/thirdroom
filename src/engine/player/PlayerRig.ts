@@ -5,7 +5,7 @@ import { quat, vec3 } from "gl-matrix";
 import { addInteractableComponent, GRAB_DISTANCE } from "../../plugins/interaction/interaction.game";
 import { getSpawnPoints, spawnPointQuery } from "../../plugins/thirdroom/thirdroom.game";
 import { addChild } from "../component/transform";
-import { GameState } from "../GameTypes";
+import { GameContext } from "../GameTypes";
 import { createNodeFromGLTFURI } from "../gltf/gltf.game";
 import { GameInputModule } from "../input/input.game";
 import { createLineMesh } from "../mesh/mesh.game";
@@ -13,7 +13,7 @@ import { getModule } from "../module/module.common";
 import { GameNetworkState, associatePeerWithEntity, NetworkModule, setLocalPeerId } from "../network/network.game";
 import { Owned, Networked } from "../network/NetworkComponents";
 import { playerCollisionGroups } from "../physics/CollisionGroups";
-import { addRigidBody, Kinematic, PhysicsModule, PhysicsModuleState } from "../physics/physics.game";
+import { addPhysicsBody, addPhysicsCollider, PhysicsModule, PhysicsModuleState } from "../physics/physics.game";
 import { createPrefabEntity, PrefabType, registerPrefab } from "../prefab/prefab.game";
 import {
   RemoteNode,
@@ -22,9 +22,18 @@ import {
   RemoteAudioData,
   RemoteAudioEmitter,
   RemoteAudioSource,
+  RemoteCollider,
+  RemotePhysicsBody,
 } from "../resource/RemoteResources";
 import { getRemoteResource } from "../resource/resource.game";
-import { InteractableType, MaterialType, MaterialAlphaMode, AudioEmitterType } from "../resource/schema";
+import {
+  InteractableType,
+  MaterialType,
+  MaterialAlphaMode,
+  AudioEmitterType,
+  PhysicsBodyType,
+  ColliderType,
+} from "../resource/schema";
 import { spawnEntity } from "../utils/spawnEntity";
 import { teleportEntity } from "../utils/teleportEntity";
 import { addCameraRig, CameraRigType } from "./CameraRig";
@@ -41,11 +50,11 @@ const AVATAR_CAPSULE_RADIUS = 0.35;
 export const AVATAR_HEIGHT = AVATAR_CAPSULE_HEIGHT + AVATAR_CAPSULE_RADIUS * 2;
 const AVATAR_CAMERA_OFFSET = 0.06;
 
-export function registerPlayerPrefabs(ctx: GameState) {
+export function registerPlayerPrefabs(ctx: GameContext) {
   registerPrefab(ctx, {
     name: "avatar",
     type: PrefabType.Avatar,
-    create: (ctx: GameState) => {
+    create: (ctx: GameContext) => {
       const physics = getModule(ctx, PhysicsModule);
       const spawnPoints = spawnPointQuery(ctx.world);
 
@@ -68,20 +77,27 @@ export function registerPlayerPrefabs(ctx: GameState) {
 
       addCameraRig(ctx, container, CameraRigType.PointerLock, [0, AVATAR_HEIGHT - AVATAR_CAMERA_OFFSET, 0]);
 
-      const rigidBodyDesc = RAPIER.RigidBodyDesc.kinematicPositionBased();
+      addPhysicsCollider(
+        ctx.world,
+        container,
+        new RemoteCollider(ctx.resourceManager, {
+          type: ColliderType.Capsule,
+          height: AVATAR_CAPSULE_HEIGHT + 0.15,
+          radius: AVATAR_CAPSULE_RADIUS,
+          activeEvents: RAPIER.ActiveEvents.COLLISION_EVENTS,
+          collisionGroups: playerCollisionGroups,
+          offset: [0, AVATAR_CAPSULE_HEIGHT - 0.15, 0],
+        })
+      );
 
-      addComponent(ctx.world, Kinematic, container.eid);
-
-      const rigidBody = physics.physicsWorld.createRigidBody(rigidBodyDesc);
-
-      const colliderDesc = RAPIER.ColliderDesc.capsule(AVATAR_CAPSULE_HEIGHT / 2, AVATAR_CAPSULE_RADIUS)
-        .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS)
-        .setCollisionGroups(playerCollisionGroups)
-        .setTranslation(0, AVATAR_CAPSULE_HEIGHT - 0.1, 0);
-
-      physics.physicsWorld.createCollider(colliderDesc, rigidBody);
-
-      addRigidBody(ctx, container, rigidBody);
+      addPhysicsBody(
+        ctx.world,
+        physics,
+        container,
+        new RemotePhysicsBody(ctx.resourceManager, {
+          type: PhysicsBodyType.Kinematic,
+        })
+      );
 
       addInteractableComponent(ctx, physics, container, InteractableType.Player);
 
@@ -95,7 +111,7 @@ export function registerPlayerPrefabs(ctx: GameState) {
   registerPrefab(ctx, {
     name: "xr-head",
     type: PrefabType.Avatar,
-    create: (ctx: GameState, options?: any) => {
+    create: (ctx: GameContext, options?: any) => {
       const node = createNodeFromGLTFURI(ctx, `/gltf/headset.glb`);
       node.scale.set([0.75, 0.75, 0.75]);
       node.position.set([0, 0, 0.1]);
@@ -109,7 +125,7 @@ export function registerPlayerPrefabs(ctx: GameState) {
   registerPrefab(ctx, {
     name: "xr-hand-left",
     type: PrefabType.Avatar,
-    create: (ctx: GameState, options?: any) => {
+    create: (ctx: GameContext, options?: any) => {
       const node = createNodeFromGLTFURI(ctx, `/gltf/controller-left.glb`);
 
       addComponent(ctx.world, XRControllerComponent, node.eid);
@@ -121,7 +137,7 @@ export function registerPlayerPrefabs(ctx: GameState) {
   registerPrefab(ctx, {
     name: "xr-hand-right",
     type: PrefabType.Avatar,
-    create: (ctx: GameState, options?: any) => {
+    create: (ctx: GameContext, options?: any) => {
       const node = createNodeFromGLTFURI(ctx, `/gltf/controller-right.glb`);
 
       addComponent(ctx.world, XRControllerComponent, node.eid);
@@ -133,7 +149,7 @@ export function registerPlayerPrefabs(ctx: GameState) {
   registerPrefab(ctx, {
     name: "xr-ray",
     type: PrefabType.Avatar,
-    create: (ctx: GameState, options: any) => {
+    create: (ctx: GameContext, options: any) => {
       const color = options.color || [0, 0.3, 1, 0.3];
       const length = options.length || GRAB_DISTANCE;
       const rayMaterial = new RemoteMaterial(ctx.resourceManager, {
@@ -162,7 +178,7 @@ export const XRControllerComponent = defineComponent();
 export const XRHeadComponent = defineComponent();
 export const XRRayComponent = defineComponent();
 
-export function addPlayerFromPeer(ctx: GameState, eid: number, peerId: string) {
+export function addPlayerFromPeer(ctx: GameContext, eid: number, peerId: string) {
   const network = getModule(ctx, NetworkModule);
 
   addComponent(ctx.world, Player, eid);
@@ -201,7 +217,7 @@ export function addPlayerFromPeer(ctx: GameState, eid: number, peerId: string) {
   }
 }
 
-export function loadPlayerRig(ctx: GameState, physics: PhysicsModuleState, input: GameInputModule) {
+export function loadPlayerRig(ctx: GameContext, physics: PhysicsModuleState, input: GameInputModule) {
   ctx.worldResource.activeCameraNode = undefined;
 
   const rig = createPrefabEntity(ctx, "avatar");
@@ -236,7 +252,7 @@ export function loadPlayerRig(ctx: GameState, physics: PhysicsModuleState, input
 }
 
 export function loadNetworkedPlayerRig(
-  ctx: GameState,
+  ctx: GameContext,
   physics: PhysicsModuleState,
   input: GameInputModule,
   network: GameNetworkState,
@@ -255,7 +271,7 @@ export function loadNetworkedPlayerRig(
   return rig;
 }
 
-export function spawnPlayer(ctx: GameState, rig: RemoteNode) {
+export function spawnPlayer(ctx: GameContext, rig: RemoteNode) {
   const spawnPoints = getSpawnPoints(ctx);
 
   if (spawnPoints.length > 0) {

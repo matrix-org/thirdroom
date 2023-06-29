@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-import { IMainThreadContext } from "../../engine/MainThread";
+import { MainContext } from "../../engine/MainThread";
 import { registerMessageHandler } from "../../engine/module/module.common";
 import { InteractableType } from "../../engine/resource/schema";
 import { createDisposables } from "../../engine/utils/createDisposables";
@@ -22,12 +22,9 @@ export interface InteractionState {
   uri?: string;
 }
 
-export function useWorldInteraction(
-  mainThread: IMainThreadContext,
-  interactionCallback: (interaction?: InteractionState) => void
-) {
+export function useWorldInteraction(ctx: MainContext, interactionCallback: (interaction?: InteractionState) => void) {
   useEffect(() => {
-    const handleInteraction = async (ctx: IMainThreadContext, message: InteractionMessage) => {
+    const handleInteraction = async (ctx: MainContext, message: InteractionMessage) => {
       const { interactableType, action } = message;
 
       if (!interactableType || action === InteractableAction.Unfocus) {
@@ -70,14 +67,14 @@ export function useWorldInteraction(
       }
     };
 
-    const onExitedWorld = (ctx: IMainThreadContext, message: ExitedWorldMessage) => {
+    const onExitedWorld = (ctx: MainContext, message: ExitedWorldMessage) => {
       interactionCallback(undefined);
     };
 
     const disposables = createDisposables([
-      registerMessageHandler(mainThread, InteractionMessageType, handleInteraction),
-      registerMessageHandler(mainThread, ThirdRoomMessageType.ExitedWorld, onExitedWorld),
+      registerMessageHandler(ctx, InteractionMessageType, handleInteraction),
+      registerMessageHandler(ctx, ThirdRoomMessageType.ExitedWorld, onExitedWorld),
     ]);
     return disposables;
-  }, [mainThread, interactionCallback]);
+  }, [ctx, interactionCallback]);
 }

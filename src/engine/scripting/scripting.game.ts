@@ -2,7 +2,7 @@ import { addComponent, defineQuery, exitQuery } from "bitecs";
 
 import scriptingRuntimeWASMUrl from "./emscripten/build/scripting-runtime.wasm?url";
 import { createCursorView } from "../allocator/CursorView";
-import { GameState, RemoteResourceManager } from "../GameTypes";
+import { GameContext, RemoteResourceManager } from "../GameTypes";
 import { createMatrixWASMModule } from "../matrix/matrix.game";
 import { createWebSGNetworkModule } from "../network/scripting.game";
 import { RemoteScene } from "../resource/RemoteResources";
@@ -36,14 +36,14 @@ export const ScriptComponent = new Map<number, Script>();
 export const scriptQuery = defineQuery([ScriptComponent]);
 const scriptExitQuery = exitQuery(scriptQuery);
 
-export function addScriptComponent(ctx: GameState, scene: RemoteScene, script: Script) {
+export function addScriptComponent(ctx: GameContext, scene: RemoteScene, script: Script) {
   const eid = scene.eid;
   script.loaded();
   addComponent(ctx.world, ScriptComponent, eid);
   ScriptComponent.set(eid, script);
 }
 
-export function ScriptingSystem(ctx: GameState) {
+export function ScriptingSystem(ctx: GameContext) {
   const entities = scriptQuery(ctx.world);
 
   for (let i = 0; i < entities.length; i++) {
@@ -67,7 +67,7 @@ export function ScriptingSystem(ctx: GameState) {
 }
 
 export async function loadScript(
-  ctx: GameState,
+  ctx: GameContext,
   resourceManager: RemoteResourceManager,
   scriptUrl: string,
   signal?: AbortSignal

@@ -16,7 +16,7 @@ import { useMainThreadContext } from "../../../hooks/useMainThread";
 import { getModule, registerMessageHandler } from "../../../../engine/module/module.common";
 import { useToast } from "../../../hooks/useToast";
 import { useHydrogen } from "../../../hooks/useHydrogen";
-import { IMainThreadContext } from "../../../../engine/MainThread";
+import { MainContext } from "../../../../engine/MainThread";
 import { createDisposables } from "../../../../engine/utils/createDisposables";
 import { useCalls } from "../../../hooks/useCalls";
 import { useRoomCall } from "../../../hooks/useRoomCall";
@@ -78,7 +78,7 @@ export function WorldView({ world }: WorldViewProps) {
   useToggleStatsAction(setStatsEnabled);
 
   useEffect(() => {
-    const onObjectCapReached = (ctx: IMainThreadContext, message: ObjectCapReachedMessage) => {
+    const onObjectCapReached = (ctx: MainContext, message: ObjectCapReachedMessage) => {
       showToast("Maximum number of objects reached.");
     };
 

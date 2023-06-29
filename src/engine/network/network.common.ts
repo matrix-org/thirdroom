@@ -20,10 +20,10 @@ export enum NetworkMessageType {
 // Main -> Game
 
 export interface InitializeNetworkStateMessage extends Message<NetworkMessageType.InitializeNetworkState> {
-  incomingReliableRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
-  incomingUnreliableRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
-  outgoingReliableRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
-  outgoingUnreliableRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
+  incomingReliableRingBuffer: NetworkRingBuffer;
+  incomingUnreliableRingBuffer: NetworkRingBuffer;
+  outgoingReliableRingBuffer: NetworkRingBuffer;
+  outgoingUnreliableRingBuffer: NetworkRingBuffer;
 }
 
 // Game -> Main

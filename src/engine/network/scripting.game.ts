@@ -9,7 +9,7 @@ import {
   writeInt32,
   CursorView,
 } from "../allocator/CursorView";
-import { GameState } from "../GameTypes";
+import { GameContext } from "../GameTypes";
 import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
 import { GameNetworkState, NetworkModule } from "./network.game";
 import { NetworkAction } from "./NetworkAction";
@@ -35,12 +35,12 @@ import { Replication, createReplicator } from "./Replicator";
 import { Networked, Owned } from "./NetworkComponents";
 import { addPrefabComponent } from "../prefab/prefab.game";
 
-export const WebSGNetworkModule = defineModule<GameState, {}>({
+export const WebSGNetworkModule = defineModule<GameContext, {}>({
   name: "WebSGNetwork",
   create: () => {
     return {};
   },
-  init(ctx: GameState) {
+  init(ctx: GameContext) {
     const network = getModule(ctx, NetworkModule);
     registerInboundMessageHandler(network, NetworkAction.BinaryScriptMessage, (ctx, v, peerId) =>
       deserializeScriptMessage(ctx, v, peerId, true)
@@ -56,7 +56,7 @@ export const WebSGNetworkModule = defineModule<GameState, {}>({
   },
 });
 
-function onPeerEntered(ctx: GameState, msg: PeerEnteredMessage) {
+function onPeerEntered(ctx: GameContext, msg: PeerEnteredMessage) {
   const entities = scriptQuery(ctx.world);
 
   for (const eid of entities) {
@@ -65,7 +65,7 @@ function onPeerEntered(ctx: GameState, msg: PeerEnteredMessage) {
   }
 }
 
-function onPeerExited(ctx: GameState, msg: PeerExitedMessage) {
+function onPeerExited(ctx: GameContext, msg: PeerExitedMessage) {
   const entities = scriptQuery(ctx.world);
 
   for (const eid of entities) {
@@ -74,7 +74,7 @@ function onPeerExited(ctx: GameState, msg: PeerExitedMessage) {
   }
 }
 
-export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleContext) {
+export function createWebSGNetworkModule(ctx: GameContext, wasmCtx: WASMModuleContext) {
   const network = getModule(ctx, NetworkModule);
 
   const networkWASMModule = {
@@ -653,7 +653,7 @@ export function createWebSGNetworkModule(ctx: GameState, wasmCtx: WASMModuleCont
 
 const messageView = createCursorView(new ArrayBuffer(10000));
 
-function createScriptMessage(ctx: GameState, packet: ArrayBuffer, binary: boolean) {
+function createScriptMessage(ctx: GameContext, packet: ArrayBuffer, binary: boolean) {
   writeMetadata(messageView, binary ? NetworkAction.BinaryScriptMessage : NetworkAction.StringScriptMessage);
   serializeScriptMessage(messageView, packet);
   return sliceCursorView(messageView);
@@ -664,7 +664,7 @@ function serializeScriptMessage(v: CursorView, packet: ArrayBuffer) {
   cursorWriteArrayBuffer(v, packet);
 }
 
-function deserializeScriptMessage(ctx: GameState, v: CursorView, peerId: string, binary: boolean) {
+function deserializeScriptMessage(ctx: GameContext, v: CursorView, peerId: string, binary: boolean) {
   const len = readUint32(v);
   const packet = readArrayBuffer(v, len);
 
@@ -692,7 +692,7 @@ function deserializeScriptMessage(ctx: GameState, v: CursorView, peerId: string,
   }
 }
 
-function getPeerNode(ctx: GameState, network: GameNetworkState, peerIndex: number) {
+function getPeerNode(ctx: GameContext, network: GameNetworkState, peerIndex: number) {
   const peerId = network.indexToPeerId.get(peerIndex);
 
   if (!peerId) {

@@ -4,9 +4,9 @@ import { vec3, quat, vec2, mat4, glMatrix as glm } from "gl-matrix";
 import { InteractableAction } from "../../plugins/interaction/interaction.common";
 import { sendInteractionMessage } from "../../plugins/interaction/interaction.game";
 import { createRemotePerspectiveCamera } from "../camera/camera.game";
-import { Axes } from "../component/math";
+import { Axes, clamp } from "../common/math";
 import { addChild } from "../component/transform";
-import { GameState, World } from "../GameTypes";
+import { GameContext, World } from "../GameTypes";
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "../input/ActionMap";
 import { InputModule, GameInputModule } from "../input/input.game";
 import { getModule, Thread } from "../module/module.common";
@@ -15,7 +15,6 @@ import { XRMode } from "../renderer/renderer.common";
 import { getXRMode } from "../renderer/renderer.game";
 import { RemoteNode, addObjectToWorld, removeObjectFromWorld } from "../resource/RemoteResources";
 import { tryGetRemoteResource, getRemoteResource } from "../resource/resource.game";
-import { clamp } from "../utils/interpolation";
 import { CameraRigMessage } from "./Player.common";
 import { PlayerModule } from "./Player.game";
 import { ThirdPersonComponent } from "./CharacterController";
@@ -169,7 +168,7 @@ interface CameraRigOptions {
   zoom: number;
 }
 
-export function startOrbit(ctx: GameState, nodeToOrbit: RemoteNode, options?: CameraRigOptions) {
+export function startOrbit(ctx: GameContext, nodeToOrbit: RemoteNode, options?: CameraRigOptions) {
   const xrMode = getXRMode(ctx);
   if (xrMode !== XRMode.None) {
     return;
@@ -212,7 +211,7 @@ export function startOrbit(ctx: GameState, nodeToOrbit: RemoteNode, options?: Ca
   sendInteractionMessage(ctx, InteractableAction.Unfocus);
 }
 
-export function stopOrbit(ctx: GameState) {
+export function stopOrbit(ctx: GameContext) {
   const xrMode = getXRMode(ctx);
   if (xrMode !== XRMode.None) {
     return;
@@ -237,7 +236,7 @@ export function stopOrbit(ctx: GameState) {
 }
 
 export function addCameraRig(
-  ctx: GameState,
+  ctx: GameContext,
   node: RemoteNode,
   type: CameraRigType,
   anchorOffset?: vec3
@@ -322,7 +321,7 @@ function setYaw(node: RemoteNode, value: number) {
   quat.rotateY(quaternion, quaternion, -value);
 }
 
-function applyYaw(ctx: GameState, input: GameInputModule, rigYaw: YawComponent) {
+function applyYaw(ctx: GameContext, input: GameInputModule, rigYaw: YawComponent) {
   const node = tryGetRemoteResource<RemoteNode>(ctx, rigYaw.target);
 
   const [look] = input.actionStates.get(CameraRigAction.LookMovement) as vec2;
@@ -362,7 +361,7 @@ function setPitch(node: RemoteNode, rigPitch: PitchComponent, value: number) {
   quat.setAxisAngle(node.quaternion, Axes.X, value);
 }
 
-function applyPitch(ctx: GameState, input: GameInputModule, rigPitch: PitchComponent) {
+function applyPitch(ctx: GameContext, input: GameInputModule, rigPitch: PitchComponent) {
   const node = tryGetRemoteResource<RemoteNode>(ctx, rigPitch.target);
 
   const look = input.actionStates.get(CameraRigAction.LookMovement) as vec2;
@@ -382,7 +381,7 @@ function setZoom(node: RemoteNode, rigZoom: ZoomComponent, value: number) {
   node.position[2] = clamp(value, rigZoom.min, rigZoom.max);
 }
 
-function applyZoom(ctx: GameState, input: GameInputModule, rigZoom: ZoomComponent) {
+function applyZoom(ctx: GameContext, input: GameInputModule, rigZoom: ZoomComponent) {
   const node = tryGetRemoteResource<RemoteNode>(ctx, rigZoom.target);
 
   const scroll = input.actionStates.get(CameraRigAction.Zoom) as vec2;
@@ -394,7 +393,7 @@ function applyZoom(ctx: GameState, input: GameInputModule, rigZoom: ZoomComponen
 }
 
 const _v = vec3.create();
-export function CameraRigSystem(ctx: GameState) {
+export function CameraRigSystem(ctx: GameContext) {
   const input = getModule(ctx, InputModule);
   const camRigModule = getModule(ctx, PlayerModule);
 
@@ -479,7 +478,7 @@ export function CameraRigSystem(ctx: GameState) {
   exitQueryCleanup(ctx, exitOrbitAnchorQuery, OrbitAnchor);
 }
 
-function exitQueryCleanup(ctx: GameState, query: Query, component: Map<number, any>) {
+function exitQueryCleanup(ctx: GameContext, query: Query, component: Map<number, any>) {
   const ents = query(ctx.world);
   for (let i = 0; i < ents.length; i++) {
     const eid = ents[i];

@@ -1,7 +1,9 @@
+import { defineQuery, enterQuery } from "bitecs";
 import { AnimationClip } from "three";
+import RAPIER from "@dimforge/rapier3d-compat";
 
 import { getLastSibling } from "../component/transform";
-import { GameState, RemoteResourceManager } from "../GameTypes";
+import { GameContext, RemoteResourceManager } from "../GameTypes";
 import { defineRemoteResourceClass, InitialRemoteResourceProps } from "./RemoteResourceClass";
 import {
   NametagResource,
@@ -41,6 +43,9 @@ import {
   ColliderResource,
   PhysicsBodyResource,
 } from "./schema";
+import { getModule } from "../module/module.common";
+import { PhysicsModule } from "../physics/physics.game";
+import { removeResourceRef } from "./resource.game";
 
 export class RemoteNametag extends defineRemoteResourceClass(NametagResource) {}
 
@@ -149,7 +154,38 @@ export class RemoteCollider extends defineRemoteResourceClass(ColliderResource) 
   declare mesh: RemoteMesh | undefined;
 }
 
-export class RemotePhysicsBody extends defineRemoteResourceClass(PhysicsBodyResource) {}
+export class RemotePhysicsBody extends defineRemoteResourceClass(PhysicsBodyResource) {
+  velocity: Float32Array = new Float32Array(3);
+  body?: RAPIER.RigidBody;
+  mesh?: RemoteMesh;
+  primitive?: RemoteMeshPrimitive;
+
+  dispose() {
+    const physics = getModule(this.manager.ctx, PhysicsModule);
+
+    if (this.body) {
+      for (let i = 0; i < this.body.numColliders(); i++) {
+        const collider = this.body.collider(i);
+        physics.handleToEid.delete(collider.handle);
+      }
+
+      physics.handleToEid.delete(this.body.handle);
+      physics.physicsWorld.removeRigidBody(this.body);
+    }
+
+    if (this.mesh) {
+      removeResourceRef(this.manager.ctx, this.mesh.eid);
+    }
+
+    if (this.primitive) {
+      removeResourceRef(this.manager.ctx, this.primitive.eid);
+    }
+  }
+}
+
+export const physicsBodyQuery = defineQuery([RemotePhysicsBody]);
+export const enteredPhysicsBodyQuery = enterQuery(physicsBodyQuery);
+
 const NodeIsStaticOffset = NodeResource.schema.isStatic.byteOffset / 4;
 
 export class RemoteNode extends defineRemoteResourceClass(NodeResource) {
@@ -228,7 +264,7 @@ export class RemoteWorld extends defineRemoteResourceClass(WorldResource) {
   declare activeRightControllerNode: RemoteNode | undefined;
 }
 
-export function addObjectToWorld(ctx: GameState, object: RemoteNode) {
+export function addObjectToWorld(ctx: GameContext, object: RemoteNode) {
   const worldResource = ctx.worldResource;
   const firstNode = worldResource.firstNode;
 
@@ -241,7 +277,7 @@ export function addObjectToWorld(ctx: GameState, object: RemoteNode) {
   }
 }
 
-export function removeObjectFromWorld(ctx: GameState, object: RemoteNode) {
+export function removeObjectFromWorld(ctx: GameContext, object: RemoteNode) {
   object.addRef();
 
   const worldResource = ctx.worldResource;

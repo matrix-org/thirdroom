@@ -5,14 +5,14 @@ import { mat4, quat, vec3 } from "gl-matrix";
 import { getReadObjectBufferView } from "../../engine/allocator/ObjectBufferView";
 import { ourPlayerQuery } from "../../engine/player/Player";
 import { setFromLocalMatrix } from "../../engine/component/transform";
-import { GameState } from "../../engine/GameTypes";
-import { InputModule } from "../../engine/input/input.game";
+import { GameContext } from "../../engine/GameTypes";
 import { getModule } from "../../engine/module/module.common";
 import { grabShapeCastCollisionGroups } from "../../engine/physics/CollisionGroups";
-import { PhysicsModule, RigidBody } from "../../engine/physics/physics.game";
+import { PhysicsModule } from "../../engine/physics/physics.game";
 import { RemoteNode } from "../../engine/resource/RemoteResources";
-import { tryGetRemoteResource } from "../../engine/resource/resource.game";
+import { getRemoteResource, tryGetRemoteResource } from "../../engine/resource/resource.game";
 import { getRotationNoAlloc } from "../../engine/utils/getRotationNoAlloc";
+import { RendererModule } from "../../engine/renderer/renderer.game";
 
 export enum RaycastShape {
   Line,
@@ -43,8 +43,8 @@ const _rayPosePosition = vec3.create();
 const _rayPoseRotation = quat.create();
 const _rayDirection = vec3.create();
 
-export function XRInteractionSystem(ctx: GameState) {
-  const { xrInputSourcesByHand } = getModule(ctx, InputModule);
+export function XRInteractionSystem(ctx: GameContext) {
+  const { xrInputSourcesByHand } = getModule(ctx, RendererModule);
   const { physicsWorld, handleToEid } = getModule(ctx, PhysicsModule);
 
   const entities = interactionRaycasterQuery(ctx.world);
@@ -103,9 +103,10 @@ export function XRInteractionSystem(ctx: GameState) {
   }
 }
 
-export function addXRRaycaster(ctx: GameState, eid: number, hand: XRHandedness) {
+export function addXRRaycaster(ctx: GameContext, eid: number, hand: XRHandedness) {
   addComponent(ctx.world, XRRaycaster, eid);
   const ourPlayer = ourPlayerQuery(ctx.world)[0];
+  const node = getRemoteResource<RemoteNode>(ctx, ourPlayer);
   XRRaycaster.set(eid, {
     hand,
     maxToi: 10,
@@ -113,11 +114,11 @@ export function addXRRaycaster(ctx: GameState, eid: number, hand: XRHandedness) 
     action: "",
     ray: new RAPIER.Ray(new RAPIER.Vector3(0, 0, 0), new RAPIER.Vector3(0, 0, 0)),
     filterGroups: grabShapeCastCollisionGroups,
-    filterExcludeRigidBody: RigidBody.store.get(ourPlayer),
+    filterExcludeRigidBody: node?.physicsBody?.body,
   });
 }
 
-export function removeXRRaycaster(ctx: GameState, eid: number) {
+export function removeXRRaycaster(ctx: GameContext, eid: number) {
   removeComponent(ctx.world, XRRaycaster, eid);
   XRRaycaster.delete(eid);
 }

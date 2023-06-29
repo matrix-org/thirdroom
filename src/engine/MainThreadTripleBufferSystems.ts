@@ -1,10 +1,10 @@
 import { swapReadBufferFlags, swapWriteBufferFlags } from "./allocator/TripleBuffer";
-import { IMainThreadContext } from "./MainThread";
+import { MainContext } from "./MainThread";
 
-export function IncomingMainThreadTripleBufferSystem(ctx: IMainThreadContext) {
+export function IncomingMainThreadTripleBufferSystem(ctx: MainContext) {
   swapReadBufferFlags(ctx.gameToMainTripleBufferFlags);
 }
 
-export function OutgoingMainThreadTripleBufferSystem(ctx: IMainThreadContext) {
+export function OutgoingMainThreadTripleBufferSystem(ctx: MainContext) {
   swapWriteBufferFlags(ctx.mainToGameTripleBufferFlags);
 }

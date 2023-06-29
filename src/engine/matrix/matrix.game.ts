@@ -1,4 +1,4 @@
-import { GameState } from "../GameTypes";
+import { GameContext } from "../GameTypes";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import { ScriptComponent, scriptQuery } from "../scripting/scripting.game";
 import { readString, WASMModuleContext, writeEncodedString } from "../scripting/WASMModuleContext";
@@ -9,19 +9,19 @@ interface MatrixModuleState {
   textEncoder: TextEncoder;
 }
 
-export const MatrixModule = defineModule<GameState, MatrixModuleState>({
+export const MatrixModule = defineModule<GameContext, MatrixModuleState>({
   name: "matrix",
   create: () => {
     return {
       textEncoder: new TextEncoder(),
     };
   },
-  init(ctx: GameState) {
+  init(ctx: GameContext) {
     return createDisposables([registerMessageHandler(ctx, MatrixMessageType.WidgetMessage, onWidgetMessage)]);
   },
 });
 
-function onWidgetMessage(ctx: GameState, message: WidgetMessage) {
+function onWidgetMessage(ctx: GameContext, message: WidgetMessage) {
   const { textEncoder } = getModule(ctx, MatrixModule);
 
   const scripts = scriptQuery(ctx.world);
@@ -43,7 +43,7 @@ function onWidgetMessage(ctx: GameState, message: WidgetMessage) {
   }
 }
 
-export function createMatrixWASMModule(ctx: GameState, wasmCtx: WASMModuleContext) {
+export function createMatrixWASMModule(ctx: GameContext, wasmCtx: WASMModuleContext) {
   const matrixWASMModule = {
     listen() {
       const resourceManager = wasmCtx.resourceManager;

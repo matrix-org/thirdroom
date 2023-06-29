@@ -1,5 +1,7 @@
-import { IMainThreadContext } from "../MainThread";
+import { MainContext } from "../MainThread";
 import { defineModule, getModule, Thread } from "../module/module.common";
+import { RenderStats } from "../renderer/renderer.common";
+import { RendererModule } from "../renderer/renderer.main";
 import { InitializeStatsBufferMessage, StatNames, Stats, StatsBuffer, StatsMessageType } from "./stats.common";
 
 /*********
@@ -11,19 +13,18 @@ export interface StatsModuleState {
   stats: StatsObject;
 }
 
-export type StatsObject = { [Property in Exclude<keyof typeof Stats, number>]: number | string };
+export type StatsObject = { [Property in Exclude<keyof (typeof Stats & typeof RenderStats), number>]: number | string };
 
 /******************
  * Initialization *
  *****************/
 
-export const StatsModule = defineModule<IMainThreadContext, StatsModuleState>({
+export const StatsModule = defineModule<MainContext, StatsModuleState>({
   name: "stats",
   create(ctx, { sendMessage }) {
     const statsBuffer = createStatsBuffer();
 
     sendMessage<InitializeStatsBufferMessage>(Thread.Game, StatsMessageType.InitializeStatsBuffer, { statsBuffer });
-    sendMessage<InitializeStatsBufferMessage>(Thread.Render, StatsMessageType.InitializeStatsBuffer, { statsBuffer });
 
     return {
       buffer: statsBuffer,
@@ -51,21 +52,22 @@ function createStatsBuffer(): StatsBuffer {
  * API *
  ******/
 
-export function getStats(context: IMainThreadContext): StatsObject {
-  const { stats, buffer } = getModule(context, StatsModule);
-  stats.fps = buffer.f32[Stats.fps].toFixed(2);
-  stats.frameTime = buffer.f32[Stats.frameTime].toFixed(2);
-  stats.frameDuration = (buffer.f32[Stats.frameDuration] * 1000).toFixed(2);
+export function getStats(ctx: MainContext): StatsObject {
+  const { stats, buffer } = getModule(ctx, StatsModule);
+  const { statsBuffer: renderStatsBuffer } = getModule(ctx, RendererModule);
+  stats.fps = renderStatsBuffer.f32[RenderStats.fps].toFixed(2);
+  stats.frameTime = renderStatsBuffer.f32[RenderStats.frameTime].toFixed(2);
+  stats.frameDuration = (renderStatsBuffer.f32[RenderStats.frameDuration] * 1000).toFixed(2);
   stats.gameTime = (buffer.f32[Stats.gameTime] * 1000).toFixed(2);
   stats.gameDuration = buffer.f32[Stats.gameDuration].toFixed(2);
-  stats.frame = buffer.u32[Stats.frame];
-  stats.staleFrames = buffer.u32[Stats.staleFrames];
-  stats.drawCalls = buffer.u32[Stats.drawCalls];
-  stats.programs = buffer.u32[Stats.programs];
-  stats.geometries = buffer.u32[Stats.geometries];
-  stats.textures = buffer.u32[Stats.textures];
-  stats.triangles = buffer.u32[Stats.triangles];
-  stats.points = buffer.u32[Stats.points];
-  stats.lines = buffer.u32[Stats.lines];
+  stats.frame = renderStatsBuffer.u32[RenderStats.frame];
+  stats.staleFrames = renderStatsBuffer.u32[RenderStats.staleFrames];
+  stats.drawCalls = renderStatsBuffer.u32[RenderStats.drawCalls];
+  stats.programs = renderStatsBuffer.u32[RenderStats.programs];
+  stats.geometries = renderStatsBuffer.u32[RenderStats.geometries];
+  stats.textures = renderStatsBuffer.u32[RenderStats.textures];
+  stats.triangles = renderStatsBuffer.u32[RenderStats.triangles];
+  stats.points = renderStatsBuffer.u32[RenderStats.points];
+  stats.lines = renderStatsBuffer.u32[RenderStats.lines];
   return stats;
 }

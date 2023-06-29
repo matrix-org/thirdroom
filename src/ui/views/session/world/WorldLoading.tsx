@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Room } from "@thirdroom/hydrogen-view-sdk";
 import { useAtom } from "jotai";
 
-import { IMainThreadContext } from "../../../../engine/MainThread";
+import { MainContext } from "../../../../engine/MainThread";
 import { registerMessageHandler } from "../../../../engine/module/module.common";
 import { FetchProgressMessage, FetchProgressMessageType } from "../../../../engine/utils/fetchWithProgress.game";
 import { Progress } from "../../../atoms/progress/Progress";
@@ -26,7 +26,7 @@ function useWorldLoadingProgress(): [() => void, WorldLoadProgress] {
   const [loadProgress, setLoadProgress] = useState<WorldLoadProgress>({ loaded: 0, total: 0 });
 
   useEffect(() => {
-    const onFetchProgress = (ctx: IMainThreadContext, message: FetchProgressMessage) => {
+    const onFetchProgress = (ctx: MainContext, message: FetchProgressMessage) => {
       setLoadProgress(message.status);
     };
     return registerMessageHandler(engine, FetchProgressMessageType, onFetchProgress);

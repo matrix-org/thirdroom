@@ -12,7 +12,7 @@ import { Checkbox } from "../../../atoms/checkbox/Checkbox";
 import { getLocalResources, MainNode } from "../../../../engine/resource/resource.main";
 import { useMainThreadContext } from "../../../hooks/useMainThread";
 import { setProperty, setRefArrayProperty, setRefProperty } from "../../../../engine/editor/editor.main";
-import { setEulerFromQuaternion, setQuaternionFromEuler } from "../../../../engine/component/math";
+import { setEulerFromQuaternion, setQuaternionFromEuler } from "../../../../engine/common/math";
 import { Icon } from "../../../atoms/icon/Icon";
 import CircleIC from "../../../../../res/ic/circle.svg";
 import ArrowBackIC from "../../../../../res/ic/arrow-back.svg";
@@ -23,7 +23,7 @@ import {
   ResourcePropDef,
   Schema,
 } from "../../../../engine/resource/ResourceDefinition";
-import { IMainThreadContext } from "../../../../engine/MainThread";
+import { MainContext } from "../../../../engine/MainThread";
 import { Scroll } from "../../../atoms/scroll/Scroll";
 import { SelectInput } from "../../components/property-panel/SelectInput";
 import { Input } from "../../../atoms/input/Input";
@@ -408,7 +408,7 @@ const RefArrayProperty = memo<
   (prevProps, nextProps) => prevProps.value === nextProps.value && compareOptions(prevProps.options, nextProps.options)
 );
 
-export function getPropComponents(ctx: IMainThreadContext, resource: MainNode) {
+export function getPropComponents(ctx: MainContext, resource: MainNode) {
   function setProp<T>(propName: string, value: T) {
     setProperty(ctx, resource.eid, propName, value);
   }

@@ -3,7 +3,7 @@ import murmurHash from "murmurhash-js";
 import { availableRead } from "@thirdroom/ringbuffer";
 
 import { createCursorView, CursorView } from "../allocator/CursorView";
-import { GameState } from "../GameTypes";
+import { GameContext } from "../GameTypes";
 import { Player } from "../player/Player";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import {
@@ -50,10 +50,10 @@ export interface DeferredUpdate {
 
 export interface GameNetworkState {
   onExitWorldQueue: any[];
-  incomingReliableRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
-  incomingUnreliableRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
-  outgoingReliableRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
-  outgoingUnreliableRingBuffer: NetworkRingBuffer<Uint8ArrayConstructor>;
+  incomingReliableRingBuffer: NetworkRingBuffer;
+  incomingUnreliableRingBuffer: NetworkRingBuffer;
+  outgoingReliableRingBuffer: NetworkRingBuffer;
+  outgoingUnreliableRingBuffer: NetworkRingBuffer;
   commands: [number, number, ArrayBuffer][];
   hostId: string;
   peerId: string;
@@ -70,7 +70,7 @@ export interface GameNetworkState {
   localIdCount: number;
   removedLocalIds: number[];
   messageHandlers: {
-    [key: number]: (ctx: GameState, v: CursorView, peerId: string) => void;
+    [key: number]: (ctx: GameContext, v: CursorView, peerId: string) => void;
   };
   cursorView: CursorView;
   tickRate: number;
@@ -84,7 +84,7 @@ export interface GameNetworkState {
  * Initialization *
  *****************/
 
-export const NetworkModule = defineModule<GameState, GameNetworkState>({
+export const NetworkModule = defineModule<GameContext, GameNetworkState>({
   name: "network",
   create: async (ctx, { waitForMessage }): Promise<GameNetworkState> => {
     const {
@@ -123,7 +123,7 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
       interpolate: false,
     };
   },
-  init(ctx: GameState) {
+  init(ctx: GameContext) {
     const network = getModule(ctx, NetworkModule);
 
     // TODO: make new API for this that allows user to use strings (internally mapped to an integer)
@@ -158,7 +158,7 @@ export const NetworkModule = defineModule<GameState, GameNetworkState>({
  * Message Handlers *
  *******************/
 
-export const addPeerId = (ctx: GameState, peerId: string) => {
+export const addPeerId = (ctx: GameContext, peerId: string) => {
   console.info("addPeerId", peerId);
   const network = getModule(ctx, NetworkModule);
 
@@ -176,9 +176,9 @@ export const addPeerId = (ctx: GameState, peerId: string) => {
   ctx.sendMessage<PeerEnteredMessage>(Thread.Game, { type: NetworkMessageType.PeerEntered, peerIndex });
 };
 
-const onAddPeerId = (ctx: GameState, message: AddPeerIdMessage) => addPeerId(ctx, message.peerId);
+const onAddPeerId = (ctx: GameContext, message: AddPeerIdMessage) => addPeerId(ctx, message.peerId);
 
-export const removePeerId = (ctx: GameState, peerId: string) => {
+export const removePeerId = (ctx: GameContext, peerId: string) => {
   const network = getModule(ctx, NetworkModule);
 
   const peerArrIndex = network.peers.indexOf(peerId);
@@ -208,14 +208,14 @@ export const removePeerId = (ctx: GameState, peerId: string) => {
   }
 };
 
-const onRemovePeerId = (ctx: GameState, message: RemovePeerIdMessage) => removePeerId(ctx, message.peerId);
+const onRemovePeerId = (ctx: GameContext, message: RemovePeerIdMessage) => removePeerId(ctx, message.peerId);
 
-const onExitWorld = (ctx: GameState, message: ExitWorldMessage) => {
+const onExitWorld = (ctx: GameContext, message: ExitWorldMessage) => {
   const network = getModule(ctx, NetworkModule);
   network.onExitWorldQueue.push(message);
 };
 
-export function NetworkExitWorldQueueSystem(ctx: GameState) {
+export function NetworkExitWorldQueueSystem(ctx: GameContext) {
   const network = getModule(ctx, NetworkModule);
 
   while (network.onExitWorldQueue.length) {
@@ -240,13 +240,13 @@ export function NetworkExitWorldQueueSystem(ctx: GameState) {
 }
 
 // Set local peer id
-export const setLocalPeerId = (ctx: GameState, localPeerId: string) => {
+export const setLocalPeerId = (ctx: GameContext, localPeerId: string) => {
   const network = getModule(ctx, NetworkModule);
   network.peerId = localPeerId;
   mapPeerIdAndIndex(network, localPeerId);
 };
 
-const onSetHost = async (ctx: GameState, message: SetHostMessage) => {
+const onSetHost = async (ctx: GameContext, message: SetHostMessage) => {
   const network = getModule(ctx, NetworkModule);
   const newHostId = message.hostId;
   network.hostId = newHostId;
@@ -270,8 +270,8 @@ export const setPeerIdIndexInNetworkId = (nid: number, peerIdIndex: number) => {
   return ((localId << 16) | peerIdIndex) >>> 0;
 };
 
-export const createNetworkId = (state: GameState) => {
-  const network = getModule(state, NetworkModule);
+export const createNetworkId = (ctx: GameContext) => {
+  const network = getModule(ctx, NetworkModule);
 
   const localId = network.removedLocalIds.shift() || network.localIdCount++;
   const peerIndex = network.peerIdToIndex.get(network.peerId);
@@ -287,7 +287,7 @@ export const createNetworkId = (state: GameState) => {
   return ((localId << 16) | peerIndex) >>> 0;
 };
 
-export const removeNetworkId = (ctx: GameState, nid: number) => {
+export const removeNetworkId = (ctx: GameContext, nid: number) => {
   const network = getModule(ctx, NetworkModule);
   const localId = getLocalIdFromNetworkId(nid);
   if (network.removedLocalIds.includes(localId)) {

@@ -1,11 +1,6 @@
-import RAPIER from "@dimforge/rapier3d-compat";
 import { BufferGeometry, BoxGeometry, SphereGeometry, TubeGeometry, Curve, Vector3 } from "three";
 
-import { addInteractableComponent } from "../../plugins/interaction/interaction.game";
-import { GameState } from "../GameTypes";
-import { getModule } from "../module/module.common";
-import { dynamicObjectCollisionGroups } from "../physics/CollisionGroups";
-import { PhysicsModule, addRigidBody } from "../physics/physics.game";
+import { GameContext } from "../GameTypes";
 import {
   RemoteAccessor,
   RemoteBuffer,
@@ -19,13 +14,12 @@ import {
   AccessorComponentType,
   AccessorType,
   MaterialType,
-  InteractableType,
   MeshPrimitiveAttributeIndex,
   MaterialAlphaMode,
 } from "../resource/schema";
 
 export const createMesh = (
-  ctx: GameState,
+  ctx: GameContext,
   geometry: BufferGeometry,
   material?: RemoteMaterial,
   resourceManager = ctx.resourceManager
@@ -94,12 +88,12 @@ export const createMesh = (
   return remoteMesh;
 };
 
-export const createCubeMesh = (ctx: GameState, size: number, material?: RemoteMaterial) => {
+export const createCubeMesh = (ctx: GameContext, size: number, material?: RemoteMaterial) => {
   const geometry = new BoxGeometry(size, size, size);
   return createMesh(ctx, geometry, material);
 };
 
-export const createSphereMesh = (ctx: GameState, radius: number, material?: RemoteMaterial) => {
+export const createSphereMesh = (ctx: GameContext, radius: number, material?: RemoteMaterial) => {
   const geometry = new SphereGeometry(radius / 2);
   return createMesh(ctx, geometry, material);
 };
@@ -115,12 +109,12 @@ class StraightLine extends Curve<Vector3> {
     return optionalTarget.set(0, 0, t).multiplyScalar(this.scale);
   }
 }
-export const createLineMesh = (ctx: GameState, length: number, thickness = 0.01, material?: RemoteMaterial) => {
+export const createLineMesh = (ctx: GameContext, length: number, thickness = 0.01, material?: RemoteMaterial) => {
   const geometry = new TubeGeometry(new StraightLine(-length), 1, thickness, 3);
   return createMesh(ctx, geometry, material);
 };
 
-export function createLine(ctx: GameState, length = 10, thickness = 0.2) {
+export function createLine(ctx: GameContext, length = 10, thickness = 0.2) {
   const rayMaterial = new RemoteMaterial(ctx.resourceManager, {
     type: MaterialType.Standard,
     baseColorFactor: [0, 1, 0.2, 1],
@@ -136,35 +130,7 @@ export function createLine(ctx: GameState, length = 10, thickness = 0.2) {
   return node;
 }
 
-export const createPhysicsCube = (
-  ctx: GameState,
-  size: number,
-  material?: RemoteMaterial,
-  remote = false
-): RemoteNode => {
-  const physics = getModule(ctx, PhysicsModule);
-  const { physicsWorld } = physics;
-  const node = new RemoteNode(ctx.resourceManager, {
-    mesh: createCubeMesh(ctx, size, material),
-  });
-
-  const rigidBodyDesc = remote ? RAPIER.RigidBodyDesc.kinematicPositionBased() : RAPIER.RigidBodyDesc.dynamic();
-  const rigidBody = physicsWorld.createRigidBody(rigidBodyDesc);
-
-  const colliderDesc = RAPIER.ColliderDesc.cuboid(size / 2, size / 2, size / 2)
-    .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS)
-    .setCollisionGroups(dynamicObjectCollisionGroups);
-
-  physicsWorld.createCollider(colliderDesc, rigidBody);
-
-  addRigidBody(ctx, node, rigidBody);
-
-  addInteractableComponent(ctx, physics, node, InteractableType.Grabbable);
-
-  return node;
-};
-
-export const createSimpleCube = (ctx: GameState, size: number, material?: RemoteMaterial) => {
+export const createSimpleCube = (ctx: GameContext, size: number, material?: RemoteMaterial) => {
   return new RemoteNode(ctx.resourceManager, {
     mesh: createCubeMesh(ctx, size, material),
   });

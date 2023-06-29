@@ -1,7 +1,7 @@
-import { IMainThreadContext } from "../../engine/MainThread";
+import { MainContext } from "../../engine/MainThread";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../../engine/module/module.common";
 import { NetworkModule } from "../../engine/network/network.main";
-import { PhysicsMessageType, TogglePhysicsDebugMessage } from "../../engine/physics/physics.common";
+import { printRenderThreadState, togglePhysicsDebug } from "../../engine/renderer/renderer.main";
 import { createDisposables } from "../../engine/utils/createDisposables";
 import { createDeferred } from "../../engine/utils/Deferred";
 import { registerThirdroomGlobalFn } from "../../engine/utils/registerThirdroomGlobal";
@@ -30,7 +30,7 @@ interface ThirdRoomModuleState {
   actionBarItems: ActionBarItem[];
 }
 
-export const ThirdroomModule = defineModule<IMainThreadContext, ThirdRoomModuleState>({
+export const ThirdroomModule = defineModule<MainContext, ThirdRoomModuleState>({
   name: "thirdroom",
   create() {
     return {
@@ -44,9 +44,7 @@ export const ThirdroomModule = defineModule<IMainThreadContext, ThirdRoomModuleS
         type: ThirdRoomMessageType.PrintThreadState,
       });
 
-      ctx.sendMessage<PrintThreadStateMessage>(Thread.Render, {
-        type: ThirdRoomMessageType.PrintThreadState,
-      });
+      printRenderThreadState(ctx);
 
       console.log(Thread.Main, ctx);
     });
@@ -65,9 +63,7 @@ export const ThirdroomModule = defineModule<IMainThreadContext, ThirdRoomModuleS
     });
 
     registerThirdroomGlobalFn("togglePhysicsDebug", () => {
-      ctx.sendMessage<TogglePhysicsDebugMessage>(Thread.Game, {
-        type: PhysicsMessageType.TogglePhysicsDebug,
-      });
+      togglePhysicsDebug(ctx);
     });
 
     return createDisposables([
@@ -76,7 +72,7 @@ export const ThirdroomModule = defineModule<IMainThreadContext, ThirdRoomModuleS
   },
 });
 
-export async function loadWorld(ctx: IMainThreadContext, environmentUrl: string, options: LoadWorldOptions) {
+export async function loadWorld(ctx: MainContext, environmentUrl: string, options: LoadWorldOptions) {
   const thirdroom = getModule(ctx, ThirdroomModule);
   const loadingEnvironment = createDeferred(false);
 
@@ -85,7 +81,7 @@ export async function loadWorld(ctx: IMainThreadContext, environmentUrl: string,
   // eslint-disable-next-line prefer-const
   let disposeHandlers: () => void;
 
-  const onLoadWorld = (ctx: IMainThreadContext, message: WorldLoadedMessage) => {
+  const onLoadWorld = (ctx: MainContext, message: WorldLoadedMessage) => {
     if (message.id === id) {
       if (message.url === thirdroom.environmentUrl) {
         loadingEnvironment.resolve(undefined);
@@ -97,7 +93,7 @@ export async function loadWorld(ctx: IMainThreadContext, environmentUrl: string,
     }
   };
 
-  const onLoadWorldError = (ctx: IMainThreadContext, message: WorldLoadErrorMessage) => {
+  const onLoadWorldError = (ctx: MainContext, message: WorldLoadErrorMessage) => {
     console.log(`error`, message);
     if (message.id === id) {
       loadingEnvironment.reject(new Error(message.error));
@@ -122,7 +118,7 @@ export async function loadWorld(ctx: IMainThreadContext, environmentUrl: string,
   return loadingEnvironment.promise;
 }
 
-export function enterWorld(ctx: IMainThreadContext, localPeerId: string) {
+export function enterWorld(ctx: MainContext, localPeerId: string) {
   const thirdroom = getModule(ctx, ThirdroomModule);
   const network = getModule(ctx, NetworkModule);
   const enteringWorld = createDeferred(false);
@@ -132,14 +128,14 @@ export function enterWorld(ctx: IMainThreadContext, localPeerId: string) {
   // eslint-disable-next-line prefer-const
   let disposeHandlers: () => void;
 
-  const onEnteredWorld = (ctx: IMainThreadContext, message: EnteredWorldMessage) => {
+  const onEnteredWorld = (ctx: MainContext, message: EnteredWorldMessage) => {
     if (message.id === id) {
       enteringWorld.resolve(undefined);
       disposeHandlers();
     }
   };
 
-  const onEnterWorldError = (ctx: IMainThreadContext, message: EnterWorldErrorMessage) => {
+  const onEnterWorldError = (ctx: MainContext, message: EnterWorldErrorMessage) => {
     console.log(`error`, message);
     if (message.id === id) {
       enteringWorld.reject(new Error(message.error));
@@ -163,7 +159,7 @@ export function enterWorld(ctx: IMainThreadContext, localPeerId: string) {
   return enteringWorld.promise;
 }
 
-export function reloadWorld(ctx: IMainThreadContext, environmentUrl: string, options: LoadWorldOptions) {
+export function reloadWorld(ctx: MainContext, environmentUrl: string, options: LoadWorldOptions) {
   const thirdroom = getModule(ctx, ThirdroomModule);
   const reloadingWorld = createDeferred(false);
 
@@ -172,14 +168,14 @@ export function reloadWorld(ctx: IMainThreadContext, environmentUrl: string, opt
   // eslint-disable-next-line prefer-const
   let disposeHandlers: () => void;
 
-  const onReloadedWorld = (ctx: IMainThreadContext, message: ReloadedWorldMessage) => {
+  const onReloadedWorld = (ctx: MainContext, message: ReloadedWorldMessage) => {
     if (message.id === id) {
       reloadingWorld.resolve(undefined);
       disposeHandlers();
     }
   };
 
-  const onReloadWorldError = (ctx: IMainThreadContext, message: ReloadWorldErrorMessage) => {
+  const onReloadWorldError = (ctx: MainContext, message: ReloadWorldErrorMessage) => {
     console.log(`error`, message);
     if (message.id === id) {
       reloadingWorld.reject(new Error(message.error));
@@ -202,19 +198,13 @@ export function reloadWorld(ctx: IMainThreadContext, environmentUrl: string, opt
   return reloadingWorld.promise;
 }
 
-export function exitWorld(context: IMainThreadContext) {
+export function exitWorld(context: MainContext) {
   context.sendMessage(Thread.Game, {
     type: ThirdRoomMessageType.ExitWorld,
   });
 }
 
-export function togglePhysicsDebug(ctx: IMainThreadContext) {
-  ctx.sendMessage<TogglePhysicsDebugMessage>(Thread.Game, {
-    type: PhysicsMessageType.TogglePhysicsDebug,
-  });
-}
-
-function onSetActionBarItems(ctx: IMainThreadContext, message: SetActionBarItemsMessage) {
+function onSetActionBarItems(ctx: MainContext, message: SetActionBarItemsMessage) {
   const thirdroom = getModule(ctx, ThirdroomModule);
   thirdroom.actionBarItems = message.actionBarItems;
 }

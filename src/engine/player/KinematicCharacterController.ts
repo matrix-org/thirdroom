@@ -3,12 +3,12 @@ import RAPIER from "@dimforge/rapier3d-compat";
 import { RawCharacterCollision } from "@dimforge/rapier3d-compat/raw";
 import { Quaternion, Vector3 } from "three";
 
-import { GameState } from "../GameTypes";
+import { GameContext } from "../GameTypes";
 import { enableActionMap } from "../input/ActionMappingSystem";
 import { ActionMap, ActionState, ActionType, BindingType, ButtonActionState } from "../input/ActionMap";
 import { InputModule } from "../input/input.game";
 import { defineModule, getModule } from "../module/module.common";
-import { PhysicsModule, PhysicsModuleState, RigidBody } from "../physics/physics.game";
+import { PhysicsModule, PhysicsModuleState } from "../physics/physics.game";
 import { tryGetRemoteResource } from "../resource/resource.game";
 import { RemoteNode } from "../resource/RemoteResources";
 import { playOneShotAudio } from "../audio/audio.game";
@@ -93,7 +93,7 @@ export const KinematicCharacterControllerActionMap: ActionMap = {
 
 type KinematicCharacterControllerModuleState = {};
 
-export const KinematicCharacterControllerModule = defineModule<GameState, KinematicCharacterControllerModuleState>({
+export const KinematicCharacterControllerModule = defineModule<GameContext, KinematicCharacterControllerModuleState>({
   name: "kinematic-character-controller",
   create() {
     return {};
@@ -134,11 +134,11 @@ export let lastSlideTime = 0;
 
 let lastFootstepFrame = 0;
 
-export function addKinematicControls(ctx: GameState, eid: number) {
+export function addKinematicControls(ctx: GameContext, eid: number) {
   addComponent(ctx.world, KinematicControls, eid);
 }
 
-function cameraHeadBob(ctx: GameState, rig: RemoteNode, speed: number, isGrounded: boolean, isSprinting: boolean) {
+function cameraHeadBob(ctx: GameContext, rig: RemoteNode, speed: number, isGrounded: boolean, isSprinting: boolean) {
   if (speed > 0.1 && isGrounded) {
     const amplitude = 0.04;
     const time = ctx.elapsed;
@@ -159,7 +159,7 @@ function cameraHeadBob(ctx: GameState, rig: RemoteNode, speed: number, isGrounde
 }
 
 export function updateKinematicControls(
-  ctx: GameState,
+  ctx: GameContext,
   { physicsWorld, collisionHandlers, handleToEid, characterCollision, eidTocharacterController }: PhysicsModuleState,
   actionStates: Map<string, ActionState>,
   rig: RemoteNode,
@@ -290,7 +290,7 @@ function createCharacterController(physics: PhysicsModuleState, eid: number) {
   return characterController;
 }
 
-export const KinematicCharacterControllerSystem = (ctx: GameState) => {
+export const KinematicCharacterControllerSystem = (ctx: GameContext) => {
   const physics = getModule(ctx, PhysicsModule);
   const input = getModule(ctx, InputModule);
 
@@ -305,7 +305,7 @@ export const KinematicCharacterControllerSystem = (ctx: GameState) => {
   for (let i = 0; i < rigs.length; i++) {
     const eid = rigs[i];
     const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
-    const body = RigidBody.store.get(eid);
+    const body = node.physicsBody?.body;
 
     if (!body) {
       console.warn("skipping kinematic controller - rigidbody not found on eid " + eid);

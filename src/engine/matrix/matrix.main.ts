@@ -1,6 +1,6 @@
 import { Room, Session } from "@thirdroom/hydrogen-view-sdk";
 
-import { IMainThreadContext } from "../MainThread";
+import { MainContext } from "../MainThread";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import { createDisposables } from "../utils/createDisposables";
 import { createDeferred, Deferred } from "../utils/Deferred";
@@ -31,19 +31,19 @@ interface MatrixModuleState {
   widgets: Map<string, WidgetContext>;
 }
 
-export const MatrixModule = defineModule<IMainThreadContext, MatrixModuleState>({
+export const MatrixModule = defineModule<MainContext, MatrixModuleState>({
   name: "matrix",
   create: () => {
     return {
       widgets: new Map(),
     };
   },
-  init(ctx: IMainThreadContext) {
+  init(ctx: MainContext) {
     return createDisposables([registerMessageHandler(ctx, MatrixMessageType.WidgetMessage, onWidgetMessage)]);
   },
 });
 
-function onWidgetMessage(ctx: IMainThreadContext, widgetMessage: WidgetMessage) {
+function onWidgetMessage(ctx: MainContext, widgetMessage: WidgetMessage) {
   const matrixModule = getModule(ctx, MatrixModule);
 
   const message = widgetMessage.message;
@@ -73,11 +73,7 @@ function getNextRequestId(widget: WidgetContext) {
   return id;
 }
 
-function reply<T extends { [key: string]: unknown }>(
-  ctx: IMainThreadContext,
-  request: WidgetAPIRequest,
-  responseData: T
-) {
+function reply<T extends { [key: string]: unknown }>(ctx: MainContext, request: WidgetAPIRequest, responseData: T) {
   ctx.sendMessage<WidgetMessage>(Thread.Game, {
     type: MatrixMessageType.WidgetMessage,
     message: {
@@ -88,7 +84,7 @@ function reply<T extends { [key: string]: unknown }>(
 }
 
 function sendComplete<T extends { [key: string]: unknown }, R extends WidgetAPIResponse>(
-  ctx: IMainThreadContext,
+  ctx: MainContext,
   widget: WidgetContext,
   action: WidgetAction,
   data: T
@@ -117,7 +113,7 @@ function sendComplete<T extends { [key: string]: unknown }, R extends WidgetAPIR
 
 // TODO: Don't actually export this. Just doing this to prevent linting errors
 export function send<T extends { [key: string]: unknown }, R extends { [key: string]: unknown }>(
-  ctx: IMainThreadContext,
+  ctx: MainContext,
   widget: WidgetContext,
   action: WidgetAction,
   data: T
@@ -125,7 +121,7 @@ export function send<T extends { [key: string]: unknown }, R extends { [key: str
   return sendComplete<T, WidgetAPIResponse>(ctx, widget, action, data).then((r) => r.response as R);
 }
 
-function handleWidgetRequest(ctx: IMainThreadContext, matrixModule: MatrixModuleState, request: WidgetAPIRequest) {
+function handleWidgetRequest(ctx: MainContext, matrixModule: MatrixModuleState, request: WidgetAPIRequest) {
   const { widgets } = matrixModule;
 
   const action = request.action;
@@ -190,11 +186,7 @@ function handleWidgetResponse(
   }
 }
 
-async function initializeRoomEventListener(
-  ctx: IMainThreadContext,
-  matrixModule: MatrixModuleState,
-  widget: WidgetContext
-) {
+async function initializeRoomEventListener(ctx: MainContext, matrixModule: MatrixModuleState, widget: WidgetContext) {
   const session = matrixModule.activeSession;
 
   if (!session) {
@@ -234,7 +226,7 @@ async function initializeRoomEventListener(
 }
 
 function ensureCapability(
-  ctx: IMainThreadContext,
+  ctx: MainContext,
   widget: WidgetContext,
   request: WidgetAPIRequest,
   capability: string,
@@ -262,7 +254,7 @@ function ensureCapability(
 }
 
 function handleSendEventAction(
-  ctx: IMainThreadContext,
+  ctx: MainContext,
   matrixModule: MatrixModuleState,
   widget: WidgetContext,
   request: WidgetAPIRequest
@@ -334,7 +326,7 @@ function handleSendEventAction(
 const DEFAULT_TIMELINE_LOAD_LIMIT = 1000;
 
 function handleReadEventsAction(
-  ctx: IMainThreadContext,
+  ctx: MainContext,
   matrixModule: MatrixModuleState,
   widget: WidgetContext,
   request: WidgetAPIRequest
@@ -454,7 +446,7 @@ function handleReadEventsAction(
   });
 }
 
-export function setActiveMatrixRoom(ctx: IMainThreadContext, session: Session, roomId: string) {
+export function setActiveMatrixRoom(ctx: MainContext, session: Session, roomId: string) {
   const matrixModule = getModule(ctx, MatrixModule);
 
   const room = session.rooms.get(roomId);
@@ -467,7 +459,7 @@ export function setActiveMatrixRoom(ctx: IMainThreadContext, session: Session, r
   matrixModule.activeSession = session;
 }
 
-export function disposeActiveMatrixRoom(ctx: IMainThreadContext) {
+export function disposeActiveMatrixRoom(ctx: MainContext) {
   const matrixModule = getModule(ctx, MatrixModule);
   matrixModule.activeRoom = undefined;
   matrixModule.activeSession = undefined;

@@ -1,4 +1,4 @@
-import { GameState } from "../GameTypes";
+import { GameContext } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import { RemoteResource } from "./RemoteResourceClass";
 import { ResourceModule } from "./resource.game";
@@ -10,7 +10,7 @@ interface ResourceRef {
   index: number;
 }
 
-export function findResourceRetainers(ctx: GameState, resourceId: number) {
+export function findResourceRetainers(ctx: GameContext, resourceId: number) {
   const resourceModule = getModule(ctx, ResourceModule);
 
   const resourceInfo = resourceModule.resourceInfos.get(resourceId);
@@ -90,7 +90,7 @@ export function findResourceRetainers(ctx: GameState, resourceId: number) {
   };
 }
 
-export function findResourceRetainerRoots(ctx: GameState, resourceId: number) {
+export function findResourceRetainerRoots(ctx: GameContext, resourceId: number) {
   const { refs } = findResourceRetainers(ctx, resourceId);
 
   const results: ResourceRef[] = [];
@@ -102,7 +102,7 @@ export function findResourceRetainerRoots(ctx: GameState, resourceId: number) {
   return results;
 }
 
-function findResourceRetainerRootsRecursive(ctx: GameState, ref: ResourceRef, results: ResourceRef[]) {
+function findResourceRetainerRootsRecursive(ctx: GameContext, ref: ResourceRef, results: ResourceRef[]) {
   const { refs: childRefs } = findResourceRetainers(ctx, ref.resource.eid);
 
   if (childRefs.length === 0) {

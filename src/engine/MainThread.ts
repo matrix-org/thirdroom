@@ -19,10 +19,9 @@ import {
   RenderQuality,
   RenderQualitySetting,
 } from "./renderer/renderer.common";
+import { createInputRingBuffer, InputRingBuffer } from "./common/InputRingBuffer";
 
-export type MainThreadSystem = (state: IMainThreadContext) => void;
-
-export interface IMainThreadContext extends ConsumerThreadContext {
+export interface MainContext extends ConsumerThreadContext {
   useOffscreenCanvas: boolean;
   mainToGameTripleBufferFlags: Uint8Array;
   gameToMainTripleBufferFlags: Uint8Array;
@@ -35,7 +34,10 @@ export interface IMainThreadContext extends ConsumerThreadContext {
   dt: number;
   elapsed: number;
   quality: RenderQuality;
+  inputRingBuffer: InputRingBuffer;
 }
+
+export type MainThreadSystem = (ctx: MainContext) => void;
 
 async function getSupportedXRSessionModes(): Promise<false | XRSessionMode[]> {
   let supportedXRSessionModes: XRSessionMode[] | false = false;
@@ -114,6 +116,8 @@ export async function MainThread(canvas: HTMLCanvasElement) {
         update: () => {},
       };
 
+  const inputRingBuffer = createInputRingBuffer();
+
   const gameWorker = new GameWorker();
   const renderWorker = await initRenderWorker(canvas, gameWorker, useOffscreenCanvas, singleConsumerThreadSharedState);
   const interWorkerMessageChannel = new MessageChannel();
@@ -131,7 +135,7 @@ export async function MainThread(canvas: HTMLCanvasElement) {
   const gameToRenderTripleBufferFlags = new Uint8Array(new SharedArrayBuffer(Uint8Array.BYTES_PER_ELEMENT)).fill(0x6);
   const gameToMainTripleBufferFlags = new Uint8Array(new SharedArrayBuffer(Uint8Array.BYTES_PER_ELEMENT)).fill(0x6);
 
-  const ctx: IMainThreadContext = {
+  const ctx: MainContext = {
     thread: Thread.Main,
     mainToGameTripleBufferFlags,
     gameToMainTripleBufferFlags,
@@ -152,6 +156,7 @@ export async function MainThread(canvas: HTMLCanvasElement) {
     tick: 0,
     singleConsumerThreadSharedState,
     quality,
+    inputRingBuffer,
   };
 
   function onWorkerMessage(event: MessageEvent) {
@@ -267,11 +272,11 @@ async function initRenderWorker(
 ): Promise<Worker | MockMessagePort> {
   if (useOffscreenCanvas) {
     console.info("Browser supports OffscreenCanvas, rendering in WebWorker.");
-    const { default: RenderWorker } = await import("./RenderWorker?worker");
+    const { default: RenderWorker } = await import("./renderer/RenderWorker?worker");
     return new RenderWorker();
   } else {
     console.info("Browser does not support OffscreenCanvas, rendering on main thread.");
-    const { default: initRenderWorkerOnMainThread } = await import("./RenderWorker");
+    const { default: initRenderWorkerOnMainThread } = await import("./renderer/RenderWorker");
     return initRenderWorkerOnMainThread(canvas, gameWorker, singleConsumerThreadSharedState!);
   }
 }

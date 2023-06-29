@@ -12,7 +12,7 @@ import {
 
 import { exitWorld } from "../../plugins/thirdroom/thirdroom.main";
 import { setLocalMediaStream } from "../audio/audio.main";
-import { IMainThreadContext } from "../MainThread";
+import { MainContext } from "../MainThread";
 import { addPeer, disconnect, hasPeer, removePeer, setHost } from "./network.main";
 import { getRoomCall } from "../../ui/utils/matrixUtils";
 
@@ -50,7 +50,7 @@ function getReliableHost(groupCall: GroupCall): Member | undefined {
 const getWorldGroupCall = (session: Session, world: Room) => getRoomCall(session.callHandler.calls, world.id);
 
 export async function createMatrixNetworkInterface(
-  ctx: IMainThreadContext,
+  ctx: MainContext,
   client: Client,
   platform: Platform,
   world: Room

@@ -1,8 +1,8 @@
-import { GameState } from "../GameTypes";
+import { GameContext } from "../GameTypes";
 import { ComponentPropertyType, ComponentPropertyStore, ComponentPropertyValue } from "./types";
 
 export type ComponentPropertyGetter<T extends ComponentPropertyType = ComponentPropertyType> = (
-  state: GameState,
+  ctx: GameContext,
   eid: number
 ) => ComponentPropertyValue<T>;
 
@@ -15,7 +15,7 @@ export const ComponentPropertyGetters: {
 };
 
 export type ComponentPropertySetter<T extends ComponentPropertyType = ComponentPropertyType> = (
-  state: GameState,
+  ctx: GameContext,
   eid: number,
   value: ComponentPropertyValue<T>
 ) => void;

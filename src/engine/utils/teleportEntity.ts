@@ -1,7 +1,6 @@
 import { vec3, quat } from "gl-matrix";
 import { Vector3, Quaternion } from "three";
 
-import { RigidBody } from "../physics/physics.game";
 import { RemoteNode } from "../resource/RemoteResources";
 
 const zero = new Vector3();
@@ -16,7 +15,7 @@ export function teleportEntity(node: RemoteNode, position: vec3, quaternion?: qu
   if (quaternion) {
     node.quaternion.set(quaternion);
   }
-  const body = RigidBody.store.get(node.eid);
+  const body = node.physicsBody?.body;
   if (body) {
     const position = node.position;
     body.setTranslation(tmpVec.fromArray(position), true);

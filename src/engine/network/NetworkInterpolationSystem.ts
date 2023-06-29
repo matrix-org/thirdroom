@@ -3,8 +3,7 @@ import { defineQuery, enterQuery, exitQuery, Not } from "bitecs";
 import { Vector3, Quaternion } from "three";
 import { quat, vec3 } from "gl-matrix";
 
-import { GameState } from "../GameTypes";
-import { RigidBody } from "../physics/physics.game";
+import { GameContext } from "../GameTypes";
 import { GameNetworkState, getPeerIndexFromNetworkId, NetworkModule, ownedPlayerQuery } from "./network.game";
 import { Networked, Owned } from "./NetworkComponents";
 import { getModule } from "../module/module.common";
@@ -16,10 +15,10 @@ import {
   removeEntityFromHistorian,
 } from "./Historian";
 import { addEntityHistory, syncWithHistorian } from "./InterpolationBuffer";
-import { clamp } from "../utils/interpolation";
 import { getRemoteResource } from "../resource/resource.game";
 import { RemoteNode } from "../resource/RemoteResources";
 import { OurPlayer } from "../player/Player";
+import { clamp } from "../common/math";
 
 export const remoteEntityQuery = defineQuery([Networked, Not(Owned), Not(OurPlayer)]);
 
@@ -38,7 +37,7 @@ const _quat = new Quaternion();
 const _v3 = vec3.create();
 const _q = quat.create();
 
-export function NetworkInterpolationSystem(ctx: GameState) {
+export function NetworkInterpolationSystem(ctx: GameContext) {
   const network = getModule(ctx, NetworkModule);
 
   const haveConnectedPeers = network.peers.length > 0;
@@ -52,7 +51,7 @@ export function NetworkInterpolationSystem(ctx: GameState) {
   for (let i = 0; i < entered.length; i++) {
     const eid = entered[i];
     const node = getRemoteResource<RemoteNode>(ctx, eid);
-    const body = RigidBody.store.get(eid);
+    const body = node?.physicsBody?.body;
 
     if (node) {
       applyNetworkedToEntity(node, body);
@@ -85,7 +84,7 @@ export function NetworkInterpolationSystem(ctx: GameState) {
       continue;
     }
 
-    const body = RigidBody.store.get(eid);
+    const body = node.physicsBody?.body;
 
     if (!network.interpolate) {
       applyNetworkedToEntity(node, body);
@@ -108,7 +107,7 @@ export function NetworkInterpolationSystem(ctx: GameState) {
 
     const position = node.position;
     const quaternion = node.quaternion;
-    const velocity = RigidBody.velocity[eid];
+    const velocity = node.physicsBody!.velocity;
 
     const netPosition = Networked.position[eid];
     const netVelocity = Networked.velocity[eid];
@@ -173,7 +172,7 @@ export function NetworkInterpolationSystem(ctx: GameState) {
   postprocessHistorians(ctx, network);
 }
 
-function preprocessHistorians(ctx: GameState, network: GameNetworkState) {
+function preprocessHistorians(ctx: GameContext, network: GameNetworkState) {
   for (const [, historian] of network.peerIdToHistorian) {
     if (historian.needsUpdate) {
       historian.latency = Date.now() - historian.latestTime;
@@ -218,11 +217,11 @@ function preprocessHistorians(ctx: GameState, network: GameNetworkState) {
 
     const ratio = (targetTime - fromTime) / (toTime - fromTime);
 
-    historian.fractionOfTimePassed = clamp(0, 1, ratio);
+    historian.fractionOfTimePassed = clamp(ratio, 0, 1);
   }
 }
 
-function postprocessHistorians(ctx: GameState, network: GameNetworkState) {
+function postprocessHistorians(ctx: GameContext, network: GameNetworkState) {
   for (const [, historian] of network.peerIdToHistorian) {
     historian.needsUpdate = false;
   }
@@ -237,9 +236,10 @@ export function applyNetworkedToEntity(node: RemoteNode, body?: RapierRigidBody)
   node.position.set(netPosition);
   node.quaternion.set(netQuaternion);
 
-  if (body) {
+  if (node.physicsBody && body) {
     body.setTranslation(_vec.fromArray(netPosition), true);
     if (body.isDynamic()) body.setLinvel(_vec.fromArray(netVelocity), true);
+    node.physicsBody.velocity.set(netVelocity);
     body.setRotation(_quat.fromArray(netQuaternion), true);
   }
 }

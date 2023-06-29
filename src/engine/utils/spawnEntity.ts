@@ -1,6 +1,6 @@
 import { vec3, quat, mat4 } from "gl-matrix";
 
-import { getYaw, RAD2DEG } from "../component/math";
+import { getYaw, RAD2DEG } from "../common/math";
 import { RemoteNode } from "../resource/RemoteResources";
 import { getRotationNoAlloc } from "./getRotationNoAlloc";
 import { teleportEntity } from "./teleportEntity";

@@ -1,7 +1,7 @@
 import { swapReadBufferFlags } from "../allocator/TripleBuffer";
-import { GameState } from "../GameTypes";
+import { GameContext } from "../GameTypes";
 
-export function IncomingTripleBufferSystem(ctx: GameState) {
+export function IncomingTripleBufferSystem(ctx: GameContext) {
   swapReadBufferFlags(ctx.mainToGameTripleBufferFlags);
   swapReadBufferFlags(ctx.renderToGameTripleBufferFlags);
 }

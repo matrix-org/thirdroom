@@ -7,7 +7,7 @@ import { playOneShotAudio } from "../../engine/audio/audio.game";
 import { unproject } from "../../engine/camera/camera.game";
 import { OurPlayer, ourPlayerQuery } from "../../engine/player/Player";
 import { maxEntities, NOOP } from "../../engine/config.common";
-import { GameState } from "../../engine/GameTypes";
+import { GameContext } from "../../engine/GameTypes";
 import { enableActionMap } from "../../engine/input/ActionMappingSystem";
 import { GameInputModule, InputModule } from "../../engine/input/input.game";
 import { defineModule, getModule, Thread } from "../../engine/module/module.common";
@@ -27,7 +27,7 @@ import {
   grabShapeCastCollisionGroups,
   removeCollisionGroupMembership,
 } from "../../engine/physics/CollisionGroups";
-import { PhysicsModule, PhysicsModuleState, RigidBody } from "../../engine/physics/physics.game";
+import { PhysicsModule, PhysicsModuleState } from "../../engine/physics/physics.game";
 import { Prefab } from "../../engine/prefab/prefab.game";
 import { addResourceRef, getRemoteResource, tryGetRemoteResource } from "../../engine/resource/resource.game";
 import {
@@ -40,19 +40,23 @@ import {
   removeObjectFromWorld,
 } from "../../engine/resource/RemoteResources";
 import { AudioEmitterType, InteractableType } from "../../engine/resource/schema";
-import { clamp } from "../../engine/utils/interpolation";
 import { PortalComponent } from "../portals/portals.game";
 import { InteractableAction, InteractionMessage, InteractionMessageType } from "./interaction.common";
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "../../engine/input/ActionMap";
 import { XRAvatarRig } from "../../engine/input/WebXRAvatarRigSystem";
-import { UICanvasFocusMessage, UICanvasPressMessage, WebSGUIMessage } from "../../engine/ui/ui.common";
 import { getRotationNoAlloc } from "../../engine/utils/getRotationNoAlloc";
 import { PlayerModule } from "../../engine/player/Player.game";
 import { ZoomComponent, orbitAnchorQuery, OrbitAnchor } from "../../engine/player/CameraRig";
-import { GameRendererModuleState, RendererModule } from "../../engine/renderer/renderer.game";
+import {
+  GameRendererModuleState,
+  notifyUICanvasFocus,
+  notifyUICanvasPressed,
+  RendererModule,
+} from "../../engine/renderer/renderer.game";
 import { getCamera } from "../../engine/player/getCamera";
 import { ThirdRoomMessageType } from "../thirdroom/thirdroom.common";
 import { ThirdRoomModule, ThirdRoomModuleState } from "../thirdroom/thirdroom.game";
+import { clamp } from "../../engine/common/math";
 
 // TODO: importing from spawnables.game in this file induces a runtime error
 // import { SpawnablesModule } from "../spawnables/spawnables.game";
@@ -61,7 +65,7 @@ type InteractionModuleState = {
   clickEmitter?: RemoteAudioEmitter;
 };
 
-export const InteractionModule = defineModule<GameState, InteractionModuleState>({
+export const InteractionModule = defineModule<GameContext, InteractionModuleState>({
   name: "interaction",
   create() {
     return {};
@@ -282,7 +286,7 @@ const zero = new Vector3();
 
 const interactableQuery = defineQuery([Interactable]);
 
-export function ResetInteractablesSystem(ctx: GameState) {
+export function ResetInteractablesSystem(ctx: GameContext) {
   const interactableEntities = interactableQuery(ctx.world);
 
   for (let i = 0; i < interactableEntities.length; i++) {
@@ -302,7 +306,7 @@ export function ResetInteractablesSystem(ctx: GameState) {
   }
 }
 
-export function InteractionSystem(ctx: GameState) {
+export function InteractionSystem(ctx: GameContext) {
   const thirdroom = getModule(ctx, ThirdRoomModule);
   const network = getModule(ctx, NetworkModule);
   const physics = getModule(ctx, PhysicsModule);
@@ -342,7 +346,7 @@ export function InteractionSystem(ctx: GameState) {
 }
 
 function updateOrbitInteraction(
-  ctx: GameState,
+  ctx: GameContext,
   input: GameInputModule,
   renderer: GameRendererModuleState,
   physics: PhysicsModuleState,
@@ -466,7 +470,7 @@ function hitscan(physics: PhysicsModuleState, node: RemoteNode, collisionGroup: 
   return hit;
 }
 
-function updateFocus(ctx: GameState, physics: PhysicsModuleState, rig: RemoteNode, focusingNode: RemoteNode) {
+function updateFocus(ctx: GameContext, physics: PhysicsModuleState, rig: RemoteNode, focusingNode: RemoteNode) {
   const hit = hitscan(physics, focusingNode, focusShapeCastCollisionGroups, MAX_FOCUS_DISTANCE);
 
   // if there's no hit, clear focus
@@ -506,7 +510,7 @@ function updateFocus(ctx: GameState, physics: PhysicsModuleState, rig: RemoteNod
   }
 }
 
-function updateDeletion(ctx: GameState, interaction: InteractionModuleState, input: GameInputModule, rig: number) {
+function updateDeletion(ctx: GameContext, interaction: InteractionModuleState, input: GameInputModule, rig: number) {
   const deleteBtn = input.actionStates.get("Delete") as ButtonActionState;
   if (deleteBtn.pressed) {
     const focusedEid = FocusComponent.focusedEntity[rig];
@@ -523,7 +527,7 @@ function updateDeletion(ctx: GameState, interaction: InteractionModuleState, inp
   }
 }
 
-function projectHitOntoCanvas(ctx: GameState, shapecastHit: RAPIER.ShapeColliderTOI, node: RemoteNode) {
+function projectHitOntoCanvas(ctx: GameContext, shapecastHit: RAPIER.ShapeColliderTOI, node: RemoteNode) {
   const { x, y, z } = shapecastHit.witness1;
 
   // convert to local space
@@ -535,7 +539,7 @@ function projectHitOntoCanvas(ctx: GameState, shapecastHit: RAPIER.ShapeCollider
 }
 
 function updateGrabThrow(
-  ctx: GameState,
+  ctx: GameContext,
   interaction: InteractionModuleState,
   physics: PhysicsModuleState,
   network: GameNetworkState,
@@ -569,7 +573,12 @@ function updateGrabThrow(
 
     // fire!
     _impulse.fromArray(direction);
-    RigidBody.store.get(heldEntity)?.applyImpulse(_impulse, true);
+    const heldNode = getRemoteResource<RemoteNode>(ctx, heldEntity);
+    if (!heldNode || !heldNode.physicsBody || !heldNode.physicsBody.body) {
+      throw new Error(`No physics body found on entity ${heldEntity}`);
+    }
+
+    heldNode.physicsBody.body.applyImpulse(_impulse, true);
 
     if (ourPlayer) {
       sendInteractionMessage(ctx, InteractableAction.Release, heldEntity);
@@ -688,7 +697,7 @@ function updateGrabThrow(
     if (scrollY !== 0) {
       heldOffset -= scrollY / 1000;
     }
-    GrabComponent.heldOffset[rig.eid] = clamp(MIN_HELD_DISTANCE, MAX_HELD_DISTANCE, heldOffset);
+    GrabComponent.heldOffset[rig.eid] = clamp(heldOffset, MIN_HELD_DISTANCE, MAX_HELD_DISTANCE);
 
     const heldPosition = heldNode.position;
 
@@ -707,7 +716,7 @@ function updateGrabThrow(
 
     vec3.scale(target, target, HELD_MOVE_SPEED - heldOffset / 2);
 
-    const body = RigidBody.store.get(heldEntity);
+    const body = heldNode.physicsBody?.body;
     if (body) {
       body.setLinvel(_impulse.fromArray(target), true);
       body.setAngvel(zero, true);
@@ -717,7 +726,7 @@ function updateGrabThrow(
 }
 
 function updateGrabThrowXR(
-  ctx: GameState,
+  ctx: GameContext,
   physics: PhysicsModuleState,
   network: GameNetworkState,
   controller: GameInputModule,
@@ -824,7 +833,7 @@ function updateGrabThrowXR(
 
     vec3.scale(target, target, HELD_MOVE_SPEED * 2);
 
-    const body = RigidBody.store.get(focusedEntity);
+    const body = focusedNode.physicsBody?.body;
     if (body) {
       body.setLinvel(_impulse.fromArray(target), true);
       body.setAngvel(zero, true);
@@ -835,25 +844,7 @@ function updateGrabThrowXR(
   }
 }
 
-function notifyUICanvasPressed(ctx: GameState, hitPoint: vec3, node: RemoteNode) {
-  const uiCanvas = node.uiCanvas;
-  ctx.sendMessage<UICanvasPressMessage>(Thread.Render, {
-    type: WebSGUIMessage.CanvasPress,
-    hitPoint,
-    uiCanvasEid: uiCanvas!.eid,
-  });
-}
-
-function notifyUICanvasFocus(ctx: GameState, hitPoint: vec3, node: RemoteNode) {
-  const uiCanvas = node.uiCanvas;
-  ctx.sendMessage<UICanvasFocusMessage>(Thread.Render, {
-    type: WebSGUIMessage.CanvasFocus,
-    hitPoint,
-    uiCanvasEid: uiCanvas!.eid,
-  });
-}
-
-export function sendInteractionMessage(ctx: GameState, action: InteractableAction, eid = NOOP) {
+export function sendInteractionMessage(ctx: GameContext, action: InteractableAction, eid = NOOP) {
   const network = getModule(ctx, NetworkModule);
 
   const interactableType = Interactable.type[eid];
@@ -905,7 +896,7 @@ export function sendInteractionMessage(ctx: GameState, action: InteractableActio
 }
 
 export function addInteractableComponent(
-  ctx: GameState,
+  ctx: GameContext,
   physics: PhysicsModuleState,
   node: RemoteNode | RemoteUIButton,
   interactableType: InteractableType
@@ -917,16 +908,16 @@ export function addInteractableComponent(
 
   node.interactable = new RemoteInteractable(ctx.resourceManager, { type: interactableType });
 
-  const rigidBody = RigidBody.store.get(eid);
-  if (!rigidBody) {
+  const body = (node as RemoteNode).physicsBody?.body;
+  if (!body) {
     console.warn(
       `Adding interactable component to entity "${eid}" without a RigidBody component. This entity will not be interactable.`
     );
     return;
   }
 
-  for (let i = 0; i < rigidBody.numColliders(); i++) {
-    const collider = rigidBody.collider(i);
+  for (let i = 0; i < body.numColliders(); i++) {
+    const collider = body.collider(i);
 
     let collisionGroups = collider.collisionGroups();
 
@@ -938,19 +929,19 @@ export function addInteractableComponent(
   }
 }
 
-export function removeInteractableComponent(ctx: GameState, physics: PhysicsModuleState, node: RemoteNode) {
+export function removeInteractableComponent(ctx: GameContext, physics: PhysicsModuleState, node: RemoteNode) {
   removeComponent(ctx.world, Interactable, node.eid);
 
-  const rigidBody = RigidBody.store.get(node.eid);
-  if (!rigidBody) {
+  const body = node.physicsBody?.body;
+  if (!body) {
     console.warn(
-      `Adding interactable component to entity "${node.name}" without a RigidBody component. This entity will not be interactable.`
+      `Removing interactable component from entity "${node.name}" without a physics body. This entity will not be interactable.`
     );
     return;
   }
 
-  for (let i = 0; i < rigidBody.numColliders(); i++) {
-    const collider = rigidBody.collider(i);
+  for (let i = 0; i < body.numColliders(); i++) {
+    const collider = body.collider(i);
 
     let collisionGroups = collider.collisionGroups();
 
