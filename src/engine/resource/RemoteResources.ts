@@ -1,4 +1,4 @@
-import { defineQuery } from "bitecs";
+import { defineQuery, enterQuery } from "bitecs";
 import { AnimationClip } from "three";
 import RAPIER from "@dimforge/rapier3d-compat";
 
@@ -184,6 +184,7 @@ export class RemotePhysicsBody extends defineRemoteResourceClass(PhysicsBodyReso
 }
 
 export const physicsBodyQuery = defineQuery([RemotePhysicsBody]);
+export const enteredPhysicsBodyQuery = enterQuery(physicsBodyQuery);
 
 const NodeIsStaticOffset = NodeResource.schema.isStatic.byteOffset / 4;
 
