@@ -262,7 +262,7 @@ export function updateComponentValuesFromGamepad(
     // NOTE: The Gamepad API defines the forward direction as negative on the yAxis so we negate here.
     // https://w3c.github.io/gamepad/#dom-gamepad-axes
     const gamepadAxis = -gamepad.axes[gamepadIndices.yAxis];
-    const yAxis = clamp(-1, 1, gamepadAxis);
+    const yAxis = clamp(gamepadAxis, -1, 1);
 
     if (state === XRInputComponentStateValue.Default && Math.abs(yAxis) > AXIS_TOUCH_THRESHOLD) {
       state = XRInputComponentStateValue.Touched;
