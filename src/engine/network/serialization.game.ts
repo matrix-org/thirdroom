@@ -1,28 +1,28 @@
 import { addComponent } from "bitecs";
 
 import {
-  createCursorView,
   CursorView,
   moveCursorView,
   readArrayBuffer,
   readFloat32,
-  readFloat64,
   readString,
   readUint16,
   readUint32,
+  readUint64,
   readUint8,
   rewindCursorView,
   scrollCursorView,
   sliceCursorView,
   spaceUint16,
   spaceUint32,
+  spaceUint64,
   writeArrayBuffer,
   writeFloat32,
-  writeFloat64,
   writePropIfChanged,
   writeScalarPropIfChanged,
   writeString,
   writeUint32,
+  writeUint64,
   writeUint8,
 } from "../allocator/CursorView";
 import { NOOP } from "../config.common";
@@ -31,15 +31,17 @@ import { getModule } from "../module/module.common";
 import { Prefab, createPrefabEntity } from "../prefab/prefab.game";
 import { checkBitflag } from "../utils/checkBitflag";
 import {
-  ownedNetworkedQuery,
-  createdOwnedNetworkedQuery,
+  authoringNetworkedQuery,
+  spawnedNetworkeQuery,
   GameNetworkState,
-  deletedOwnedNetworkedQuery,
+  despawnedNetworkQuery,
   associatePeerWithEntity,
+  NetworkID,
+  tryGetPeerIndex,
 } from "./network.game";
 import { Networked } from "./NetworkComponents";
 import { NetworkModule } from "./network.game";
-import { NetworkAction } from "./NetworkAction";
+import { NetworkMessage } from "./NetworkMessage";
 import { waitUntil } from "../utils/waitUntil";
 import { getRemoteResource, tryGetRemoteResource } from "../resource/resource.game";
 import {
@@ -57,35 +59,15 @@ import { Player } from "../player/Player";
 import { addNametag } from "../player/nametags.game";
 import { AudioEmitterType } from "../resource/schema";
 
-// ad-hoc messages view
-const messageView = createCursorView(new ArrayBuffer(10000));
-
 const metadataTotalBytes =
   Uint8Array.BYTES_PER_ELEMENT + Float64Array.BYTES_PER_ELEMENT + Uint32Array.BYTES_PER_ELEMENT;
 
-export const writeMessageType = (v: CursorView, type: NetworkAction) => writeUint8(v, type);
-
-export const writeElapsed = (v: CursorView) => writeFloat64(v, Date.now());
-
-export const writeMetadata = (v: CursorView, type: NetworkAction) => {
-  writeMessageType(v, type);
-  writeElapsed(v);
-  // HACK: leave space for the input tick
-  scrollCursorView(v, Uint32Array.BYTES_PER_ELEMENT);
-};
-
-const _out: { type: number; elapsed: number; inputTick: number } = { type: 0, elapsed: 0, inputTick: 0 };
-export const readMetadata = (v: CursorView, out = _out) => {
-  out.type = readUint8(v);
-  out.elapsed = readFloat64(v);
-  // HACK?: read input tick processed from this peer to each packet
-  out.inputTick = readUint32(v);
-  return out;
-};
+export const writeMessageType = (v: CursorView, type: NetworkMessage) => writeUint8(v, type);
+export const readMessageType = (v: CursorView) => readUint8(v);
 
 /* Transform serialization */
 
-export const serializeTransformSnapshot = (v: CursorView, node: RemoteNode) => {
+export const writeTransform = (v: CursorView, node: RemoteNode) => {
   const position = node.position;
   writeFloat32(v, position[0]);
   writeFloat32(v, position[1]);
@@ -108,10 +90,10 @@ export const serializeTransformSnapshot = (v: CursorView, node: RemoteNode) => {
   return v;
 };
 
-export const deserializeTransformSnapshot = (
+export const readTransform = (
   network: GameNetworkState,
   v: CursorView,
-  nid: number,
+  nid: NetworkID,
   node: RemoteNode | undefined
 ) => {
   if (node !== undefined) {
@@ -190,7 +172,7 @@ export const serializeTransformChanged = (v: CursorView, node: RemoteNode) => {
   return changeMask > 0;
 };
 
-export const deserializeTransformChanged = (v: CursorView, nid: number, node: RemoteNode | undefined) => {
+export const deserializeTransformChanged = (v: CursorView, nid: NetworkID, node: RemoteNode | undefined) => {
   if (node) {
     const changeMask = readUint16(v);
     let b = 0;
@@ -222,14 +204,14 @@ export const deserializeTransformChanged = (v: CursorView, nid: number, node: Re
 export function createRemoteNetworkedEntity(
   ctx: GameContext,
   network: GameNetworkState,
-  nid: number,
+  nid: NetworkID,
   prefab: string
 ): RemoteNode {
   const node = createPrefabEntity(ctx, prefab);
 
   // assign networkId
   addComponent(ctx.world, Networked, node.eid, true);
-  Networked.networkId[node.eid] = nid;
+  Networked.networkId[node.eid] = Number(nid);
   network.networkIdToEntityId.set(nid, node.eid);
   addObjectToWorld(ctx, node);
 
@@ -237,7 +219,7 @@ export function createRemoteNetworkedEntity(
 }
 
 function writeCreation(network: GameNetworkState, v: CursorView, eid: number) {
-  const nid = Networked.networkId[eid];
+  const nid = BigInt(Networked.networkId[eid]);
 
   const prefabName = Prefab.get(eid);
   if (!prefabName) {
@@ -245,7 +227,7 @@ function writeCreation(network: GameNetworkState, v: CursorView, eid: number) {
     throw new Error(`could not serialize creation for ${eid}, entity has no prefab`);
   }
 
-  writeUint32(v, nid);
+  writeUint64(v, nid);
   writeString(v, prefabName);
   const writeDataByteLength = spaceUint32(v);
 
@@ -264,7 +246,7 @@ function writeCreation(network: GameNetworkState, v: CursorView, eid: number) {
 
 export function serializeCreatesSnapshot(ctx: GameContext, v: CursorView) {
   const network = getModule(ctx, NetworkModule);
-  const entities = ownedNetworkedQuery(ctx.world);
+  const entities = authoringNetworkedQuery(ctx.world);
 
   // TODO: optimize length written with maxEntities config
   writeUint32(v, entities.length);
@@ -276,7 +258,7 @@ export function serializeCreatesSnapshot(ctx: GameContext, v: CursorView) {
 
 export function serializeCreates(ctx: GameContext, v: CursorView) {
   const network = getModule(ctx, NetworkModule);
-  const entities = createdOwnedNetworkedQuery(ctx.world);
+  const entities = spawnedNetworkeQuery(ctx.world);
 
   writeUint32(v, entities.length);
   for (let i = 0; i < entities.length; i++) {
@@ -289,7 +271,7 @@ export function deserializeCreates(ctx: GameContext, v: CursorView, peerId: stri
   const network = getModule(ctx, NetworkModule);
   const count = readUint32(v);
   for (let i = 0; i < count; i++) {
-    const nid = readUint32(v);
+    const nid = readUint64(v);
     const prefabName = readString(v);
     const dataByteLength = readUint32(v);
 
@@ -308,7 +290,7 @@ export function deserializeCreates(ctx: GameContext, v: CursorView, peerId: stri
 
       replicator.spawned.push({
         networkId: nid,
-        peerIndex: network.peerIdToIndex.get(peerId)!,
+        peerIndex: tryGetPeerIndex(network, peerId),
         data,
       });
       network.deferredUpdates.set(nid, []);
@@ -321,14 +303,14 @@ export function deserializeCreates(ctx: GameContext, v: CursorView, peerId: stri
 /* Updates - Snapshot */
 
 export function serializeUpdatesSnapshot(ctx: GameContext, v: CursorView) {
-  const entities = ownedNetworkedQuery(ctx.world);
+  const entities = authoringNetworkedQuery(ctx.world);
   writeUint32(v, entities.length);
   for (let i = 0; i < entities.length; i++) {
     const eid = entities[i];
-    const nid = Networked.networkId[eid];
+    const nid = BigInt(Networked.networkId[eid]);
     const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
-    writeUint32(v, nid);
-    serializeTransformSnapshot(v, node);
+    writeUint64(v, nid);
+    writeTransform(v, node);
   }
 }
 
@@ -336,26 +318,26 @@ export function deserializeUpdatesSnapshot(ctx: GameContext, v: CursorView) {
   const network = getModule(ctx, NetworkModule);
   const count = readUint32(v);
   for (let i = 0; i < count; i++) {
-    const nid = readUint32(v);
+    const nid = readUint64(v);
     const eid = network.networkIdToEntityId.get(nid) || NOOP;
     const node = getRemoteResource<RemoteNode>(ctx, eid);
 
-    deserializeTransformSnapshot(network, v, nid, node);
+    readTransform(network, v, nid, node);
   }
 }
 
 /* Updates - Changed */
 
 export function serializeUpdatesChanged(ctx: GameContext, v: CursorView) {
-  const entities = ownedNetworkedQuery(ctx.world);
+  const entities = authoringNetworkedQuery(ctx.world);
   const writeCount = spaceUint32(v);
   let count = 0;
   for (let i = 0; i < entities.length; i++) {
     const eid = entities[i];
-    const nid = Networked.networkId[eid];
+    const nid = BigInt(Networked.networkId[eid]);
     const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
     const rewind = rewindCursorView(v);
-    const writeNid = spaceUint32(v);
+    const writeNid = spaceUint64(v);
     const written = serializeTransformChanged(v, node);
     if (written) {
       writeNid(nid);
@@ -371,7 +353,7 @@ export function deserializeUpdatesChanged(ctx: GameContext, v: CursorView) {
   const network = getModule(ctx, NetworkModule);
   const count = readUint32(v);
   for (let i = 0; i < count; i++) {
-    const nid = readUint32(v);
+    const nid = readUint64(v);
     const eid = network.networkIdToEntityId.get(nid) || NOOP;
 
     if (eid === NOOP) {
@@ -386,12 +368,12 @@ export function deserializeUpdatesChanged(ctx: GameContext, v: CursorView) {
 /* Delete */
 
 export function serializeDeletes(ctx: GameContext, v: CursorView) {
-  const entities = deletedOwnedNetworkedQuery(ctx.world);
+  const entities = despawnedNetworkQuery(ctx.world);
   writeUint32(v, entities.length);
   for (let i = 0; i < entities.length; i++) {
     const eid = entities[i];
-    const nid = Networked.networkId[eid];
-    writeUint32(v, nid);
+    const nid = BigInt(Networked.networkId[eid]);
+    writeUint64(v, nid);
     console.info("serialized deletion for nid", nid, "eid", eid, "prefab", Prefab.get(eid));
   }
 }
@@ -400,7 +382,7 @@ export function deserializeDeletes(ctx: GameContext, v: CursorView) {
   const network = getModule(ctx, NetworkModule);
   const count = readUint32(v);
   for (let i = 0; i < count; i++) {
-    const nid = readUint32(v);
+    const nid = readUint64(v);
     const eid = network.networkIdToEntityId.get(nid);
     const node = eid ? getRemoteResource<RemoteNode>(ctx, eid) : undefined;
     if (!node) {
@@ -415,28 +397,29 @@ export function deserializeDeletes(ctx: GameContext, v: CursorView) {
 
 /* Update NetworkId Message */
 
-export const serializeUpdateNetworkId = (ctx: GameContext, v: CursorView, from: number, to: number) => {
+export const serializeUpdateNetworkId = (ctx: GameContext, v: CursorView, from: NetworkID, to: NetworkID) => {
   console.info("serializeUpdateNetworkId", from, "->", to);
-  writeUint32(v, from);
-  writeUint32(v, to);
+  writeUint64(v, from);
+  writeUint64(v, to);
 };
 export function deserializeUpdateNetworkId(ctx: GameContext, v: CursorView) {
   const network = getModule(ctx, NetworkModule);
 
-  const from = readUint32(v);
-  const to = readUint32(v);
+  const from = readUint64(v);
+  const to = readUint64(v);
 
   const eid = network.networkIdToEntityId.get(from);
   if (!eid) throw new Error("could not find entity for nid: " + from);
 
-  Networked.networkId[eid] = to;
+  Networked.networkId[eid] = Number(to);
 
   console.info("deserializeUpdateNetworkId", from, "->", to);
 }
 export function createUpdateNetworkIdMessage(ctx: GameContext, from: number, to: number) {
-  writeMetadata(messageView, NetworkAction.UpdateNetworkId);
-  serializeUpdateNetworkId(ctx, messageView, from, to);
-  return sliceCursorView(messageView);
+  const network = getModule(ctx, NetworkModule);
+  writeMessageType(network.cursorView, NetworkMessage.UpdateNetworkId);
+  serializeUpdateNetworkId(ctx, network.cursorView, BigInt(from), BigInt(to));
+  return sliceCursorView(network.cursorView);
 }
 
 /* Player NetworkId Message */
@@ -444,18 +427,18 @@ export function createUpdateNetworkIdMessage(ctx: GameContext, from: number, to:
 export const serializeInformPlayerNetworkId = (ctx: GameContext, v: CursorView, peerId: string) => {
   console.info("serializeInformPlayerNetworkId", peerId);
   const network = getModule(ctx, NetworkModule);
-  const peerEid = network.peerIdToEntityId.get(peerId);
-  if (peerEid === undefined) {
+  const eid = network.peerIdToEntityId.get(peerId);
+  if (eid === undefined) {
     throw new Error(`could not send NetworkMessage.InformPlayerNetworkId, ${peerId} not set on peerIdToEntity map`);
   }
 
-  const peerNid = Networked.networkId[peerEid];
-  if (peerNid === NOOP) {
-    throw new Error(`could not send NetworkMessage.InformPlayerNetworkId, ${peerEid} has no networkId assigned`);
+  const nid = BigInt(Networked.networkId[eid]);
+  if (!nid) {
+    throw new Error(`could not send NetworkMessage.InformPlayerNetworkId, ${eid} has no networkId assigned`);
   }
 
   writeString(v, peerId);
-  writeUint32(v, peerNid);
+  writeUint64(v, nid);
 };
 
 export async function deserializeInformPlayerNetworkId(ctx: GameContext, v: CursorView) {
@@ -463,7 +446,7 @@ export async function deserializeInformPlayerNetworkId(ctx: GameContext, v: Curs
 
   // read
   const peerId = readString(v);
-  const peerNid = readUint32(v);
+  const peerNid = BigInt(readUint64(v));
 
   console.info("deserializeInformPlayerNetworkId for peer", peerId, peerNid);
 
@@ -511,11 +494,10 @@ export async function deserializeInformPlayerNetworkId(ctx: GameContext, v: Curs
 }
 
 export function createInformXRModeMessage(ctx: GameContext, xrMode: XRMode) {
-  writeMetadata(messageView, NetworkAction.InformXRMode);
-
-  serializeInformXRMode(messageView, xrMode);
-
-  return sliceCursorView(messageView);
+  const network = getModule(ctx, NetworkModule);
+  writeMessageType(network.cursorView, NetworkMessage.InformXRMode);
+  serializeInformXRMode(network.cursorView, xrMode);
+  return sliceCursorView(network.cursorView);
 }
 export const serializeInformXRMode = (v: CursorView, xrMode: XRMode) => {
   writeUint8(v, xrMode);
@@ -533,9 +515,10 @@ export const deserializeInformXRMode = (ctx: GameContext, v: CursorView, peerId:
 };
 
 export function createInformPlayerNetworkIdMessage(ctx: GameContext, peerId: string) {
-  writeMetadata(messageView, NetworkAction.InformPlayerNetworkId);
-  serializeInformPlayerNetworkId(ctx, messageView, peerId);
-  return sliceCursorView(messageView);
+  const network = getModule(ctx, NetworkModule);
+  writeMessageType(network.cursorView, NetworkMessage.InformPlayerNetworkId);
+  serializeInformPlayerNetworkId(ctx, network.cursorView, peerId);
+  return sliceCursorView(network.cursorView);
 }
 
 /* Message Factories */
@@ -543,7 +526,7 @@ export function createInformPlayerNetworkIdMessage(ctx: GameContext, peerId: str
 // New Peer Snapshot Update
 
 export const createNewPeerSnapshotMessage = (ctx: GameContext, v: CursorView) => {
-  writeMetadata(v, NetworkAction.NewPeerSnapshot);
+  writeMessageType(v, NetworkMessage.NewPeerSnapshot);
   serializeCreatesSnapshot(ctx, v);
   serializeUpdatesSnapshot(ctx, v);
   return sliceCursorView(v);
@@ -556,7 +539,7 @@ export const deserializeNewPeerSnapshot = (ctx: GameContext, v: CursorView, peer
 
 // Full Snapshot Update
 export const createFullSnapshotMessage = (ctx: GameContext, v: CursorView) => {
-  writeMetadata(v, NetworkAction.FullSnapshot);
+  writeMessageType(v, NetworkMessage.FullSnapshot);
   serializeCreates(ctx, v);
   serializeUpdatesSnapshot(ctx, v);
   serializeDeletes(ctx, v);
@@ -573,7 +556,7 @@ export const deserializeSnapshot = (ctx: GameContext, v: CursorView, peerId: str
 
 // Changed State Update
 export const createFullChangedMessage = (ctx: GameContext, v: CursorView) => {
-  writeMetadata(v, NetworkAction.FullChanged);
+  writeMessageType(v, NetworkMessage.FullChanged);
   serializeCreates(ctx, v);
   serializeUpdatesChanged(ctx, v);
   serializeDeletes(ctx, v);
@@ -591,7 +574,7 @@ export const deserializeFullChangedUpdate = (ctx: GameContext, v: CursorView, pe
 
 // Deletion Update
 export const createDeleteMessage = (ctx: GameContext, v: CursorView) => {
-  writeMetadata(v, NetworkAction.Delete);
+  writeMessageType(v, NetworkMessage.Delete);
   serializeDeletes(ctx, v);
   if (v.cursor <= metadataTotalBytes + Uint32Array.BYTES_PER_ELEMENT) {
     moveCursorView(v, 0);
@@ -600,7 +583,7 @@ export const createDeleteMessage = (ctx: GameContext, v: CursorView) => {
 };
 
 export const createCreateMessage = (ctx: GameContext, v: CursorView) => {
-  writeMetadata(v, NetworkAction.Create);
+  writeMessageType(v, NetworkMessage.Create);
   serializeCreates(ctx, v);
   if (v.cursor <= metadataTotalBytes + Uint32Array.BYTES_PER_ELEMENT) {
     moveCursorView(v, 0);
@@ -609,7 +592,7 @@ export const createCreateMessage = (ctx: GameContext, v: CursorView) => {
 };
 
 export const createUpdateChangedMessage = (ctx: GameContext, v: CursorView) => {
-  writeMetadata(v, NetworkAction.UpdateChanged);
+  writeMessageType(v, NetworkMessage.UpdateChanged);
   serializeUpdatesChanged(ctx, v);
   if (v.cursor <= metadataTotalBytes + Uint32Array.BYTES_PER_ELEMENT) {
     moveCursorView(v, 0);
@@ -618,7 +601,7 @@ export const createUpdateChangedMessage = (ctx: GameContext, v: CursorView) => {
 };
 
 export const createUpdateSnapshotMessage = (ctx: GameContext, v: CursorView) => {
-  writeMetadata(v, NetworkAction.UpdateSnapshot);
+  writeMessageType(v, NetworkMessage.UpdateSnapshot);
   serializeUpdatesSnapshot(ctx, v);
   if (v.cursor <= metadataTotalBytes + Uint32Array.BYTES_PER_ELEMENT) {
     moveCursorView(v, 0);

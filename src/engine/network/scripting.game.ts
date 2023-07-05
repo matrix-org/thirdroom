@@ -8,13 +8,15 @@ import {
   writeArrayBuffer as cursorWriteArrayBuffer,
   writeInt32,
   CursorView,
+  writeUint64,
+  readUint64,
 } from "../allocator/CursorView";
 import { GameContext } from "../GameTypes";
 import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
-import { GameNetworkState, NetworkModule } from "./network.game";
-import { NetworkAction } from "./NetworkAction";
+import { GameNetworkState, NetworkModule, PeerIndex, getPeerIndex, tryGetPeerIndex } from "./network.game";
+import { NetworkMessage } from "./NetworkMessage";
 import { broadcastReliable, sendReliable, sendUnreliable } from "./outbound.game";
-import { writeMetadata } from "./serialization.game";
+import { writeMessageType } from "./serialization.game";
 import { writeUint32, readUint32 } from "../allocator/CursorView";
 import { registerInboundMessageHandler } from "./inbound.game";
 import {
@@ -32,7 +34,7 @@ import { createDisposables } from "../utils/createDisposables";
 import { NetworkMessageType, PeerEnteredMessage, PeerExitedMessage } from "./network.common";
 import { ScriptComponent, scriptQuery } from "../scripting/scripting.game";
 import { Replication, createReplicator } from "./Replicator";
-import { Networked, Owned } from "./NetworkComponents";
+import { Networked, Authoring } from "./NetworkComponents";
 import { addPrefabComponent } from "../prefab/prefab.game";
 
 export const WebSGNetworkModule = defineModule<GameContext, {}>({
@@ -42,10 +44,10 @@ export const WebSGNetworkModule = defineModule<GameContext, {}>({
   },
   init(ctx: GameContext) {
     const network = getModule(ctx, NetworkModule);
-    registerInboundMessageHandler(network, NetworkAction.BinaryScriptMessage, (ctx, v, peerId) =>
+    registerInboundMessageHandler(network, NetworkMessage.BinaryScriptMessage, (ctx, v, peerId) =>
       deserializeScriptMessage(ctx, v, peerId, true)
     );
-    registerInboundMessageHandler(network, NetworkAction.StringScriptMessage, (ctx, v, peerId) =>
+    registerInboundMessageHandler(network, NetworkMessage.StringScriptMessage, (ctx, v, peerId) =>
       deserializeScriptMessage(ctx, v, peerId, true)
     );
 
@@ -79,19 +81,19 @@ export function createWebSGNetworkModule(ctx: GameContext, wasmCtx: WASMModuleCo
 
   const networkWASMModule = {
     network_get_host_peer_index() {
-      const peerIndex = network.peerIdToIndex.get(network.hostId);
+      const peerIndex = getPeerIndex(network, network.hostId);
 
       if (peerIndex === undefined) {
-        return 0;
+        return 0n;
       }
 
       return peerIndex;
     },
     network_get_local_peer_index() {
-      const peerIndex = network.peerIdToIndex.get(network.peerId);
+      const peerIndex = getPeerIndex(network, network.peerId);
 
       if (peerIndex === undefined) {
-        return 0;
+        return 0n;
       }
 
       return peerIndex;
@@ -142,7 +144,7 @@ export function createWebSGNetworkModule(ctx: GameContext, wasmCtx: WASMModuleCo
 
       if (!listener) {
         moveCursorView(wasmCtx.cursorView, infoPtr);
-        writeUint32(wasmCtx.cursorView, 0);
+        writeUint64(wasmCtx.cursorView, 0n);
         writeUint32(wasmCtx.cursorView, 0);
         writeInt32(wasmCtx.cursorView, 0);
         console.error(`WebSGNetworking: Listener ${listenerId} does not exist.`);
@@ -150,12 +152,12 @@ export function createWebSGNetworkModule(ctx: GameContext, wasmCtx: WASMModuleCo
       }
 
       let message: [string, ArrayBuffer, boolean] | undefined;
-      let peerIndex: number | undefined;
+      let peerIndex: PeerIndex | undefined;
 
       while (listener.inbound.length > 0) {
         message = listener.inbound[0];
         const peerId = message[0];
-        peerIndex = network.peerIdToIndex.get(peerId);
+        peerIndex = getPeerIndex(network, peerId);
 
         if (peerIndex === undefined) {
           // This message is from a peer that no longer exists.
@@ -168,7 +170,7 @@ export function createWebSGNetworkModule(ctx: GameContext, wasmCtx: WASMModuleCo
       }
 
       moveCursorView(wasmCtx.cursorView, infoPtr);
-      writeUint32(wasmCtx.cursorView, peerIndex || 0);
+      writeUint64(wasmCtx.cursorView, peerIndex || 0n);
       writeUint32(wasmCtx.cursorView, message ? message[1].byteLength : 0);
       writeInt32(wasmCtx.cursorView, message ? (message[2] ? 1 : 0) : 0);
 
@@ -193,7 +195,7 @@ export function createWebSGNetworkModule(ctx: GameContext, wasmCtx: WASMModuleCo
           }
 
           const peerId = message[0];
-          const peerIndex = network.peerIdToIndex.get(peerId);
+          const peerIndex = getPeerIndex(network, peerId);
 
           if (peerIndex === undefined) {
             console.warn("Discarded message from peer that no longer exists");
@@ -221,7 +223,7 @@ export function createWebSGNetworkModule(ctx: GameContext, wasmCtx: WASMModuleCo
         return -1;
       }
     },
-    peer_get_id_length(peerIndex: number) {
+    peer_get_id_length(peerIndex: PeerIndex) {
       const peerId = network.indexToPeerId.get(peerIndex);
 
       if (!peerId) {
@@ -231,7 +233,7 @@ export function createWebSGNetworkModule(ctx: GameContext, wasmCtx: WASMModuleCo
 
       return peerId.length;
     },
-    peer_get_id(peerIndex: number, idPtr: number, maxBufLength: number) {
+    peer_get_id(peerIndex: PeerIndex, idPtr: number, maxBufLength: number) {
       const peerId = network.indexToPeerId.get(peerIndex);
 
       if (!peerId) {
@@ -246,7 +248,7 @@ export function createWebSGNetworkModule(ctx: GameContext, wasmCtx: WASMModuleCo
         return -1;
       }
     },
-    peer_get_translation_element(peerIndex: number, index: number) {
+    peer_get_translation_element(peerIndex: PeerIndex, index: number) {
       const node = getPeerNode(ctx, network, peerIndex);
 
       if (!node) {
@@ -256,7 +258,7 @@ export function createWebSGNetworkModule(ctx: GameContext, wasmCtx: WASMModuleCo
 
       return node.position[index];
     },
-    peer_get_translation(peerIndex: number, translationPtr: number) {
+    peer_get_translation(peerIndex: PeerIndex, translationPtr: number) {
       const node = getPeerNode(ctx, network, peerIndex);
 
       if (!node) {
@@ -268,7 +270,7 @@ export function createWebSGNetworkModule(ctx: GameContext, wasmCtx: WASMModuleCo
 
       return 0;
     },
-    peer_get_rotation_element(peerIndex: number, index: number) {
+    peer_get_rotation_element(peerIndex: PeerIndex, index: number) {
       const node = getPeerNode(ctx, network, peerIndex);
 
       if (!node) {
@@ -278,7 +280,7 @@ export function createWebSGNetworkModule(ctx: GameContext, wasmCtx: WASMModuleCo
 
       return node.quaternion[index];
     },
-    peer_get_rotation(peerIndex: number, rotationPtr: number) {
+    peer_get_rotation(peerIndex: PeerIndex, rotationPtr: number) {
       const node = getPeerNode(ctx, network, peerIndex);
 
       if (!node) {
@@ -290,7 +292,7 @@ export function createWebSGNetworkModule(ctx: GameContext, wasmCtx: WASMModuleCo
 
       return 0;
     },
-    peer_is_host(peerIndex: number) {
+    peer_is_host(peerIndex: PeerIndex) {
       const peerId = network.indexToPeerId.get(peerIndex);
 
       if (!peerId) {
@@ -300,7 +302,7 @@ export function createWebSGNetworkModule(ctx: GameContext, wasmCtx: WASMModuleCo
 
       return network.hostId === peerId ? 1 : 0;
     },
-    peer_is_local(peerIndex: number) {
+    peer_is_local(peerIndex: PeerIndex) {
       const peerId = network.indexToPeerId.get(peerIndex);
 
       if (!peerId) {
@@ -310,7 +312,7 @@ export function createWebSGNetworkModule(ctx: GameContext, wasmCtx: WASMModuleCo
 
       return network.peerId === peerId ? 1 : 0;
     },
-    peer_send: (peerIndex: number, packetPtr: number, byteLength: number, binary: number, reliable: number) => {
+    peer_send: (peerIndex: PeerIndex, packetPtr: number, byteLength: number, binary: number, reliable: number) => {
       try {
         const peerId = network.indexToPeerId.get(peerIndex);
 
@@ -368,12 +370,12 @@ export function createWebSGNetworkModule(ctx: GameContext, wasmCtx: WASMModuleCo
 
       addPrefabComponent(ctx.world, nodeId, replicator.prefabName);
       addComponent(ctx.world, Networked, nodeId);
-      addComponent(ctx.world, Owned, nodeId);
+      addComponent(ctx.world, Authoring, nodeId);
 
       const buffer = new Uint8Array([...readUint8Array(wasmCtx, packetPtr, byteLength)]);
       const data = byteLength > 0 ? buffer : undefined;
       const peerId = network.peerId;
-      const peerIndex = network.peerIdToIndex.get(peerId)!;
+      const peerIndex = tryGetPeerIndex(network, peerId);
 
       if (data) {
         replicator.eidToData.set(nodeId, data);
@@ -400,7 +402,7 @@ export function createWebSGNetworkModule(ctx: GameContext, wasmCtx: WASMModuleCo
       const buffer = new Uint8Array([...readUint8Array(wasmCtx, packetPtr, byteLength)]);
       const data = byteLength > 0 ? buffer : undefined;
       const peerId = network.peerId;
-      const peerIndex = network.peerIdToIndex.get(peerId)!;
+      const peerIndex = tryGetPeerIndex(network, peerId);
 
       if (data) {
         replicator.eidToData.set(nodeId, data);
@@ -417,8 +419,8 @@ export function createWebSGNetworkModule(ctx: GameContext, wasmCtx: WASMModuleCo
         if (!replicator) {
           moveCursorView(wasmCtx.cursorView, infoPtr);
           writeUint32(wasmCtx.cursorView, 0);
-          writeUint32(wasmCtx.cursorView, 0);
-          writeUint32(wasmCtx.cursorView, 0);
+          writeUint64(wasmCtx.cursorView, 0n);
+          writeUint64(wasmCtx.cursorView, 0n);
           writeUint32(wasmCtx.cursorView, 0);
           console.error("Undefined replicator.");
           return -1;
@@ -445,8 +447,8 @@ export function createWebSGNetworkModule(ctx: GameContext, wasmCtx: WASMModuleCo
 
         moveCursorView(wasmCtx.cursorView, infoPtr);
         writeUint32(wasmCtx.cursorView, nodeId);
-        writeUint32(wasmCtx.cursorView, networkId);
-        writeUint32(wasmCtx.cursorView, peerIndex);
+        writeUint64(wasmCtx.cursorView, BigInt(networkId));
+        writeUint64(wasmCtx.cursorView, BigInt(peerIndex));
         writeUint32(wasmCtx.cursorView, byteLength);
 
         return replicator.spawned.length;
@@ -462,8 +464,8 @@ export function createWebSGNetworkModule(ctx: GameContext, wasmCtx: WASMModuleCo
         if (!replicator) {
           moveCursorView(wasmCtx.cursorView, infoPtr);
           writeUint32(wasmCtx.cursorView, 0);
-          writeUint32(wasmCtx.cursorView, 0);
-          writeUint32(wasmCtx.cursorView, 0);
+          writeUint64(wasmCtx.cursorView, 0n);
+          writeUint64(wasmCtx.cursorView, 0n);
           writeUint32(wasmCtx.cursorView, 0);
           console.error("Undefined replicator.");
           return -1;
@@ -490,8 +492,8 @@ export function createWebSGNetworkModule(ctx: GameContext, wasmCtx: WASMModuleCo
 
         moveCursorView(wasmCtx.cursorView, infoPtr);
         writeUint32(wasmCtx.cursorView, nodeId);
-        writeUint32(wasmCtx.cursorView, networkId);
-        writeUint32(wasmCtx.cursorView, peerIndex);
+        writeUint64(wasmCtx.cursorView, BigInt(networkId));
+        writeUint64(wasmCtx.cursorView, BigInt(peerIndex));
         writeUint32(wasmCtx.cursorView, byteLength);
 
         return replicator.despawned.length;
@@ -605,7 +607,7 @@ export function createWebSGNetworkModule(ctx: GameContext, wasmCtx: WASMModuleCo
 
         moveCursorView(wasmCtx.cursorView, propsPtr);
         readExtensionsAndExtras(wasmCtx);
-        const networkId = readUint32(wasmCtx.cursorView);
+        const networkId = readUint64(wasmCtx.cursorView);
         const replicatorId = readUint32(wasmCtx.cursorView);
 
         const replicator = wasmCtx.resourceManager.replicators.get(replicatorId);
@@ -616,7 +618,7 @@ export function createWebSGNetworkModule(ctx: GameContext, wasmCtx: WASMModuleCo
         }
 
         addComponent(ctx.world, Networked, nodeId, true);
-        Networked.networkId[nodeId] = networkId;
+        Networked.networkId[nodeId] = Number(networkId);
         network.networkIdToEntityId.set(networkId, nodeId);
         addPrefabComponent(ctx.world, nodeId, replicator.prefabName);
 
@@ -654,7 +656,7 @@ export function createWebSGNetworkModule(ctx: GameContext, wasmCtx: WASMModuleCo
 const messageView = createCursorView(new ArrayBuffer(10000));
 
 function createScriptMessage(ctx: GameContext, packet: ArrayBuffer, binary: boolean) {
-  writeMetadata(messageView, binary ? NetworkAction.BinaryScriptMessage : NetworkAction.StringScriptMessage);
+  writeMessageType(messageView, binary ? NetworkMessage.BinaryScriptMessage : NetworkMessage.StringScriptMessage);
   serializeScriptMessage(messageView, packet);
   return sliceCursorView(messageView);
 }
@@ -692,7 +694,7 @@ function deserializeScriptMessage(ctx: GameContext, v: CursorView, peerId: strin
   }
 }
 
-function getPeerNode(ctx: GameContext, network: GameNetworkState, peerIndex: number) {
+function getPeerNode(ctx: GameContext, network: GameNetworkState, peerIndex: PeerIndex) {
   const peerId = network.indexToPeerId.get(peerIndex);
 
   if (!peerId) {

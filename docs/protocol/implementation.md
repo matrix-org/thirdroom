@@ -22,11 +22,12 @@ Three components are used to determine how the peer's simulation treats each net
   - Enter Query [Networked, Authoring]
     - if we are the current host (if Networked.peerIndex is our peerIndex), we can safely send out a spawn across the network for this entity
     - if we are a new host being migrated to, the entity has spawned on the network already, therefore do not execute a spawn for this entity
+    - if we are a new host first joining, wait for HostSnapshot
   - Exit Query [Networked, Authoring]
     - if we are the current host (if Networked.peerIndex is our peerIndex), we can safely send out a despawn across the network for this entity
     - if we are a old host being migrated away from, we should not send a despawn across the network for this entity
 - Relaying
-  - This component indicates that this peer is hosting the simulation for this entity, but is only responsible for relaying the source-of-truth state for this entity which is being received by another peer who is authoring the source-of-truth for the entity
+  - This component indicates that the current peer is only responsible for relaying the source-of-truth which is being received by the authoring peer.
   - Holds the peerIndex of the peer who we are relaying the source-of-truth for
 
 ### Networked Object Lifecycle

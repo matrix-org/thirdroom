@@ -10,7 +10,7 @@ import {
   SubscriptionHandle,
 } from "@thirdroom/hydrogen-view-sdk";
 
-import { exitWorld } from "../../plugins/thirdroom/thirdroom.main";
+import { enterWorld, exitWorld } from "../../plugins/thirdroom/thirdroom.main";
 import { setLocalMediaStream } from "../audio/audio.main";
 import { MainContext } from "../MainThread";
 import { addPeer, disconnect, hasPeer, removePeer, setHost } from "./network.main";
@@ -95,7 +95,7 @@ export async function createMatrixNetworkInterface(
   const userId = session.userId;
 
   const initialHostId = await getInitialHost(groupCall, userId);
-  await joinWorld(groupCall, userId, initialHostId === userId);
+  await joinWorld(groupCall, userId, initialHostId);
 
   function getInitialHost(groupCall: GroupCall, userId: string): Promise<string> {
     // Of the all group call members find the one whose member event is oldest
@@ -156,8 +156,8 @@ export async function createMatrixNetworkInterface(
     });
   }
 
-  async function joinWorld(groupCall: GroupCall, userId: string, isHost: boolean) {
-    if (isHost) setHost(ctx, userId);
+  async function joinWorld(groupCall: GroupCall, userId: string, hostId: string) {
+    setHost(ctx, hostId);
 
     unsubscibeMembersObservable = groupCall.members.subscribe({
       onAdd(_key, member) {
@@ -186,6 +186,8 @@ export async function createMatrixNetworkInterface(
         addPeer(ctx, member.userId, member.dataChannel, member.remoteMedia?.userMedia);
       }
     }
+
+    await enterWorld(ctx, userId, hostId);
   }
 
   function updateHost(groupCall: GroupCall, userId: string) {

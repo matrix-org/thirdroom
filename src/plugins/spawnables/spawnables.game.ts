@@ -7,8 +7,8 @@ import { GameContext } from "../../engine/GameTypes";
 import { createNodeFromGLTFURI } from "../../engine/gltf/gltf.game";
 import { createSphereMesh } from "../../engine/mesh/mesh.game";
 import { defineModule, getModule, Thread } from "../../engine/module/module.common";
-import { ownedNetworkedQuery } from "../../engine/network/network.game";
-import { Networked, Owned } from "../../engine/network/NetworkComponents";
+import { authoringNetworkedQuery } from "../../engine/network/network.game";
+import { Networked, Authoring } from "../../engine/network/NetworkComponents";
 import { dynamicObjectCollisionGroups } from "../../engine/physics/CollisionGroups";
 import {
   addPhysicsBody,
@@ -326,7 +326,7 @@ export function spawnPrefab(ctx: GameContext, spawnFrom: RemoteNode, prefabId: s
   const { maxObjectCap } = getModule(ctx, ThirdRoomModule);
 
   // bounce out of the function if we hit the max object cap
-  const ownedEnts = ownedNetworkedQuery(ctx.world);
+  const ownedEnts = authoringNetworkedQuery(ctx.world);
   if (ownedEnts.length > maxObjectCap) {
     ctx.sendMessage(Thread.Main, {
       type: ThirdRoomMessageType.ObjectCapReached,
@@ -339,7 +339,7 @@ export function spawnPrefab(ctx: GameContext, spawnFrom: RemoteNode, prefabId: s
   const prefab = createPrefabEntity(ctx, prefabId);
   const eid = prefab.eid;
 
-  addComponent(ctx.world, Owned, eid);
+  addComponent(ctx.world, Authoring, eid);
   addComponent(ctx.world, Networked, eid, true);
 
   mat4.getTranslation(prefab.position, spawnFrom.worldMatrix);

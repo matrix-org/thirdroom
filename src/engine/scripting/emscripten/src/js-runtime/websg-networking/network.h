@@ -16,10 +16,10 @@ JSValue js_websg_new_network(JSContext *ctx);
 
 void js_websg_network(JSContext *ctx, JSValue websg_networking);
 
-int32_t js_websg_network_local_peer_entered(JSContext *ctx, JSValue network);
+int64_t js_websg_network_local_peer_entered(JSContext *ctx, JSValue network);
 
-int32_t js_websg_network_peer_entered(JSContext *ctx, JSValue network, uint32_t peer_index);
+int64_t js_websg_network_peer_entered(JSContext *ctx, JSValue network, uint64_t peer_index);
 
-int32_t js_websg_network_peer_exited(JSContext *ctx, JSValue network, uint32_t peer_index);
+int64_t js_websg_network_peer_exited(JSContext *ctx, JSValue network, uint64_t peer_index);
 
 #endif

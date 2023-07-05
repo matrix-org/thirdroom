@@ -67,7 +67,7 @@ static JSValue js_websg_network_broadcast(JSContext *ctx, JSValueConst this_val,
 
 static JSValue js_websg_network_get_host(JSContext *ctx, JSValueConst this_val) {
   WebSGNetworkData *network_data = JS_GetOpaque2(ctx, this_val, js_websg_network_class_id);
-  uint32_t peer_index = websg_network_get_host_peer_index();
+  uint64_t peer_index = websg_network_get_host_peer_index();
 
   if (peer_index == 0) {
     return JS_UNDEFINED;
@@ -78,7 +78,7 @@ static JSValue js_websg_network_get_host(JSContext *ctx, JSValueConst this_val) 
 
 static JSValue js_websg_network_get_local(JSContext *ctx, JSValueConst this_val) {
   WebSGNetworkData *network_data = JS_GetOpaque2(ctx, this_val, js_websg_network_class_id);
-  uint32_t peer_index = websg_network_get_local_peer_index();
+  uint64_t peer_index = websg_network_get_local_peer_index();
 
   if (peer_index == 0) {
     return JS_UNDEFINED;
@@ -163,8 +163,8 @@ JSValue js_websg_new_network(JSContext *ctx) {
   return network;
 }
 
-int32_t js_websg_network_local_peer_entered(JSContext *ctx, JSValue network) {
-  uint32_t local_peer_index = websg_network_get_local_peer_index();
+int64_t js_websg_network_local_peer_entered(JSContext *ctx, JSValue network) {
+  uint64_t local_peer_index = websg_network_get_local_peer_index();
 
   if (local_peer_index == -1) {
     return -1;
@@ -174,12 +174,12 @@ int32_t js_websg_network_local_peer_entered(JSContext *ctx, JSValue network) {
 
   JSValue local_peer = js_websg_create_peer(ctx, network_data, local_peer_index);
 
-  JS_SetPropertyUint32(ctx, network_data->peers, local_peer_index, local_peer);
+  JS_SetPropertyInt64(ctx, network_data->peers, (int64_t)local_peer_index, local_peer);
 
   return 0;
 }
 
-int32_t js_websg_network_peer_entered(JSContext *ctx, JSValue network, uint32_t peer_index) {
+int64_t js_websg_network_peer_entered(JSContext *ctx, JSValue network, uint64_t peer_index) {
   WebSGNetworkData *network_data = JS_GetOpaque2(ctx, network, js_websg_network_class_id);
 
   JSValue peer = js_websg_create_peer(ctx, network_data, peer_index);
@@ -188,7 +188,7 @@ int32_t js_websg_network_peer_entered(JSContext *ctx, JSValue network, uint32_t 
     return -1;
   }
 
-  JS_SetPropertyUint32(ctx, network_data->peers, peer_index, peer);
+  JS_SetPropertyInt64(ctx, network_data->peers, (int64_t)peer_index, peer);
 
   JSValue network_on_peer_entered_func = JS_GetPropertyStr(ctx, network, "onpeerentered");
 
@@ -210,7 +210,7 @@ int32_t js_websg_network_peer_entered(JSContext *ctx, JSValue network, uint32_t 
   }
 }
 
-int32_t js_websg_network_peer_exited(JSContext *ctx, JSValue network, uint32_t peer_index) {
+int64_t js_websg_network_peer_exited(JSContext *ctx, JSValue network, uint64_t peer_index) {
   WebSGNetworkData *network_data = JS_GetOpaque2(ctx, network, js_websg_network_class_id);
 
   JSValue peer = js_websg_remove_peer(ctx, network_data, peer_index);

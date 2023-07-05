@@ -23,6 +23,7 @@ export interface EnterWorldMessage {
   type: ThirdRoomMessageType.EnterWorld;
   id: number;
   localPeerId?: string;
+  hostPeerId?: string;
 }
 
 export interface EnteredWorldMessage {

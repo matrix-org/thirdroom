@@ -11,7 +11,7 @@ import { RemoteNode } from "../resource/RemoteResources";
 import { tryGetRemoteResource } from "../resource/resource.game";
 import { addFlyControls, FlyControls } from "./FlyCharacterController";
 import { getAvatar } from "./getAvatar";
-import { getCamera } from "./getCamera";
+import { tryGetCamera } from "./getCamera";
 import { KinematicControls } from "./KinematicCharacterController";
 
 export enum CharacterControllerType {
@@ -72,7 +72,7 @@ export const ThirdPersonComponent = defineComponent();
 
 function swapToThirdPerson(ctx: GameContext, node: RemoteNode) {
   addComponent(ctx.world, ThirdPersonComponent, node.eid);
-  const camera = getCamera(ctx, node);
+  const camera = tryGetCamera(ctx, node);
   camera.position[2] = 2;
   camera.parent!.position[0] = 0.4;
 
@@ -82,7 +82,7 @@ function swapToThirdPerson(ctx: GameContext, node: RemoteNode) {
 
 function swapToFirstPerson(ctx: GameContext, node: RemoteNode) {
   removeComponent(ctx.world, ThirdPersonComponent, node.eid);
-  const camera = getCamera(ctx, node);
+  const camera = tryGetCamera(ctx, node);
   camera.position[2] = 0;
   camera.parent!.position[0] = 0;
 

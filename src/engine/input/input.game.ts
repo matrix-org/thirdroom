@@ -1,7 +1,7 @@
 import { ourPlayerQuery } from "../player/Player";
 import { GameContext } from "../GameTypes";
 import { defineModule, getModule, Thread } from "../module/module.common";
-import { getCamera } from "../player/getCamera";
+import { tryGetCamera } from "../player/getCamera";
 import { XRMode } from "../renderer/renderer.common";
 import { getXRMode } from "../renderer/renderer.game";
 import { RemoteNode } from "../resource/RemoteResources";
@@ -58,6 +58,6 @@ export function getPrimaryInputSourceNode(ctx: GameContext) {
     return rightRayNode;
   } else {
     const playerNode = getRemoteResource<RemoteNode>(ctx, ourPlayer) as RemoteNode;
-    return getCamera(ctx, playerNode).parent as RemoteNode;
+    return tryGetCamera(ctx, playerNode).parent as RemoteNode;
   }
 }

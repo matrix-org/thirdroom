@@ -1,20 +1,24 @@
 import RAPIER from "@dimforge/rapier3d-compat";
-import { addComponent, defineComponent } from "bitecs";
+import { addComponent } from "bitecs";
 import { quat, vec3 } from "gl-matrix";
 
 import { addInteractableComponent, GRAB_DISTANCE } from "../../plugins/interaction/interaction.game";
-import { getSpawnPoints, spawnPointQuery } from "../../plugins/thirdroom/thirdroom.game";
+import {
+  getSpawnPoints,
+  spawnPointQuery,
+  ThirdRoomModule,
+  ThirdRoomModuleState,
+} from "../../plugins/thirdroom/thirdroom.game";
 import { addChild } from "../component/transform";
 import { GameContext } from "../GameTypes";
 import { createNodeFromGLTFURI } from "../gltf/gltf.game";
-import { GameInputModule } from "../input/input.game";
 import { createLineMesh } from "../mesh/mesh.game";
 import { getModule } from "../module/module.common";
-import { GameNetworkState, associatePeerWithEntity, NetworkModule, setLocalPeerId } from "../network/network.game";
-import { Owned, Networked } from "../network/NetworkComponents";
+import { NetworkModule, tryGetPeerIndex } from "../network/network.game";
+import { Authoring, Networked } from "../network/NetworkComponents";
 import { playerCollisionGroups } from "../physics/CollisionGroups";
-import { addPhysicsBody, addPhysicsCollider, PhysicsModule, PhysicsModuleState } from "../physics/physics.game";
-import { createPrefabEntity, PrefabType, registerPrefab } from "../prefab/prefab.game";
+import { addPhysicsBody, addPhysicsCollider, PhysicsModule } from "../physics/physics.game";
+import { PrefabType, registerPrefab } from "../prefab/prefab.game";
 import {
   RemoteNode,
   RemoteMaterial,
@@ -24,6 +28,7 @@ import {
   RemoteAudioSource,
   RemoteCollider,
   RemotePhysicsBody,
+  removeObjectFromWorld,
 } from "../resource/RemoteResources";
 import { getRemoteResource } from "../resource/resource.game";
 import {
@@ -43,70 +48,91 @@ import { embodyAvatar } from "./embodyAvatar";
 import { addFlyControls } from "./FlyCharacterController";
 import { addKinematicControls } from "./KinematicCharacterController";
 import { addNametag } from "./nametags.game";
-import { Player, OurPlayer } from "./Player";
+import { Player } from "./Player";
+import { XRControllerComponent, XRHeadComponent, XRRayComponent } from "./XRComponents";
+import { createNetworkReplicator } from "../network/NetworkReplicator";
+import { CursorView } from "../allocator/CursorView";
+import { readTransform, writeTransform } from "../network/NetworkMessage";
+import { Codec } from "../network/Codec";
+import { isHost } from "../network/network.common";
 
 const AVATAR_CAPSULE_HEIGHT = 1;
 const AVATAR_CAPSULE_RADIUS = 0.35;
 export const AVATAR_HEIGHT = AVATAR_CAPSULE_HEIGHT + AVATAR_CAPSULE_RADIUS * 2;
 const AVATAR_CAMERA_OFFSET = 0.06;
 
-export function registerPlayerPrefabs(ctx: GameContext) {
-  registerPrefab(ctx, {
-    name: "avatar",
-    type: PrefabType.Avatar,
-    create: (ctx: GameContext) => {
-      const physics = getModule(ctx, PhysicsModule);
-      const spawnPoints = spawnPointQuery(ctx.world);
+const avatarFactory = (ctx: GameContext) => {
+  const physics = getModule(ctx, PhysicsModule);
 
-      const container = new RemoteNode(ctx.resourceManager);
-      const rig = createNodeFromGLTFURI(ctx, "/gltf/full-animation-rig.glb");
+  const container = new RemoteNode(ctx.resourceManager);
+  const rig = createNodeFromGLTFURI(ctx, "/gltf/full-animation-rig.glb");
 
-      addChild(container, rig);
+  addChild(container, rig);
 
-      quat.fromEuler(rig.quaternion, 0, 180, 0);
+  quat.fromEuler(rig.quaternion, 0, 180, 0);
 
-      // on container
-      const characterControllerType = SceneCharacterControllerComponent.get(
-        ctx.worldResource.environment!.publicScene!.eid
-      )?.type;
-      if (characterControllerType === CharacterControllerType.Fly || spawnPoints.length === 0) {
-        addFlyControls(ctx, container.eid);
-      } else {
-        addKinematicControls(ctx, container.eid);
-      }
+  addPhysicsCollider(
+    ctx.world,
+    container,
+    new RemoteCollider(ctx.resourceManager, {
+      type: ColliderType.Capsule,
+      height: AVATAR_CAPSULE_HEIGHT + 0.15,
+      radius: AVATAR_CAPSULE_RADIUS,
+      activeEvents: RAPIER.ActiveEvents.COLLISION_EVENTS,
+      collisionGroups: playerCollisionGroups,
+      offset: [0, AVATAR_CAPSULE_HEIGHT - 0.15, 0],
+    })
+  );
 
-      addCameraRig(ctx, container, CameraRigType.PointerLock, [0, AVATAR_HEIGHT - AVATAR_CAMERA_OFFSET, 0]);
+  addPhysicsBody(
+    ctx.world,
+    physics,
+    container,
+    new RemotePhysicsBody(ctx.resourceManager, {
+      type: PhysicsBodyType.Kinematic,
+    })
+  );
 
-      addPhysicsCollider(
-        ctx.world,
-        container,
-        new RemoteCollider(ctx.resourceManager, {
-          type: ColliderType.Capsule,
-          height: AVATAR_CAPSULE_HEIGHT + 0.15,
-          radius: AVATAR_CAPSULE_RADIUS,
-          activeEvents: RAPIER.ActiveEvents.COLLISION_EVENTS,
-          collisionGroups: playerCollisionGroups,
-          offset: [0, AVATAR_CAPSULE_HEIGHT - 0.15, 0],
-        })
-      );
+  addInteractableComponent(ctx, physics, container, InteractableType.Player);
 
-      addPhysicsBody(
-        ctx.world,
-        physics,
-        container,
-        new RemotePhysicsBody(ctx.resourceManager, {
-          type: PhysicsBodyType.Kinematic,
-        })
-      );
+  addComponent(ctx.world, AvatarRef, container.eid);
+  AvatarRef.eid[container.eid] = rig.eid;
 
-      addInteractableComponent(ctx, physics, container, InteractableType.Player);
-
-      addComponent(ctx.world, AvatarRef, container.eid);
-      AvatarRef.eid[container.eid] = rig.eid;
-
-      return container;
-    },
+  // TODO: reuse audio sources+data
+  container.audioEmitter = new RemoteAudioEmitter(ctx.resourceManager, {
+    type: AudioEmitterType.Positional,
+    sources: [
+      new RemoteAudioSource(ctx.resourceManager, {
+        audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-01.ogg" }),
+      }),
+      new RemoteAudioSource(ctx.resourceManager, {
+        audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-02.ogg" }),
+      }),
+      new RemoteAudioSource(ctx.resourceManager, {
+        audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-03.ogg" }),
+      }),
+      new RemoteAudioSource(ctx.resourceManager, {
+        audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-04.ogg" }),
+      }),
+    ],
   });
+
+  return container;
+};
+
+const transformCodec: Codec<RemoteNode> = {
+  encode: (view: CursorView, node: RemoteNode) => {
+    return writeTransform(view, node);
+  },
+  decode: (view: CursorView, node: RemoteNode) => {
+    return readTransform(view, node);
+  },
+};
+
+export function registerPlayerPrefabs(ctx: GameContext, thirdroom: ThirdRoomModuleState) {
+  thirdroom.replicators = {
+    avatar: createNetworkReplicator(ctx, avatarFactory, transformCodec),
+  };
 
   registerPrefab(ctx, {
     name: "xr-head",
@@ -174,10 +200,6 @@ export function registerPlayerPrefabs(ctx: GameContext) {
   });
 }
 
-export const XRControllerComponent = defineComponent();
-export const XRHeadComponent = defineComponent();
-export const XRRayComponent = defineComponent();
-
 export function addPlayerFromPeer(ctx: GameContext, eid: number, peerId: string) {
   const network = getModule(ctx, NetworkModule);
 
@@ -217,66 +239,85 @@ export function addPlayerFromPeer(ctx: GameContext, eid: number, peerId: string)
   }
 }
 
-export function loadPlayerRig(ctx: GameContext, physics: PhysicsModuleState, input: GameInputModule) {
-  ctx.worldResource.activeCameraNode = undefined;
-
-  const rig = createPrefabEntity(ctx, "avatar");
-
-  // setup positional audio emitter for footsteps
-  rig.audioEmitter = new RemoteAudioEmitter(ctx.resourceManager, {
-    type: AudioEmitterType.Positional,
-    sources: [
-      new RemoteAudioSource(ctx.resourceManager, {
-        audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-01.ogg" }),
-      }),
-      new RemoteAudioSource(ctx.resourceManager, {
-        audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-02.ogg" }),
-      }),
-      new RemoteAudioSource(ctx.resourceManager, {
-        audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-03.ogg" }),
-      }),
-      new RemoteAudioSource(ctx.resourceManager, {
-        audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-04.ogg" }),
-      }),
-    ],
-  });
-
-  addComponent(ctx.world, Player, rig.eid);
-  addComponent(ctx.world, OurPlayer, rig.eid);
-
-  addObjectToWorld(ctx, rig);
-
-  embodyAvatar(ctx, physics, input, rig);
-
-  return rig;
-}
-
-export function loadNetworkedPlayerRig(
-  ctx: GameContext,
-  physics: PhysicsModuleState,
-  input: GameInputModule,
-  network: GameNetworkState,
-  localPeerId: string
-) {
-  const rig = loadPlayerRig(ctx, physics, input);
-  const eid = rig.eid;
-  setLocalPeerId(ctx, localPeerId);
-  associatePeerWithEntity(network, localPeerId, eid);
-  rig.name = localPeerId;
-  // TODO: add Authoring component for authoritatively controlled entities as a host,
-  //       use Owned to distinguish actual ownership on all clients
-  // Networked component isn't reset when removed so reset on add
-  addComponent(ctx.world, Owned, eid);
-  addComponent(ctx.world, Networked, eid, true);
-  return rig;
-}
-
-export function spawnPlayer(ctx: GameContext, rig: RemoteNode) {
+export function teleportToSpawnPoint(ctx: GameContext, rig: RemoteNode) {
   const spawnPoints = getSpawnPoints(ctx);
 
   if (spawnPoints.length > 0) {
     spawnEntity(spawnPoints, rig);
   } else {
     teleportEntity(rig, vec3.fromValues(0, 0, 0), quat.create());
+  }
+}
+
+export function SpawnAvatarSystem(ctx: GameContext) {
+  const thirdroom = getModule(ctx, ThirdRoomModule);
+  const physics = getModule(ctx, PhysicsModule);
+  const network = getModule(ctx, NetworkModule);
+
+  const spawned = thirdroom.replicators!.avatar.spawned;
+  const despawned = thirdroom.replicators!.avatar.despawned;
+
+  let spawn;
+  while ((spawn = spawned.dequeue())) {
+    const avatar = spawn.node;
+
+    addObjectToWorld(ctx, avatar);
+
+    const localPeerIndex = tryGetPeerIndex(network, network.peerId);
+    const authorIndex = BigInt(Networked.authorIndex[avatar.eid]);
+    const hosting = isHost(network);
+
+    const authoring = authorIndex === localPeerIndex;
+    if (authoring) {
+      // if we aren't hosting
+      if (!hosting) {
+        // add Authoring component so that our avatar updates are sent to the host (client-side authority)
+        addComponent(ctx.world, Authoring, avatar.eid);
+        Networked.authorIndex[avatar.eid] = Number(localPeerIndex);
+
+        // probably don't need to do this anymore
+        // associatePeerWithEntity(network, network.peerId, avatar.eid);
+      }
+
+      // add appropriate controls
+      const characterControllerType = SceneCharacterControllerComponent.get(
+        ctx.worldResource.environment!.publicScene!.eid
+      )?.type;
+      const spawnPoints = spawnPointQuery(ctx.world);
+      if (characterControllerType === CharacterControllerType.Fly || spawnPoints.length === 0) {
+        addFlyControls(ctx, avatar.eid);
+      } else {
+        addKinematicControls(ctx, avatar.eid);
+      }
+
+      // add camerar rig and embody the avatar
+      // TODO: maybe refactor this portion
+      addCameraRig(ctx, avatar, CameraRigType.PointerLock, [0, AVATAR_HEIGHT - AVATAR_CAMERA_OFFSET, 0]);
+      embodyAvatar(ctx, physics, avatar);
+    } else {
+      const peerId = network.indexToPeerId.get(authorIndex)!;
+      avatar.name = peerId;
+      addNametag(ctx, AVATAR_HEIGHT + AVATAR_HEIGHT / 3, avatar, peerId);
+      addComponent(ctx.world, Player, avatar.eid);
+    }
+  }
+
+  let avatar;
+  while ((avatar = despawned.dequeue())) {
+    removeObjectFromWorld(ctx, avatar);
+
+    const localPeerIndex = tryGetPeerIndex(network, network.peerId);
+    const authorIndex = BigInt(Networked.authorIndex[avatar.eid]);
+    const hosting = isHost(network);
+
+    const authoring = authorIndex === localPeerIndex;
+
+    if (authoring) {
+      // TODO: cleanup relevant network state
+    }
+
+    if (hosting) {
+      // TODO: clean up relevant host state
+    }
   }
 }

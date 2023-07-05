@@ -3,7 +3,7 @@ import { AudioModule } from "./audio/audio.game";
 import { InputModule } from "./input/input.game";
 import { UpdateRawInputSystem, ResetRawInputSystem } from "./input/RawInputSystems";
 import { PhysicsModule, PhysicsSystem } from "./physics/physics.game";
-import { NetworkExitWorldQueueSystem, NetworkModule } from "./network/network.game";
+import { NetworkThreadedMessageQueueSystem, NetworkModule } from "./network/network.game";
 import { ActionMappingSystem } from "./input/ActionMappingSystem";
 import {
   KinematicCharacterControllerModule,
@@ -28,7 +28,7 @@ import {
 import { ThirdRoomModule, WorldLoaderSystem } from "../plugins/thirdroom/thirdroom.game";
 import { UpdateMatrixWorldSystem } from "./component/transform";
 import { FlyCharacterControllerModule, FlyControllerSystem } from "./player/FlyCharacterController";
-import { NetworkInterpolationSystem } from "./network/NetworkInterpolationSystem";
+// import { NetworkInterpolationSystem } from "./network/NetworkInterpolationSystem";
 import { PrefabDisposalSystem, PrefabModule } from "./prefab/prefab.game";
 import { AnimationSystem } from "./animation/animation.game";
 import {
@@ -55,6 +55,8 @@ import { PlayerModule } from "./player/Player.game";
 import { ActionBarSystem } from "../plugins/thirdroom/action-bar.game";
 import { EnableCharacterControllerSystem } from "./player/CharacterController";
 import { CameraRigSystem } from "./player/CameraRig";
+// import { TransferAuthoritySystem } from "./network/TransferAuthoritySystem";
+import { SpawnAvatarSystem } from "./player/PlayerRig";
 
 export default defineConfig<GameContext>({
   modules: [
@@ -87,6 +89,8 @@ export default defineConfig<GameContext>({
     ActionMappingSystem,
 
     InboundNetworkSystem,
+    // TransferAuthoritySystem,
+    SpawnAvatarSystem,
 
     WorldLoaderSystem,
 
@@ -104,7 +108,8 @@ export default defineConfig<GameContext>({
     PhysicsSystem,
 
     // interpolate towards authoritative state
-    NetworkInterpolationSystem,
+    // TODO: rewrite
+    // NetworkInterpolationSystem,
 
     ScriptingSystem,
 
@@ -117,7 +122,7 @@ export default defineConfig<GameContext>({
     //EditorSelectionSystem,
 
     OutboundNetworkSystem,
-    NetworkExitWorldQueueSystem,
+    NetworkThreadedMessageQueueSystem,
 
     RemoteCameraSystem,
     PrefabDisposalSystem,

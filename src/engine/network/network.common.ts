@@ -1,7 +1,7 @@
 import { Message } from "../module/module.common";
-import { GameNetworkState } from "./network.game";
+import { GameNetworkState, PeerIndex } from "./network.game";
 import { MainNetworkState } from "./network.main";
-import { NetworkRingBuffer } from "./RingBuffer";
+import { NetworkRingBuffer } from "./NetworkRingBuffer";
 
 export enum NetworkMessageType {
   // Main -> Game
@@ -41,11 +41,11 @@ export interface SetHostMessage extends Message<NetworkMessageType.SetHost> {
 }
 
 export interface PeerEnteredMessage extends Message<NetworkMessageType.PeerEntered> {
-  peerIndex: number;
+  peerIndex: PeerIndex;
 }
 
 export interface PeerExitedMessage extends Message<NetworkMessageType.PeerExited> {
-  peerIndex: number;
+  peerIndex: PeerIndex;
 }
 
 export const isHost = (network: GameNetworkState | MainNetworkState): boolean =>

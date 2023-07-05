@@ -1,27 +1,26 @@
-import { NOOP } from "../config.common";
+import { addComponent } from "bitecs";
+
+import { ThirdRoomModule } from "../../plugins/thirdroom/thirdroom.game";
 import { GameContext } from "../GameTypes";
 import { getModule } from "../module/module.common";
-import { getXRMode } from "../renderer/renderer.game";
+import { isHost } from "./network.common";
 import {
   NetworkModule,
-  enteredNetworkIdQuery,
-  createNetworkId,
-  exitedNetworkIdQuery,
-  removeNetworkId,
   exitedNetworkedQuery,
   ownedPlayerQuery,
   GameNetworkState,
+  newPeersQueue,
+  getPeerIndex,
+  tryGetPeerIndex,
 } from "./network.game";
-import { Networked } from "./NetworkComponents";
-import { enqueueNetworkRingBuffer } from "./RingBuffer";
+import { Networked, Relaying } from "./NetworkComponents";
 import {
-  createNewPeerSnapshotMessage,
-  createInformPlayerNetworkIdMessage,
-  createCreateMessage,
-  createDeleteMessage,
-  createUpdateChangedMessage,
-  createInformXRModeMessage,
-} from "./serialization.game";
+  serializeHostSnapshot,
+  serializePeerEntered,
+  serializeHostCommands,
+  serializeEntityUpdates,
+} from "./NetworkMessage";
+import { enqueueNetworkRingBuffer } from "./NetworkRingBuffer";
 
 export const broadcastReliable = (ctx: GameContext, network: GameNetworkState, packet: ArrayBuffer) => {
   if (!packet.byteLength) return;
@@ -51,86 +50,48 @@ export const sendUnreliable = (ctx: GameContext, network: GameNetworkState, peer
   }
 };
 
-const assignNetworkIds = (ctx: GameContext) => {
-  const network = getModule(ctx, NetworkModule);
-  const entered = enteredNetworkIdQuery(ctx.world);
-  for (let i = 0; i < entered.length; i++) {
-    const eid = entered[i];
-    const nid = createNetworkId(ctx) || 0;
+const sendUpdatesHost = (ctx: GameContext, network: GameNetworkState) => {
+  const haveNewPeers = newPeersQueue.length > 0;
+  if (haveNewPeers) {
+    const thirdroom = getModule(ctx, ThirdRoomModule);
 
-    Networked.networkId[eid] = nid;
-    console.info("networkId", nid, "assigned to eid", eid);
-    network.networkIdToEntityId.set(nid, eid);
-  }
-  return ctx;
-};
+    // create an avatar for each new player before serializing the host snapshot
+    for (const peerId of newPeersQueue) {
+      const avatar = thirdroom.replicators!.avatar.spawn(ctx);
 
-const unassignNetworkIds = (ctx: GameContext) => {
-  const exited = exitedNetworkIdQuery(ctx.world);
-  for (let i = 0; i < exited.length; i++) {
-    const eid = exited[i];
-    console.info("networkId", Networked.networkId[eid], "deleted from eid", eid);
-    removeNetworkId(ctx, Networked.networkId[eid]);
-    Networked.networkId[eid] = NOOP;
-  }
-  return ctx;
-};
+      const peerIndex = Number(tryGetPeerIndex(network, peerId));
+      Networked.authorIndex[avatar.eid] = peerIndex;
 
-function disposeNetworkedEntities(ctx: GameContext) {
-  const network = getModule(ctx, NetworkModule);
-  const exited = exitedNetworkedQuery(ctx.world);
+      addComponent(ctx.world, Relaying, avatar.eid);
+      Relaying.for[avatar.eid] = peerIndex;
+    }
 
-  for (let i = 0; i < exited.length; i++) {
-    const eid = exited[i];
-    network.networkIdToEntityId.delete(Networked.networkId[eid]);
-  }
-}
+    const hostSnapshot = serializeHostSnapshot(ctx, network);
 
-const sendUpdatesPeerToPeer = (ctx: GameContext) => {
-  const network = getModule(ctx, NetworkModule);
-
-  // only send updates when:
-  // - we have connected peers
-  // - peerIdIndex has been assigned
-  // - player rig has spawned
-  const haveConnectedPeers = network.peers.length > 0;
-  const spawnedPlayerRig = ownedPlayerQuery(ctx.world).length > 0;
-
-  if (haveConnectedPeers && spawnedPlayerRig) {
-    // send snapshot update to all new peers
-    const haveNewPeers = network.newPeers.length > 0;
-    if (haveNewPeers) {
-      const newPeerSnapshotMsg = createNewPeerSnapshotMessage(ctx, network.cursorView);
-
-      while (network.newPeers.length) {
-        const theirPeerId = network.newPeers.shift();
-        if (theirPeerId) {
-          // send out the snapshot first so entities that the next messages may reference exist
-          sendReliable(ctx, network, theirPeerId, newPeerSnapshotMsg);
-
-          // inform new peer of our avatar's networkId
-          sendReliable(ctx, network, theirPeerId, createInformPlayerNetworkIdMessage(ctx, network.peerId));
-
-          // inform other clients of our XRMode
-          broadcastReliable(ctx, network, createInformXRModeMessage(ctx, getXRMode(ctx)));
-        }
+    let peerId;
+    while ((peerId = newPeersQueue.dequeue())) {
+      const peerIndex = getPeerIndex(network, peerId);
+      if (!peerIndex) {
+        throw new Error("Peer index missing for peerId: " + peerId);
       }
-    } else {
-      // send reliable creates
-      const createMsg = createCreateMessage(ctx, network.cursorView);
-      broadcastReliable(ctx, network, createMsg);
 
-      // send reliable deletes
-      const deleteMsg = createDeleteMessage(ctx, network.cursorView);
-      broadcastReliable(ctx, network, deleteMsg);
+      // send snapshot to new peer
+      sendReliable(ctx, network, peerId, hostSnapshot);
 
-      // send unreliable updates
-      const updateMsg = createUpdateChangedMessage(ctx, network.cursorView);
-      broadcastUnreliable(ctx, network, updateMsg);
+      // inform all peers of the new peer's info
+      broadcastReliable(ctx, network, serializePeerEntered(ctx, network, peerId, peerIndex));
     }
   }
 
-  return ctx;
+  // send HostCommands message
+  broadcastReliable(ctx, network, serializeHostCommands(ctx, network));
+
+  // send EntityUpdates message
+  broadcastUnreliable(ctx, network, serializeEntityUpdates(ctx, network));
+};
+
+const sendUpdatesClient = (ctx: GameContext, network: GameNetworkState) => {
+  sendReliable(ctx, network, network.hostId, serializeEntityUpdates(ctx, network));
 };
 
 export function OutboundNetworkSystem(ctx: GameContext) {
@@ -139,20 +100,32 @@ export function OutboundNetworkSystem(ctx: GameContext) {
   const hasPeerIdIndex = network.peerIdToIndex.has(network.peerId);
   if (!hasPeerIdIndex) return ctx;
 
-  // assign networkIds before serializing game state
-  assignNetworkIds(ctx);
-
   // serialize and send all outgoing updates
   try {
-    sendUpdatesPeerToPeer(ctx);
+    // only send updates when:
+    // - we have connected to the host (prob unecessary, we only send updates to the host or we are the host)
+    // - HostSnapshot received, meaning player rig has spawned, we are given authority over it, and peerIndex assigned
+    const connectedToHost = isHost(network) || (network.hostId && network.peers.includes(network.hostId));
+    const hostSnapshotReceived = ownedPlayerQuery(ctx.world).length > 0 && getPeerIndex(network, network.peerId);
+    const connectedToPeers = network.peers.length;
+
+    if (connectedToHost && hostSnapshotReceived && connectedToPeers) {
+      if (isHost(network)) {
+        sendUpdatesHost(ctx, network);
+      } else {
+        sendUpdatesClient(ctx, network);
+      }
+    }
   } catch (e) {
     console.error(e);
   }
 
-  // delete networkIds after serializing game state (deletes serialization needs to know the nid before removal)
-  unassignNetworkIds(ctx);
-
-  disposeNetworkedEntities(ctx);
+  // delete networkId to entityId mapping
+  const exited = exitedNetworkedQuery(ctx.world);
+  for (let i = 0; i < exited.length; i++) {
+    const eid = exited[i];
+    network.networkIdToEntityId.delete(BigInt(Networked.networkId[eid]));
+  }
 
   return ctx;
 }

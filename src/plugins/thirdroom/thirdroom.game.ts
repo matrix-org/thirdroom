@@ -1,4 +1,4 @@
-import { defineQuery, hasComponent } from "bitecs";
+import { addComponent, defineQuery, hasComponent } from "bitecs";
 import RAPIER from "@dimforge/rapier3d-compat";
 
 import { SpawnPoint } from "../../engine/component/SpawnPoint";
@@ -12,7 +12,14 @@ import {
   registerMessageHandler,
   Thread,
 } from "../../engine/module/module.common";
-import { addPeerId, NetworkModule, removePeerId } from "../../engine/network/network.game";
+import {
+  addPeerId,
+  GameNetworkState,
+  mapPeerIndex,
+  NetworkModule,
+  removePeerId,
+  tryGetPeerIndex,
+} from "../../engine/network/network.game";
 import {
   EnterWorldMessage,
   WorldLoadedMessage,
@@ -41,7 +48,7 @@ import {
   registerCollisionHandler,
 } from "../../engine/physics/physics.game";
 import { boundsCheckCollisionGroups } from "../../engine/physics/CollisionGroups";
-import { Player } from "../../engine/player/Player";
+import { OurPlayer, Player } from "../../engine/player/Player";
 import { enableActionMap } from "../../engine/input/ActionMappingSystem";
 import { InputModule } from "../../engine/input/input.game";
 import { spawnEntity } from "../../engine/utils/spawnEntity";
@@ -69,13 +76,11 @@ import { findResourceRetainerRoots, findResourceRetainers } from "../../engine/r
 import { RemoteResource } from "../../engine/resource/RemoteResourceClass";
 import { actionBarMap, setDefaultActionBarItems } from "./action-bar.game";
 import { createDisposables } from "../../engine/utils/createDisposables";
-import {
-  registerPlayerPrefabs,
-  loadPlayerRig,
-  loadNetworkedPlayerRig,
-  spawnPlayer,
-} from "../../engine/player/PlayerRig";
+import { registerPlayerPrefabs, teleportToSpawnPoint } from "../../engine/player/PlayerRig";
 import { MAX_OBJECT_CAP } from "../../engine/config.common";
+import { NetworkReplicator } from "../../engine/network/NetworkReplicator";
+import { isHost } from "../../engine/network/network.common";
+import { Authoring, Networked } from "../../engine/network/NetworkComponents";
 
 type WorldLoaderMessage = LoadWorldMessage | EnterWorldMessage | ExitWorldMessage | ReloadWorldMessage;
 
@@ -95,6 +100,9 @@ export interface ThirdRoomModuleState {
   environmentScript?: Script;
   environmentGLTFResource?: GLTFResource;
   maxObjectCap: number;
+  replicators?: {
+    avatar: NetworkReplicator<RemoteNode>;
+  };
 }
 
 const tempSpawnPoints: RemoteNode[] = [];
@@ -131,7 +139,9 @@ export const ThirdRoomModule = defineModule<GameContext, ThirdRoomModuleState>({
     };
   },
   async init(ctx) {
-    const { worldLoaderMessages } = getModule(ctx, ThirdRoomModule);
+    const thirdroom = getModule(ctx, ThirdRoomModule);
+    const { worldLoaderMessages } = thirdroom;
+
     const input = getModule(ctx, InputModule);
 
     const dispose = createDisposables([
@@ -146,7 +156,7 @@ export const ThirdRoomModule = defineModule<GameContext, ThirdRoomModuleState>({
       console.error("Error loading avatar:", error);
     });
 
-    registerPlayerPrefabs(ctx);
+    registerPlayerPrefabs(ctx, thirdroom);
 
     // create out of bounds floor check
     const physics = getModule(ctx, PhysicsModule);
@@ -333,7 +343,15 @@ async function loadWorld(ctx: GameContext, environmentUrl: string, options: Load
 // when we join the world
 function onEnterWorld(ctx: GameContext, message: EnterWorldMessage) {
   try {
-    enterWorld(ctx, message.localPeerId);
+    console.log("onEnterWorld", message.localPeerId, message.hostPeerId);
+
+    if (message.localPeerId && message.hostPeerId) {
+      const thirdroom = getModule(ctx, ThirdRoomModule);
+      const network = getModule(ctx, NetworkModule);
+      enterNetworkedWorld(ctx, thirdroom, network, message.localPeerId, message.hostPeerId);
+    } else {
+      enterViewerWorld(ctx);
+    }
 
     ctx.sendMessage<EnteredWorldMessage>(Thread.Main, {
       type: ThirdRoomMessageType.EnteredWorld,
@@ -352,22 +370,49 @@ function onEnterWorld(ctx: GameContext, message: EnterWorldMessage) {
   }
 }
 
-function enterWorld(ctx: GameContext, localPeerId?: string) {
-  const thirdroom = getModule(ctx, ThirdRoomModule);
+async function onReloadWorld(ctx: GameContext, message: ReloadWorldMessage) {
+  try {
+    // TODO: probably don't need to do this on reload
+    disposeWorld(ctx);
 
-  if (thirdroom.loadState !== WorldLoadState.Loaded) {
-    throw new Error("Cannot enter world when world is not loaded.");
+    await loadWorld(ctx, message.environmentUrl, message.options);
+
+    const thirdroom = getModule(ctx, ThirdRoomModule);
+    const network = getModule(ctx, NetworkModule);
+    enterNetworkedWorld(ctx, thirdroom, network, network.peerId, network.hostId);
+
+    // reinform peers
+    for (const peerId of network.peers) {
+      removePeerId(ctx, peerId);
+      addPeerId(ctx, peerId);
+    }
+
+    ctx.sendMessage<ReloadedWorldMessage>(Thread.Main, {
+      type: ThirdRoomMessageType.ReloadedWorld,
+      id: message.id,
+    });
+  } catch (error: any) {
+    disposeWorld(ctx);
+
+    console.error(error);
+
+    ctx.sendMessage<ReloadWorldErrorMessage>(Thread.Main, {
+      type: ThirdRoomMessageType.ReloadWorldError,
+      id: message.id,
+      error: error.message || "Unknown error",
+    });
   }
+}
 
-  const network = getModule(ctx, NetworkModule);
-  const physics = getModule(ctx, PhysicsModule);
-  const input = getModule(ctx, InputModule);
-  const { environmentScript, environmentGLTFResource } = getModule(ctx, ThirdRoomModule);
+function onExitWorld(ctx: GameContext, message: ExitWorldMessage) {
+  disposeWorld(ctx);
 
-  if (!environmentGLTFResource) {
-    throw new Error("Cannot enter world: environment glTF resource not yet loaded.");
-  }
+  ctx.sendMessage<ExitedWorldMessage>(Thread.Main, {
+    type: ThirdRoomMessageType.ExitedWorld,
+  });
+}
 
+function setupEnvironment(ctx: GameContext, environmentGLTFResource: GLTFResource) {
   const environmentScene = loadDefaultGLTFScene(ctx, environmentGLTFResource, {
     createDefaultMeshColliders: true,
     rootIsStatic: true,
@@ -406,16 +451,31 @@ function enterWorld(ctx: GameContext, localPeerId?: string) {
     privateScene: transientScene,
   });
 
-  let rig: RemoteNode;
+  return environmentScene;
+}
 
-  if (localPeerId) {
-    rig = loadNetworkedPlayerRig(ctx, physics, input, network, localPeerId);
-  } else {
-    rig = loadPlayerRig(ctx, physics, input);
+function enterViewerWorld(ctx: GameContext) {
+  const thirdroom = getModule(ctx, ThirdRoomModule);
+
+  if (thirdroom.loadState !== WorldLoadState.Loaded) {
+    throw new Error("Cannot enter world when world is not loaded.");
   }
 
-  spawnPlayer(ctx, rig);
+  if (!thirdroom.environmentGLTFResource) {
+    throw new Error("Cannot enter world: environment glTF resource not yet loaded.");
+  }
 
+  const environmentScene = setupEnvironment(ctx, thirdroom.environmentGLTFResource);
+
+  // TODO: use factory?
+  const rig = thirdroom.replicators!.avatar.spawn(ctx);
+
+  addComponent(ctx.world, Player, rig.eid);
+  addComponent(ctx.world, OurPlayer, rig.eid);
+
+  teleportToSpawnPoint(ctx, rig);
+
+  const { environmentScript } = thirdroom;
   if (environmentScript) {
     addScriptComponent(ctx, environmentScene, environmentScript);
     environmentScript.entered();
@@ -424,46 +484,52 @@ function enterWorld(ctx: GameContext, localPeerId?: string) {
   thirdroom.loadState = WorldLoadState.Entered;
 }
 
-async function onReloadWorld(ctx: GameContext, message: ReloadWorldMessage) {
-  try {
-    const network = getModule(ctx, NetworkModule);
-
-    // TODO: probably don't need to do this on reload
-    disposeWorld(ctx);
-
-    await loadWorld(ctx, message.environmentUrl, message.options);
-
-    enterWorld(ctx, network.peerId);
-
-    // reinform peers
-    for (const peerId of network.peers) {
-      removePeerId(ctx, peerId);
-      addPeerId(ctx, peerId);
-    }
-
-    ctx.sendMessage<ReloadedWorldMessage>(Thread.Main, {
-      type: ThirdRoomMessageType.ReloadedWorld,
-      id: message.id,
-    });
-  } catch (error: any) {
-    disposeWorld(ctx);
-
-    console.error(error);
-
-    ctx.sendMessage<ReloadWorldErrorMessage>(Thread.Main, {
-      type: ThirdRoomMessageType.ReloadWorldError,
-      id: message.id,
-      error: error.message || "Unknown error",
-    });
+function enterNetworkedWorld(
+  ctx: GameContext,
+  thirdroom: ThirdRoomModuleState,
+  network: GameNetworkState,
+  localPeerId: string,
+  hostPeerId: string
+) {
+  if (thirdroom.loadState !== WorldLoadState.Loaded) {
+    throw new Error("Cannot enter world when world is not loaded.");
   }
-}
 
-function onExitWorld(ctx: GameContext, message: ExitWorldMessage) {
-  disposeWorld(ctx);
+  if (!thirdroom.environmentGLTFResource) {
+    throw new Error("Cannot enter world: environment glTF resource not yet loaded.");
+  }
 
-  ctx.sendMessage<ExitedWorldMessage>(Thread.Main, {
-    type: ThirdRoomMessageType.ExitedWorld,
-  });
+  const environmentScene = setupEnvironment(ctx, thirdroom.environmentGLTFResource);
+
+  network.peerId = localPeerId;
+  network.hostId = hostPeerId;
+
+  // this is where the host spawns themself in
+  // other peers wait for their avatar to be spawned and authority transfered (handled by newPeersQueue on the host side)
+  if (isHost(network)) {
+    // create a new peer index and map it to our id
+    const peerIndex = network.peerIndexCount++;
+    mapPeerIndex(network, localPeerId, peerIndex);
+
+    const rig = thirdroom.replicators!.avatar.spawn(ctx);
+
+    addComponent(ctx.world, Authoring, rig.eid);
+    Networked.authorIndex[rig.eid] = Number(tryGetPeerIndex(network, localPeerId));
+    rig.name = localPeerId;
+
+    addComponent(ctx.world, Player, rig.eid);
+    addComponent(ctx.world, OurPlayer, rig.eid);
+
+    teleportToSpawnPoint(ctx, rig);
+
+    const { environmentScript } = thirdroom;
+    if (environmentScript) {
+      addScriptComponent(ctx, environmentScene, environmentScript);
+      environmentScript.entered();
+    }
+  }
+
+  thirdroom.loadState = WorldLoadState.Entered;
 }
 
 function onSetObjectCap(ctx: GameContext, message: SetObjectCapMessage) {

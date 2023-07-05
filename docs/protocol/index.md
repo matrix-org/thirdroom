@@ -8,7 +8,7 @@ Client uses [host election algorithm](#host-election) to determine host among me
 
 Client waits to connect to host's `WebRTCPeerConnection` and ensures that the `RTCDataChannel` is open.
 
-Wait for a `HostSnapshot` message from the host. Note you may receive messages from clients that are not the determined host. This could either be malicious or the result of the Matrix Room's state events not being up to date yet. If the message is from the host, set the local peer index to the `localPeerIndex` returned in the `HostSnapshot` message and the host peer index to the `hostPeerIndex`. If it is not from the host, store the message in case the current host changes. If the connection timeout happens before a `HostSnapshot` message is received stop waiting and show an error to the user and a button allowing them to try to reconnect.
+If our client is not determined as host, wait for a `HostSnapshot` message from the host. Note you may receive messages from clients that are not the determined host. This could either be malicious or the result of the Matrix Room's state events not being up to date yet. If the message is from the host, set the local peer index to the `localPeerIndex` returned in the `HostSnapshot` message and the host peer index to the `hostPeerIndex`. If it is not from the host, store the message in case the current host changes. If the connection timeout happens before a `HostSnapshot` message is received stop waiting and show an error to the user and a button allowing them to try to reconnect.
 
 ### Disconnect
 
@@ -81,6 +81,7 @@ struct PeerInfo {
 
 struct Spawn {
   networkId: uint64
+  authorIndex: uint64
   schemaId: uint32
   creationDataByteLength: uint32
   creationData: uint8[]
@@ -93,7 +94,6 @@ struct Despawn {
 
 struct Update {
   networkId: uint64 // The network id of the spawned node
-  bitmask: uint8/16/32 // a bitmask indicating which properties of the schema are included in this update
   data: uint8[] // The update data
 }
 
@@ -118,11 +118,11 @@ message HostSnapshot {
   hostTime: uint64
   localPeerIndex: uint64
   hostPeerIndex: uint64
-  peerCount: uint32
-  peers: PeerInfo[peerCount]
-  entityCount: uint32
+  entityCount: uint16
   entitySpawns: Spawn[entityCount]
-  hostStateByteLength: uint32
+  peerCount: uint16
+  peers: PeerInfo[peerCount]
+  hostStateByteLength: uint16
   hostState: uint8[char]
 }
 

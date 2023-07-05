@@ -9,9 +9,9 @@ import {
   dequeueNetworkRingBuffer,
   enqueueNetworkRingBuffer,
   NetworkRingBuffer,
-} from "./RingBuffer";
+} from "./NetworkRingBuffer";
 import { createCursorView, readUint8 } from "../allocator/CursorView";
-import { UnreliableNetworkActions } from "./NetworkAction";
+import { UnreliableNetworkActions } from "./NetworkMessage";
 
 /*********
  * Types *

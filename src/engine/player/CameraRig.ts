@@ -217,7 +217,6 @@ export function stopOrbit(ctx: GameContext) {
     return;
   }
 
-  const input = getModule(ctx, InputModule);
   const physics = getModule(ctx, PhysicsModule);
   const camRigModule = getModule(ctx, PlayerModule);
 
@@ -230,7 +229,7 @@ export function stopOrbit(ctx: GameContext) {
 
   const ourPlayer = ourPlayerQuery(ctx.world)[0];
   const node = tryGetRemoteResource<RemoteNode>(ctx, ourPlayer);
-  embodyAvatar(ctx, physics, input, node);
+  embodyAvatar(ctx, physics, node);
 
   ctx.sendMessage(Thread.Main, { type: CameraRigMessage.StopOrbit });
 }

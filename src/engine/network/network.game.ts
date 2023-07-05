@@ -1,47 +1,60 @@
 import { defineQuery, enterQuery, exitQuery, Not } from "bitecs";
-import murmurHash from "murmurhash-js";
 import { availableRead } from "@thirdroom/ringbuffer";
 
 import { createCursorView, CursorView } from "../allocator/CursorView";
 import { GameContext } from "../GameTypes";
-import { Player } from "../player/Player";
+import { OurPlayer } from "../player/Player";
 import { defineModule, getModule, registerMessageHandler, Thread } from "../module/module.common";
 import {
   AddPeerIdMessage,
   InitializeNetworkStateMessage,
+  isHost,
   NetworkMessageType,
   PeerEnteredMessage,
   PeerExitedMessage,
   RemovePeerIdMessage,
   SetHostMessage,
 } from "./network.common";
-import { deserializeRemoveOwnership } from "./ownership.game";
 import { createHistorian, Historian } from "./Historian";
 import {
-  deserializeCreates,
-  deserializeDeletes,
-  deserializeFullChangedUpdate,
-  deserializeInformPlayerNetworkId,
-  deserializeInformXRMode,
-  deserializeNewPeerSnapshot,
-  deserializeSnapshot,
-  deserializeUpdateNetworkId,
-  deserializeUpdatesChanged,
-  deserializeUpdatesSnapshot,
-} from "./serialization.game";
-import { NetworkAction } from "./NetworkAction";
+  deserializeEntityUpdates,
+  deserializeHostCommands,
+  deserializeHostSnapshot,
+  deserializePeerEntered,
+  deserializePeerExited,
+  NetworkMessage,
+} from "./NetworkMessage";
 import { registerInboundMessageHandler } from "./inbound.game";
-import { dequeueNetworkRingBuffer, NetworkRingBuffer } from "./RingBuffer";
+import { dequeueNetworkRingBuffer, NetworkRingBuffer } from "./NetworkRingBuffer";
 import { ExitWorldMessage, ThirdRoomMessageType } from "../../plugins/thirdroom/thirdroom.common";
-import { getRemoteResource } from "../resource/resource.game";
+import { tryGetRemoteResource } from "../resource/resource.game";
 import { RemoteNode, removeObjectFromWorld } from "../resource/RemoteResources";
-import { Networked, Owned } from "./NetworkComponents";
+import { Networked, Authoring, Relaying } from "./NetworkComponents";
 import { XRMode } from "../renderer/renderer.common";
 import { Replicator } from "./Replicator";
+import { createQueue, Queue } from "../utils/Queue";
+import { Message } from "../module/module.common";
+import { NetworkReplicator } from "./NetworkReplicator";
+import { waitUntil } from "../utils/waitUntil";
 
 /*********
  * Types *
  ********/
+
+// TODO: nominalize so the types are not interchangeable: bigint & { __brand: "Brand Name" }
+export type PeerIndex = bigint;
+export type NetworkID = bigint;
+
+// TODO: compress relevant properties from GameNetworkState onto PeerInfo
+export interface PeerInfo {
+  peerIndex: PeerIndex;
+  peerId: string;
+  xrMode: XRMode;
+  lastUpdate: number;
+  entityId?: number;
+  networkId?: NetworkID;
+  historian?: Historian;
+}
 
 export interface DeferredUpdate {
   position: Float32Array;
@@ -49,40 +62,55 @@ export interface DeferredUpdate {
 }
 
 export interface GameNetworkState {
-  onExitWorldQueue: any[];
-  incomingReliableRingBuffer: NetworkRingBuffer;
-  incomingUnreliableRingBuffer: NetworkRingBuffer;
-  outgoingReliableRingBuffer: NetworkRingBuffer;
-  outgoingUnreliableRingBuffer: NetworkRingBuffer;
-  commands: [number, number, ArrayBuffer][];
+  // NetworkReplicator
+  replicatorIdCount: number;
+  replicators: Map<number, NetworkReplicator<never>>;
+  prefabToReplicator: Map<string, Replicator>;
+  deferredUpdates: Map<bigint, DeferredUpdate[]>;
+
+  // PeerInfo
   hostId: string;
   peerId: string;
   peers: string[];
-  newPeers: string[];
-  peerIdCount: number;
-  peerIdToIndex: Map<string, number>;
-  indexToPeerId: Map<number, string>;
+  newPeers: Queue<string>;
+  peerIndexCount: PeerIndex;
+  peerIdToIndex: Map<string, PeerIndex>;
+  indexToPeerId: Map<PeerIndex, string>;
   peerIdToHistorian: Map<string, Historian>;
   peerIdToEntityId: Map<string, number>;
   peerIdToXRMode: Map<string, XRMode>;
+  peerIdToTime: Map<string, number>;
   entityIdToPeerId: Map<number, string>;
-  networkIdToEntityId: Map<number, number>;
+
+  // NetworkId
+  networkIdToEntityId: Map<NetworkID, number>;
+  networkIdCount: NetworkID;
   localIdCount: number;
   removedLocalIds: number[];
+
+  // Messages
   messageHandlers: {
     [key: number]: (ctx: GameContext, v: CursorView, peerId: string) => void;
   };
   cursorView: CursorView;
-  tickRate: number;
-  prefabToReplicator: Map<string, Replicator>;
-  deferredUpdates: Map<number, DeferredUpdate[]>;
+  // TODO: unify into single ringbuffer?
+  incomingReliableRingBuffer: NetworkRingBuffer;
+  incomingUnreliableRingBuffer: NetworkRingBuffer;
+  outgoingReliableRingBuffer: NetworkRingBuffer;
+  outgoingUnreliableRingBuffer: NetworkRingBuffer;
+
   // feature flags
+  tickRate: number;
   interpolate: boolean;
 }
 
 /******************
  * Initialization *
  *****************/
+
+const threadMessageQueue = createQueue<Message<NetworkMessageType | ThirdRoomMessageType>>();
+
+export const newPeersQueue = createQueue<string>();
 
 export const NetworkModule = defineModule<GameContext, GameNetworkState>({
   name: "network",
@@ -95,55 +123,67 @@ export const NetworkModule = defineModule<GameContext, GameNetworkState>({
     } = await waitForMessage<InitializeNetworkStateMessage>(Thread.Main, NetworkMessageType.InitializeNetworkState);
 
     return {
-      onExitWorldQueue: [],
-      incomingReliableRingBuffer,
-      incomingUnreliableRingBuffer,
-      outgoingReliableRingBuffer,
-      outgoingUnreliableRingBuffer,
-      commands: [],
+      // NetworkReplicator
+      replicatorIdCount: 1,
+      replicators: new Map(),
+      prefabToReplicator: new Map(),
+      deferredUpdates: new Map(),
+
+      // PeerInfo
       hostId: "",
       peerId: "",
       peers: [],
-      newPeers: [],
+      newPeers: createQueue<string>(),
       peerIdToIndex: new Map(),
+      indexToPeerId: new Map(),
       peerIdToHistorian: new Map(),
       networkIdToEntityId: new Map(),
       peerIdToEntityId: new Map(),
       peerIdToXRMode: new Map(),
+      peerIdToTime: new Map(),
       entityIdToPeerId: new Map(),
-      indexToPeerId: new Map(),
-      peerIdCount: 0,
+      peerIndexCount: 1n,
+
+      // NetworkID
+      networkIdCount: 1n,
       localIdCount: 1,
       removedLocalIds: [],
+
+      // Messages
       messageHandlers: {},
       cursorView: createCursorView(),
-      prefabToReplicator: new Map(),
-      deferredUpdates: new Map(),
-      tickRate: 10,
+      incomingReliableRingBuffer,
+      incomingUnreliableRingBuffer,
+      outgoingReliableRingBuffer,
+      outgoingUnreliableRingBuffer,
+
+      // feature flags
+      tickRate: 60,
       interpolate: false,
     };
   },
   init(ctx: GameContext) {
     const network = getModule(ctx, NetworkModule);
 
-    // TODO: make new API for this that allows user to use strings (internally mapped to an integer)
-    registerInboundMessageHandler(network, NetworkAction.Create, deserializeCreates);
-    registerInboundMessageHandler(network, NetworkAction.UpdateChanged, deserializeUpdatesChanged);
-    registerInboundMessageHandler(network, NetworkAction.UpdateSnapshot, deserializeUpdatesSnapshot);
-    registerInboundMessageHandler(network, NetworkAction.Delete, deserializeDeletes);
-    registerInboundMessageHandler(network, NetworkAction.FullSnapshot, deserializeSnapshot);
-    registerInboundMessageHandler(network, NetworkAction.FullChanged, deserializeFullChangedUpdate);
-    registerInboundMessageHandler(network, NetworkAction.UpdateNetworkId, deserializeUpdateNetworkId);
-    registerInboundMessageHandler(network, NetworkAction.InformPlayerNetworkId, deserializeInformPlayerNetworkId);
-    registerInboundMessageHandler(network, NetworkAction.NewPeerSnapshot, deserializeNewPeerSnapshot);
-    registerInboundMessageHandler(network, NetworkAction.RemoveOwnershipMessage, deserializeRemoveOwnership);
-    registerInboundMessageHandler(network, NetworkAction.InformXRMode, deserializeInformXRMode);
+    registerInboundMessageHandler(network, NetworkMessage.HostSnapshot, deserializeHostSnapshot);
+    registerInboundMessageHandler(network, NetworkMessage.HostCommands, deserializeHostCommands);
+    registerInboundMessageHandler(network, NetworkMessage.EntityUpdates, deserializeEntityUpdates);
+    registerInboundMessageHandler(network, NetworkMessage.PeerEntered, deserializePeerEntered);
+    registerInboundMessageHandler(network, NetworkMessage.PeerExited, deserializePeerExited);
 
     const disposables = [
-      registerMessageHandler(ctx, NetworkMessageType.SetHost, onSetHost),
-      registerMessageHandler(ctx, NetworkMessageType.AddPeerId, onAddPeerId),
-      registerMessageHandler(ctx, NetworkMessageType.RemovePeerId, onRemovePeerId),
-      registerMessageHandler(ctx, ThirdRoomMessageType.ExitWorld, onExitWorld),
+      registerMessageHandler(ctx, NetworkMessageType.SetHost, (ctx: GameContext, message: SetHostMessage) => {
+        threadMessageQueue.enqueue(message);
+      }),
+      registerMessageHandler(ctx, NetworkMessageType.AddPeerId, (ctx: GameContext, message: AddPeerIdMessage) => {
+        threadMessageQueue.enqueue(message);
+      }),
+      registerMessageHandler(ctx, NetworkMessageType.RemovePeerId, (ctx: GameContext, message: RemovePeerIdMessage) => {
+        threadMessageQueue.enqueue(message);
+      }),
+      registerMessageHandler(ctx, ThirdRoomMessageType.ExitWorld, (ctx: GameContext, message: ExitWorldMessage) => {
+        threadMessageQueue.enqueue(message);
+      }),
     ];
 
     return () => {
@@ -165,15 +205,19 @@ export const addPeerId = (ctx: GameContext, peerId: string) => {
   if (network.peers.includes(peerId) || network.peerId === peerId) return;
 
   network.peers.push(peerId);
-  network.newPeers.push(peerId);
+  newPeersQueue.enqueue(peerId);
 
   network.peerIdToHistorian.set(peerId, createHistorian());
 
-  mapPeerIdAndIndex(network, peerId);
-
-  const peerIndex = network.peerIdToIndex.get(peerId) || 0;
-
-  ctx.sendMessage<PeerEnteredMessage>(Thread.Game, { type: NetworkMessageType.PeerEntered, peerIndex });
+  if (isHost(network)) {
+    const peerIndex = network.peerIndexCount++;
+    mapPeerIndex(network, peerId, peerIndex);
+    ctx.sendMessage<PeerEnteredMessage>(Thread.Game, { type: NetworkMessageType.PeerEntered, peerIndex });
+  } else {
+    waitUntil<bigint>(() => getPeerIndex(network, peerId)).then((peerIndex) => {
+      ctx.sendMessage<PeerEnteredMessage>(Thread.Game, { type: NetworkMessageType.PeerEntered, peerIndex });
+    });
+  }
 };
 
 const onAddPeerId = (ctx: GameContext, message: AddPeerIdMessage) => addPeerId(ctx, message.peerId);
@@ -182,68 +226,77 @@ export const removePeerId = (ctx: GameContext, peerId: string) => {
   const network = getModule(ctx, NetworkModule);
 
   const peerArrIndex = network.peers.indexOf(peerId);
-  const peerIndex = network.peerIdToIndex.get(peerId);
+  const peerIndex = getPeerIndex(network, peerId);
 
-  if (peerArrIndex > -1 && peerIndex) {
-    const entities = networkedQuery(ctx.world);
+  if (isHost(network)) {
+    if (peerArrIndex > -1 && peerIndex) {
+      const entities = networkedQuery(ctx.world);
 
-    for (let i = entities.length - 1; i >= 0; i--) {
-      const eid = entities[i];
-      const node = getRemoteResource<RemoteNode>(ctx, eid);
+      for (let i = entities.length - 1; i >= 0; i--) {
+        const eid = entities[i];
+        const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
 
-      const networkId = Networked.networkId[eid];
+        const authorIndex = BigInt(Networked.authorIndex[eid]) as PeerIndex;
 
-      // if the entity's networkId contains the peerIndex it means that peer owns the entity
-      if (node && peerIndex === getPeerIndexFromNetworkId(networkId)) {
-        network.entityIdToPeerId.delete(eid);
-        removeObjectFromWorld(ctx, node);
+        const authoring = peerIndex === authorIndex;
+        const destroyOnLeave = Networked.destroyOnLeave[eid];
+
+        if (authoring && destroyOnLeave) {
+          network.entityIdToPeerId.delete(eid);
+          removeObjectFromWorld(ctx, node);
+        }
       }
+
+      network.peers.splice(peerArrIndex, 1);
+      unmapPeerIndex(network, peerId);
+
+      ctx.sendMessage<PeerExitedMessage>(Thread.Game, { type: NetworkMessageType.PeerExited, peerIndex });
+    } else {
+      console.warn(`cannot remove peerId ${peerId}, does not exist in peer list`);
     }
-
-    network.peers.splice(peerArrIndex, 1);
-
-    ctx.sendMessage<PeerExitedMessage>(Thread.Game, { type: NetworkMessageType.PeerExited, peerIndex });
-  } else {
-    console.warn(`cannot remove peerId ${peerId}, does not exist in peer list`);
   }
 };
 
 const onRemovePeerId = (ctx: GameContext, message: RemovePeerIdMessage) => removePeerId(ctx, message.peerId);
 
-const onExitWorld = (ctx: GameContext, message: ExitWorldMessage) => {
+const onExitWorld = (ctx: GameContext) => {
   const network = getModule(ctx, NetworkModule);
-  network.onExitWorldQueue.push(message);
+
+  // PeerInfo
+  network.hostId = "";
+  network.peers = [];
+  network.peerIdToEntityId.clear();
+  network.entityIdToPeerId.clear();
+  network.networkIdToEntityId.clear();
+  network.peerIdToIndex.clear();
+  network.indexToPeerId.clear();
+  network.peerIndexCount = 1n;
+
+  // NetworkID
+  network.networkIdCount = 1n;
+  network.localIdCount = 1;
+  network.removedLocalIds = [];
+
+  // drain ring buffers
+  const ringOut = { packet: new ArrayBuffer(0), peerId: "", broadcast: false };
+  while (availableRead(network.outgoingReliableRingBuffer))
+    dequeueNetworkRingBuffer(network.outgoingReliableRingBuffer, ringOut);
+  while (availableRead(network.incomingReliableRingBuffer))
+    dequeueNetworkRingBuffer(network.incomingReliableRingBuffer, ringOut);
+
+  while (threadMessageQueue.length) threadMessageQueue.dequeue();
+  while (newPeersQueue.length) newPeersQueue.dequeue();
 };
-
-export function NetworkExitWorldQueueSystem(ctx: GameContext) {
-  const network = getModule(ctx, NetworkModule);
-
-  while (network.onExitWorldQueue.length) {
-    network.onExitWorldQueue.shift();
-
-    network.hostId = "";
-    network.peers = [];
-    network.newPeers = [];
-    network.peerIdToEntityId.clear();
-    network.entityIdToPeerId.clear();
-    network.networkIdToEntityId.clear();
-    network.localIdCount = 1;
-    network.removedLocalIds = [];
-    network.commands = [];
-    // drain ring buffers
-    const ringOut = { packet: new ArrayBuffer(0), peerId: "", broadcast: false };
-    while (availableRead(network.outgoingReliableRingBuffer))
-      dequeueNetworkRingBuffer(network.outgoingReliableRingBuffer, ringOut);
-    while (availableRead(network.incomingReliableRingBuffer))
-      dequeueNetworkRingBuffer(network.incomingReliableRingBuffer, ringOut);
-  }
-}
 
 // Set local peer id
 export const setLocalPeerId = (ctx: GameContext, localPeerId: string) => {
   const network = getModule(ctx, NetworkModule);
   network.peerId = localPeerId;
-  mapPeerIdAndIndex(network, localPeerId);
+
+  if (isHost(network)) {
+    const peerIndex = network.peerIndexCount++;
+    mapPeerIndex(network, localPeerId, peerIndex);
+  }
 };
 
 const onSetHost = async (ctx: GameContext, message: SetHostMessage) => {
@@ -254,51 +307,41 @@ const onSetHost = async (ctx: GameContext, message: SetHostMessage) => {
 
 /* Utils */
 
-const mapPeerIdAndIndex = (network: GameNetworkState, peerId: string) => {
-  const peerIndex = murmurHash(peerId) >>> 16;
+export const mapPeerIndex = (network: GameNetworkState, peerId: string, peerIndex: PeerIndex) => {
   network.peerIdToIndex.set(peerId, peerIndex);
   network.indexToPeerId.set(peerIndex, peerId);
-};
-
-const isolateBits = (val: number, n: number, offset = 0) => val & (((1 << n) - 1) << offset);
-
-export const getPeerIndexFromNetworkId = (nid: number) => isolateBits(nid, 16);
-export const getLocalIdFromNetworkId = (nid: number) => isolateBits(nid >>> 16, 16);
-
-export const setPeerIdIndexInNetworkId = (nid: number, peerIdIndex: number) => {
-  const localId = getLocalIdFromNetworkId(nid);
-  return ((localId << 16) | peerIdIndex) >>> 0;
-};
-
-export const createNetworkId = (ctx: GameContext) => {
-  const network = getModule(ctx, NetworkModule);
-
-  const localId = network.removedLocalIds.shift() || network.localIdCount++;
-  const peerIndex = network.peerIdToIndex.get(network.peerId);
-
-  if (peerIndex === undefined) {
-    throw new Error("could not create networkId, peerId not set in peerIdToIndex map");
+  // this keeps peerIdCount synchronized on all peers
+  if (peerIndex > network.peerIndexCount) {
+    network.peerIndexCount = peerIndex;
   }
-
-  console.info("createNetworkId - localId:", localId, "; peerIndex:", peerIndex);
-
-  // bitwise operations in JS are limited to 32 bit integers (https://developer.mozilla.org/en-US/docs/web/javascript/reference/operators#binary_bitwise_operators)
-  // logical right shift by 0 to treat as an unsigned integer
-  return ((localId << 16) | peerIndex) >>> 0;
 };
 
-export const removeNetworkId = (ctx: GameContext, nid: number) => {
-  const network = getModule(ctx, NetworkModule);
-  const localId = getLocalIdFromNetworkId(nid);
-  if (network.removedLocalIds.includes(localId)) {
-    console.warn(`could not remove localId ${localId}, already removed`);
-  } else {
-    network.removedLocalIds.push(localId);
+export const unmapPeerIndex = (network: GameNetworkState, peerId: string) => {
+  const i = tryGetPeerIndex(network, peerId);
+  network.indexToPeerId.delete(i);
+  network.peerIdToIndex.delete(peerId);
+  // this keeps peerIdCount synchronized on all peers
+  network.peerIndexCount--;
+};
+
+export const tryGetPeerIndex = (network: GameNetworkState, peerId: string) => {
+  const peerIndex = network.peerIdToIndex.get(peerId);
+  if (!peerIndex) {
+    throw new Error("PeerIndex not found for PeerId: " + peerId);
   }
+  return peerIndex;
+};
+
+export const getPeerIndex = (network: GameNetworkState, peerId: string) => network.peerIdToIndex.get(peerId);
+
+export const createNetworkId = (network: GameNetworkState) => {
+  return network.networkIdCount++;
 };
 
 export const associatePeerWithEntity = (network: GameNetworkState, peerId: string, eid: number) => {
+  Networked.authorIndex[eid] = Number(tryGetPeerIndex(network, peerId));
   network.peerIdToEntityId.set(peerId, eid);
+  // TODO: replace with Networked.authorIndex
   network.entityIdToPeerId.set(eid, peerId);
 };
 
@@ -307,21 +350,37 @@ export const associatePeerWithEntity = (network: GameNetworkState, peerId: strin
 export const networkedQuery = defineQuery([Networked]);
 export const exitedNetworkedQuery = exitQuery(networkedQuery);
 
-export const ownedNetworkedQuery = defineQuery([Networked, Owned]);
-export const createdOwnedNetworkedQuery = enterQuery(ownedNetworkedQuery);
-export const deletedOwnedNetworkedQuery = exitQuery(ownedNetworkedQuery);
+export const relayingNetworkedQuery = defineQuery([Networked, Relaying]);
 
-export const remoteNetworkedQuery = defineQuery([Networked, Not(Owned)]);
+export const authoringNetworkedQuery = defineQuery([Networked, Authoring]);
+export const spawnedNetworkeQuery = enterQuery(authoringNetworkedQuery);
+export const despawnedNetworkQuery = exitQuery(authoringNetworkedQuery);
+
+export const remoteNetworkedQuery = defineQuery([Networked, Not(Authoring)]);
 
 // bitecs todo: add defineQueue to bitECS / allow multiple enter/exit queries to avoid duplicate query
-export const networkIdQuery = defineQuery([Networked, Owned]);
-export const enteredNetworkIdQuery = enterQuery(networkIdQuery);
-export const exitedNetworkIdQuery = exitQuery(networkIdQuery);
+// export const networkIdQuery = defineQuery([Networked, Authoring]);
+// export const enteredNetworkIdQuery = enterQuery(networkIdQuery);
+// export const exitedNetworkIdQuery = exitQuery(networkIdQuery);
 
-export const ownedPlayerQuery = defineQuery([Player, Owned]);
-export const enteredOwnedPlayerQuery = enterQuery(ownedPlayerQuery);
-export const exitedOwnedPlayerQuery = exitQuery(ownedPlayerQuery);
+export const ownedPlayerQuery = defineQuery([OurPlayer, Authoring]);
+// export const enteredOwnedPlayerQuery = enterQuery(ownedPlayerQuery);
+// export const exitedOwnedPlayerQuery = exitQuery(ownedPlayerQuery);
 
-// export const remotePlayerQuery = defineQuery([Player, Not(Owned)]);
+// export const remotePlayerQuery = defineQuery([Player, Not(Authoring)]);
 // export const enteredRemotePlayerQuery = enterQuery(remotePlayerQuery);
 // export const exitedRemotePlayerQuery = exitQuery(remotePlayerQuery);
+
+const MessageTypeHandler: { [key: string]: Function } = {
+  [NetworkMessageType.SetHost]: onSetHost,
+  [NetworkMessageType.AddPeerId]: onAddPeerId,
+  [NetworkMessageType.RemovePeerId]: onRemovePeerId,
+  [ThirdRoomMessageType.ExitWorld]: onExitWorld,
+};
+
+export function NetworkThreadedMessageQueueSystem(ctx: GameContext) {
+  let message;
+  while ((message = threadMessageQueue.dequeue())) {
+    MessageTypeHandler[message.type](ctx, message);
+  }
+}

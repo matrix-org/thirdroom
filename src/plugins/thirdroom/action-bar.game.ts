@@ -4,7 +4,7 @@ import { ActionMap, ActionDefinition, ActionType, BindingType, ButtonActionState
 import { GameInputModule, InputModule } from "../../engine/input/input.game";
 import { XRAvatarRig } from "../../engine/input/WebXRAvatarRigSystem";
 import { getModule, Thread } from "../../engine/module/module.common";
-import { getCamera } from "../../engine/player/getCamera";
+import { tryGetCamera } from "../../engine/player/getCamera";
 import { RemoteNode } from "../../engine/resource/RemoteResources";
 import { tryGetRemoteResource } from "../../engine/resource/resource.game";
 import { ScriptComponent, scriptQuery } from "../../engine/scripting/scripting.game";
@@ -128,7 +128,7 @@ export function ActionBarSystem(ctx: GameContext) {
         const rightRayNode = tryGetRemoteResource<RemoteNode>(ctx, xr.rightRayEid);
         return spawnPrefab(ctx, rightRayNode, actionBarItem.id, true);
       } else {
-        const camera = getCamera(ctx, node).parent;
+        const camera = tryGetCamera(ctx, node).parent;
 
         if (camera) {
           return spawnPrefab(ctx, camera, actionBarItem.id, true);

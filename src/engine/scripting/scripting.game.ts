@@ -10,6 +10,7 @@ import { createThirdroomModule } from "./thirdroom";
 import { createWASIModule } from "./wasi";
 import { WASMModuleContext } from "./WASMModuleContext";
 import { createWebSGModule } from "./websg";
+import { PeerIndex } from "../network/network.game";
 
 export enum ScriptState {
   Uninitialized,
@@ -27,8 +28,8 @@ export interface Script {
   entered: () => void;
   update: (dt: number, time: number) => void;
   dispose: () => void;
-  peerEntered: (peerIndex: number) => void;
-  peerExited: (peerIndex: number) => void;
+  peerEntered: (peerIndex: PeerIndex) => void;
+  peerExited: (peerIndex: PeerIndex) => void;
 }
 
 export const ScriptComponent = new Map<number, Script>();
@@ -242,14 +243,14 @@ export async function loadScript(
         throw new Error("update() can only be called from the Entered state");
       }
     },
-    peerEntered(peerId: number) {
+    peerEntered(peerIndex: PeerIndex) {
       if (this.state === ScriptState.Error) {
         return;
       }
 
       if (this.state === ScriptState.Loaded || this.state === ScriptState.Entered) {
         if (websgPeerEntered) {
-          const result = websgPeerEntered(peerId);
+          const result = websgPeerEntered(peerIndex);
 
           if (result < 0) {
             console.error(`Script peerEntered callback failed with code: ${result}`);
@@ -261,14 +262,14 @@ export async function loadScript(
         throw new Error("peerEntered() can only be called from the Loaded or Entered state");
       }
     },
-    peerExited(peerId: number) {
+    peerExited(peerIndex: PeerIndex) {
       if (this.state === ScriptState.Error) {
         return;
       }
 
       if (this.state === ScriptState.Loaded || this.state === ScriptState.Entered) {
         if (websgPeerExited) {
-          const result = websgPeerExited(peerId);
+          const result = websgPeerExited(peerIndex);
 
           if (result < 0) {
             console.error(`Script peerExited callback failed with code: ${result}`);
@@ -281,7 +282,6 @@ export async function loadScript(
       }
     },
     dispose() {
-      console.trace("script disposed");
       disposeThirdroomModule();
       disposeWebSGModule();
       disposeMatrixModule();

@@ -11,13 +11,8 @@ import { GameContext } from "../../engine/GameTypes";
 import { enableActionMap } from "../../engine/input/ActionMappingSystem";
 import { GameInputModule, InputModule } from "../../engine/input/input.game";
 import { defineModule, getModule, Thread } from "../../engine/module/module.common";
-import {
-  GameNetworkState,
-  getPeerIndexFromNetworkId,
-  NetworkModule,
-  ownedNetworkedQuery,
-} from "../../engine/network/network.game";
-import { Networked, Owned } from "../../engine/network/NetworkComponents";
+import { GameNetworkState, NetworkModule, authoringNetworkedQuery } from "../../engine/network/network.game";
+import { Networked, Authoring } from "../../engine/network/NetworkComponents";
 import { takeOwnership } from "../../engine/network/ownership.game";
 import {
   addCollisionGroupMembership,
@@ -336,11 +331,13 @@ export function InteractionSystem(ctx: GameContext) {
       updateGrabThrowXR(ctx, physics, network, input, thirdroom, rig, leftRay, "left");
       updateGrabThrowXR(ctx, physics, network, input, thirdroom, rig, rightRay, "right");
     } else {
-      const grabbingNode = getCamera(ctx, rig).parent!;
+      const grabbingNode = getCamera(ctx, rig)?.parent;
 
-      updateFocus(ctx, physics, rig, grabbingNode);
-      updateDeletion(ctx, interaction, input, eid);
-      updateGrabThrow(ctx, interaction, physics, network, input, thirdroom, rig, grabbingNode);
+      if (grabbingNode) {
+        updateFocus(ctx, physics, rig, grabbingNode);
+        updateDeletion(ctx, interaction, input, eid);
+        updateGrabThrow(ctx, interaction, physics, network, input, thirdroom, rig, grabbingNode);
+      }
     }
   }
 }
@@ -464,7 +461,7 @@ function hitscan(physics: PhysicsModuleState, node: RemoteNode, collisionGroup: 
     colliderShape,
     10.0,
     true,
-    0,
+    0 as QueryFilterFlags,
     collisionGroup
   );
   return hit;
@@ -518,7 +515,7 @@ function updateDeletion(ctx: GameContext, interaction: InteractionModuleState, i
     // TODO: For now we only delete owned objects
     if (
       focused &&
-      hasComponent(ctx.world, Owned, focused.eid) &&
+      hasComponent(ctx.world, Authoring, focused.eid) &&
       Interactable.type[focused.eid] === InteractableType.Grabbable
     ) {
       removeObjectFromWorld(ctx, focused);
@@ -615,8 +612,8 @@ function updateGrabThrow(
         if (grabPressed) {
           if (Interactable.type[node.eid] === InteractableType.Grabbable) {
             playOneShotAudio(ctx, interaction.clickEmitter?.sources[0] as RemoteAudioSource);
-            const ownedEnts = ownedNetworkedQuery(ctx.world);
-            if (ownedEnts.length > thirdroom.maxObjectCap && !hasComponent(ctx.world, Owned, node.eid)) {
+            const ownedEnts = authoringNetworkedQuery(ctx.world);
+            if (ownedEnts.length > thirdroom.maxObjectCap && !hasComponent(ctx.world, Authoring, node.eid)) {
               // do nothing if we hit the max obj cap
               ctx.sendMessage(Thread.Main, {
                 type: ThirdRoomMessageType.ObjectCapReached,
@@ -739,6 +736,7 @@ function updateGrabThrowXR(
 
   if (hit === null) {
     grabbingNode.visible = true;
+
     return;
   }
 
@@ -746,6 +744,7 @@ function updateGrabThrowXR(
 
   if (!focusedEntity) {
     grabbingNode.visible = true;
+
     return;
   }
 
@@ -763,8 +762,8 @@ function updateGrabThrowXR(
 
     if (hit.toi <= Interactable.interactionDistance[focusedNode.eid]) {
       if (squeezeState.held && Interactable.type[focusedNode.eid] === InteractableType.Grabbable) {
-        const ownedEnts = ownedNetworkedQuery(ctx.world);
-        if (ownedEnts.length > thirdroom.maxObjectCap && !hasComponent(ctx.world, Owned, focusedNode.eid)) {
+        const ownedEnts = authoringNetworkedQuery(ctx.world);
+        if (ownedEnts.length > thirdroom.maxObjectCap && !hasComponent(ctx.world, Authoring, focusedNode.eid)) {
           // do nothing if we hit the max obj cap
           // TODO: websgui
           // ctx.sendMessage(Thread.Main, {
@@ -864,9 +863,8 @@ export function sendInteractionMessage(ctx: GameContext, action: InteractableAct
     let ownerId;
 
     if (interactableType === InteractableType.Grabbable) {
-      const ownerIdIndex = getPeerIndexFromNetworkId(Networked.networkId[eid]);
-      ownerId = network.indexToPeerId.get(ownerIdIndex);
-      if (hasComponent(ctx.world, Owned, eid)) {
+      ownerId = network.indexToPeerId.get(BigInt(Networked.authorIndex[eid]));
+      if (hasComponent(ctx.world, Authoring, eid)) {
         ownerId = peerId;
       }
     }
