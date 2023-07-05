@@ -14,7 +14,6 @@ import {
   PeerExitedMessage,
   RemovePeerIdMessage,
   SetHostMessage,
-  WindowFocusMessage,
 } from "./network.common";
 import { createHistorian, Historian } from "./Historian";
 import {
@@ -99,7 +98,6 @@ export interface GameNetworkState {
   incomingUnreliableRingBuffer: NetworkRingBuffer;
   outgoingReliableRingBuffer: NetworkRingBuffer;
   outgoingUnreliableRingBuffer: NetworkRingBuffer;
-  windowFocused: boolean;
 
   // feature flags
   tickRate: number;
@@ -158,7 +156,6 @@ export const NetworkModule = defineModule<GameContext, GameNetworkState>({
       incomingUnreliableRingBuffer,
       outgoingReliableRingBuffer,
       outgoingUnreliableRingBuffer,
-      windowFocused: true,
 
       // feature flags
       tickRate: 60,
@@ -182,9 +179,6 @@ export const NetworkModule = defineModule<GameContext, GameNetworkState>({
         threadMessageQueue.enqueue(message);
       }),
       registerMessageHandler(ctx, NetworkMessageType.RemovePeerId, (ctx: GameContext, message: RemovePeerIdMessage) => {
-        threadMessageQueue.enqueue(message);
-      }),
-      registerMessageHandler(ctx, NetworkMessageType.WindowFocus, (ctx: GameContext, message: WindowFocusMessage) => {
         threadMessageQueue.enqueue(message);
       }),
       registerMessageHandler(ctx, ThirdRoomMessageType.ExitWorld, (ctx: GameContext, message: ExitWorldMessage) => {
@@ -311,12 +305,6 @@ const onSetHost = async (ctx: GameContext, message: SetHostMessage) => {
   network.hostId = newHostId;
 };
 
-const onWindowFocus = (ctx: GameContext, message: WindowFocusMessage) => {
-  const network = getModule(ctx, NetworkModule);
-  network.windowFocused = message.focused;
-  console.log("onWindowFocus", network.windowFocused);
-};
-
 /* Utils */
 
 export const mapPeerIndex = (network: GameNetworkState, peerId: string, peerIndex: PeerIndex) => {
@@ -387,7 +375,6 @@ const MessageTypeHandler: { [key: string]: Function } = {
   [NetworkMessageType.SetHost]: onSetHost,
   [NetworkMessageType.AddPeerId]: onAddPeerId,
   [NetworkMessageType.RemovePeerId]: onRemovePeerId,
-  [NetworkMessageType.WindowFocus]: onWindowFocus,
   [ThirdRoomMessageType.ExitWorld]: onExitWorld,
 };
 

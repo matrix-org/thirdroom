@@ -6,7 +6,6 @@ import { NetworkRingBuffer } from "./NetworkRingBuffer";
 export enum NetworkMessageType {
   // Main -> Game
   InitializeNetworkState = "InitializeNetworkState",
-  WindowFocus = "window-focus",
 
   // Game -> Main
   AddPeerId = "add-peer-id",
@@ -25,10 +24,6 @@ export interface InitializeNetworkStateMessage extends Message<NetworkMessageTyp
   incomingUnreliableRingBuffer: NetworkRingBuffer;
   outgoingReliableRingBuffer: NetworkRingBuffer;
   outgoingUnreliableRingBuffer: NetworkRingBuffer;
-}
-
-export interface WindowFocusMessage extends Message<NetworkMessageType.WindowFocus> {
-  focused: boolean;
 }
 
 // Game -> Main

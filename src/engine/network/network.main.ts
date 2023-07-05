@@ -1,11 +1,6 @@
 import { availableRead } from "@thirdroom/ringbuffer";
 
-import {
-  InitializeNetworkStateMessage,
-  NetworkMessageType,
-  SetHostMessage,
-  WindowFocusMessage,
-} from "./network.common";
+import { InitializeNetworkStateMessage, NetworkMessageType, SetHostMessage } from "./network.common";
 import { MainContext } from "../MainThread";
 import { AudioModule, setPeerMediaStream } from "../audio/audio.main";
 import { defineModule, getModule, Thread } from "../module/module.common";
@@ -65,21 +60,7 @@ export const NetworkModule = defineModule<MainContext, MainNetworkState>({
       incomingMessageHandlers: new Map(),
     };
   },
-  init(ctx) {
-    window.addEventListener("blur", () => {
-      ctx.sendMessage<WindowFocusMessage>(Thread.Game, {
-        type: NetworkMessageType.WindowFocus,
-        focused: false,
-      });
-    });
-
-    window.addEventListener("focus", () => {
-      ctx.sendMessage<WindowFocusMessage>(Thread.Game, {
-        type: NetworkMessageType.WindowFocus,
-        focused: true,
-      });
-    });
-  },
+  init(ctx) {},
 });
 
 /********************
