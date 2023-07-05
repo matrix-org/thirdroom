@@ -20,37 +20,26 @@ import {
   serializeHostCommands,
   serializeEntityUpdates,
 } from "./NetworkMessage";
-import { enqueueNetworkRingBuffer } from "./NetworkRingBuffer";
-
-export const broadcastReliable = (ctx: GameContext, network: GameNetworkState, packet: ArrayBuffer) => {
-  if (!packet.byteLength) return;
-  if (!enqueueNetworkRingBuffer(network.outgoingReliableRingBuffer, "", packet, true)) {
-    console.warn("outgoing reliable network ring buffer full");
-  }
-};
-
-export const broadcastUnreliable = (ctx: GameContext, network: GameNetworkState, packet: ArrayBuffer) => {
-  if (!packet.byteLength) return;
-  if (!enqueueNetworkRingBuffer(network.outgoingUnreliableRingBuffer, "", packet, true)) {
-    console.warn("outgoing unreliable network ring buffer full");
-  }
-};
-
-export const sendReliable = (ctx: GameContext, network: GameNetworkState, peerId: string, packet: ArrayBuffer) => {
-  if (!packet.byteLength) return;
-  if (!enqueueNetworkRingBuffer(network.outgoingReliableRingBuffer, peerId, packet)) {
-    console.warn("outgoing reliable network ring buffer full");
-  }
-};
-
-export const sendUnreliable = (ctx: GameContext, network: GameNetworkState, peerId: string, packet: ArrayBuffer) => {
-  if (!packet.byteLength) return;
-  if (!enqueueNetworkRingBuffer(network.outgoingUnreliableRingBuffer, peerId, packet)) {
-    console.warn("outgoing unreliable network ring buffer full");
-  }
-};
+import { enqueueReliable, enqueueReliableBroadcast, enqueueUnreliableBroadcast } from "./NetworkRingBuffer";
 
 const sendUpdatesHost = (ctx: GameContext, network: GameNetworkState) => {
+  /**
+   * Send updates from host if:
+   * - the window is focused
+   * - we have connected peers
+   */
+
+  // TODO
+  const windowFocused = true;
+  if (!windowFocused) {
+    return;
+  }
+
+  const connectedToPeers = network.peers.length;
+  if (!connectedToPeers) {
+    return;
+  }
+
   const haveNewPeers = newPeersQueue.length > 0;
   if (haveNewPeers) {
     const thirdroom = getModule(ctx, ThirdRoomModule);
@@ -66,6 +55,7 @@ const sendUpdatesHost = (ctx: GameContext, network: GameNetworkState) => {
       Relaying.for[avatar.eid] = peerIndex;
     }
 
+    // newly created avatars will be picked up by networking queries and serialized in the host snapshot
     const hostSnapshot = serializeHostSnapshot(ctx, network);
 
     let peerId;
@@ -76,45 +66,61 @@ const sendUpdatesHost = (ctx: GameContext, network: GameNetworkState) => {
       }
 
       // send snapshot to new peer
-      sendReliable(ctx, network, peerId, hostSnapshot);
+      enqueueReliable(network, peerId, hostSnapshot);
 
       // inform all peers of the new peer's info
-      broadcastReliable(ctx, network, serializePeerEntered(ctx, network, peerId, peerIndex));
+      enqueueReliableBroadcast(network, serializePeerEntered(ctx, network, peerId, peerIndex));
     }
   }
 
   // send HostCommands message
-  broadcastReliable(ctx, network, serializeHostCommands(ctx, network));
+  enqueueReliableBroadcast(network, serializeHostCommands(ctx, network));
 
   // send EntityUpdates message
-  broadcastUnreliable(ctx, network, serializeEntityUpdates(ctx, network));
+  enqueueUnreliableBroadcast(network, serializeEntityUpdates(ctx, network));
 };
 
 const sendUpdatesClient = (ctx: GameContext, network: GameNetworkState) => {
-  sendReliable(ctx, network, network.hostId, serializeEntityUpdates(ctx, network));
+  /**
+   * Send updates from client if:
+   * - the window is focused
+   * - we have peer connections
+   * - we have a host connection
+   * - host snapshot received
+   */
+
+  // TODO
+  const windowFocused = true;
+  if (!windowFocused) {
+    return;
+  }
+
+  const connectedToPeers = network.peers.length;
+  if (!connectedToPeers) {
+    return;
+  }
+
+  const connectedToHost = isHost(network) || (network.hostId && network.peers.includes(network.hostId));
+  if (!connectedToHost) {
+    return;
+  }
+
+  const hostSnapshotReceived = ownedPlayerQuery(ctx.world).length > 0 && getPeerIndex(network, network.peerId);
+  if (!hostSnapshotReceived) {
+    return;
+  }
+
+  enqueueReliable(network, network.hostId, serializeEntityUpdates(ctx, network));
 };
 
 export function OutboundNetworkSystem(ctx: GameContext) {
   const network = getModule(ctx, NetworkModule);
 
-  const hasPeerIdIndex = network.peerIdToIndex.has(network.peerId);
-  if (!hasPeerIdIndex) return ctx;
-
-  // serialize and send all outgoing updates
   try {
-    // only send updates when:
-    // - we have connected to the host (prob unecessary, we only send updates to the host or we are the host)
-    // - HostSnapshot received, meaning player rig has spawned, we are given authority over it, and peerIndex assigned
-    const connectedToHost = isHost(network) || (network.hostId && network.peers.includes(network.hostId));
-    const hostSnapshotReceived = ownedPlayerQuery(ctx.world).length > 0 && getPeerIndex(network, network.peerId);
-    const connectedToPeers = network.peers.length;
-
-    if (connectedToHost && hostSnapshotReceived && connectedToPeers) {
-      if (isHost(network)) {
-        sendUpdatesHost(ctx, network);
-      } else {
-        sendUpdatesClient(ctx, network);
-      }
+    if (isHost(network)) {
+      sendUpdatesHost(ctx, network);
+    } else {
+      sendUpdatesClient(ctx, network);
     }
   } catch (e) {
     console.error(e);

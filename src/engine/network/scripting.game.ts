@@ -15,7 +15,6 @@ import { GameContext } from "../GameTypes";
 import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
 import { GameNetworkState, NetworkModule, PeerIndex, getPeerIndex, tryGetPeerIndex } from "./network.game";
 import { NetworkMessage } from "./NetworkMessage";
-import { broadcastReliable, sendReliable, sendUnreliable } from "./outbound.game";
 import { writeMessageType } from "./serialization.game";
 import { writeUint32, readUint32 } from "../allocator/CursorView";
 import { registerInboundMessageHandler } from "./inbound.game";
@@ -36,6 +35,7 @@ import { ScriptComponent, scriptQuery } from "../scripting/scripting.game";
 import { Replication, createReplicator } from "./Replicator";
 import { Networked, Authoring } from "./NetworkComponents";
 import { addPrefabComponent } from "../prefab/prefab.game";
+import { enqueueReliableBroadcast, enqueueReliable, enqueueUnreliable } from "./NetworkRingBuffer";
 
 export const WebSGNetworkModule = defineModule<GameContext, {}>({
   name: "WebSGNetwork",
@@ -105,7 +105,7 @@ export function createWebSGNetworkModule(ctx: GameContext, wasmCtx: WASMModuleCo
         const msg = createScriptMessage(ctx, scriptPacket, !!binary);
 
         if (reliable) {
-          broadcastReliable(ctx, network, msg);
+          enqueueReliableBroadcast(network, msg);
           return 0;
         } else {
           console.error("WebSGNetworking: Unreliable broadcast currently not supported.");
@@ -326,10 +326,10 @@ export function createWebSGNetworkModule(ctx: GameContext, wasmCtx: WASMModuleCo
         const msg = createScriptMessage(ctx, scriptPacket, !!binary);
 
         if (reliable) {
-          sendReliable(ctx, network, peerId, msg);
+          enqueueReliable(network, peerId, msg);
           return 0;
         } else {
-          sendUnreliable(ctx, network, peerId, msg);
+          enqueueUnreliable(network, peerId, msg);
         }
       } catch (error) {
         console.error("WebSGNetworking: Error broadcasting packet:", error);

@@ -23,12 +23,12 @@ import { teleportEntity } from "../utils/teleportEntity";
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "./ActionMap";
 import { InputModule } from "./input.game";
 import { Networked, Authoring } from "../network/NetworkComponents";
-import { broadcastReliable } from "../network/outbound.game";
 import { createInformXRModeMessage } from "../network/serialization.game";
 import { NetworkModule } from "../network/network.game";
 import { AvatarRef } from "../player/components";
 import { ourPlayerQuery } from "../player/Player";
 import { XRControllerComponent, XRHeadComponent } from "../player/XRComponents";
+import { enqueueReliableBroadcast } from "../network/NetworkRingBuffer";
 
 export interface XRAvatarRig {
   prevLeftAssetPath?: string;
@@ -112,7 +112,7 @@ export function WebXRAvatarRigSystem(ctx: GameContext) {
     rendererModule.prevXRMode = ourXRMode;
 
     // inform other clients of our XRMode
-    broadcastReliable(ctx, network, createInformXRModeMessage(ctx, ourXRMode));
+    enqueueReliableBroadcast(network, createInformXRModeMessage(ctx, ourXRMode));
   }
 
   for (let i = 0; i < rigs.length; i++) {

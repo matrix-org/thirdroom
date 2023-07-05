@@ -10,9 +10,9 @@ import { addObjectToWorld, RemoteNode, removeObjectFromWorld } from "../resource
 import { GameNetworkState, NetworkModule } from "./network.game";
 import { Networked, Authoring } from "./NetworkComponents";
 import { NetworkMessage } from "./NetworkMessage";
-import { broadcastReliable } from "./outbound.game";
 import { writeMessageType } from "./serialization.game";
 import { applyTransformToRigidBody } from "../physics/physics.game";
+import { enqueueReliableBroadcast } from "./NetworkRingBuffer";
 
 // const messageView = createCursorView(new ArrayBuffer(Uint32Array.BYTES_PER_ELEMENT * 3));
 const messageView = createCursorView(new ArrayBuffer(Uint32Array.BYTES_PER_ELEMENT * 30));
@@ -47,7 +47,7 @@ export const takeOwnership = (ctx: GameContext, network: GameNetworkState, oldNo
     removeObjectFromWorld(ctx, oldNode);
 
     // send message to remove on other side
-    broadcastReliable(ctx, network, createRemoveOwnershipMessage(ctx, oldNode.eid));
+    enqueueReliableBroadcast(network, createRemoveOwnershipMessage(ctx, oldNode.eid));
 
     const prefabName = Prefab.get(eid);
     if (!prefabName) throw new Error("could not take ownership, prefab name not found: " + prefabName);

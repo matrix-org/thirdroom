@@ -20,6 +20,7 @@ import {
   writeUint32,
   writeUint8,
 } from "../allocator/CursorView";
+import { GameNetworkState } from "./network.game";
 
 export interface NetworkRingBuffer extends RingBuffer<Uint8ArrayConstructor> {
   buffer: ArrayBuffer;
@@ -100,3 +101,31 @@ export function dequeueNetworkRingBuffer(
 
   return rv === rb.array.length;
 }
+
+export const enqueueReliableBroadcast = (network: GameNetworkState, packet: ArrayBuffer) => {
+  if (!packet.byteLength) return;
+  if (!enqueueNetworkRingBuffer(network.outgoingReliableRingBuffer, "", packet, true)) {
+    console.warn("outgoing reliable network ring buffer full");
+  }
+};
+
+export const enqueueUnreliableBroadcast = (network: GameNetworkState, packet: ArrayBuffer) => {
+  if (!packet.byteLength) return;
+  if (!enqueueNetworkRingBuffer(network.outgoingUnreliableRingBuffer, "", packet, true)) {
+    console.warn("outgoing unreliable network ring buffer full");
+  }
+};
+
+export const enqueueReliable = (network: GameNetworkState, peerId: string, packet: ArrayBuffer) => {
+  if (!packet.byteLength) return;
+  if (!enqueueNetworkRingBuffer(network.outgoingReliableRingBuffer, peerId, packet)) {
+    console.warn("outgoing reliable network ring buffer full");
+  }
+};
+
+export const enqueueUnreliable = (network: GameNetworkState, peerId: string, packet: ArrayBuffer) => {
+  if (!packet.byteLength) return;
+  if (!enqueueNetworkRingBuffer(network.outgoingUnreliableRingBuffer, peerId, packet)) {
+    console.warn("outgoing unreliable network ring buffer full");
+  }
+};
