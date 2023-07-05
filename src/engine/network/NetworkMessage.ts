@@ -107,9 +107,6 @@ export const writeTransform = (v: CursorView, node: RemoteNode) => {
   writeFloat32(v, quaternion[2]);
   writeFloat32(v, quaternion[3]);
 
-  // console.log("writeTransform ====");
-  // console.log("position", position);
-
   return v.cursor - cursorBefore;
 };
 
@@ -129,8 +126,6 @@ export const readTransform = (v: CursorView, node: RemoteNode) => {
   quaternion[1] = readFloat32(v);
   quaternion[2] = readFloat32(v);
   quaternion[3] = readFloat32(v);
-  // console.log("readTransform ====");
-  // console.log("position", node.eid, position);
 };
 
 export const writeTransformMutations = (v: CursorView, node: RemoteNode) => {
@@ -278,9 +273,6 @@ const writeUpdate = (
   if (written) {
     writeNetworkId(networkId);
   }
-  // console.log("writeUpdate =========");
-  // console.log("networkId", networkId);
-  // console.log("bytesWritten", bytesWritten);
   return written;
 };
 const readUpdate = (ctx: GameContext, network: GameNetworkState, v: CursorView) => {

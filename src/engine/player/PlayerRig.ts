@@ -274,9 +274,6 @@ export function SpawnAvatarSystem(ctx: GameContext) {
         // add Authoring component so that our avatar updates are sent to the host (client-side authority)
         addComponent(ctx.world, Authoring, avatar.eid);
         Networked.authorIndex[avatar.eid] = Number(localPeerIndex);
-
-        // probably don't need to do this anymore
-        // associatePeerWithEntity(network, network.peerId, avatar.eid);
       }
 
       // add appropriate controls
@@ -296,9 +293,46 @@ export function SpawnAvatarSystem(ctx: GameContext) {
       embodyAvatar(ctx, physics, avatar);
     } else {
       const peerId = network.indexToPeerId.get(authorIndex)!;
+
       avatar.name = peerId;
+
       addNametag(ctx, AVATAR_HEIGHT + AVATAR_HEIGHT / 3, avatar, peerId);
       addComponent(ctx.world, Player, avatar.eid);
+
+      // TODO: fix audio emitter disposal
+      // avatar.audioEmitter!.sources.push(
+      //   new RemoteAudioSource(ctx.resourceManager, {
+      //     audio: new RemoteAudioData(ctx.resourceManager, {
+      //       uri: `mediastream:${peerId}`,
+      //     }),
+      //     autoPlay: true,
+      //   })
+      // );
+
+      // HACK
+      avatar.audioEmitter = new RemoteAudioEmitter(ctx.resourceManager, {
+        type: AudioEmitterType.Positional,
+        sources: [
+          new RemoteAudioSource(ctx.resourceManager, {
+            audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-01.ogg" }),
+          }),
+          new RemoteAudioSource(ctx.resourceManager, {
+            audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-02.ogg" }),
+          }),
+          new RemoteAudioSource(ctx.resourceManager, {
+            audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-03.ogg" }),
+          }),
+          new RemoteAudioSource(ctx.resourceManager, {
+            audio: new RemoteAudioData(ctx.resourceManager, { uri: "/audio/footstep-04.ogg" }),
+          }),
+          new RemoteAudioSource(ctx.resourceManager, {
+            audio: new RemoteAudioData(ctx.resourceManager, {
+              uri: `mediastream:${peerId}`,
+            }),
+            autoPlay: true,
+          }),
+        ],
+      });
     }
   }
 
