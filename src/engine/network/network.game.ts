@@ -236,12 +236,10 @@ export const removePeerId = (ctx: GameContext, peerId: string) => {
         const eid = entities[i];
         const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
 
-        const authorIndex = BigInt(Networked.authorIndex[eid]) as PeerIndex;
-
-        const authoring = peerIndex === authorIndex;
+        const hosting = isHost(network);
         const destroyOnLeave = Networked.destroyOnLeave[eid];
 
-        if (authoring && destroyOnLeave) {
+        if (hosting && destroyOnLeave) {
           network.entityIdToPeerId.delete(eid);
           removeObjectFromWorld(ctx, node);
         }
