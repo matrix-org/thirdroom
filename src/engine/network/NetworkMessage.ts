@@ -25,9 +25,10 @@ import {
   writeArrayBuffer,
   spaceUint64,
   moveCursorView,
+  spaceUint32,
 } from "../allocator/CursorView";
 import { getModule } from "../module/module.common";
-import { RemoteNode, RemotePhysicsBody, removeObjectFromWorld } from "../resource/RemoteResources";
+import { RemoteNode, removeObjectFromWorld } from "../resource/RemoteResources";
 import { getRemoteResource, tryGetRemoteResource } from "../resource/resource.game";
 import { checkBitflag } from "../utils/checkBitflag";
 import { Authoring, Networked } from "./NetworkComponents";
@@ -130,12 +131,8 @@ export const readTransform = (v: CursorView, node: RemoteNode) => {
 };
 
 export const transformCodec: Codec<RemoteNode> = {
-  encode: (view: CursorView, node: RemoteNode) => {
-    return writeTransform(view, node);
-  },
-  decode: (view: CursorView, node: RemoteNode) => {
-    return readTransform(view, node);
-  },
+  encode: writeTransform,
+  decode: readTransform,
 };
 
 export const writeTransformMutations = (v: CursorView, node: RemoteNode) => {
@@ -276,35 +273,30 @@ export const writeUpdate = (
   networkId: NetworkID,
   replicator: NetworkReplicator<RemoteNode>,
   node: RemoteNode
-): boolean => {
+) => {
   const writeNetworkId = spaceUint64(v);
+  const writeBytes = spaceUint32(v);
   const bytesWritten = replicator.mutationCodec.encode(v, node);
-  const written = bytesWritten > 0;
-  if (written) {
+  if (bytesWritten) {
     writeNetworkId(networkId);
+    writeBytes(bytesWritten);
   }
-  return written;
+  return bytesWritten > 0;
 };
-// TODO: don't hardcode transform codec
-const noopEntity: RemoteNode = {
-  position: new Float32Array(3),
-  quaternion: new Float32Array(4),
-  physicsBody: {
-    velocity: new Float32Array(3),
-  } as RemotePhysicsBody,
-} as unknown as RemoteNode;
+
 export const readUpdate = (ctx: GameContext, network: GameNetworkState, v: CursorView) => {
   const networkId = readUint64(v);
+  const bytesWritten = readUint32(v);
 
   const eid = network.networkIdToEntityId.get(networkId) || 0;
-  let node = getRemoteResource<RemoteNode>(ctx, eid);
+  const node = getRemoteResource<RemoteNode>(ctx, eid);
   const replicatorId = Networked.replicatorId[eid];
   const replicator = tryGetNetworkReplicator<RemoteNode>(network, replicatorId);
 
   // ignore update if node doesn't exist, or we are the author of this entity
   if (!node || hasComponent(ctx.world, Authoring, eid)) {
-    // apply update to a NOOP node to move cursor forward by the appropriate amount
-    node = noopEntity;
+    scrollCursorView(v, bytesWritten);
+    return;
   }
 
   replicator.mutationCodec.decode(v, node);
