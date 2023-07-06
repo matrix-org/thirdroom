@@ -7,7 +7,7 @@ import { GameContext } from "../../engine/GameTypes";
 import { createNodeFromGLTFURI } from "../../engine/gltf/gltf.game";
 import { createSphereMesh } from "../../engine/mesh/mesh.game";
 import { defineModule, getModule, Thread } from "../../engine/module/module.common";
-import { authoringNetworkedQuery } from "../../engine/network/network.game";
+import { authoringNetworkedQuery, NetworkModule } from "../../engine/network/network.game";
 import { Authoring } from "../../engine/network/NetworkComponents";
 import { dynamicObjectCollisionGroups } from "../../engine/physics/CollisionGroups";
 import {
@@ -44,6 +44,7 @@ import { ThirdRoomModule } from "../thirdroom/thirdroom.game";
 import { ThirdRoomMessageType } from "../thirdroom/thirdroom.common";
 import { createNetworkReplicator, NetworkReplicator } from "../../engine/network/NetworkReplicator";
 import { transformCodec } from "../../engine/network/NetworkMessage";
+import { isHost } from "../../engine/network/network.common";
 
 const { abs, floor, random } = Math;
 
@@ -305,6 +306,11 @@ const _spawnWorldQuat = quat.create();
 
 // Returns false if the object exceeded the object cap
 export function spawnPrefab(ctx: GameContext, spawnFrom: RemoteNode, prefabId: string, isXR: boolean): boolean {
+  const network = getModule(ctx, NetworkModule);
+  if (!isHost(network)) {
+    console.warn("Cannot spawn entity, this peer is not the host.");
+    return false;
+  }
   const { maxObjectCap } = getModule(ctx, ThirdRoomModule);
   const { replicators } = getModule(ctx, SpawnablesModule);
 

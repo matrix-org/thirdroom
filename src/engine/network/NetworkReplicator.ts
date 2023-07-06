@@ -44,8 +44,7 @@ export const createNetworkReplicator = <T>(
 
   const spawn = (ctx: GameContext, data?: ArrayBuffer) => {
     if (!isHost(network)) {
-      console.error("Only hosts can spawn items.");
-      return;
+      throw new Error("Only hosts can spawn items.");
     }
 
     const node = factory(ctx, data);
@@ -70,8 +69,7 @@ export const createNetworkReplicator = <T>(
 
   const despawn = (node: RemoteNode) => {
     if (!isHost(network)) {
-      console.error("Only hosts can despawn items.");
-      return;
+      throw new Error("Only hosts can spawn items.");
     }
     despawned.enqueue(node);
   };
