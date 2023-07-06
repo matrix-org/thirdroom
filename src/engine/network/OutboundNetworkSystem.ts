@@ -51,14 +51,13 @@ const sendUpdatesHost = (ctx: GameContext, network: GameNetworkState) => {
     // newly created avatars will be picked up by networking queries and serialized in the host snapshot
     const hostSnapshot = serializeHostSnapshot(ctx, network);
 
+    // inform new peer(s) and all other peers of new avatar(s)
+    // this is technically redundant for existing peers, but existing peers will gracefully ignore spawns
+    enqueueReliableBroadcast(network, hostSnapshot);
+
     let peerId;
     while ((peerId = newPeersQueue.dequeue())) {
       const peerIndex = tryGetPeerIndex(network, peerId);
-
-      // inform new peer(s) and all other peers of new avatar(s)
-      // TODO: this is redundant for peers other than this new peer
-      enqueueReliableBroadcast(network, hostSnapshot);
-
       // inform all peers of the new peer's info
       enqueueReliableBroadcast(network, serializePeerEntered(ctx, network, peerId, peerIndex));
     }
