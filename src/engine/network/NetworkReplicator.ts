@@ -100,4 +100,4 @@ export const tryGetNetworkReplicator = <T>(network: GameNetworkState, id: number
   return replicator as NetworkReplicator<T>;
 };
 export const getNetworkReplicator = <T>(network: GameNetworkState, id: number) =>
-  network.replicators.get(id) as NetworkReplicator<T>;
+  network.replicators.get(id) as NetworkReplicator<T> | undefined;
