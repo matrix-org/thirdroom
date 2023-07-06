@@ -32,7 +32,6 @@ import {
   RemoteInteractable,
   RemoteNode,
   RemoteUIButton,
-  removeObjectFromWorld,
 } from "../../engine/resource/RemoteResources";
 import { AudioEmitterType, InteractableType } from "../../engine/resource/schema";
 import { PortalComponent } from "../portals/portals.game";

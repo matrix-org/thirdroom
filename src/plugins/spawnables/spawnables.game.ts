@@ -8,7 +8,7 @@ import { createNodeFromGLTFURI } from "../../engine/gltf/gltf.game";
 import { createSphereMesh } from "../../engine/mesh/mesh.game";
 import { defineModule, getModule, Thread } from "../../engine/module/module.common";
 import { authoringNetworkedQuery } from "../../engine/network/network.game";
-import { Networked, Authoring } from "../../engine/network/NetworkComponents";
+import { Authoring } from "../../engine/network/NetworkComponents";
 import { dynamicObjectCollisionGroups } from "../../engine/physics/CollisionGroups";
 import {
   addPhysicsBody,
@@ -18,7 +18,6 @@ import {
   PhysicsModuleState,
   registerCollisionHandler,
 } from "../../engine/physics/physics.game";
-import { createPrefabEntity, PrefabType, registerPrefab } from "../../engine/prefab/prefab.game";
 import {
   addObjectToWorld,
   RemoteAudioData,
