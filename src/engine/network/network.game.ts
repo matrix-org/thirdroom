@@ -24,7 +24,7 @@ import {
   deserializePeerExited,
   NetworkMessage,
 } from "./NetworkMessage";
-import { registerInboundMessageHandler } from "./inbound.game";
+import { registerInboundMessageHandler } from "./InboundNetworkSystem";
 import { dequeueNetworkRingBuffer, NetworkRingBuffer } from "./NetworkRingBuffer";
 import { ExitWorldMessage, ThirdRoomMessageType } from "../../plugins/thirdroom/thirdroom.common";
 import { tryGetRemoteResource } from "../resource/resource.game";

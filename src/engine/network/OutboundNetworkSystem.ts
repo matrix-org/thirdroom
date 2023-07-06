@@ -25,15 +25,8 @@ import { enqueueReliable, enqueueReliableBroadcast, enqueueUnreliableBroadcast }
 const sendUpdatesHost = (ctx: GameContext, network: GameNetworkState) => {
   /**
    * Send updates from host if:
-   * - the window is focused
    * - we have connected peers
    */
-
-  // TODO
-  const windowFocused = true;
-  if (!windowFocused) {
-    return;
-  }
 
   const connectedToPeers = network.peers.length;
   if (!connectedToPeers) {
@@ -65,8 +58,9 @@ const sendUpdatesHost = (ctx: GameContext, network: GameNetworkState) => {
         throw new Error("Peer index missing for peerId: " + peerId);
       }
 
-      // send snapshot to new peer
-      enqueueReliable(network, peerId, hostSnapshot);
+      // inform new peer(s) and all other peers of new avatar(s)
+      // TODO: this is redundant for peers other than this new peer
+      enqueueReliableBroadcast(network, hostSnapshot);
 
       // inform all peers of the new peer's info
       enqueueReliableBroadcast(network, serializePeerEntered(ctx, network, peerId, peerIndex));
@@ -83,17 +77,10 @@ const sendUpdatesHost = (ctx: GameContext, network: GameNetworkState) => {
 const sendUpdatesClient = (ctx: GameContext, network: GameNetworkState) => {
   /**
    * Send updates from client if:
-   * - the window is focused
    * - we have peer connections
    * - we have a host connection
    * - host snapshot received
    */
-
-  // TODO
-  const windowFocused = true;
-  if (!windowFocused) {
-    return;
-  }
 
   const connectedToPeers = network.peers.length;
   if (!connectedToPeers) {

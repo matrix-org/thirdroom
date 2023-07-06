@@ -17,7 +17,7 @@ import { GameNetworkState, NetworkModule, PeerIndex, getPeerIndex, tryGetPeerInd
 import { NetworkMessage } from "./NetworkMessage";
 import { writeMessageType } from "./serialization.game";
 import { writeUint32, readUint32 } from "../allocator/CursorView";
-import { registerInboundMessageHandler } from "./inbound.game";
+import { registerInboundMessageHandler } from "./InboundNetworkSystem";
 import {
   getScriptResource,
   readExtensionsAndExtras,
