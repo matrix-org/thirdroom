@@ -52,6 +52,7 @@ import { getCamera } from "../../engine/player/getCamera";
 import { ThirdRoomMessageType } from "../thirdroom/thirdroom.common";
 import { ThirdRoomModule, ThirdRoomModuleState } from "../thirdroom/thirdroom.game";
 import { clamp } from "../../engine/common/math";
+import { tryGetNetworkReplicator } from "../../engine/network/NetworkReplicator";
 
 // TODO: importing from spawnables.game in this file induces a runtime error
 // import { SpawnablesModule } from "../spawnables/spawnables.game";
@@ -508,6 +509,7 @@ function updateFocus(ctx: GameContext, physics: PhysicsModuleState, rig: RemoteN
 }
 
 function updateDeletion(ctx: GameContext, interaction: InteractionModuleState, input: GameInputModule, rig: number) {
+  const network = getModule(ctx, NetworkModule);
   const deleteBtn = input.actionStates.get("Delete") as ButtonActionState;
   if (deleteBtn.pressed) {
     const focusedEid = FocusComponent.focusedEntity[rig];
@@ -518,7 +520,8 @@ function updateDeletion(ctx: GameContext, interaction: InteractionModuleState, i
       hasComponent(ctx.world, Authoring, focused.eid) &&
       Interactable.type[focused.eid] === InteractableType.Grabbable
     ) {
-      removeObjectFromWorld(ctx, focused);
+      const replicator = tryGetNetworkReplicator(network, Networked.replicatorId[focusedEid]);
+      replicator.despawn(focused);
       playOneShotAudio(ctx, interaction.clickEmitter?.sources[1] as RemoteAudioSource, 0.4);
     }
   }

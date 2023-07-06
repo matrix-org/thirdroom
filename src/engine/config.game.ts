@@ -17,7 +17,7 @@ import {
 } from "./editor/editor.game";
 import { GameContext } from "./GameTypes";
 import { RendererModule } from "./renderer/renderer.game";
-import { SpawnablesModule } from "../plugins/spawnables/spawnables.game";
+import { SpawnablesModule, SpawnablesSystem } from "../plugins/spawnables/spawnables.game";
 import {
   RecycleResourcesSystem,
   ResourceDisposalSystem,
@@ -102,6 +102,7 @@ export default defineConfig<GameContext>({
     InteractionSystem,
     XRInteractionSystem,
     ActionBarSystem,
+    SpawnablesSystem,
     EnableCharacterControllerSystem,
 
     // step physics forward and copy rigidbody data to transform component

@@ -86,28 +86,28 @@ const BinaryToReadFunction = {
   f64: readFloat64,
 };
 
-export type Schema =
+export type CodecSchema =
   | BinaryType[]
   | {
       [key: string | number]: BinaryType;
     };
 
-export type ObjectType<S extends Schema> = {
+export type ObjectType<S extends CodecSchema> = {
   [key in keyof S]: S[key] extends ui64 ? bigint : S[key] extends i64 ? bigint : number;
 };
 
-type AutoEncoder<S extends Schema> = (v: CursorView, object: ObjectType<S>) => CursorView | boolean;
-type AutoDecoder<S extends Schema> = (v: CursorView, object?: ObjectType<S>) => ObjectType<S>;
+type AutoEncoder<S extends CodecSchema> = (v: CursorView, object: ObjectType<S>) => CursorView | boolean;
+type AutoDecoder<S extends CodecSchema> = (v: CursorView, object?: ObjectType<S>) => ObjectType<S>;
 
-type MutationEncoder<S extends Schema> = AutoEncoder<S>;
-type MutationDecoder<S extends Schema> = AutoDecoder<S>;
+type MutationEncoder<S extends CodecSchema> = AutoEncoder<S>;
+type MutationDecoder<S extends CodecSchema> = AutoDecoder<S>;
 
 /**
  * API
  */
 
 export const createAutoEncoder =
-  <S extends Schema>(schema: S): AutoEncoder<S> =>
+  <S extends CodecSchema>(schema: S): AutoEncoder<S> =>
   (v: CursorView, object: ObjectType<S>) => {
     for (const key in schema) {
       const type = schema[key];
@@ -118,7 +118,7 @@ export const createAutoEncoder =
     return v;
   };
 
-export const createAutoDecoder = <S extends Schema>(schema: S): AutoDecoder<S> => {
+export const createAutoDecoder = <S extends CodecSchema>(schema: S): AutoDecoder<S> => {
   let o = {} as ObjectType<S>;
   return (v: CursorView, out?: ObjectType<S>): ObjectType<S> => {
     if (out) o = out;
@@ -133,7 +133,7 @@ export const createAutoDecoder = <S extends Schema>(schema: S): AutoDecoder<S> =
   };
 };
 
-export const createMutationEncoder = <S extends Schema>(schema: S): MutationEncoder<S> => {
+export const createMutationEncoder = <S extends CodecSchema>(schema: S): MutationEncoder<S> => {
   const memoir = new Map<ObjectType<S>, ObjectType<S>>();
 
   const propCount = Object.keys(schema).length;
@@ -177,7 +177,7 @@ export const createMutationEncoder = <S extends Schema>(schema: S): MutationEnco
   };
 };
 
-export const createMutationDecoder = <S extends Schema>(schema: S): MutationDecoder<S> => {
+export const createMutationDecoder = <S extends CodecSchema>(schema: S): MutationDecoder<S> => {
   let o = {} as ObjectType<S>;
 
   const propCount = Object.keys(schema).length;
@@ -206,12 +206,12 @@ export const createMutationDecoder = <S extends Schema>(schema: S): MutationDeco
   };
 };
 
-export const createCodec = (schema: Schema) => ({
+export const createAutoCodec = (schema: CodecSchema) => ({
   encode: createAutoEncoder(schema),
   decode: createAutoDecoder(schema),
 });
 
-export const createMutationCodec = (schema: Schema) => ({
+export const createMutationCodec = (schema: CodecSchema) => ({
   encode: createMutationEncoder(schema),
   decode: createMutationDecoder(schema),
 });

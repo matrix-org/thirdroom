@@ -51,9 +51,7 @@ import { addNametag } from "./nametags.game";
 import { Player } from "./Player";
 import { XRControllerComponent, XRHeadComponent, XRRayComponent } from "./XRComponents";
 import { createNetworkReplicator } from "../network/NetworkReplicator";
-import { CursorView } from "../allocator/CursorView";
-import { readTransform, writeTransform } from "../network/NetworkMessage";
-import { Codec } from "../network/Codec";
+import { transformCodec } from "../network/NetworkMessage";
 import { isHost } from "../network/network.common";
 
 const AVATAR_CAPSULE_HEIGHT = 1;
@@ -118,15 +116,6 @@ const avatarFactory = (ctx: GameContext) => {
   });
 
   return container;
-};
-
-const transformCodec: Codec<RemoteNode> = {
-  encode: (view: CursorView, node: RemoteNode) => {
-    return writeTransform(view, node);
-  },
-  decode: (view: CursorView, node: RemoteNode) => {
-    return readTransform(view, node);
-  },
 };
 
 export function registerPlayerPrefabs(ctx: GameContext, thirdroom: ThirdRoomModuleState) {

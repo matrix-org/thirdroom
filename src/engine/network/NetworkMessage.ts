@@ -1,4 +1,4 @@
-import { addComponent } from "bitecs";
+import { addComponent, hasComponent } from "bitecs";
 
 import { GameContext } from "../GameTypes";
 import {
@@ -27,10 +27,10 @@ import {
   moveCursorView,
 } from "../allocator/CursorView";
 import { getModule } from "../module/module.common";
-import { RemoteNode, removeObjectFromWorld } from "../resource/RemoteResources";
-import { tryGetRemoteResource } from "../resource/resource.game";
+import { RemoteNode, RemotePhysicsBody, removeObjectFromWorld } from "../resource/RemoteResources";
+import { getRemoteResource, tryGetRemoteResource } from "../resource/resource.game";
 import { checkBitflag } from "../utils/checkBitflag";
-import { Networked } from "./NetworkComponents";
+import { Authoring, Networked } from "./NetworkComponents";
 import { NetworkReplicator, tryGetNetworkReplicator } from "./NetworkReplicator";
 import {
   PeerIndex,
@@ -45,6 +45,7 @@ import {
   despawnedNetworkQuery,
   relayingNetworkedQuery,
 } from "./network.game";
+import { Codec } from "./Codec";
 
 export enum NetworkMessage {
   // old
@@ -126,6 +127,15 @@ export const readTransform = (v: CursorView, node: RemoteNode) => {
   quaternion[1] = readFloat32(v);
   quaternion[2] = readFloat32(v);
   quaternion[3] = readFloat32(v);
+};
+
+export const transformCodec: Codec<RemoteNode> = {
+  encode: (view: CursorView, node: RemoteNode) => {
+    return writeTransform(view, node);
+  },
+  decode: (view: CursorView, node: RemoteNode) => {
+    return readTransform(view, node);
+  },
 };
 
 export const writeTransformMutations = (v: CursorView, node: RemoteNode) => {
@@ -257,7 +267,7 @@ export const readDespawn = (ctx: GameContext, network: GameNetworkState, v: Curs
   const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
 
   const replicator = tryGetNetworkReplicator(network, Networked.replicatorId[eid]);
-  replicator.despawn(node);
+  replicator.despawned.enqueue(node);
 };
 
 // Update
@@ -275,15 +285,27 @@ export const writeUpdate = (
   }
   return written;
 };
+// TODO: don't hardcode transform codec
+const noopEntity: RemoteNode = {
+  position: new Float32Array(3),
+  quaternion: new Float32Array(4),
+  physicsBody: {
+    velocity: new Float32Array(3),
+  } as RemotePhysicsBody,
+} as unknown as RemoteNode;
 export const readUpdate = (ctx: GameContext, network: GameNetworkState, v: CursorView) => {
-  // console.log("readUpdate =========");
   const networkId = readUint64(v);
-  // console.log("networkId", networkId);
 
   const eid = network.networkIdToEntityId.get(networkId) || 0;
-  const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
+  let node = getRemoteResource<RemoteNode>(ctx, eid);
   const replicatorId = Networked.replicatorId[eid];
   const replicator = tryGetNetworkReplicator<RemoteNode>(network, replicatorId);
+
+  // ignore update if node doesn't exist, or we are the author of this entity
+  if (!node || hasComponent(ctx.world, Authoring, eid)) {
+    // apply update to a NOOP node to move cursor forward by the appropriate amount
+    node = noopEntity;
+  }
 
   replicator.mutationCodec.decode(v, node);
 };

@@ -16,10 +16,11 @@ import {
 import { ColliderType, MeshPrimitiveAttributeIndex, PhysicsBodyType } from "../resource/schema";
 import { getAccessorArrayView, scaleVec3Array } from "../common/accessor";
 import { updateMatrixWorld } from "../component/transform";
-import { OurPlayer } from "../player/Player";
+import { OurPlayer, Player } from "../player/Player";
 import { getRotationNoAlloc } from "../utils/getRotationNoAlloc";
 import { dynamicObjectCollisionGroups, staticRigidBodyCollisionGroups } from "./CollisionGroups";
 import { updatePhysicsDebugBuffers } from "../renderer/renderer.game";
+import { Authoring, Networked } from "../network/NetworkComponents";
 
 export type CollisionHandler = (eid1: number, eid2: number, handle1: number, handle2: number, started: boolean) => void;
 
@@ -150,12 +151,17 @@ export function PhysicsSystem(ctx: GameContext) {
     }
 
     const isOurPlayer = hasComponent(ctx.world, OurPlayer, eid);
+    const isRemoteNonPlayer =
+      hasComponent(ctx.world, Networked, eid) &&
+      !hasComponent(ctx.world, Player, eid) &&
+      !hasComponent(ctx.world, Authoring, eid);
     const isDynamic = hasComponent(ctx.world, RigidBody, eid);
     const isKinematic = hasComponent(ctx.world, KinematicBody, eid);
 
-    // our player is a special condition. it uses rapier's char controller
     if (isOurPlayer) {
       applyRigidBodyToTransform(body, node);
+    } else if (isRemoteNonPlayer) {
+      applyTransformToRigidBody(body, node);
     } else if (isDynamic) {
       applyRigidBodyToTransform(body, node);
     } else if (isKinematic) {
