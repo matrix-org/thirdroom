@@ -53,10 +53,7 @@ const sendUpdatesHost = (ctx: GameContext, network: GameNetworkState) => {
 
     let peerId;
     while ((peerId = newPeersQueue.dequeue())) {
-      const peerIndex = getPeerIndex(network, peerId);
-      if (!peerIndex) {
-        throw new Error("Peer index missing for peerId: " + peerId);
-      }
+      const peerIndex = tryGetPeerIndex(network, peerId);
 
       // inform new peer(s) and all other peers of new avatar(s)
       // TODO: this is redundant for peers other than this new peer
@@ -87,7 +84,7 @@ const sendUpdatesClient = (ctx: GameContext, network: GameNetworkState) => {
     return;
   }
 
-  const connectedToHost = isHost(network) || (network.hostId && network.peers.includes(network.hostId));
+  const connectedToHost = network.hostId && network.peers.includes(network.hostId);
   if (!connectedToHost) {
     return;
   }
