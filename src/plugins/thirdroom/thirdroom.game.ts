@@ -166,7 +166,7 @@ export const ThirdRoomModule = defineModule<GameContext, ThirdRoomModuleState>({
       name: "Out of Bounds Floor",
     });
 
-    oobFloor.position.set([size / 2, -150, size / 2]);
+    oobFloor.position.set([0, -150, 0]);
 
     addPhysicsCollider(
       ctx.world,
