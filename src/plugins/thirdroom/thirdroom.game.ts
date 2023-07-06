@@ -143,6 +143,7 @@ export const ThirdRoomModule = defineModule<GameContext, ThirdRoomModuleState>({
     const { worldLoaderMessages } = thirdroom;
 
     const input = getModule(ctx, InputModule);
+    const network = getModule(ctx, NetworkModule);
 
     const dispose = createDisposables([
       worldLoaderMessages.register(ctx),
@@ -200,11 +201,13 @@ export const ThirdRoomModule = defineModule<GameContext, ThirdRoomModuleState>({
 
       const node = tryGetRemoteResource<RemoteNode>(ctx, objectEid);
 
-      if (hasComponent(ctx.world, Player, objectEid)) {
-        const spawnPoints = getSpawnPoints(ctx);
-        spawnEntity(spawnPoints, node);
-      } else {
-        removeObjectFromWorld(ctx, node);
+      if (isHost(network)) {
+        if (hasComponent(ctx.world, Player, objectEid)) {
+          const spawnPoints = getSpawnPoints(ctx);
+          spawnEntity(spawnPoints, node);
+        } else {
+          removeObjectFromWorld(ctx, node);
+        }
       }
     });
 
