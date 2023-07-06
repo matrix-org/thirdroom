@@ -1,4 +1,4 @@
-import { defineQuery, enterQuery, exitQuery, Not } from "bitecs";
+import { addComponent, defineQuery, enterQuery, exitQuery, Not } from "bitecs";
 import { availableRead } from "@thirdroom/ringbuffer";
 
 import { createCursorView, CursorView } from "../allocator/CursorView";
@@ -36,6 +36,7 @@ import { createQueue, Queue } from "../utils/Queue";
 import { Message } from "../module/module.common";
 import { NetworkReplicator } from "./NetworkReplicator";
 import { waitUntil } from "../utils/waitUntil";
+import { ThirdRoomModule } from "../../plugins/thirdroom/thirdroom.game";
 
 /*********
  * Types *
@@ -381,5 +382,25 @@ export function NetworkThreadedMessageQueueSystem(ctx: GameContext) {
   let message;
   while ((message = threadMessageQueue.dequeue())) {
     MessageTypeHandler[message.type](ctx, message);
+  }
+}
+
+export function NetworkSpawnPeerAvatarSystem(ctx: GameContext) {
+  const thirdroom = getModule(ctx, ThirdRoomModule);
+  const network = getModule(ctx, NetworkModule);
+
+  if (!isHost(network)) {
+    return;
+  }
+
+  // don't drain the queue, it is later drained by the OutboundNetworkSystem
+  for (const peerId of newPeersQueue) {
+    const avatar = thirdroom.replicators!.avatar.spawn(ctx);
+
+    const peerIndex = Number(tryGetPeerIndex(network, peerId));
+    Networked.authorIndex[avatar.eid] = peerIndex;
+
+    addComponent(ctx.world, Relaying, avatar.eid);
+    Relaying.for[avatar.eid] = peerIndex;
   }
 }

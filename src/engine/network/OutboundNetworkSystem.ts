@@ -1,6 +1,3 @@
-import { addComponent } from "bitecs";
-
-import { ThirdRoomModule } from "../../plugins/thirdroom/thirdroom.game";
 import { GameContext } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import { isHost } from "./network.common";
@@ -13,7 +10,7 @@ import {
   getPeerIndex,
   tryGetPeerIndex,
 } from "./network.game";
-import { Networked, Relaying } from "./NetworkComponents";
+import { Networked } from "./NetworkComponents";
 import {
   serializeHostSnapshot,
   serializePeerEntered,
@@ -35,38 +32,17 @@ const sendUpdatesHost = (ctx: GameContext, network: GameNetworkState) => {
 
   const haveNewPeers = newPeersQueue.length > 0;
   if (haveNewPeers) {
-    const thirdroom = getModule(ctx, ThirdRoomModule);
-
-    // create an avatar for each new player before serializing the host snapshot
-    for (const peerId of newPeersQueue) {
-      const avatar = thirdroom.replicators!.avatar.spawn(ctx);
-
-      const peerIndex = Number(tryGetPeerIndex(network, peerId));
-      Networked.authorIndex[avatar.eid] = peerIndex;
-
-      addComponent(ctx.world, Relaying, avatar.eid);
-      Relaying.for[avatar.eid] = peerIndex;
-    }
-
-    // newly created avatars will be picked up by networking queries and serialized in the host snapshot
     const hostSnapshot = serializeHostSnapshot(ctx, network);
-
-    // inform new peer(s) and all other peers of new avatar(s)
-    // this is technically redundant for existing peers, but existing peers will gracefully ignore spawns
-    enqueueReliableBroadcast(network, hostSnapshot);
 
     let peerId;
     while ((peerId = newPeersQueue.dequeue())) {
       const peerIndex = tryGetPeerIndex(network, peerId);
-      // inform all peers of the new peer's info
+      enqueueReliable(network, peerId, hostSnapshot);
       enqueueReliableBroadcast(network, serializePeerEntered(ctx, network, peerId, peerIndex));
     }
   }
 
-  // send HostCommands message
   enqueueReliableBroadcast(network, serializeHostCommands(ctx, network));
-
-  // send EntityUpdates message
   enqueueUnreliableBroadcast(network, serializeEntityUpdates(ctx, network));
 };
 

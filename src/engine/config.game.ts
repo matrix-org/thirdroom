@@ -3,7 +3,7 @@ import { AudioModule } from "./audio/audio.game";
 import { InputModule } from "./input/input.game";
 import { UpdateRawInputSystem, ResetRawInputSystem } from "./input/RawInputSystems";
 import { PhysicsModule, PhysicsSystem } from "./physics/physics.game";
-import { NetworkThreadedMessageQueueSystem, NetworkModule } from "./network/network.game";
+import { NetworkThreadedMessageQueueSystem, NetworkModule, NetworkSpawnPeerAvatarSystem } from "./network/network.game";
 import { ActionMappingSystem } from "./input/ActionMappingSystem";
 import {
   KinematicCharacterControllerModule,
@@ -91,6 +91,7 @@ export default defineConfig<GameContext>({
     InboundNetworkSystem,
     // TransferAuthoritySystem,
     SpawnAvatarSystem,
+    NetworkSpawnPeerAvatarSystem,
 
     WorldLoaderSystem,
 
