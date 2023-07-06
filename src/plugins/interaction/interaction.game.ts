@@ -574,7 +574,8 @@ function updateGrabThrow(
     _impulse.fromArray(direction);
     const heldNode = getRemoteResource<RemoteNode>(ctx, heldEntity);
     if (!heldNode || !heldNode.physicsBody || !heldNode.physicsBody.body) {
-      throw new Error(`No physics body found on entity ${heldEntity}`);
+      // entity was removed while held
+      return;
     }
 
     heldNode.physicsBody.body.applyImpulse(_impulse, true);
