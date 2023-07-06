@@ -310,7 +310,8 @@ export const mapPeerIndex = (network: GameNetworkState, peerId: string, peerInde
   network.indexToPeerId.set(peerIndex, peerId);
   // this keeps peerIdCount synchronized on all peers
   if (peerIndex > network.peerIndexCount) {
-    network.peerIndexCount = peerIndex;
+    // set count to one increment ahead of this peerIndex
+    network.peerIndexCount = peerIndex + 1n;
   }
 };
 

@@ -253,7 +253,7 @@ export const readSpawn = (ctx: GameContext, network: GameNetworkState, v: Cursor
 
   // this keeps networkIdCount synchronized on all peers
   if (networkId > network.networkIdCount) {
-    network.networkIdCount = networkId;
+    network.networkIdCount = networkId + 1n;
   }
 };
 
