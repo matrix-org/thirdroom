@@ -69,7 +69,7 @@ export const createNetworkReplicator = <T>(
 
   const despawn = (node: RemoteNode) => {
     if (!isHost(network)) {
-      throw new Error("Only hosts can spawn items.");
+      throw new Error("Only hosts can despawn items.");
     }
     despawned.enqueue(node);
     instances.splice(instances.indexOf(node), 1);
