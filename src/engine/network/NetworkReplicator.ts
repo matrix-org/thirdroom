@@ -72,6 +72,7 @@ export const createNetworkReplicator = <T>(
       throw new Error("Only hosts can spawn items.");
     }
     despawned.enqueue(node);
+    instances.splice(instances.indexOf(node), 1);
   };
 
   const replicator: NetworkReplicator<T> = {
