@@ -308,6 +308,7 @@ const _spawnWorldQuat = quat.create();
 export function spawnPrefab(ctx: GameContext, spawnFrom: RemoteNode, prefabId: string, isXR: boolean): boolean {
   const network = getModule(ctx, NetworkModule);
   if (!isHost(network)) {
+    // TODO: request spawn from the host
     console.warn("Cannot spawn entity, this peer is not the host.");
     return false;
   }

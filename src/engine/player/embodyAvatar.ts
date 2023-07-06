@@ -21,7 +21,7 @@ export function embodyAvatar(ctx: GameContext, physics: PhysicsModuleState, node
   const avatar = getRemoteResource<RemoteNode>(ctx, avatarEid);
   if (avatar) avatar.visible = false;
 
-  // mark entity as our player entity and start authoring
+  // mark entity as our player entity
   addComponent(ctx.world, OurPlayer, node.eid);
   addComponent(ctx.world, Player, node.eid);
 
