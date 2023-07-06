@@ -70,7 +70,13 @@ export const mockRenderState = () => ({
 
 export const mockNetworkState = () => ({
   networkIdToEntityId: new Map(),
-  prefabToReplicator: new Map(),
+  peerIndexCount: 1,
+  peerIdToIndex: new Map(),
+  indexToPeerId: new Map(),
+  replicators: new Map(),
+  replicatorIdCount: 1,
+  hostId: "a",
+  peerId: "a",
 });
 
 export const mockResourceModule = () => ({

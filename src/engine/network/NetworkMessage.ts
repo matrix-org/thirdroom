@@ -181,11 +181,11 @@ export const readTransformMutations = (v: CursorView, nid: NetworkID, node: Remo
 };
 
 // PeerInfo
-const writePeerInfo = (v: CursorView, peerId: string, peerIndex: PeerIndex) => {
+export const writePeerInfo = (v: CursorView, peerId: string, peerIndex: PeerIndex) => {
   writeUint64(v, peerIndex);
   writeString(v, peerId);
 };
-const readPeerInfo = (network: GameNetworkState, v: CursorView) => {
+export const readPeerInfo = (network: GameNetworkState, v: CursorView) => {
   const peerIndex = readUint64(v);
   const peerId = readString(v);
 
@@ -193,7 +193,7 @@ const readPeerInfo = (network: GameNetworkState, v: CursorView) => {
 };
 
 // Spawn
-const writeSpawn = (
+export const writeSpawn = (
   v: CursorView,
   networkId: NetworkID,
   authorIndex: PeerIndex,
@@ -209,7 +209,7 @@ const writeSpawn = (
   replicator.snapshotCodec.encode(v, node);
 };
 
-const readSpawn = (ctx: GameContext, network: GameNetworkState, v: CursorView) => {
+export const readSpawn = (ctx: GameContext, network: GameNetworkState, v: CursorView) => {
   // read
   const networkId = readUint64(v);
   const authorIndex = readUint64(v);
@@ -248,10 +248,10 @@ const readSpawn = (ctx: GameContext, network: GameNetworkState, v: CursorView) =
 };
 
 // Despawn
-const writeDespawn = (v: CursorView, nid: NetworkID) => {
+export const writeDespawn = (v: CursorView, nid: NetworkID) => {
   writeUint64(v, nid);
 };
-const readDespawn = (ctx: GameContext, network: GameNetworkState, v: CursorView) => {
+export const readDespawn = (ctx: GameContext, network: GameNetworkState, v: CursorView) => {
   const nid = readUint64(v);
   const eid = network.networkIdToEntityId.get(nid)!;
   const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
@@ -261,7 +261,7 @@ const readDespawn = (ctx: GameContext, network: GameNetworkState, v: CursorView)
 };
 
 // Update
-const writeUpdate = (
+export const writeUpdate = (
   v: CursorView,
   networkId: NetworkID,
   replicator: NetworkReplicator<RemoteNode>,
@@ -275,7 +275,7 @@ const writeUpdate = (
   }
   return written;
 };
-const readUpdate = (ctx: GameContext, network: GameNetworkState, v: CursorView) => {
+export const readUpdate = (ctx: GameContext, network: GameNetworkState, v: CursorView) => {
   // console.log("readUpdate =========");
   const networkId = readUint64(v);
   // console.log("networkId", networkId);
@@ -476,11 +476,21 @@ export const serializeEntityUpdates = (ctx: GameContext, network: GameNetworkSta
   const time = performance.now();
   writeFloat64(v, time);
 
-  const ents = authoringNetworkedQuery(ctx.world);
+  const authors = authoringNetworkedQuery(ctx.world);
   let count = 0;
   const writeCount = spaceUint16(v);
-  for (let i = 0; i < ents.length; i++) {
-    const eid = ents[i];
+  for (let i = 0; i < authors.length; i++) {
+    const eid = authors[i];
+    const networkId = BigInt(Networked.networkId[eid]);
+    const replicatorId = Networked.replicatorId[eid];
+    const replicator = tryGetNetworkReplicator<RemoteNode>(network, replicatorId);
+    const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
+
+    count += writeUpdate(v, networkId, replicator, node) ? 1 : 0;
+  }
+  const relays = relayingNetworkedQuery(ctx.world);
+  for (let i = 0; i < relays.length; i++) {
+    const eid = relays[i];
     const networkId = BigInt(Networked.networkId[eid]);
     const replicatorId = Networked.replicatorId[eid];
     const replicator = tryGetNetworkReplicator<RemoteNode>(network, replicatorId);

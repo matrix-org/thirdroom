@@ -94,7 +94,7 @@ export const createNetworkReplicator = <T>(
 export const tryGetNetworkReplicator = <T>(network: GameNetworkState, id: number) => {
   const replicator = network.replicators.get(id);
   if (!replicator) {
-    throw new Error("Replicator not found");
+    throw new Error("Replicator not found for replicatorId: " + id);
   }
   return replicator as NetworkReplicator<T>;
 };
