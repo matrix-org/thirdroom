@@ -132,7 +132,7 @@
     "postinstall-postinstall": "^2.1.0",
     "prettier": "^2.6.1",
     "storybook": "^7.0.20",
-    "stylelint": "^15.2.0",
+    "stylelint": "^15.10.1",
     "stylelint-config-prettier": "^9.0.3",
     "stylelint-config-standard": "^30.0.1",
     "ts-node": "^10.7.0",
