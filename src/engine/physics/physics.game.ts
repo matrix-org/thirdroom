@@ -341,8 +341,6 @@ export function addPhysicsBody(
 
   node.physicsBody.body = body;
 
-  handleToEid.set(body.handle, node.eid);
-
   if (node.collider) {
     const colliderDescriptions = createNodeColliderDescriptions(node);
 
