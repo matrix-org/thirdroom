@@ -28,13 +28,13 @@ import { registerInboundMessageHandler } from "./InboundNetworkSystem";
 import { dequeueNetworkRingBuffer, NetworkRingBuffer } from "./NetworkRingBuffer";
 import { ExitWorldMessage, ThirdRoomMessageType } from "../../plugins/thirdroom/thirdroom.common";
 import { tryGetRemoteResource } from "../resource/resource.game";
-import { RemoteNode, removeObjectFromWorld } from "../resource/RemoteResources";
+import { RemoteNode } from "../resource/RemoteResources";
 import { Networked, Authoring, Relaying } from "./NetworkComponents";
 import { XRMode } from "../renderer/renderer.common";
 import { Replicator } from "./Replicator";
 import { createQueue, Queue } from "../utils/Queue";
 import { Message } from "../module/module.common";
-import { NetworkReplicator } from "./NetworkReplicator";
+import { NetworkReplicator, tryGetNetworkReplicator } from "./NetworkReplicator";
 import { waitUntil } from "../utils/waitUntil";
 import { ThirdRoomModule } from "../../plugins/thirdroom/thirdroom.game";
 
@@ -235,14 +235,23 @@ export const removePeerId = (ctx: GameContext, peerId: string) => {
 
       for (let i = entities.length - 1; i >= 0; i--) {
         const eid = entities[i];
+
+        // skip if the entity does not belong to this peer
+        if (Networked.authorIndex[eid] !== Number(peerIndex)) {
+          continue;
+        }
+
         const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
 
         const hosting = isHost(network);
         const destroyOnLeave = Networked.destroyOnLeave[eid];
 
         if (hosting && destroyOnLeave) {
+          const replicator = tryGetNetworkReplicator(network, Networked.replicatorId[eid]);
+
+          replicator.despawn(node);
+
           network.entityIdToPeerId.delete(eid);
-          removeObjectFromWorld(ctx, node);
         }
       }
 
