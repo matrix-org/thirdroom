@@ -130,14 +130,14 @@ export const writeFloat32 = (v: CursorView, value: number) => {
   return v;
 };
 
-export const writeUint64 = (v: CursorView, value: number) => {
-  v.setUint64(v.cursor, value, v.littleEndian);
+export const writeUint64 = (v: CursorView, value: bigint) => {
+  v.setBigInt64(v.cursor, value, v.littleEndian);
   v.cursor += BigUint64Array.BYTES_PER_ELEMENT;
   return v;
 };
 
-export const writeInt64 = (v: CursorView, value: number) => {
-  v.setInt64(v.cursor, value, v.littleEndian);
+export const writeInt64 = (v: CursorView, value: bigint) => {
+  v.setBigInt64(v.cursor, value, v.littleEndian);
   v.cursor += BigInt64Array.BYTES_PER_ELEMENT;
   return v;
 };
@@ -209,8 +209,8 @@ export const spaceFloat32 = (v: CursorView) => {
 export const spaceUint64 = (v: CursorView) => {
   const savePoint = v.cursor;
   v.cursor += BigUint64Array.BYTES_PER_ELEMENT;
-  return (value: number) => {
-    v.setUint64(savePoint, value, v.littleEndian);
+  return (value: bigint) => {
+    v.setBigUint64(savePoint, value, v.littleEndian);
     return v;
   };
 };
@@ -218,8 +218,8 @@ export const spaceUint64 = (v: CursorView) => {
 export const spaceInt64 = (v: CursorView) => {
   const savePoint = v.cursor;
   v.cursor += BigInt64Array.BYTES_PER_ELEMENT;
-  return (value: number) => {
-    v.setInt64(savePoint, value, v.littleEndian);
+  return (value: bigint) => {
+    v.setBigInt64(savePoint, value, v.littleEndian);
     return v;
   };
 };

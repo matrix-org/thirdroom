@@ -9,9 +9,9 @@ import {
   dequeueNetworkRingBuffer,
   enqueueNetworkRingBuffer,
   NetworkRingBuffer,
-} from "./RingBuffer";
+} from "./NetworkRingBuffer";
 import { createCursorView, readUint8 } from "../allocator/CursorView";
-import { UnreliableNetworkActions } from "./NetworkAction";
+import { UnreliableNetworkActions } from "./NetworkMessage";
 
 /*********
  * Types *
@@ -26,8 +26,8 @@ export interface MainNetworkState {
   incomingUnreliableRingBuffer: NetworkRingBuffer;
   outgoingReliableRingBuffer: NetworkRingBuffer;
   outgoingUnreliableRingBuffer: NetworkRingBuffer;
-  peerId?: string;
-  hostId?: string;
+  peerKey?: string;
+  hostKey?: string;
 }
 
 /******************
@@ -116,16 +116,16 @@ function onPeerLeft(ctx: MainContext, peerId: string) {
  * API *
  ******/
 
-export function setHost(ctx: MainContext, hostId: string) {
+export function setHost(ctx: MainContext, hostKey: string) {
   const network = getModule(ctx, NetworkModule);
-  const hostChanged = network.hostId !== hostId;
+  const hostChanged = network.hostKey !== hostKey;
 
   if (hostChanged) {
-    console.info("electing new host", hostId);
-    network.hostId = hostId;
+    console.info("electing new host", hostKey);
+    network.hostKey = hostKey;
     ctx.sendMessage<SetHostMessage>(Thread.Game, {
       type: NetworkMessageType.SetHost,
-      hostId,
+      hostId: hostKey,
     });
   }
 }
@@ -136,32 +136,34 @@ export function hasPeer(ctx: MainContext, peerId: string): boolean {
   return reliableChannels.has(peerId);
 }
 
-export function addPeer(ctx: MainContext, peerId: string, dataChannel: RTCDataChannel, mediaStream?: MediaStream) {
+export function addPeer(ctx: MainContext, peerKey: string, dataChannel: RTCDataChannel, mediaStream?: MediaStream) {
   const network = getModule(ctx, NetworkModule);
   const audio = getModule(ctx, AudioModule);
   const { reliableChannels, unreliableChannels } = network;
 
-  if (reliableChannels.has(peerId)) {
-    console.warn("peer already added", peerId);
+  if (reliableChannels.has(peerKey)) {
+    console.warn("peer already added", peerKey);
     return;
   }
 
-  if (dataChannel.ordered) reliableChannels.set(peerId, dataChannel);
-  else unreliableChannels.set(peerId, dataChannel);
+  if (dataChannel.ordered) reliableChannels.set(peerKey, dataChannel);
+  else unreliableChannels.set(peerKey, dataChannel);
 
   const onOpen = () => {
     const onClose = () => {
-      onPeerLeft(ctx, peerId);
+      onPeerLeft(ctx, peerKey);
     };
 
-    const handler = onIncomingMessage(ctx, network, peerId);
-    network.incomingMessageHandlers.set(peerId, handler);
+    const handler = onIncomingMessage(ctx, network, peerKey);
+    network.incomingMessageHandlers.set(peerKey, handler);
     dataChannel.addEventListener("message", handler);
     dataChannel.addEventListener("close", onClose);
 
+    network.peerKey = peerKey;
+
     ctx.sendMessage(Thread.Game, {
       type: NetworkMessageType.AddPeerId,
-      peerId,
+      peerId: peerKey,
     });
   };
 
@@ -174,17 +176,17 @@ export function addPeer(ctx: MainContext, peerId: string, dataChannel: RTCDataCh
   }
 
   if (mediaStream) {
-    setPeerMediaStream(audio, peerId, mediaStream);
+    setPeerMediaStream(audio, peerKey, mediaStream);
   }
 }
 
-export function removePeer(ctx: MainContext, peerId: string) {
-  onPeerLeft(ctx, peerId);
+export function removePeer(ctx: MainContext, peerKey: string) {
+  onPeerLeft(ctx, peerKey);
 }
 
-export function toggleMutePeer(ctx: MainContext, peerId: string) {
+export function toggleMutePeer(ctx: MainContext, peerKey: string) {
   const audio = getModule(ctx, AudioModule);
-  const mediaStream = audio.mediaStreams.get(peerId);
+  const mediaStream = audio.mediaStreams.get(peerKey);
   if (mediaStream) {
     const tracks = mediaStream.getAudioTracks();
     if (tracks[0].enabled) tracks.forEach((t) => (t.enabled = false));
@@ -209,7 +211,7 @@ export function disconnect(ctx: MainContext) {
   }
 }
 
-const ringOut = { packet: new ArrayBuffer(0), peerId: "", broadcast: false };
+const ringOut = { packet: new ArrayBuffer(0), peerKey: "", broadcast: false };
 export function MainThreadNetworkSystem(ctx: MainContext) {
   const network = getModule(ctx, NetworkModule);
 
@@ -225,9 +227,9 @@ export function MainThreadNetworkSystem(ctx: MainContext) {
         peer.send(ringOut.packet);
       });
     } else {
-      const peer = network.reliableChannels.get(ringOut.peerId);
+      const peer = network.reliableChannels.get(ringOut.peerKey);
       if (!peer) {
-        console.error("Failed to send message, peer's reliable channel not found", ringOut.peerId);
+        console.error("Failed to send message, peer's reliable channel not found", ringOut.peerKey);
         continue;
       }
 
@@ -248,9 +250,9 @@ export function MainThreadNetworkSystem(ctx: MainContext) {
         peer.send(ringOut.packet);
       });
     } else {
-      const peer = network.reliableChannels.get(ringOut.peerId);
+      const peer = network.reliableChannels.get(ringOut.peerKey);
       if (!peer) {
-        console.error("peer's unreliable channel is not found", ringOut.peerId);
+        console.error("peer's unreliable channel is not found", ringOut.peerKey);
         continue;
       }
 

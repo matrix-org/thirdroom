@@ -3,7 +3,7 @@ import { AudioModule } from "./audio/audio.game";
 import { InputModule } from "./input/input.game";
 import { UpdateRawInputSystem, ResetRawInputSystem } from "./input/RawInputSystems";
 import { PhysicsModule, PhysicsSystem } from "./physics/physics.game";
-import { NetworkExitWorldQueueSystem, NetworkModule } from "./network/network.game";
+import { NetworkThreadedMessageQueueSystem, NetworkModule, HostSpawnPeerAvatarSystem } from "./network/network.game";
 import { ActionMappingSystem } from "./input/ActionMappingSystem";
 import {
   KinematicCharacterControllerModule,
@@ -17,7 +17,7 @@ import {
 } from "./editor/editor.game";
 import { GameContext } from "./GameTypes";
 import { RendererModule } from "./renderer/renderer.game";
-import { SpawnablesModule } from "../plugins/spawnables/spawnables.game";
+import { SpawnablesModule, SpawnablesSystem } from "../plugins/spawnables/spawnables.game";
 import {
   RecycleResourcesSystem,
   ResourceDisposalSystem,
@@ -28,7 +28,7 @@ import {
 import { ThirdRoomModule, WorldLoaderSystem } from "../plugins/thirdroom/thirdroom.game";
 import { UpdateMatrixWorldSystem } from "./component/transform";
 import { FlyCharacterControllerModule, FlyControllerSystem } from "./player/FlyCharacterController";
-import { NetworkInterpolationSystem } from "./network/NetworkInterpolationSystem";
+// import { NetworkInterpolationSystem } from "./network/NetworkInterpolationSystem";
 import { PrefabDisposalSystem, PrefabModule } from "./prefab/prefab.game";
 import { AnimationSystem } from "./animation/animation.game";
 import {
@@ -40,8 +40,8 @@ import { NametagModule, NametagSystem } from "./player/nametags.game";
 import { ScriptingSystem } from "./scripting/scripting.game";
 import { GameResourceSystem } from "./resource/GameResourceSystem";
 import { RemoteCameraSystem } from "./camera/camera.game";
-import { InboundNetworkSystem } from "./network/inbound.game";
-import { OutboundNetworkSystem } from "./network/outbound.game";
+import { InboundNetworkSystem } from "./network/InboundNetworkSystem";
+import { OutboundNetworkSystem } from "./network/OutboundNetworkSystem";
 import { GLTFResourceDisposalSystem } from "./gltf/gltf.game";
 import { IncomingTripleBufferSystem } from "./resource/IncomingTripleBufferSystem";
 import { OutgoingTripleBufferSystem } from "./resource/OutgoingTripleBufferSystem";
@@ -55,6 +55,8 @@ import { PlayerModule } from "./player/Player.game";
 import { ActionBarSystem } from "../plugins/thirdroom/action-bar.game";
 import { EnableCharacterControllerSystem } from "./player/CharacterController";
 import { CameraRigSystem } from "./player/CameraRig";
+// import { TransferAuthoritySystem } from "./network/TransferAuthoritySystem";
+import { DespawnAvatarSystem, SpawnAvatarSystem } from "./player/PlayerRig";
 
 export default defineConfig<GameContext>({
   modules: [
@@ -87,6 +89,10 @@ export default defineConfig<GameContext>({
     ActionMappingSystem,
 
     InboundNetworkSystem,
+    // TransferAuthoritySystem,
+    HostSpawnPeerAvatarSystem,
+    SpawnAvatarSystem,
+    DespawnAvatarSystem,
 
     WorldLoaderSystem,
 
@@ -98,13 +104,15 @@ export default defineConfig<GameContext>({
     InteractionSystem,
     XRInteractionSystem,
     ActionBarSystem,
+    SpawnablesSystem,
     EnableCharacterControllerSystem,
 
-    // step physics forward and copy rigidbody data to transform component
+    // step physics forward and sync physics bodies with node transforms
     PhysicsSystem,
 
     // interpolate towards authoritative state
-    NetworkInterpolationSystem,
+    // TODO: rewrite
+    // NetworkInterpolationSystem,
 
     ScriptingSystem,
 
@@ -117,7 +125,7 @@ export default defineConfig<GameContext>({
     //EditorSelectionSystem,
 
     OutboundNetworkSystem,
-    NetworkExitWorldQueueSystem,
+    NetworkThreadedMessageQueueSystem,
 
     RemoteCameraSystem,
     PrefabDisposalSystem,

@@ -258,8 +258,8 @@
 257:websg_replicator_spawn_local
 258:websg_replicator_despawn_local
 259:__wasi_clock_time_get
-260:__wasi_fd_close
-261:__wasi_proc_exit
+260:__wasi_proc_exit
+261:__wasi_fd_close
 262:__wasi_environ_sizes_get
 263:__wasi_environ_get
 264:__wasi_fd_write
@@ -1565,9 +1565,9 @@
 1564:__syscall_openat
 1565:__syscall_fstat64
 1566:emscripten_resize_heap
-1567:__errno_location
-1568:__map_file
-1569:_Exit
+1567:_Exit
+1568:__errno_location
+1569:__map_file
 1570:acos
 1571:R
 1572:acosh

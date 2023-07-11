@@ -46,7 +46,7 @@ import { disableActionMap, enableActionMap } from "../input/ActionMappingSystem"
 import { ActionMap, ActionType, BindingType, ButtonActionState } from "../input/ActionMap";
 import { InputModule } from "../input/input.game";
 import { flyControlsQuery } from "../player/FlyCharacterController";
-import { getCamera } from "../player/getCamera";
+import { tryGetCamera } from "../player/getCamera";
 import { setRenderNodeOptimizationsEnabled } from "../renderer/renderer.game";
 
 /*********
@@ -304,7 +304,7 @@ export function EditorStateSystem(ctx: GameContext) {
       for (let i = 0; i < ents.length; i++) {
         const playerRigEid = ents[i];
         const playerRig = tryGetRemoteResource<RemoteNode>(ctx, playerRigEid);
-        getCamera(ctx, playerRig);
+        tryGetCamera(ctx, playerRig);
 
         const body = playerRig.physicsBody?.body;
 

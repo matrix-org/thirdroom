@@ -10,7 +10,7 @@ import {
   registerMatrixNetworkInterface,
   provideMatrixNetworkInterface,
 } from "../../engine/network/createMatrixNetworkInterface";
-import { enterWorld, loadWorld, reloadWorld } from "../../plugins/thirdroom/thirdroom.main";
+import { loadWorld, reloadWorld } from "../../plugins/thirdroom/thirdroom.main";
 import { worldAtom } from "../state/world";
 import { useHydrogen } from "./useHydrogen";
 import { useMainThreadContext } from "./useMainThread";
@@ -77,7 +77,7 @@ export function useWorldLoader(): WorldLoader {
 
         registerMatrixNetworkInterface(matrixNetworkInterface);
 
-        await enterWorld(mainThread, session.userId);
+        // await enterWorld(mainThread, session.userId, hostId);
 
         const audio = getModule(mainThread, AudioModule);
         audio.context.resume().catch(() => console.error("Couldn't resume audio context"));

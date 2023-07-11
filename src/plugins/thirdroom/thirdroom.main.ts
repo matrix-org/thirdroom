@@ -118,7 +118,7 @@ export async function loadWorld(ctx: MainContext, environmentUrl: string, option
   return loadingEnvironment.promise;
 }
 
-export function enterWorld(ctx: MainContext, localPeerId: string) {
+export function enterWorld(ctx: MainContext, localPeerId: string, hostPeerId: string) {
   const thirdroom = getModule(ctx, ThirdroomModule);
   const network = getModule(ctx, NetworkModule);
   const enteringWorld = createDeferred(false);
@@ -148,12 +148,14 @@ export function enterWorld(ctx: MainContext, localPeerId: string) {
     registerMessageHandler(ctx, ThirdRoomMessageType.EnterWorldError, onEnterWorldError),
   ]);
 
-  network.peerId = localPeerId;
+  network.peerKey = localPeerId;
+  network.hostKey = hostPeerId;
 
   ctx.sendMessage<EnterWorldMessage>(Thread.Game, {
     type: ThirdRoomMessageType.EnterWorld,
     id,
     localPeerId,
+    hostPeerId,
   });
 
   return enteringWorld.promise;

@@ -3,7 +3,7 @@ import { quat, vec3 } from "gl-matrix";
 import RAPIER from "@dimforge/rapier3d-compat";
 import { Quaternion, Vector3 } from "three";
 
-import { getCamera } from "./getCamera";
+import { tryGetCamera } from "./getCamera";
 import { updateMatrixWorld } from "../component/transform";
 import { GameContext } from "../GameTypes";
 import { enableActionMap } from "../input/ActionMappingSystem";
@@ -122,7 +122,7 @@ export function FlyControllerSystem(ctx: GameContext) {
   for (let i = 0; i < ents.length; i++) {
     const playerRigEid = ents[i];
     const playerRig = tryGetRemoteResource<RemoteNode>(ctx, playerRigEid);
-    const camera = getCamera(ctx, playerRig);
+    const camera = tryGetCamera(ctx, playerRig);
     const body = playerRig.physicsBody?.body;
 
     if (!body) {

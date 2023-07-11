@@ -217,7 +217,6 @@ export function stopOrbit(ctx: GameContext) {
     return;
   }
 
-  const input = getModule(ctx, InputModule);
   const physics = getModule(ctx, PhysicsModule);
   const camRigModule = getModule(ctx, PlayerModule);
 
@@ -230,7 +229,7 @@ export function stopOrbit(ctx: GameContext) {
 
   const ourPlayer = ourPlayerQuery(ctx.world)[0];
   const node = tryGetRemoteResource<RemoteNode>(ctx, ourPlayer);
-  embodyAvatar(ctx, physics, input, node);
+  embodyAvatar(ctx, physics, node);
 
   ctx.sendMessage(Thread.Main, { type: CameraRigMessage.StopOrbit });
 }
@@ -444,6 +443,8 @@ export function CameraRigSystem(ctx: GameContext) {
       continue;
     }
 
+    // console.log("pitch.target", pitch.target);
+
     applyPitch(ctx, input, pitch);
   }
 
@@ -457,6 +458,8 @@ export function CameraRigSystem(ctx: GameContext) {
       continue;
     }
 
+    // console.log("yaw.target", yaw.target);
+
     applyYaw(ctx, input, yaw);
   }
 
@@ -468,6 +471,8 @@ export function CameraRigSystem(ctx: GameContext) {
     if (zoom.type === CameraRigType.PointerLock && !hasComponent(ctx.world, ThirdPersonComponent, eid)) {
       continue;
     }
+
+    // console.log("zoom.target", zoom.target);
 
     applyZoom(ctx, input, zoom);
   }
@@ -482,6 +487,7 @@ function exitQueryCleanup(ctx: GameContext, query: Query, component: Map<number,
   const ents = query(ctx.world);
   for (let i = 0; i < ents.length; i++) {
     const eid = ents[i];
+    console.log("cleaning up camera rig component for", eid);
     component.delete(eid);
   }
 }

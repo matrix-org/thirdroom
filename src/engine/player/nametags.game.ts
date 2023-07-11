@@ -113,9 +113,14 @@ export function addNametag(ctx: GameContext, height: number, node: RemoteNode, l
   return nametag;
 }
 
-export function getNametag(ctx: GameContext, parent: RemoteNode) {
+export function tryGetNametag(ctx: GameContext, parent: RemoteNode) {
   const nametagEid = NametagRef.eid[parent.eid];
   if (!nametagEid) throw new Error(`NametagRef not found on node "${parent.name}"`);
   const nametag = tryGetRemoteResource<RemoteNode>(ctx, nametagEid);
   return nametag;
+}
+
+export function getNametag(ctx: GameContext, parent: RemoteNode) {
+  const nametagEid = NametagRef.eid[parent.eid];
+  return getRemoteResource<RemoteNode>(ctx, nametagEid);
 }

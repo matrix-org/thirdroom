@@ -7,8 +7,8 @@ import { GameContext } from "../../engine/GameTypes";
 import { createNodeFromGLTFURI } from "../../engine/gltf/gltf.game";
 import { createSphereMesh } from "../../engine/mesh/mesh.game";
 import { defineModule, getModule, Thread } from "../../engine/module/module.common";
-import { ownedNetworkedQuery } from "../../engine/network/network.game";
-import { Networked, Owned } from "../../engine/network/NetworkComponents";
+import { authoringNetworkedQuery, NetworkModule } from "../../engine/network/network.game";
+import { Authoring } from "../../engine/network/NetworkComponents";
 import { dynamicObjectCollisionGroups } from "../../engine/physics/CollisionGroups";
 import {
   addPhysicsBody,
@@ -18,7 +18,6 @@ import {
   PhysicsModuleState,
   registerCollisionHandler,
 } from "../../engine/physics/physics.game";
-import { createPrefabEntity, PrefabType, registerPrefab } from "../../engine/prefab/prefab.game";
 import {
   addObjectToWorld,
   RemoteAudioData,
@@ -28,6 +27,7 @@ import {
   RemoteMaterial,
   RemoteNode,
   RemotePhysicsBody,
+  removeObjectFromWorld,
 } from "../../engine/resource/RemoteResources";
 import {
   AudioEmitterType,
@@ -42,11 +42,15 @@ import { addInteractableComponent } from "../interaction/interaction.game";
 import { getRotationNoAlloc } from "../../engine/utils/getRotationNoAlloc";
 import { ThirdRoomModule } from "../thirdroom/thirdroom.game";
 import { ThirdRoomMessageType } from "../thirdroom/thirdroom.common";
+import { createNetworkReplicator, NetworkReplicator } from "../../engine/network/NetworkReplicator";
+import { transformCodec } from "../../engine/network/NetworkMessage";
+import { isHost } from "../../engine/network/network.common";
 
 const { abs, floor, random } = Math;
 
 type SpawnablesModuleState = {
   hitAudioEmitters: Map<number, RemoteAudioEmitter>;
+  replicators?: { [key: string]: NetworkReplicator<RemoteNode> };
 };
 
 export const SpawnablesModule = defineModule<GameContext, SpawnablesModuleState>({
@@ -65,33 +69,6 @@ export const SpawnablesModule = defineModule<GameContext, SpawnablesModuleState>
       uri: "/audio/hit.wav",
     });
     crateAudioData.addRef();
-
-    registerPrefab(ctx, {
-      name: "small-crate",
-      type: PrefabType.Object,
-      create: (ctx, { kinematic }) => {
-        const size = 1;
-        return createCrate(ctx, module, physics, size, crateAudioData, kinematic);
-      },
-    });
-
-    registerPrefab(ctx, {
-      name: "medium-crate",
-      type: PrefabType.Object,
-      create: (ctx, { kinematic }) => {
-        const size = 1.75;
-        return createCrate(ctx, module, physics, size, crateAudioData, kinematic);
-      },
-    });
-
-    registerPrefab(ctx, {
-      name: "large-crate",
-      type: PrefabType.Object,
-      create: (ctx, { kinematic }) => {
-        const size = 2.5;
-        return createCrate(ctx, module, physics, size, crateAudioData, kinematic);
-      },
-    });
 
     const ballAudioData = new RemoteAudioData(ctx.resourceManager, {
       name: "Ball Audio Data",
@@ -139,37 +116,43 @@ export const SpawnablesModule = defineModule<GameContext, SpawnablesModuleState>
     });
     blackMirrorMaterial.addRef();
 
-    registerPrefab(ctx, {
-      name: "small-ball",
-      type: PrefabType.Object,
-      create: (ctx, { kinematic }) => {
-        return createBall(ctx, module, physics, 0.25, emissiveMaterial, ballAudioData, kinematic);
-      },
-    });
-
-    registerPrefab(ctx, {
-      name: "mirror-ball",
-      type: PrefabType.Object,
-      create: (ctx, { kinematic }) => {
-        return createBall(ctx, module, physics, 1, mirrorMaterial, ballAudioData, kinematic);
-      },
-    });
-
-    registerPrefab(ctx, {
-      name: "black-mirror-ball",
-      type: PrefabType.Object,
-      create: (ctx, { kinematic }) => {
-        return createBall(ctx, module, physics, 1, blackMirrorMaterial, ballAudioData, kinematic);
-      },
-    });
-
-    registerPrefab(ctx, {
-      name: "emissive-ball",
-      type: PrefabType.Object,
-      create: (ctx, { kinematic }) => {
-        return createBall(ctx, module, physics, 2, emissiveMaterial, ballAudioData, kinematic);
-      },
-    });
+    module.replicators = {
+      "small-crate": createNetworkReplicator(
+        ctx,
+        () => createCrate(ctx, module, physics, 1, crateAudioData),
+        transformCodec
+      ),
+      "medium-crate": createNetworkReplicator(
+        ctx,
+        () => createCrate(ctx, module, physics, 1.75, crateAudioData),
+        transformCodec
+      ),
+      "large-crate": createNetworkReplicator(
+        ctx,
+        () => createCrate(ctx, module, physics, 2.5, crateAudioData),
+        transformCodec
+      ),
+      "small-ball": createNetworkReplicator(
+        ctx,
+        () => createBall(ctx, module, physics, 0.25, emissiveMaterial, ballAudioData),
+        transformCodec
+      ),
+      "mirror-ball": createNetworkReplicator(
+        ctx,
+        () => createBall(ctx, module, physics, 1, mirrorMaterial, ballAudioData),
+        transformCodec
+      ),
+      "black-mirror-ball": createNetworkReplicator(
+        ctx,
+        () => createBall(ctx, module, physics, 1, blackMirrorMaterial, ballAudioData),
+        transformCodec
+      ),
+      "emissive-ball": createNetworkReplicator(
+        ctx,
+        () => createBall(ctx, module, physics, 2, emissiveMaterial, ballAudioData),
+        transformCodec
+      ),
+    };
 
     // collision handlers
     const { physicsWorld } = getModule(ctx, PhysicsModule);
@@ -323,10 +306,17 @@ const _spawnWorldQuat = quat.create();
 
 // Returns false if the object exceeded the object cap
 export function spawnPrefab(ctx: GameContext, spawnFrom: RemoteNode, prefabId: string, isXR: boolean): boolean {
+  const network = getModule(ctx, NetworkModule);
+  if (!isHost(network)) {
+    // TODO: request spawn from the host
+    console.warn("Cannot spawn entity, this peer is not the host.");
+    return false;
+  }
   const { maxObjectCap } = getModule(ctx, ThirdRoomModule);
+  const { replicators } = getModule(ctx, SpawnablesModule);
 
   // bounce out of the function if we hit the max object cap
-  const ownedEnts = ownedNetworkedQuery(ctx.world);
+  const ownedEnts = authoringNetworkedQuery(ctx.world);
   if (ownedEnts.length > maxObjectCap) {
     ctx.sendMessage(Thread.Main, {
       type: ThirdRoomMessageType.ObjectCapReached,
@@ -336,38 +326,60 @@ export function spawnPrefab(ctx: GameContext, spawnFrom: RemoteNode, prefabId: s
     return false;
   }
 
-  const prefab = createPrefabEntity(ctx, prefabId);
-  const eid = prefab.eid;
-
-  addComponent(ctx.world, Owned, eid);
-  addComponent(ctx.world, Networked, eid, true);
-
-  mat4.getTranslation(prefab.position, spawnFrom.worldMatrix);
-
-  getRotationNoAlloc(_spawnWorldQuat, spawnFrom.worldMatrix);
-  const direction = vec3.set(_direction, 0, 0, -1);
-  vec3.transformQuat(direction, direction, _spawnWorldQuat);
-
-  // place object at direction
-  vec3.add(prefab.position, prefab.position, direction);
-  prefab.quaternion.set(_spawnWorldQuat);
-
-  const body = prefab.physicsBody?.body;
-
-  if (!body) {
-    console.warn("could not find physics body for spawned entity " + eid);
-    return true;
+  if (!replicators || !replicators[prefabId]) {
+    throw new Error("replicator not found");
   }
 
-  applyTransformToRigidBody(body, prefab);
+  for (let i = 0; i < 10; i++) {
+    const node = replicators[prefabId].spawn(ctx);
+    const eid = node.eid;
 
-  const privateScene = ctx.worldResource.environment?.privateScene;
+    addComponent(ctx.world, Authoring, eid);
 
-  if (!privateScene) {
-    throw new Error("private scene not found on environment");
+    mat4.getTranslation(node.position, spawnFrom.worldMatrix);
+
+    getRotationNoAlloc(_spawnWorldQuat, spawnFrom.worldMatrix);
+    const direction = vec3.set(_direction, 0, 0, -1 * i);
+    vec3.transformQuat(direction, direction, _spawnWorldQuat);
+
+    // place object at direction
+    vec3.add(node.position, node.position, direction);
+    node.quaternion.set(_spawnWorldQuat);
+
+    const body = node.physicsBody?.body;
+
+    if (!body) {
+      console.warn("could not find physics body for spawned entity " + eid);
+      return true;
+    }
+
+    applyTransformToRigidBody(body, node);
   }
-
-  addObjectToWorld(ctx, prefab);
 
   return true;
+}
+
+const handleSpawnableReplicatorQueues = (ctx: GameContext, replicator: NetworkReplicator<RemoteNode>) => {
+  let spawn;
+  while ((spawn = replicator.spawned.dequeue())) {
+    const node = spawn.node;
+    addObjectToWorld(ctx, node);
+  }
+  let despawn;
+  while ((despawn = replicator.despawned.dequeue())) {
+    removeObjectFromWorld(ctx, despawn);
+  }
+};
+
+export function SpawnablesSystem(ctx: GameContext) {
+  const { replicators } = getModule(ctx, SpawnablesModule);
+
+  handleSpawnableReplicatorQueues(ctx, replicators!["small-crate"]);
+  handleSpawnableReplicatorQueues(ctx, replicators!["medium-crate"]);
+  handleSpawnableReplicatorQueues(ctx, replicators!["large-crate"]);
+
+  handleSpawnableReplicatorQueues(ctx, replicators!["small-ball"]);
+  handleSpawnableReplicatorQueues(ctx, replicators!["mirror-ball"]);
+  handleSpawnableReplicatorQueues(ctx, replicators!["black-mirror-ball"]);
+  handleSpawnableReplicatorQueues(ctx, replicators!["emissive-ball"]);
 }

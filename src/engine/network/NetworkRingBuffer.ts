@@ -16,10 +16,10 @@ import {
   readUint32,
   readUint8,
   writeArrayBuffer,
-  writeString,
   writeUint32,
   writeUint8,
 } from "../allocator/CursorView";
+import { GameNetworkState } from "./network.game";
 
 export interface NetworkRingBuffer extends RingBuffer<Uint8ArrayConstructor> {
   buffer: ArrayBuffer;
@@ -42,21 +42,23 @@ export function createNetworkRingBuffer(capacity = 1000): NetworkRingBuffer {
   });
 }
 
-const writePeerIdCache = new Map();
-const writePeerId = (v: CursorView, peerId: string) => {
-  const encoded = writePeerIdCache.get(peerId);
-  if (encoded) {
-    writeUint8(v, encoded.byteLength);
-    writeArrayBuffer(v, encoded);
-  } else {
-    writeString(v, peerId);
+const textEncoder = new TextEncoder();
+const writePeerKeyCache = new Map();
+const writePeerKey = (v: CursorView, peerKey: string) => {
+  let encoded = writePeerKeyCache.get(peerKey);
+  if (!encoded) {
+    encoded = textEncoder.encode(peerKey);
+    writePeerKeyCache.set(peerKey, encoded);
   }
+
+  writeUint8(v, encoded.byteLength);
+  writeArrayBuffer(v, encoded);
   return v;
 };
 
 export function enqueueNetworkRingBuffer(
   rb: NetworkRingBuffer,
-  peerId: string,
+  peerKey: string,
   packet: ArrayBuffer,
   broadcast = false
 ) {
@@ -65,7 +67,7 @@ export function enqueueNetworkRingBuffer(
   moveCursorView(view, 0);
 
   // TODO: write peerIndex instead
-  writePeerId(view, peerId);
+  writePeerKey(view, peerKey);
 
   writeUint8(view, broadcast ? 1 : 0);
 
@@ -81,7 +83,7 @@ export function enqueueNetworkRingBuffer(
 
 export function dequeueNetworkRingBuffer(
   rb: NetworkRingBuffer,
-  out: { packet: ArrayBuffer; peerId: string; broadcast: boolean }
+  out: { packet: ArrayBuffer; peerKey: string; broadcast: boolean }
 ) {
   if (isRingBufferEmpty(rb)) {
     return false;
@@ -91,7 +93,7 @@ export function dequeueNetworkRingBuffer(
   const { view } = rb;
   moveCursorView(view, 0);
 
-  out.peerId = readString(view);
+  out.peerKey = readString(view);
 
   out.broadcast = readUint8(view) ? true : false;
 
@@ -100,3 +102,31 @@ export function dequeueNetworkRingBuffer(
 
   return rv === rb.array.length;
 }
+
+export const enqueueReliableBroadcast = (network: GameNetworkState, packet: ArrayBuffer) => {
+  if (!packet.byteLength) return;
+  if (!enqueueNetworkRingBuffer(network.outgoingReliableRingBuffer, "", packet, true)) {
+    console.warn("outgoing reliable network ring buffer full");
+  }
+};
+
+export const enqueueUnreliableBroadcast = (network: GameNetworkState, packet: ArrayBuffer) => {
+  if (!packet.byteLength) return;
+  if (!enqueueNetworkRingBuffer(network.outgoingUnreliableRingBuffer, "", packet, true)) {
+    console.warn("outgoing unreliable network ring buffer full");
+  }
+};
+
+export const enqueueReliable = (network: GameNetworkState, peerId: string, packet: ArrayBuffer) => {
+  if (!packet.byteLength) return;
+  if (!enqueueNetworkRingBuffer(network.outgoingReliableRingBuffer, peerId, packet)) {
+    console.warn("outgoing reliable network ring buffer full");
+  }
+};
+
+export const enqueueUnreliable = (network: GameNetworkState, peerId: string, packet: ArrayBuffer) => {
+  if (!packet.byteLength) return;
+  if (!enqueueNetworkRingBuffer(network.outgoingUnreliableRingBuffer, peerId, packet)) {
+    console.warn("outgoing unreliable network ring buffer full");
+  }
+};

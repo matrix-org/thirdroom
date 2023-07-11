@@ -4,8 +4,8 @@ import { Vector3, Quaternion } from "three";
 import { quat, vec3 } from "gl-matrix";
 
 import { GameContext } from "../GameTypes";
-import { GameNetworkState, getPeerIndexFromNetworkId, NetworkModule, ownedPlayerQuery } from "./network.game";
-import { Networked, Owned } from "./NetworkComponents";
+import { GameNetworkState, getPeerInfoById, NetworkModule, ownedPlayerQuery, tryGetPeerInfoById } from "./network.game";
+import { Networked, Authoring } from "./NetworkComponents";
 import { getModule } from "../module/module.common";
 import {
   INTERP_BUFFER_MS,
@@ -20,16 +20,10 @@ import { RemoteNode } from "../resource/RemoteResources";
 import { OurPlayer } from "../player/Player";
 import { clamp } from "../common/math";
 
-export const remoteEntityQuery = defineQuery([Networked, Not(Owned), Not(OurPlayer)]);
+export const remoteEntityQuery = defineQuery([Networked, Not(Authoring), Not(OurPlayer)]);
 
 export const enteredRemoteEntityQuery = enterQuery(remoteEntityQuery);
 export const exitedRemoteEntityQuery = exitQuery(remoteEntityQuery);
-
-const getPeerIdFromEntityId = (network: GameNetworkState, eid: number) => {
-  const pidx = getPeerIndexFromNetworkId(Networked.networkId[eid]);
-  const peerId = network.indexToPeerId.get(pidx) || network.entityIdToPeerId.get(eid);
-  return peerId;
-};
 
 const _vec = new Vector3();
 const _quat = new Quaternion();
@@ -57,15 +51,16 @@ export function NetworkInterpolationSystem(ctx: GameContext) {
       applyNetworkedToEntity(node, body);
 
       // add to historian
-      const pidx = getPeerIndexFromNetworkId(Networked.networkId[eid]);
-      const peerId = network.indexToPeerId.get(pidx);
+      const pid = BigInt(Networked.authorId[eid]);
 
-      if (!peerId) {
-        throw new Error("peer not found for entity " + eid + " peerIndex " + pidx);
-      }
-      const historian = network.peerIdToHistorian.get(peerId);
+      getPeerInfoById;
+
+      const peerInfo = tryGetPeerInfoById(network, pid);
+      const historian = peerInfo.historian;
       if (!historian) {
-        throw new Error("historian not found for peer " + peerId);
+        // throw new Error("historian not found for peer " + peerId);
+        console.warn("historian not found for peer " + peerInfo.key);
+        continue;
       }
       addEntityToHistorian(historian, eid);
     }
@@ -91,17 +86,12 @@ export function NetworkInterpolationSystem(ctx: GameContext) {
       continue;
     }
 
-    const peerId = getPeerIdFromEntityId(network, eid);
-    if (peerId === undefined) {
-      console.warn("could not find peerId for:", eid);
-      continue;
-    }
+    const peerInfo = tryGetPeerInfoById(network, BigInt(Networked.authorId[eid]));
 
-    const historian = network.peerIdToHistorian.get(peerId);
+    const historian = peerInfo.historian;
     if (historian === undefined) {
-      console.warn("could not find historian for:", peerId);
+      console.warn("could not find historian for:", peerInfo.key);
       applyNetworkedToEntity(node, body);
-      // console.warn("could not find historian for:", peerId);
       continue;
     }
 
@@ -161,10 +151,9 @@ export function NetworkInterpolationSystem(ctx: GameContext) {
   for (let i = 0; i < exited.length; i++) {
     const eid = exited[i];
     // remove from historian
-    const pidx = getPeerIndexFromNetworkId(Networked.networkId[eid]);
-    const peerId = network.indexToPeerId.get(pidx);
-    if (!peerId) continue;
-    const historian = network.peerIdToHistorian.get(peerId);
+    const pid = BigInt(Networked.authorId[eid]);
+    const peerInfo = tryGetPeerInfoById(network, pid);
+    const historian = peerInfo.historian;
     if (!historian) continue;
     removeEntityFromHistorian(historian, eid);
   }
@@ -173,7 +162,11 @@ export function NetworkInterpolationSystem(ctx: GameContext) {
 }
 
 function preprocessHistorians(ctx: GameContext, network: GameNetworkState) {
-  for (const [, historian] of network.peerIdToHistorian) {
+  for (const { historian } of network.peers) {
+    if (!historian) {
+      continue;
+    }
+
     if (historian.needsUpdate) {
       historian.latency = Date.now() - historian.latestTime;
       // add timestamp to historian
@@ -222,7 +215,10 @@ function preprocessHistorians(ctx: GameContext, network: GameNetworkState) {
 }
 
 function postprocessHistorians(ctx: GameContext, network: GameNetworkState) {
-  for (const [, historian] of network.peerIdToHistorian) {
+  for (const { historian } of network.peers) {
+    if (!historian) {
+      continue;
+    }
     historian.needsUpdate = false;
   }
 }

@@ -23,15 +23,15 @@ import_websg_networking(peer_is_host) int32_t websg_peer_is_host(uint32_t peer_i
 import_websg_networking(peer_is_local) int32_t websg_peer_is_local(uint32_t peer_index);
 import_websg_networking(peer_send) int32_t websg_peer_send(uint32_t peer_index, uint8_t *packet, uint32_t byte_length, uint32_t binary, uint32_t reliable);
 
-import_websg_networking(network_get_host_peer_index) uint32_t websg_network_get_host_peer_index();
-import_websg_networking(network_get_local_peer_index) uint32_t websg_network_get_local_peer_index();
+import_websg_networking(network_get_host_peer_index) uint64_t websg_network_get_host_peer_index();
+import_websg_networking(network_get_local_peer_index) uint64_t websg_network_get_local_peer_index();
 import_websg_networking(network_broadcast) int32_t websg_network_broadcast(uint8_t *packet, uint32_t byte_length, uint32_t binary, uint32_t reliable);
 
 import_websg_networking(network_listen) network_listener_id_t websg_network_listen();
 import_websg_networking(network_listener_close) int32_t websg_network_listener_close(network_listener_id_t listener_id);
 
 typedef struct NetworkMessageInfo {
-  uint32_t peer_index;
+  uint64_t peer_index;
   uint32_t byte_length;
   int32_t binary;
 } NetworkMessageInfo;
@@ -62,7 +62,7 @@ import_websg_networking(replicator_despawned_count) int32_t websg_network_replic
 typedef struct ReplicationInfo {
   node_id_t node_id; // Can be null when remote. Call factory if null.
   network_id_t network_id; // Can be null with local.
-  uint32_t peer_index;
+  uint64_t peer_index;
   uint32_t byte_length;
 } ReplicationInfo;
 

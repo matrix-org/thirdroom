@@ -16,10 +16,11 @@ import {
 import { ColliderType, MeshPrimitiveAttributeIndex, PhysicsBodyType } from "../resource/schema";
 import { getAccessorArrayView, scaleVec3Array } from "../common/accessor";
 import { updateMatrixWorld } from "../component/transform";
-import { Player } from "../player/Player";
+import { OurPlayer, Player } from "../player/Player";
 import { getRotationNoAlloc } from "../utils/getRotationNoAlloc";
 import { dynamicObjectCollisionGroups, staticRigidBodyCollisionGroups } from "./CollisionGroups";
 import { updatePhysicsDebugBuffers } from "../renderer/renderer.game";
+import { Authoring, Networked } from "../network/NetworkComponents";
 
 export type CollisionHandler = (eid1: number, eid2: number, handle1: number, handle2: number, started: boolean) => void;
 
@@ -60,7 +61,7 @@ export const KinematicBody = defineComponent();
 // data flows from body->transform
 export const RigidBody = defineComponent();
 
-// daata doesn't change
+// data doesn't change
 export const StaticBody = defineComponent();
 
 const _v = new Vector3();
@@ -131,12 +132,22 @@ export function PhysicsSystem(ctx: GameContext) {
     const eid = physicsEntities[i];
     const node = getRemoteResource<RemoteNode>(ctx, eid);
 
-    if (!node || !node.physicsBody?.body) {
+    // TODO: add Not(StaticBody) to phys query
+    const isStatic = hasComponent(ctx.world, StaticBody, eid);
+    if (!node || !node.physicsBody?.body || isStatic) {
       continue;
     }
 
     const body = node.physicsBody.body;
     const bodyType = body.bodyType();
+
+    const isOurPlayer = hasComponent(ctx.world, OurPlayer, eid);
+    const isRemoteNonPlayer =
+      hasComponent(ctx.world, Networked, eid) &&
+      !hasComponent(ctx.world, Player, eid) &&
+      !hasComponent(ctx.world, Authoring, eid);
+    const isDynamic = hasComponent(ctx.world, RigidBody, eid);
+    const isKinematic = hasComponent(ctx.world, KinematicBody, eid);
 
     if (bodyType !== RAPIER.RigidBodyType.Fixed) {
       // sync velocity
@@ -147,13 +158,14 @@ export function PhysicsSystem(ctx: GameContext) {
       velocity[2] = linvel.z;
     }
 
-    const isPlayer = hasComponent(ctx.world, Player, eid);
-
-    if (bodyType === RAPIER.RigidBodyType.Dynamic || isPlayer) {
+    if (isOurPlayer) {
       applyRigidBodyToTransform(body, node);
-    } else if (bodyType === RAPIER.RigidBodyType.KinematicPositionBased && !isPlayer) {
+    } else if (isRemoteNonPlayer) {
+      applyTransformToRigidBody(body, node);
+    } else if (isDynamic) {
+      applyRigidBodyToTransform(body, node);
+    } else if (isKinematic) {
       updateMatrixWorld(node);
-
       getRotationNoAlloc(_worldQuat, node.worldMatrix);
       _q.fromArray(_worldQuat);
       body.setNextKinematicRotation(_q);
