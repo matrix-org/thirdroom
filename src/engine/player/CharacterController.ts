@@ -13,6 +13,7 @@ import { addFlyControls, FlyControls } from "./FlyCharacterController";
 import { getAvatar } from "./getAvatar";
 import { tryGetCamera } from "./getCamera";
 import { KinematicControls } from "./KinematicCharacterController";
+import { EditorControls, EditorModule } from "../editor/editor.game";
 
 export enum CharacterControllerType {
   FirstPerson = "first-person",
@@ -59,13 +60,22 @@ export interface ISceneCharacterControllerComponent {
 export const SceneCharacterControllerComponent: Map<number, ISceneCharacterControllerComponent> = new Map();
 
 function swapToFlyPlayerRig(ctx: GameContext, physics: PhysicsModuleState, node: RemoteNode) {
+  removeComponent(ctx.world, EditorControls, node.eid);
   removeComponent(ctx.world, KinematicControls, node.eid);
   addFlyControls(ctx, node.eid);
 }
 
-function swapToPlayerRig(ctx: GameContext, physics: PhysicsModuleState, node: RemoteNode) {
+export function swapToPlayerRig(ctx: GameContext, physics: PhysicsModuleState, node: RemoteNode) {
+  removeComponent(ctx.world, EditorControls, node.eid);
   removeComponent(ctx.world, FlyControls, node.eid);
   addComponent(ctx.world, KinematicControls, node.eid);
+}
+
+export function swapToEditorRig(ctx: GameContext, physics: PhysicsModuleState, node: RemoteNode) {
+  removeComponent(ctx.world, KinematicControls, node.eid);
+  removeComponent(ctx.world, FlyControls, node.eid);
+  addComponent(ctx.world, EditorControls, node.eid);
+  swapToFirstPerson(ctx, node);
 }
 
 export const ThirdPersonComponent = defineComponent();
@@ -106,7 +116,13 @@ export function EnableCharacterControllerSystem(ctx: GameContext) {
       return;
     }
 
-    if (toggleFlyMode.pressed) {
+    const editor = getModule(ctx, EditorModule);
+
+    if (editor.editorLoaded && !hasComponent(ctx.world, EditorControls, eid)) {
+      swapToEditorRig(ctx, physics, player);
+    } else if (!editor.editorLoaded && hasComponent(ctx.world, EditorControls, eid)) {
+      swapToPlayerRig(ctx, physics, player);
+    } else if (!editor.editorLoaded && toggleFlyMode.pressed) {
       if (hasComponent(ctx.world, FlyControls, player.eid)) {
         swapToPlayerRig(ctx, physics, player);
       } else {
