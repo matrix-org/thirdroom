@@ -857,16 +857,16 @@ export function sendInteractionMessage(ctx: GameContext, action: InteractableAct
       action,
     });
   } else {
-    let peerId;
+    let peerId: string | undefined;
 
     if (interactableType === InteractableType.Grabbable || interactableType === InteractableType.Player) {
-      peerId = network.entityIdToPeerId.get(eid);
+      peerId = network.entityIdToPeer.get(eid)?.key;
     }
 
-    let ownerId;
+    let ownerId: string | undefined;
 
     if (interactableType === InteractableType.Grabbable) {
-      ownerId = network.indexToPeerId.get(BigInt(Networked.authorIndex[eid]));
+      ownerId = network.peerIdToInfo.get(BigInt(Networked.authorId[eid]))?.key;
       if (hasComponent(ctx.world, Authoring, eid)) {
         ownerId = peerId;
       }

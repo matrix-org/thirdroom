@@ -14,11 +14,10 @@ import {
 } from "../../engine/module/module.common";
 import {
   addPeerId,
+  addPeerInfo,
   GameNetworkState,
-  mapPeerIndex,
   NetworkModule,
   removePeerId,
-  tryGetPeerIndex,
 } from "../../engine/network/network.game";
 import {
   EnterWorldMessage,
@@ -382,12 +381,12 @@ async function onReloadWorld(ctx: GameContext, message: ReloadWorldMessage) {
 
     const thirdroom = getModule(ctx, ThirdRoomModule);
     const network = getModule(ctx, NetworkModule);
-    enterNetworkedWorld(ctx, thirdroom, network, network.peerId, network.hostId);
+    enterNetworkedWorld(ctx, thirdroom, network, network.local!.key, network.host!.key);
 
     // reinform peers
-    for (const peerId of network.peers) {
-      removePeerId(ctx, peerId);
-      addPeerId(ctx, peerId);
+    for (const peerInfo of network.peers) {
+      removePeerId(ctx, peerInfo.key);
+      addPeerId(ctx, peerInfo.key);
     }
 
     ctx.sendMessage<ReloadedWorldMessage>(Thread.Main, {
@@ -491,8 +490,8 @@ function enterNetworkedWorld(
   ctx: GameContext,
   thirdroom: ThirdRoomModuleState,
   network: GameNetworkState,
-  localPeerId: string,
-  hostPeerId: string
+  localPeerKey: string,
+  hostPeerKey: string
 ) {
   if (thirdroom.loadState !== WorldLoadState.Loaded) {
     throw new Error("Cannot enter world when world is not loaded.");
@@ -504,21 +503,22 @@ function enterNetworkedWorld(
 
   const environmentScene = setupEnvironment(ctx, thirdroom.environmentGLTFResource);
 
-  network.peerId = localPeerId;
-  network.hostId = hostPeerId;
-
   // this is where the host spawns themself in
   // other peers wait for their avatar to be spawned and authority transfered (handled by newPeersQueue on the host side)
-  if (isHost(network)) {
+  if (localPeerKey === hostPeerKey) {
     // create a new peer index and map it to our id
-    const peerIndex = network.peerIndexCount++;
-    mapPeerIndex(network, localPeerId, peerIndex);
+    const peerId = network.peerIdCount++;
+    const peerInfo = addPeerInfo(network, localPeerKey, peerId);
+
+    // this makes isHost(network) return true
+    network.local = peerInfo;
+    network.host = peerInfo;
 
     const rig = thirdroom.replicators!.avatar.spawn(ctx);
 
     addComponent(ctx.world, Authoring, rig.eid);
-    Networked.authorIndex[rig.eid] = Number(tryGetPeerIndex(network, localPeerId));
-    rig.name = localPeerId;
+    Networked.authorId[rig.eid] = Number(peerId);
+    rig.name = localPeerKey;
 
     addComponent(ctx.world, Player, rig.eid);
     addComponent(ctx.world, OurPlayer, rig.eid);

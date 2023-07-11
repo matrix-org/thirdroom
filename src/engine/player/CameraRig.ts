@@ -443,6 +443,8 @@ export function CameraRigSystem(ctx: GameContext) {
       continue;
     }
 
+    // console.log("pitch.target", pitch.target);
+
     applyPitch(ctx, input, pitch);
   }
 
@@ -456,6 +458,8 @@ export function CameraRigSystem(ctx: GameContext) {
       continue;
     }
 
+    // console.log("yaw.target", yaw.target);
+
     applyYaw(ctx, input, yaw);
   }
 
@@ -467,6 +471,8 @@ export function CameraRigSystem(ctx: GameContext) {
     if (zoom.type === CameraRigType.PointerLock && !hasComponent(ctx.world, ThirdPersonComponent, eid)) {
       continue;
     }
+
+    // console.log("zoom.target", zoom.target);
 
     applyZoom(ctx, input, zoom);
   }
@@ -481,6 +487,7 @@ function exitQueryCleanup(ctx: GameContext, query: Query, component: Map<number,
   const ents = query(ctx.world);
   for (let i = 0; i < ents.length; i++) {
     const eid = ents[i];
+    console.log("cleaning up camera rig component for", eid);
     component.delete(eid);
   }
 }

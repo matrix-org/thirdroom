@@ -182,8 +182,8 @@ export function WebXRAvatarRigSystem(ctx: GameContext) {
   for (let i = 0; i < remoteXRControllers.length; i++) {
     const eid = remoteXRControllers[i];
     const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
-    const peerId = network.entityIdToPeerId.get(eid)!;
-    const theirXRMode = network.peerIdToXRMode.get(peerId)!;
+    const peer = network.entityIdToPeer.get(eid)!;
+    const theirXRMode = peer.xrMode;
 
     // hands are hidden for AR participants
     node.visible = !(sceneSupportsAR && ourXRMode === XRMode.ImmersiveAR && theirXRMode === XRMode.ImmersiveAR);
@@ -193,8 +193,8 @@ export function WebXRAvatarRigSystem(ctx: GameContext) {
   for (let i = 0; i < remoteXRHeads.length; i++) {
     const eid = remoteXRHeads[i];
     const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
-    const peerId = network.entityIdToPeerId.get(eid)!;
-    const theirXRMode = network.peerIdToXRMode.get(peerId)!;
+    const peer = network.entityIdToPeer.get(eid)!;
+    const theirXRMode = peer.xrMode;
 
     // heads are hidden for AR participants
     node.visible = !(sceneSupportsAR && ourXRMode === XRMode.ImmersiveAR && theirXRMode === XRMode.ImmersiveAR);

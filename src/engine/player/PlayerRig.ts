@@ -14,7 +14,7 @@ import { GameContext } from "../GameTypes";
 import { createNodeFromGLTFURI } from "../gltf/gltf.game";
 import { createLineMesh } from "../mesh/mesh.game";
 import { getModule } from "../module/module.common";
-import { NetworkModule, tryGetPeerIndex } from "../network/network.game";
+import { NetworkModule, tryGetPeerInfoById } from "../network/network.game";
 import { Authoring, Networked } from "../network/NetworkComponents";
 import { playerCollisionGroups } from "../physics/CollisionGroups";
 import { addPhysicsBody, addPhysicsCollider, PhysicsModule } from "../physics/physics.game";
@@ -189,7 +189,7 @@ export function registerPlayerPrefabs(ctx: GameContext, thirdroom: ThirdRoomModu
   });
 }
 
-export function addPlayerFromPeer(ctx: GameContext, eid: number, peerId: string) {
+export function addPlayerFromPeer(ctx: GameContext, eid: number, peerKey: string) {
   const network = getModule(ctx, NetworkModule);
 
   addComponent(ctx.world, Player, eid);
@@ -213,18 +213,18 @@ export function addPlayerFromPeer(ctx: GameContext, eid: number, peerId: string)
       }),
       new RemoteAudioSource(ctx.resourceManager, {
         audio: new RemoteAudioData(ctx.resourceManager, {
-          uri: `mediastream:${peerId}`,
+          uri: `mediastream:${peerKey}`,
         }),
         autoPlay: true,
       }),
     ],
   });
 
-  peerNode.name = peerId;
+  peerNode.name = peerKey;
 
   // if not our own avatar, add nametag
-  if (peerId !== network.peerId) {
-    addNametag(ctx, AVATAR_HEIGHT + AVATAR_HEIGHT / 3, peerNode, peerId);
+  if (peerKey !== network.local?.key) {
+    addNametag(ctx, AVATAR_HEIGHT + AVATAR_HEIGHT / 3, peerNode, peerKey);
   }
 }
 
@@ -244,7 +244,6 @@ export function SpawnAvatarSystem(ctx: GameContext) {
   const network = getModule(ctx, NetworkModule);
 
   const spawned = thirdroom.replicators!.avatar.spawned;
-  const despawned = thirdroom.replicators!.avatar.despawned;
 
   let spawn;
   while ((spawn = spawned.dequeue())) {
@@ -252,17 +251,23 @@ export function SpawnAvatarSystem(ctx: GameContext) {
 
     addObjectToWorld(ctx, avatar);
 
-    const localPeerIndex = tryGetPeerIndex(network, network.peerId);
-    const authorIndex = BigInt(Networked.authorIndex[avatar.eid]);
+    const localPeerId = network.local?.id;
+    const authorId = BigInt(Networked.authorId[avatar.eid]);
     const hosting = isHost(network);
 
-    const authoring = authorIndex === localPeerIndex;
+    console.log("spawned dequeue ====");
+    console.log("avatar.eid", avatar.eid);
+    console.log("localPeerId", localPeerId);
+    console.log("authorId", authorId);
+    console.log("hosting", hosting);
+
+    const authoring = authorId === localPeerId;
     if (authoring) {
       // if we aren't hosting
       if (!hosting) {
         // add Authoring component so that our avatar updates are sent to the host (client-side authority)
         addComponent(ctx.world, Authoring, avatar.eid);
-        Networked.authorIndex[avatar.eid] = Number(localPeerIndex);
+        Networked.authorId[avatar.eid] = Number(localPeerId);
       }
 
       // add appropriate controls
@@ -276,16 +281,17 @@ export function SpawnAvatarSystem(ctx: GameContext) {
         addKinematicControls(ctx, avatar.eid);
       }
 
-      // add camerar rig and embody the avatar
+      // add camera rig and embody the avatar
       // TODO: maybe refactor this portion
       addCameraRig(ctx, avatar, CameraRigType.PointerLock, [0, AVATAR_HEIGHT - AVATAR_CAMERA_OFFSET, 0]);
       embodyAvatar(ctx, physics, avatar);
     } else {
-      const peerId = network.indexToPeerId.get(authorIndex)!;
+      const peerInfo = tryGetPeerInfoById(network, authorId);
+      const peerKey = peerInfo.key;
 
-      avatar.name = peerId;
+      avatar.name = peerKey;
 
-      addNametag(ctx, AVATAR_HEIGHT + AVATAR_HEIGHT / 3, avatar, peerId);
+      addNametag(ctx, AVATAR_HEIGHT + AVATAR_HEIGHT / 3, avatar, peerKey);
       addComponent(ctx.world, Player, avatar.eid);
 
       // TODO: fix audio emitter disposal
@@ -316,7 +322,7 @@ export function SpawnAvatarSystem(ctx: GameContext) {
           }),
           new RemoteAudioSource(ctx.resourceManager, {
             audio: new RemoteAudioData(ctx.resourceManager, {
-              uri: `mediastream:${peerId}`,
+              uri: `mediastream:${peerKey}`,
             }),
             autoPlay: true,
           }),
@@ -324,23 +330,16 @@ export function SpawnAvatarSystem(ctx: GameContext) {
       });
     }
   }
+}
+
+export function DespawnAvatarSystem(ctx: GameContext) {
+  const thirdroom = getModule(ctx, ThirdRoomModule);
+
+  const despawned = thirdroom.replicators!.avatar.despawned;
 
   let avatar;
   while ((avatar = despawned.dequeue())) {
+    console.log("despawning avatar", avatar.eid);
     removeObjectFromWorld(ctx, avatar);
-
-    const localPeerIndex = tryGetPeerIndex(network, network.peerId);
-    const authorIndex = BigInt(Networked.authorIndex[avatar.eid]);
-    const hosting = isHost(network);
-
-    const authoring = authorIndex === localPeerIndex;
-
-    if (authoring) {
-      // TODO: cleanup relevant network state
-    }
-
-    if (hosting) {
-      // TODO: clean up relevant host state
-    }
   }
 }

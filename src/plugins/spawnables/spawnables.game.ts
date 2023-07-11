@@ -330,29 +330,31 @@ export function spawnPrefab(ctx: GameContext, spawnFrom: RemoteNode, prefabId: s
     throw new Error("replicator not found");
   }
 
-  const node = replicators[prefabId].spawn(ctx);
-  const eid = node.eid;
+  for (let i = 0; i < 10; i++) {
+    const node = replicators[prefabId].spawn(ctx);
+    const eid = node.eid;
 
-  addComponent(ctx.world, Authoring, eid);
+    addComponent(ctx.world, Authoring, eid);
 
-  mat4.getTranslation(node.position, spawnFrom.worldMatrix);
+    mat4.getTranslation(node.position, spawnFrom.worldMatrix);
 
-  getRotationNoAlloc(_spawnWorldQuat, spawnFrom.worldMatrix);
-  const direction = vec3.set(_direction, 0, 0, -1);
-  vec3.transformQuat(direction, direction, _spawnWorldQuat);
+    getRotationNoAlloc(_spawnWorldQuat, spawnFrom.worldMatrix);
+    const direction = vec3.set(_direction, 0, 0, -1 * i);
+    vec3.transformQuat(direction, direction, _spawnWorldQuat);
 
-  // place object at direction
-  vec3.add(node.position, node.position, direction);
-  node.quaternion.set(_spawnWorldQuat);
+    // place object at direction
+    vec3.add(node.position, node.position, direction);
+    node.quaternion.set(_spawnWorldQuat);
 
-  const body = node.physicsBody?.body;
+    const body = node.physicsBody?.body;
 
-  if (!body) {
-    console.warn("could not find physics body for spawned entity " + eid);
-    return true;
+    if (!body) {
+      console.warn("could not find physics body for spawned entity " + eid);
+      return true;
+    }
+
+    applyTransformToRigidBody(body, node);
   }
-
-  applyTransformToRigidBody(body, node);
 
   return true;
 }

@@ -1,6 +1,5 @@
 import { Message } from "../module/module.common";
-import { GameNetworkState, PeerIndex } from "./network.game";
-import { MainNetworkState } from "./network.main";
+import { GameNetworkState, PeerID } from "./network.game";
 import { NetworkRingBuffer } from "./NetworkRingBuffer";
 
 export enum NetworkMessageType {
@@ -41,12 +40,13 @@ export interface SetHostMessage extends Message<NetworkMessageType.SetHost> {
 }
 
 export interface PeerEnteredMessage extends Message<NetworkMessageType.PeerEntered> {
-  peerIndex: PeerIndex;
+  peerIndex: PeerID;
 }
 
 export interface PeerExitedMessage extends Message<NetworkMessageType.PeerExited> {
-  peerIndex: PeerIndex;
+  peerIndex: PeerID;
 }
 
-export const isHost = (network: GameNetworkState | MainNetworkState): boolean =>
-  !!network.peerId && !!network.hostId && network.hostId === network.peerId;
+// TODO: move out of common, into game
+export const isHost = (network: GameNetworkState): boolean =>
+  !!network.local && !!network.host && network.host.key === network.local.key;

@@ -148,8 +148,8 @@ export function enterWorld(ctx: MainContext, localPeerId: string, hostPeerId: st
     registerMessageHandler(ctx, ThirdRoomMessageType.EnterWorldError, onEnterWorldError),
   ]);
 
-  network.peerId = localPeerId;
-  network.hostId = hostPeerId;
+  network.peerKey = localPeerId;
+  network.hostKey = hostPeerId;
 
   ctx.sendMessage<EnterWorldMessage>(Thread.Game, {
     type: ThirdRoomMessageType.EnterWorld,

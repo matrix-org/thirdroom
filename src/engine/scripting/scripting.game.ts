@@ -10,7 +10,7 @@ import { createThirdroomModule } from "./thirdroom";
 import { createWASIModule } from "./wasi";
 import { WASMModuleContext } from "./WASMModuleContext";
 import { createWebSGModule } from "./websg";
-import { PeerIndex } from "../network/network.game";
+import { PeerID } from "../network/network.game";
 
 export enum ScriptState {
   Uninitialized,
@@ -28,8 +28,8 @@ export interface Script {
   entered: () => void;
   update: (dt: number, time: number) => void;
   dispose: () => void;
-  peerEntered: (peerIndex: PeerIndex) => void;
-  peerExited: (peerIndex: PeerIndex) => void;
+  peerEntered: (peerIndex: PeerID) => void;
+  peerExited: (peerIndex: PeerID) => void;
 }
 
 export const ScriptComponent = new Map<number, Script>();
@@ -243,7 +243,7 @@ export async function loadScript(
         throw new Error("update() can only be called from the Entered state");
       }
     },
-    peerEntered(peerIndex: PeerIndex) {
+    peerEntered(peerIndex: PeerID) {
       if (this.state === ScriptState.Error) {
         return;
       }
@@ -262,7 +262,7 @@ export async function loadScript(
         throw new Error("peerEntered() can only be called from the Loaded or Entered state");
       }
     },
-    peerExited(peerIndex: PeerIndex) {
+    peerExited(peerIndex: PeerID) {
       if (this.state === ScriptState.Error) {
         return;
       }

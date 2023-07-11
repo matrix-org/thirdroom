@@ -1,10 +1,10 @@
 import { RemoteResourceManager } from "../GameTypes";
-import { GameNetworkState, NetworkID, PeerIndex } from "./network.game";
+import { GameNetworkState, NetworkID, PeerID } from "./network.game";
 
 export interface Replication {
   nodeId?: number;
   networkId?: NetworkID;
-  peerIndex: PeerIndex;
+  peerIndex: PeerID;
   data?: ArrayBuffer;
 }
 

@@ -13,7 +13,7 @@ import {
 } from "../allocator/CursorView";
 import { GameContext } from "../GameTypes";
 import { defineModule, getModule, registerMessageHandler } from "../module/module.common";
-import { GameNetworkState, NetworkModule, PeerIndex, getPeerIndex, tryGetPeerIndex } from "./network.game";
+import { GameNetworkState, NetworkModule, PeerID, getPeerId, tryGetPeerInfoById } from "./network.game";
 import { NetworkMessage } from "./NetworkMessage";
 import { writeMessageType } from "./serialization.game";
 import { writeUint32, readUint32 } from "../allocator/CursorView";
@@ -81,22 +81,22 @@ export function createWebSGNetworkModule(ctx: GameContext, wasmCtx: WASMModuleCo
 
   const networkWASMModule = {
     network_get_host_peer_index() {
-      const peerIndex = getPeerIndex(network, network.hostId);
+      const peerId = network.host?.id;
 
-      if (peerIndex === undefined) {
+      if (peerId === undefined) {
         return 0n;
       }
 
-      return peerIndex;
+      return peerId;
     },
     network_get_local_peer_index() {
-      const peerIndex = getPeerIndex(network, network.peerId);
+      const peerId = network.local?.id;
 
-      if (peerIndex === undefined) {
+      if (peerId === undefined) {
         return 0n;
       }
 
-      return peerIndex;
+      return peerId;
     },
     network_broadcast: (packetPtr: number, byteLength: number, binary: number, reliable: number) => {
       try {
@@ -152,12 +152,12 @@ export function createWebSGNetworkModule(ctx: GameContext, wasmCtx: WASMModuleCo
       }
 
       let message: [string, ArrayBuffer, boolean] | undefined;
-      let peerIndex: PeerIndex | undefined;
+      let peerIndex: PeerID | undefined;
 
       while (listener.inbound.length > 0) {
         message = listener.inbound[0];
         const peerId = message[0];
-        peerIndex = getPeerIndex(network, peerId);
+        peerIndex = getPeerId(network, peerId);
 
         if (peerIndex === undefined) {
           // This message is from a peer that no longer exists.
@@ -195,7 +195,7 @@ export function createWebSGNetworkModule(ctx: GameContext, wasmCtx: WASMModuleCo
           }
 
           const peerId = message[0];
-          const peerIndex = getPeerIndex(network, peerId);
+          const peerIndex = getPeerId(network, peerId);
 
           if (peerIndex === undefined) {
             console.warn("Discarded message from peer that no longer exists");
@@ -223,32 +223,34 @@ export function createWebSGNetworkModule(ctx: GameContext, wasmCtx: WASMModuleCo
         return -1;
       }
     },
-    peer_get_id_length(peerIndex: PeerIndex) {
-      const peerId = network.indexToPeerId.get(peerIndex);
+    peer_get_id_length(peerId: PeerID) {
+      const peerInfo = tryGetPeerInfoById(network, peerId);
+      const peerKey = peerInfo.key;
 
-      if (!peerId) {
-        console.error(`WebSGNetworking: Peer ${peerIndex} does not exist.`);
+      if (!peerKey) {
+        console.error(`WebSGNetworking: PeerId ${peerId} does not exist.`);
         return -1;
       }
 
-      return peerId.length;
+      return peerKey.length;
     },
-    peer_get_id(peerIndex: PeerIndex, idPtr: number, maxBufLength: number) {
-      const peerId = network.indexToPeerId.get(peerIndex);
+    peer_get_id(peerId: PeerID, idPtr: number, maxBufLength: number) {
+      const peerInfo = tryGetPeerInfoById(network, peerId);
+      const peerKey = peerInfo.key;
 
-      if (!peerId) {
-        console.error(`WebSGNetworking: Peer ${peerIndex} does not exist.`);
+      if (!peerKey) {
+        console.error(`WebSGNetworking: Peer ${peerId} does not exist.`);
         return -1;
       }
 
       try {
-        return writeString(wasmCtx, idPtr, peerId, maxBufLength);
+        return writeString(wasmCtx, idPtr, peerKey, maxBufLength);
       } catch (error) {
         console.error(error);
         return -1;
       }
     },
-    peer_get_translation_element(peerIndex: PeerIndex, index: number) {
+    peer_get_translation_element(peerIndex: PeerID, index: number) {
       const node = getPeerNode(ctx, network, peerIndex);
 
       if (!node) {
@@ -258,7 +260,7 @@ export function createWebSGNetworkModule(ctx: GameContext, wasmCtx: WASMModuleCo
 
       return node.position[index];
     },
-    peer_get_translation(peerIndex: PeerIndex, translationPtr: number) {
+    peer_get_translation(peerIndex: PeerID, translationPtr: number) {
       const node = getPeerNode(ctx, network, peerIndex);
 
       if (!node) {
@@ -270,7 +272,7 @@ export function createWebSGNetworkModule(ctx: GameContext, wasmCtx: WASMModuleCo
 
       return 0;
     },
-    peer_get_rotation_element(peerIndex: PeerIndex, index: number) {
+    peer_get_rotation_element(peerIndex: PeerID, index: number) {
       const node = getPeerNode(ctx, network, peerIndex);
 
       if (!node) {
@@ -280,7 +282,7 @@ export function createWebSGNetworkModule(ctx: GameContext, wasmCtx: WASMModuleCo
 
       return node.quaternion[index];
     },
-    peer_get_rotation(peerIndex: PeerIndex, rotationPtr: number) {
+    peer_get_rotation(peerIndex: PeerID, rotationPtr: number) {
       const node = getPeerNode(ctx, network, peerIndex);
 
       if (!node) {
@@ -292,32 +294,21 @@ export function createWebSGNetworkModule(ctx: GameContext, wasmCtx: WASMModuleCo
 
       return 0;
     },
-    peer_is_host(peerIndex: PeerIndex) {
-      const peerId = network.indexToPeerId.get(peerIndex);
-
-      if (!peerId) {
-        console.error(`WebSGNetworking: Peer index ${peerIndex} does not exist.`);
-        return -1;
-      }
-
-      return network.hostId === peerId ? 1 : 0;
+    peer_is_host(peerId: PeerID) {
+      const peerInfo = tryGetPeerInfoById(network, peerId);
+      return network.host === peerInfo ? 1 : 0;
     },
-    peer_is_local(peerIndex: PeerIndex) {
-      const peerId = network.indexToPeerId.get(peerIndex);
-
-      if (!peerId) {
-        console.error(`WebSGNetworking: Peer index ${peerIndex} does not exist.`);
-        return -1;
-      }
-
-      return network.peerId === peerId ? 1 : 0;
+    peer_is_local(peerId: PeerID) {
+      const peerInfo = tryGetPeerInfoById(network, peerId);
+      return network.local === peerInfo ? 1 : 0;
     },
-    peer_send: (peerIndex: PeerIndex, packetPtr: number, byteLength: number, binary: number, reliable: number) => {
+    peer_send: (peerId: PeerID, packetPtr: number, byteLength: number, binary: number, reliable: number) => {
       try {
-        const peerId = network.indexToPeerId.get(peerIndex);
+        const peerInfo = tryGetPeerInfoById(network, peerId);
+        const peerKey = peerInfo.key;
 
-        if (!peerId) {
-          console.error(`WebSGNetworking: Peer ${peerIndex} does not exist.`);
+        if (!peerKey) {
+          console.error(`WebSGNetworking: PeerId ${peerId} does not exist.`);
           return -1;
         }
 
@@ -326,10 +317,10 @@ export function createWebSGNetworkModule(ctx: GameContext, wasmCtx: WASMModuleCo
         const msg = createScriptMessage(ctx, scriptPacket, !!binary);
 
         if (reliable) {
-          enqueueReliable(network, peerId, msg);
+          enqueueReliable(network, peerKey, msg);
           return 0;
         } else {
-          enqueueUnreliable(network, peerId, msg);
+          enqueueUnreliable(network, peerKey, msg);
         }
       } catch (error) {
         console.error("WebSGNetworking: Error broadcasting packet:", error);
@@ -374,14 +365,12 @@ export function createWebSGNetworkModule(ctx: GameContext, wasmCtx: WASMModuleCo
 
       const buffer = new Uint8Array([...readUint8Array(wasmCtx, packetPtr, byteLength)]);
       const data = byteLength > 0 ? buffer : undefined;
-      const peerId = network.peerId;
-      const peerIndex = tryGetPeerIndex(network, peerId);
 
       if (data) {
         replicator.eidToData.set(nodeId, data);
       }
 
-      replicator.spawned.push({ nodeId, peerIndex, data });
+      replicator.spawned.push({ nodeId, peerIndex: network.local!.id!, data });
 
       return 0;
     },
@@ -401,14 +390,12 @@ export function createWebSGNetworkModule(ctx: GameContext, wasmCtx: WASMModuleCo
 
       const buffer = new Uint8Array([...readUint8Array(wasmCtx, packetPtr, byteLength)]);
       const data = byteLength > 0 ? buffer : undefined;
-      const peerId = network.peerId;
-      const peerIndex = tryGetPeerIndex(network, peerId);
 
       if (data) {
         replicator.eidToData.set(nodeId, data);
       }
 
-      replicator.despawned.push({ nodeId, peerIndex, data });
+      replicator.despawned.push({ nodeId, peerIndex: network.local!.id!, data });
 
       return 0;
     },
@@ -694,14 +681,15 @@ function deserializeScriptMessage(ctx: GameContext, v: CursorView, peerId: strin
   }
 }
 
-function getPeerNode(ctx: GameContext, network: GameNetworkState, peerIndex: PeerIndex) {
-  const peerId = network.indexToPeerId.get(peerIndex);
+function getPeerNode(ctx: GameContext, network: GameNetworkState, peerId: PeerID) {
+  const peerInfo = tryGetPeerInfoById(network, peerId);
+  const peerKey = peerInfo.key;
 
-  if (!peerId) {
+  if (!peerKey) {
     return undefined;
   }
 
-  const eid = network.peerIdToEntityId.get(peerId);
+  const eid = peerInfo.entityId;
 
   if (!eid) {
     return undefined;

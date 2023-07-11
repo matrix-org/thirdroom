@@ -11,10 +11,11 @@ const tempQuaternion = new Quaternion();
 const tempScale = new Vector3();
 
 export function updateTransformFromNode(ctx: RenderContext, node: RenderNode, object3D: Object3D) {
-  if (node.skipLerp) {
-    setTransformFromNode(node, object3D);
-    return;
-  }
+  // TODO
+  // if (node.skipLerp) {
+  setTransformFromNode(node, object3D);
+  return;
+  // }
 
   const frameRate = 1 / ctx.dt;
   const lerpAlpha = clamp(tickRate / frameRate, 0, 1);

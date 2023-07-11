@@ -11,6 +11,7 @@ import { RemoteNode, RemoteScene, RemoteWorld, RemoteEnvironment } from "../../s
 import { addChild } from "../../src/engine/component/transform";
 import { MatrixModule } from "../../src/engine/matrix/matrix.game";
 import { WebSGNetworkModule } from "../../src/engine/network/scripting.game";
+import { XRMode } from "../../src/engine/renderer/renderer.common";
 
 export function registerDefaultPrefabs(ctx: GameContext) {
   registerPrefab(ctx, {
@@ -68,15 +69,23 @@ export const mockRenderState = () => ({
   meshPrimitives: [],
 });
 
+const peerInfo = {
+  key: "a",
+  id: 1,
+  lastUpdate: 0,
+  xrMode: XRMode.None,
+};
+
 export const mockNetworkState = () => ({
   networkIdToEntityId: new Map(),
   peerIndexCount: 1,
-  peerIdToIndex: new Map(),
-  indexToPeerId: new Map(),
+  peerIdToInfo: new Map(),
+  peerKeyToInfo: new Map(),
   replicators: new Map(),
   replicatorIdCount: 1,
-  hostId: "a",
-  peerId: "a",
+  host: peerInfo,
+  local: peerInfo,
+  peers: [],
 });
 
 export const mockResourceModule = () => ({

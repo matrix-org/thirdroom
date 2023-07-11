@@ -8,7 +8,7 @@ import { maxEntities } from "../config.common";
 export const Networked = defineComponent(
   {
     networkId: Types.ui32, // TODO: make ui64
-    authorIndex: Types.ui32, // TODO: make ui64
+    authorId: Types.ui32, // TODO: make ui64
     replicatorId: Types.ui32,
     lastUpdate: Types.f64,
     destroyOnLeave: Types.ui8,

@@ -3,7 +3,7 @@ import { AudioModule } from "./audio/audio.game";
 import { InputModule } from "./input/input.game";
 import { UpdateRawInputSystem, ResetRawInputSystem } from "./input/RawInputSystems";
 import { PhysicsModule, PhysicsSystem } from "./physics/physics.game";
-import { NetworkThreadedMessageQueueSystem, NetworkModule, NetworkSpawnPeerAvatarSystem } from "./network/network.game";
+import { NetworkThreadedMessageQueueSystem, NetworkModule, HostSpawnPeerAvatarSystem } from "./network/network.game";
 import { ActionMappingSystem } from "./input/ActionMappingSystem";
 import {
   KinematicCharacterControllerModule,
@@ -56,7 +56,7 @@ import { ActionBarSystem } from "../plugins/thirdroom/action-bar.game";
 import { EnableCharacterControllerSystem } from "./player/CharacterController";
 import { CameraRigSystem } from "./player/CameraRig";
 // import { TransferAuthoritySystem } from "./network/TransferAuthoritySystem";
-import { SpawnAvatarSystem } from "./player/PlayerRig";
+import { DespawnAvatarSystem, SpawnAvatarSystem } from "./player/PlayerRig";
 
 export default defineConfig<GameContext>({
   modules: [
@@ -90,8 +90,9 @@ export default defineConfig<GameContext>({
 
     InboundNetworkSystem,
     // TransferAuthoritySystem,
+    HostSpawnPeerAvatarSystem,
     SpawnAvatarSystem,
-    NetworkSpawnPeerAvatarSystem,
+    DespawnAvatarSystem,
 
     WorldLoaderSystem,
 
@@ -106,7 +107,7 @@ export default defineConfig<GameContext>({
     SpawnablesSystem,
     EnableCharacterControllerSystem,
 
-    // step physics forward and copy rigidbody data to transform component
+    // step physics forward and sync physics bodies with node transforms
     PhysicsSystem,
 
     // interpolate towards authoritative state

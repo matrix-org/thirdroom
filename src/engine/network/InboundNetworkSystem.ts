@@ -35,13 +35,13 @@ const processNetworkMessage = (ctx: GameContext, peerId: string, msg: ArrayBuffe
   handler(ctx, cursorView, peerId);
 };
 
-const ringOut = { packet: new ArrayBuffer(0), peerId: "", broadcast: false };
+const ringOut = { packet: new ArrayBuffer(0), peerKey: "", broadcast: false };
 const processNetworkMessages = (ctx: GameContext, network: GameNetworkState) => {
   try {
     while (availableRead(network.incomingReliableRingBuffer)) {
       dequeueNetworkRingBuffer(network.incomingReliableRingBuffer, ringOut);
-      const { peerId, packet } = ringOut;
-      if (!peerId) {
+      const { peerKey, packet } = ringOut;
+      if (!peerKey) {
         console.error("unable to process reliable network message, peerId undefined");
         continue;
       }
@@ -50,14 +50,14 @@ const processNetworkMessages = (ctx: GameContext, network: GameNetworkState) => 
         continue;
       }
 
-      processNetworkMessage(ctx, ringOut.peerId, ringOut.packet);
+      processNetworkMessage(ctx, ringOut.peerKey, ringOut.packet);
     }
 
     while (availableRead(network.incomingUnreliableRingBuffer)) {
       dequeueNetworkRingBuffer(network.incomingUnreliableRingBuffer, ringOut);
 
-      const { peerId, packet } = ringOut;
-      if (!peerId) {
+      const { peerKey, packet } = ringOut;
+      if (!peerKey) {
         console.error("unable to process unreliable network message, peerId undefined");
         continue;
       }
@@ -66,7 +66,7 @@ const processNetworkMessages = (ctx: GameContext, network: GameNetworkState) => 
         continue;
       }
 
-      processNetworkMessage(ctx, ringOut.peerId, ringOut.packet);
+      processNetworkMessage(ctx, ringOut.peerKey, ringOut.packet);
     }
   } catch (e) {
     console.error(e);
@@ -86,10 +86,5 @@ export const registerInboundMessageHandler = (
 
 export function InboundNetworkSystem(ctx: GameContext) {
   const network = getModule(ctx, NetworkModule);
-
-  // only recieve updates when we have connected to the host
-  // (probaby unecessary since all updates come from the host and we might be the host)
-  if (network.hostId && network.peers.length) {
-    processNetworkMessages(ctx, network);
-  }
+  processNetworkMessages(ctx, network);
 }

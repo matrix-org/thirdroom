@@ -35,9 +35,8 @@ import {
   spawnedNetworkeQuery,
   GameNetworkState,
   despawnedNetworkQuery,
-  associatePeerWithEntity,
   NetworkID,
-  tryGetPeerIndex,
+  tryGetPeerId,
 } from "./network.game";
 import { Networked } from "./NetworkComponents";
 import { NetworkModule } from "./network.game";
@@ -290,7 +289,7 @@ export function deserializeCreates(ctx: GameContext, v: CursorView, peerId: stri
 
       replicator.spawned.push({
         networkId: nid,
-        peerIndex: tryGetPeerIndex(network, peerId),
+        peerIndex: tryGetPeerId(network, peerId),
         data,
       });
       network.deferredUpdates.set(nid, []);
@@ -454,7 +453,7 @@ export async function deserializeInformPlayerNetworkId(ctx: GameContext, v: Curs
   // HACK: await the entity's creation
   const peid = await waitUntil<number>(() => network.networkIdToEntityId.get(peerNid));
 
-  associatePeerWithEntity(network, peerId, peid);
+  // associatePeerWithEntity(network, peerId, peid);
   addPlayerFromPeer(ctx, peid, peerId);
 
   addComponent(ctx.world, Player, peid);
@@ -488,7 +487,7 @@ export async function deserializeInformPlayerNetworkId(ctx: GameContext, v: Curs
   peerNode.name = peerId;
 
   // if not our own avatar, add nametag
-  if (peerId !== network.peerId) {
+  if (peerId !== network.local) {
     addNametag(ctx, AVATAR_HEIGHT + AVATAR_HEIGHT / 3, peerNode, peerId);
   }
 }

@@ -141,6 +141,14 @@ export function PhysicsSystem(ctx: GameContext) {
     const body = node.physicsBody.body;
     const bodyType = body.bodyType();
 
+    const isOurPlayer = hasComponent(ctx.world, OurPlayer, eid);
+    const isRemoteNonPlayer =
+      hasComponent(ctx.world, Networked, eid) &&
+      !hasComponent(ctx.world, Player, eid) &&
+      !hasComponent(ctx.world, Authoring, eid);
+    const isDynamic = hasComponent(ctx.world, RigidBody, eid);
+    const isKinematic = hasComponent(ctx.world, KinematicBody, eid);
+
     if (bodyType !== RAPIER.RigidBodyType.Fixed) {
       // sync velocity
       const linvel = body.linvel();
@@ -149,14 +157,6 @@ export function PhysicsSystem(ctx: GameContext) {
       velocity[1] = linvel.y;
       velocity[2] = linvel.z;
     }
-
-    const isOurPlayer = hasComponent(ctx.world, OurPlayer, eid);
-    const isRemoteNonPlayer =
-      hasComponent(ctx.world, Networked, eid) &&
-      !hasComponent(ctx.world, Player, eid) &&
-      !hasComponent(ctx.world, Authoring, eid);
-    const isDynamic = hasComponent(ctx.world, RigidBody, eid);
-    const isKinematic = hasComponent(ctx.world, KinematicBody, eid);
 
     if (isOurPlayer) {
       applyRigidBodyToTransform(body, node);

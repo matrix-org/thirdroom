@@ -4,11 +4,11 @@ export type Queue<T> = Array<T> & {
 };
 
 export function enqueue<T>(queue: Queue<T>, item: T): number {
-  return queue.unshift(item);
+  return queue.push(item);
 }
 
 export function dequeue<T>(queue: Queue<T>): T | undefined {
-  return queue.pop();
+  return queue.shift();
 }
 
 export function createQueue<T>(): Queue<T> {
