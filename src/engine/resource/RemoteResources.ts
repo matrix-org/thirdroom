@@ -169,7 +169,6 @@ export class RemotePhysicsBody extends defineRemoteResourceClass(PhysicsBodyReso
         physics.handleToEid.delete(collider.handle);
       }
 
-      physics.handleToEid.delete(this.body.handle);
       physics.physicsWorld.removeRigidBody(this.body);
     }
 
