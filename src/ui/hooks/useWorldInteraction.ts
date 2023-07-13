@@ -65,6 +65,16 @@ export function useWorldInteraction(ctx: MainContext, interactionCallback: (inte
         });
         return;
       }
+
+      if (interactableType === InteractableType.Screenshare) {
+        interactionCallback({
+          interactableType,
+          action,
+          name: "Screenshare",
+          peerId: message.peerId,
+          held: false,
+        });
+      }
     };
 
     const onExitedWorld = (ctx: MainContext, message: ExitedWorldMessage) => {

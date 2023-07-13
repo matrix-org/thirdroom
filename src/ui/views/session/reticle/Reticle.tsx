@@ -26,7 +26,10 @@ export function Reticle() {
           (activeEntity.interactableType === InteractableType.Grabbable ||
             activeEntity.interactableType === InteractableType.Interactable),
         Reticle__player: activeEntity && activeEntity.interactableType === InteractableType.Player,
-        Reticle__portal: activeEntity && activeEntity.interactableType === InteractableType.Portal,
+        Reticle__portal:
+          activeEntity &&
+          (activeEntity.interactableType === InteractableType.Portal ||
+            activeEntity.interactableType === InteractableType.Screenshare),
       })}
     />
   );

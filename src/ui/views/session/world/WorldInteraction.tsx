@@ -18,9 +18,10 @@ import { PlayerModule } from "../../../../engine/player/Player.main";
 import { Reticle } from "../reticle/Reticle";
 import { useWorldNavigator } from "../../../hooks/useWorldNavigator";
 import { useWorldLoader } from "../../../hooks/useWorldLoader";
+import { useHydrogen } from "../../../hooks/useHydrogen";
 
-export interface IPortalProcess {
-  joining?: boolean;
+export interface IInteractionProcess {
+  loading?: boolean;
   error?: Error;
 }
 
@@ -35,20 +36,62 @@ export function WorldInteraction({ session, world, activeCall }: WorldInteractio
   const camRigModule = getModule(mainThread, PlayerModule);
 
   const [activeEntity, setActiveEntity] = useMemoizedState<InteractionState | undefined>();
-  const [portalProcess, setPortalProcess] = useMemoizedState<IPortalProcess>({});
+  const [interactionProcess, setInteractionProcess] = useMemoizedState<IInteractionProcess>({});
   const [members, setMembers] = useState(false);
+  const { platform } = useHydrogen(true);
 
   const { navigateEnterWorld } = useWorldNavigator(session);
   const { exitWorld } = useWorldLoader();
   const selectWorld = useSetAtom(overlayWorldAtom);
   const isMounted = useIsMounted();
 
+  const handleScreenshareGrab = useCallback(
+    async (interaction) => {
+      setInteractionProcess({});
+
+      if (!activeCall) {
+        setInteractionProcess({ error: new Error("no active call") });
+        return;
+      }
+      const { peerId } = interaction;
+      if (peerId) {
+        // Someone else is already using it.
+        if (peerId === session.userId) {
+          // "someone else" is you. Stop using it. (bonus: don't stop screen sharing if you have multiple going)
+          console.log("Stopping screensharing.");
+          activeCall.localMedia?.screenShare?.getTracks().forEach((track) => track.stop());
+        } else {
+          // Tell the user to try again later.
+          const currentUser = peerId
+            ? activeCall?.members.get(peerId)?.member.displayName || getMxIdUsername(peerId)
+            : "Player";
+          setInteractionProcess({ error: new Error(`${currentUser} is currently using this.`) });
+        }
+      } else {
+        // Nobody is using it, go ahead and share your screen.
+        if (!activeCall.localMedia) {
+          setInteractionProcess({ error: new Error("activeCall.localMedia not initialized") });
+        } else {
+          try {
+            // TODO: use platform.mediaDevices.getDisplayMedia({audio: true, video: true}) to get screenshare with PC audio?
+            // See hydrogen-web/src/platform/web/dom/MediaDevices.ts
+            const screenStream = await platform.mediaDevices.getScreenShareTrack();
+            if (screenStream) await activeCall.setMedia(activeCall.localMedia.withScreenShare(screenStream));
+          } catch (err) {
+            setInteractionProcess({ error: err as Error });
+          }
+        }
+      }
+    },
+    [activeCall, platform.mediaDevices, session.userId, setInteractionProcess]
+  );
+
   const handlePortalGrab = useCallback(
     async (interaction) => {
       let unSubStatusObserver: () => void | undefined;
 
       try {
-        setPortalProcess({});
+        setInteractionProcess({});
         const { uri } = interaction;
         if (!uri) throw Error("Portal does not have valid matrix id/alias");
 
@@ -62,11 +105,11 @@ export function WorldInteraction({ session, world, activeCall }: WorldInteractio
         const roomId = roomIdOrAlias.startsWith("#") ? aliasToRoomId(session.rooms, parsedUri.mxid1) : parsedUri.mxid1;
 
         if (!roomId) {
-          setPortalProcess({ joining: true });
+          setInteractionProcess({ loading: true });
           const rId = await session.joinRoom(roomIdOrAlias);
           if (!isMounted()) return;
 
-          setPortalProcess({});
+          setInteractionProcess({});
           const roomStatusObserver = await session.observeRoomStatus(rId);
           unSubStatusObserver = roomStatusObserver.subscribe(async (roomStatus) => {
             const newWorld = session.rooms.get(rId);
@@ -99,13 +142,13 @@ export function WorldInteraction({ session, world, activeCall }: WorldInteractio
         }
       } catch (err) {
         if (!isMounted()) return;
-        setPortalProcess({ error: err as Error });
+        setInteractionProcess({ error: err as Error });
       }
       return () => {
         unSubStatusObserver?.();
       };
     },
-    [session, selectWorld, exitWorld, navigateEnterWorld, isMounted, setPortalProcess]
+    [session, selectWorld, exitWorld, navigateEnterWorld, isMounted, setInteractionProcess]
   );
 
   const handleInteraction = useCallback(
@@ -123,6 +166,9 @@ export function WorldInteraction({ session, world, activeCall }: WorldInteractio
           handlePortalGrab(interaction);
           return;
         }
+        if (interactableType === InteractableType.Screenshare) {
+          handleScreenshareGrab(interaction);
+        }
       }
 
       if (interactableType === InteractableType.Player) {
@@ -135,7 +181,7 @@ export function WorldInteraction({ session, world, activeCall }: WorldInteractio
 
       setActiveEntity(interaction);
     },
-    [handlePortalGrab, setActiveEntity, activeCall]
+    [handlePortalGrab, handleScreenshareGrab, setActiveEntity, activeCall]
   );
 
   useWorldInteraction(mainThread, handleInteraction);
@@ -149,7 +195,7 @@ export function WorldInteraction({ session, world, activeCall }: WorldInteractio
       )}
       {!camRigModule.orbiting && <Reticle />}
       {activeEntity && !camRigModule.orbiting && (
-        <EntityTooltip activeEntity={activeEntity} portalProcess={portalProcess} />
+        <EntityTooltip activeEntity={activeEntity} interactionProcess={interactionProcess} />
       )}
     </div>
   );

@@ -214,6 +214,10 @@ function GLTFViewerUI() {
           console.log("Interacted with portal", interaction);
           return;
         }
+        if (interactableType === InteractableType.Screenshare) {
+          console.log("Interacted with screenshare", interaction);
+          return;
+        }
       }
 
       if (interactableType === InteractableType.Player) {
@@ -235,7 +239,7 @@ function GLTFViewerUI() {
     <>
       <Stats statsEnabled={statsEnabled} />
       {editorEnabled && <EditorView />}
-      {activeEntity && <EntityTooltip activeEntity={activeEntity} portalProcess={{ joining: false }} />}
+      {activeEntity && <EntityTooltip activeEntity={activeEntity} interactionProcess={{ loading: false }} />}
       <Reticle />
     </>
   );
