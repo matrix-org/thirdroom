@@ -59,6 +59,75 @@ export function loadImageUrl(url: string): Promise<string> {
   });
 }
 
+export function loadImageElement(url: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = document.createElement("img");
+    img.onload = () => resolve(img);
+    img.onerror = (err) => reject(err);
+    img.src = url;
+  });
+}
+
+export function loadVideoElement(url: string): Promise<HTMLVideoElement> {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement("video");
+    video.preload = "metadata";
+    video.playsInline = true;
+    video.muted = true;
+
+    video.onloadeddata = () => {
+      resolve(video);
+      video.pause();
+    };
+    video.onerror = (e) => {
+      reject(e);
+    };
+
+    video.src = url;
+    video.load();
+    video.play();
+  });
+}
+
+export function getThumbnailDimensions(width: number, height: number): [number, number] {
+  const MAX_WIDTH = 800;
+  const MAX_HEIGHT = 600;
+  let targetWidth = width;
+  let targetHeight = height;
+  if (targetHeight > MAX_HEIGHT) {
+    targetWidth = Math.floor(targetWidth * (MAX_HEIGHT / targetHeight));
+    targetHeight = MAX_HEIGHT;
+  }
+  if (targetWidth > MAX_WIDTH) {
+    targetHeight = Math.floor(targetHeight * (MAX_WIDTH / targetWidth));
+    targetWidth = MAX_WIDTH;
+  }
+  return [targetWidth, targetHeight];
+}
+
+export function getThumbnail(
+  img: HTMLImageElement | SVGImageElement | HTMLVideoElement,
+  width: number,
+  height: number,
+  thumbnailMimeType?: string
+): Promise<Blob | undefined> {
+  return new Promise((resolve) => {
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d");
+    if (!context) {
+      resolve(undefined);
+      return;
+    }
+    context.drawImage(img, 0, 0, width, height);
+
+    canvas.toBlob((thumbnail) => {
+      resolve(thumbnail ?? undefined);
+    }, thumbnailMimeType ?? "image/jpeg");
+  });
+}
+
 export function linkifyText(body: string) {
   const msgParts = [];
 

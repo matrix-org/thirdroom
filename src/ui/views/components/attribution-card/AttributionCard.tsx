@@ -1,11 +1,14 @@
+import { AllHTMLAttributes, forwardRef } from "react";
+import classNames from "classnames";
+
 import { Input } from "../../../atoms/input/Input";
 import { Label } from "../../../atoms/text/Label";
 import { SettingTile } from "../setting-tile/SettingTile";
 import "./AttributionCard.css";
 
-export function AttributionCard() {
-  return (
-    <div className="AttributionCard flex flex-column gap-xs">
+export const AttributionCard = forwardRef<HTMLFieldSetElement, AllHTMLAttributes<HTMLFieldSetElement>>(
+  ({ className, ...props }, ref) => (
+    <fieldset className={classNames("AttributionCard flex flex-column gap-xs", className)} {...props} ref={ref}>
       <div>
         <SettingTile label={<Label>Title</Label>}>
           <Input />
@@ -27,6 +30,6 @@ export function AttributionCard() {
           <Input />
         </SettingTile>
       </div>
-    </div>
-  );
-}
+    </fieldset>
+  )
+);

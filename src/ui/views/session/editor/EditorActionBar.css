@@ -1,5 +1,5 @@
 .EditorActionBar {
-  margin: auto;
+  margin: 0 auto;
   padding: var(--sp-xs);
   background-color: var(--bg-surface);
   box-shadow: var(--bs-surface);

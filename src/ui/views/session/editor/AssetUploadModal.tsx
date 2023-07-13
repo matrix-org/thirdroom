@@ -1,3 +1,5 @@
+import { IBlobHandle } from "@thirdroom/hydrogen-view-sdk";
+
 import { Button } from "../../../atoms/button/Button";
 import { Content } from "../../../atoms/content/Content";
 import { Footer } from "../../../atoms/footer/Footer";
@@ -10,11 +12,24 @@ import { ModalContent } from "../../../atoms/modal/ModalContent";
 import { Scroll } from "../../../atoms/scroll/Scroll";
 import { Label } from "../../../atoms/text/Label";
 import { Text } from "../../../atoms/text/Text";
+import { useAutoUpload } from "../../../hooks/useAutoUpload";
+import { useHydrogen } from "../../../hooks/useHydrogen";
 import { AttributionCard } from "../../components/attribution-card/AttributionCard";
+import { FileUploadCard, FileUploadErrorCard } from "../../components/file-upload-card/FileUploadCard";
 import { ScenePreview } from "../../components/scene-preview/ScenePreview";
 import { SettingTile } from "../../components/setting-tile/SettingTile";
+import { Asset, AssetType } from "./assets";
 
-export function AssetUploadModal() {
+interface AssetUploadModalProps {
+  blob: IBlobHandle;
+  requestClose: () => void;
+  onSubmit: <T extends AssetType>(asset: Asset<T>) => void;
+}
+
+export function AssetUploadModal({ blob, requestClose, onSubmit }: AssetUploadModalProps) {
+  const { session } = useHydrogen(true);
+  const { progress, error } = useAutoUpload(session, blob);
+
   return (
     <Modal open={true}>
       <Content className="grow">
@@ -25,9 +40,19 @@ export function AssetUploadModal() {
               children={
                 <Scroll>
                   <div style={{ padding: "var(--sp-md)" }} className="flex flex-column gap-md">
+                    {error ? (
+                      <FileUploadErrorCard name={error.name} message={error.message} onUploadDrop={requestClose} />
+                    ) : (
+                      <FileUploadCard
+                        name={blob.nativeBlob.name}
+                        sentBytes={progress}
+                        totalBytes={blob.size}
+                        onUploadDrop={requestClose}
+                      />
+                    )}
                     <div className="flex gap-md">
                       <SettingTile className="grow basis-0" label={<Label>Asset Name</Label>}>
-                        <Input required />
+                        <Input defaultValue={blob.nativeBlob.name} required />
                       </SettingTile>
                       <SettingTile className="grow basis-0" label={<Label>Asset Description</Label>}>
                         <Input required />
@@ -41,7 +66,14 @@ export function AssetUploadModal() {
                 </Scroll>
               }
               bottom={
-                <Footer left={<Button fill="outline">Cancel</Button>} right={<Button type="submit">Save</Button>} />
+                <Footer
+                  left={
+                    <Button onClick={requestClose} fill="outline">
+                      Cancel
+                    </Button>
+                  }
+                  right={<Button type="submit">Save</Button>}
+                />
               }
             />
           }

@@ -2,18 +2,22 @@ import { Icon } from "../../../atoms/icon/Icon";
 import { Thumbnail } from "../../../atoms/thumbnail/Thumbnail";
 import AddIC from "../../../../../res/ic/add.svg";
 import "./EditorActionBar.css";
-import { PaginationDot } from "../../../atoms/pagination/PaginationDot";
+// import { PaginationDot } from "../../../atoms/pagination/PaginationDot";
 
-export function EditorActionBar() {
+interface EditorActionBarProps {
+  toggleAssets: () => void;
+}
+
+export function EditorActionBar({ toggleAssets }: EditorActionBarProps) {
   return (
     <div className="EditorActionBar flex items-center gap-xs">
       <Thumbnail size="xxs">
-        <button className="EditorActionBar__plusBtn flex justify-center items-center">
+        <button onClick={toggleAssets} className="EditorActionBar__plusBtn flex justify-center items-center">
           <Icon color="on-primary" src={AddIC} size="lg" />
         </button>
       </Thumbnail>
 
-      <Thumbnail size="xxs">
+      {/* <Thumbnail size="xxs">
         <Icon src={AddIC} size="lg" />
       </Thumbnail>
       <Thumbnail size="xxs">
@@ -33,7 +37,7 @@ export function EditorActionBar() {
         <PaginationDot />
         <PaginationDot />
         <PaginationDot />
-      </div>
+      </div> */}
     </div>
   );
 }

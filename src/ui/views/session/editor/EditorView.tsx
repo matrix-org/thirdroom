@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { TreeViewRefApi } from "@thirdroom/manifold-editor-components";
 import { useAtomValue } from "jotai";
 import { Room } from "@thirdroom/hydrogen-view-sdk";
@@ -15,7 +15,6 @@ import { EditorToolbar } from "./EditorToolbar";
 import { useEvent } from "../../../hooks/useEvent";
 import { EditorActionBar } from "./EditorActionBar";
 import { EditorAssets } from "./EditorAssets";
-import { AssetUploadModal } from "./AssetUploadModal";
 
 export function EditorView({ room }: { room?: Room }) {
   const treeViewRef = useRef<TreeViewRefApi>(null);
@@ -24,6 +23,8 @@ export function EditorView({ room }: { room?: Room }) {
   const mainThread = useMainThreadContext();
   const resource = getLocalResource(mainThread, activeEntity) as unknown as MainThreadResource;
   const editorMode = useAtomValue(editorModeAtom);
+
+  const [assets, setAssets] = useState(false);
 
   useEffect(() => {
     document.exitPointerLock();
@@ -79,13 +80,12 @@ export function EditorView({ room }: { room?: Room }) {
             <div className="EditorView__leftPanel grow">
               <HierarchyPanel scene={scene} resources={resources} treeViewRef={treeViewRef} />
             </div>
-            <div className="EditorView__centerPanel grow flex flex-column gap-md">
+            <div className="EditorView__centerPanel grow flex flex-column justify-end gap-md">
               {editorMode === EditorMode.ScriptEditor && room && <ScriptEditor room={room} />}
               {editorMode === EditorMode.SceneEditor && (
                 <>
-                  <EditorAssets requestClose={() => false} />
-                  <EditorActionBar />
-                  <AssetUploadModal />
+                  {assets && <EditorAssets requestClose={() => setAssets(false)} />}
+                  <EditorActionBar toggleAssets={() => setAssets(!assets)} />
                 </>
               )}
             </div>

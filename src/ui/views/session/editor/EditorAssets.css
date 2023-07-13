@@ -1,7 +1,7 @@
 .EditorAssets {
   background-color: var(--bg-surface);
   border-radius: var(--br-xs);
-  box-shadow: var(--bg-surface);
+  box-shadow: var(--bs-surface);
   overflow: hidden;
 }
 
