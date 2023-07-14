@@ -503,8 +503,16 @@ function enterNetworkedWorld(
 
   const environmentScene = setupEnvironment(ctx, thirdroom.environmentGLTFResource);
 
-  // this is where the host spawns themself in
-  // other peers wait for their avatar to be spawned and authority transfered (handled by newPeersQueue on the host side)
+  /**
+   * TODO
+   * 1. send who we think the host is
+   * 2. wait for other peers to tell us who they think the host is
+   * 3. set host to peer with the most consensus
+   * 4. wait for connection to that specific host peer
+   */
+
+  // non-host peers now wait to be spawned in by the host
+  // host spawns themself in
   if (localPeerKey === hostPeerKey) {
     // create a new peer index and map it to our id
     const peerId = network.peerIdCount++;

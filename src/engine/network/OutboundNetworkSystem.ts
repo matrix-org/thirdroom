@@ -1,9 +1,20 @@
 import { GameContext } from "../GameTypes";
 import { getModule } from "../module/module.common";
 import { isHost } from "./network.common";
-import { NetworkModule, exitedNetworkedQuery, ownedPlayerQuery, GameNetworkState, newPeersQueue } from "./network.game";
+import {
+  NetworkModule,
+  exitedNetworkedQuery,
+  ownedPlayerQuery,
+  GameNetworkState,
+  peerEnteredQueue,
+} from "./network.game";
 import { Networked } from "./NetworkComponents";
-import { serializeHostSnapshot, serializeHostCommands, serializeEntityUpdates } from "./NetworkMessage";
+import {
+  serializeHostSnapshot,
+  serializeHostCommands,
+  serializeEntityUpdates,
+  serializePeerEntered,
+} from "./NetworkMessage";
 import { enqueueReliable, enqueueReliableBroadcast, enqueueUnreliableBroadcast } from "./NetworkRingBuffer";
 
 const sendUpdatesHost = (ctx: GameContext, network: GameNetworkState) => {
@@ -17,14 +28,28 @@ const sendUpdatesHost = (ctx: GameContext, network: GameNetworkState) => {
     return;
   }
 
-  const haveNewPeers = newPeersQueue.length > 0;
+  const haveNewPeers = peerEnteredQueue.length > 0;
   if (haveNewPeers) {
+    // inform all existing peers about new peers, except for the new peers themselves
+    console.log(
+      "peerEnteredQueue",
+      peerEnteredQueue.map((p) => JSON.parse(JSON.stringify(p)))
+    );
+    for (const peerInfo of network.peers) {
+      console.log("peerInfo", peerInfo);
+      console.log("peerEnteredQueue.includes(peerInfo)", peerEnteredQueue.includes(peerInfo));
+      if (peerEnteredQueue.includes(peerInfo)) {
+        continue;
+      }
+      console.log("broadcasting peer entered for", peerInfo);
+      enqueueReliableBroadcast(network, serializePeerEntered(ctx, network, peerInfo.key, peerInfo.id!));
+    }
+    // send host snapshot to new peers
     let peerInfo;
-    while ((peerInfo = newPeersQueue.dequeue())) {
+    while ((peerInfo = peerEnteredQueue.dequeue())) {
       // TODO: optimize such that host snapshot isn't re-serialized for each peer
-      const hostSnapshot = serializeHostSnapshot(ctx, network, peerInfo);
-      console.log("sending host snapshot to ", peerInfo.key);
-      enqueueReliable(network, peerInfo.key, hostSnapshot);
+      console.log("sending host snapshot to ", peerInfo);
+      enqueueReliable(network, peerInfo.key, serializeHostSnapshot(ctx, network, peerInfo));
     }
   }
 

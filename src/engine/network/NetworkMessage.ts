@@ -37,8 +37,8 @@ import {
   GameNetworkState,
   authoringNetworkedQuery,
   NetworkModule,
-  spawnedNetworkeQuery,
-  despawnedNetworkQuery,
+  spawnedAuthoringQuery,
+  despawnedAuthoringQuery,
   relayingNetworkedQuery,
   removePeerInfo,
   NetworkID,
@@ -46,6 +46,8 @@ import {
   addPeerInfo,
   getPeerInfoByKey,
   PeerInfo,
+  spawnedRelayingQuery,
+  despawnedRelayingQuery,
 } from "./network.game";
 import { Codec } from "./Codec";
 
@@ -190,9 +192,7 @@ export const readTransformMutations = (v: CursorView, nid: NetworkID, node: Remo
 
 // PeerInfo
 export const writePeerInfo = (v: CursorView, peerKey: string, peerId: PeerID) => {
-  console.log("writePeerInfo ========");
-  console.log("peerId", peerId);
-  console.log("peerKey", peerKey);
+  console.log("writePeerInfo", { peerId, peerKey });
   writeUint64(v, peerId);
   writeString(v, peerKey);
 };
@@ -200,11 +200,12 @@ export const readPeerInfo = (network: GameNetworkState, v: CursorView, hostPeerI
   const peerId = readUint64(v);
   const peerKey = readString(v);
 
-  console.log("readPeerInfo =========");
-  console.log("hostPeerId", hostPeerId);
-  console.log("localPeerId", localPeerId);
-  console.log("peerId", peerId);
-  console.log("peerKey", peerKey);
+  console.log("readPeerInfo", {
+    hostPeerId,
+    localPeerId,
+    peerId,
+    peerKey,
+  });
 
   const peerInfo = addPeerInfo(network, peerKey, peerId);
 
@@ -254,6 +255,8 @@ export const readSpawn = (ctx: GameContext, network: GameNetworkState, v: Cursor
   // effect
   const replicator = tryGetNetworkReplicator<RemoteNode>(network, replicatorId);
   const node = replicator.factory(ctx);
+  addComponent(ctx.world, Networked, node.eid);
+  Networked.replicatorId[node.eid] = replicatorId;
 
   // read
   replicator.snapshotCodec.decode(v, node);
@@ -330,7 +333,7 @@ export const readUpdate = (ctx: GameContext, network: GameNetworkState, v: Curso
 };
 
 // Authority Transfer
-// const writeAuthorityTransfer = (v: CursorView, nid: NetworkID, authorId: PeerIndex) => {
+// const writeAuthorityTransfer = (v: CursorView, nid: NetworkID, authorId: peerId) => {
 //   writeUint64(v, nid);
 //   writeUint64(v, authorId);
 // };
@@ -423,10 +426,10 @@ export const deserializePeerEntered = (ctx: GameContext, v: CursorView) => {
 };
 
 // PeerExited Message
-export const serializePeerExited = (ctx: GameContext, network: GameNetworkState, peerIndex: PeerID) => {
+export const serializePeerExited = (ctx: GameContext, network: GameNetworkState, peerId: PeerID) => {
   const v = network.cursorView;
   writeMessageType(v, NetworkMessage.PeerExited);
-  writeUint64(v, peerIndex);
+  writeUint64(v, peerId);
   return sliceCursorView(v);
 };
 export const deserializePeerExited = (ctx: GameContext, v: CursorView) => {
@@ -438,9 +441,17 @@ export const deserializePeerExited = (ctx: GameContext, v: CursorView) => {
 
 // HostCommands Message
 export const serializeHostCommands = (ctx: GameContext, network: GameNetworkState) => {
-  const spawned = spawnedNetworkeQuery(ctx.world);
-  const despawned = despawnedNetworkQuery(ctx.world);
-  if (spawned.length === 0 && despawned.length === 0) {
+  const spawnedAuthoring = spawnedAuthoringQuery(ctx.world);
+  const despawnedAuthoring = despawnedAuthoringQuery(ctx.world);
+  const spawnedRelaying = spawnedRelayingQuery(ctx.world);
+  const despawnedRelaying = despawnedRelayingQuery(ctx.world);
+
+  if (
+    spawnedAuthoring.length === 0 &&
+    despawnedAuthoring.length === 0 &&
+    spawnedRelaying.length === 0 &&
+    despawnedRelaying.length === 0
+  ) {
     // TODO: return and handle undefined
     return new ArrayBuffer(0);
   }
@@ -449,9 +460,20 @@ export const serializeHostCommands = (ctx: GameContext, network: GameNetworkStat
 
   writeMessageType(v, NetworkMessage.HostCommands);
 
-  writeUint16(v, spawned.length);
-  for (let i = 0; i < spawned.length; i++) {
-    const eid = spawned[i];
+  writeUint16(v, spawnedAuthoring.length + spawnedRelaying.length);
+  for (let i = 0; i < spawnedAuthoring.length; i++) {
+    const eid = spawnedAuthoring[i];
+    const networkId = BigInt(Networked.networkId[eid]);
+    const authorId = BigInt(Networked.authorId[eid]);
+    const replicatorId = Networked.replicatorId[eid];
+
+    const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
+    const replicator = tryGetNetworkReplicator<RemoteNode>(network, replicatorId);
+
+    writeSpawn(v, networkId, authorId, replicator, node);
+  }
+  for (let i = 0; i < spawnedRelaying.length; i++) {
+    const eid = spawnedRelaying[i];
     const networkId = BigInt(Networked.networkId[eid]);
     const authorId = BigInt(Networked.authorId[eid]);
     const replicatorId = Networked.replicatorId[eid];
@@ -462,9 +484,14 @@ export const serializeHostCommands = (ctx: GameContext, network: GameNetworkStat
     writeSpawn(v, networkId, authorId, replicator, node);
   }
 
-  writeUint16(v, despawned.length);
-  for (let i = 0; i < despawned.length; i++) {
-    const eid = despawned[i];
+  writeUint16(v, despawnedAuthoring.length + despawnedRelaying.length);
+  for (let i = 0; i < despawnedAuthoring.length; i++) {
+    const eid = despawnedAuthoring[i];
+    const nid = BigInt(Networked.networkId[eid]);
+    writeDespawn(v, nid);
+  }
+  for (let i = 0; i < despawnedRelaying.length; i++) {
+    const eid = despawnedRelaying[i];
     const nid = BigInt(Networked.networkId[eid]);
     writeDespawn(v, nid);
   }

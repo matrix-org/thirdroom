@@ -23,9 +23,10 @@ import {
   deserializePeerEntered,
   deserializePeerExited,
   NetworkMessage,
+  serializePeerExited,
 } from "./NetworkMessage";
 import { registerInboundMessageHandler } from "./InboundNetworkSystem";
-import { dequeueNetworkRingBuffer, NetworkRingBuffer } from "./NetworkRingBuffer";
+import { dequeueNetworkRingBuffer, enqueueReliableBroadcast, NetworkRingBuffer } from "./NetworkRingBuffer";
 import { ExitWorldMessage, ThirdRoomMessageType } from "../../plugins/thirdroom/thirdroom.common";
 import { tryGetRemoteResource } from "../resource/resource.game";
 import { RemoteNode } from "../resource/RemoteResources";
@@ -111,7 +112,8 @@ export interface GameNetworkState {
 
 const threadMessageQueue = createQueue<Message<NetworkMessageType | ThirdRoomMessageType>>();
 
-export const newPeersQueue = createQueue<PeerInfo>();
+export const peerEnteredQueue = createQueue<PeerInfo>();
+export const peerExitedQueue = createQueue<PeerInfo>();
 
 export const NetworkModule = defineModule<GameContext, GameNetworkState>({
   name: "network",
@@ -204,7 +206,7 @@ export const addPeerId = (ctx: GameContext, peerKey: string) => {
     const peerId = network.peerIdCount++;
     const peerInfo = addPeerInfo(network, peerKey, peerId);
     // queue peer up for avatar creation and host snapshot
-    newPeersQueue.enqueue(peerInfo);
+    peerEnteredQueue.enqueue(peerInfo);
     ctx.sendMessage<PeerEnteredMessage>(Thread.Game, { type: NetworkMessageType.PeerEntered, peerIndex: peerId });
   } else {
     waitUntil<bigint>(() => network.local?.id).then((peerId) => {
@@ -222,37 +224,43 @@ export const removePeerId = (ctx: GameContext, peerKey: string) => {
   }
 
   const peerArrIndex = network.peers.findIndex((p) => p.key === peerKey);
+  if (peerArrIndex > -1) {
+    console.warn(`cannot remove peer ${peerKey}, does not exist in peer list`);
+    return;
+  }
+
   const peerId = network.peers[peerArrIndex]?.id;
+  if (!peerId) {
+    console.warn(`cannot remove peer ${peerKey}, does not have a PeerID assigned.`);
+    return;
+  }
 
-  if (peerArrIndex > -1 && peerId) {
-    const entities = networkedQuery(ctx.world);
+  const entities = networkedQuery(ctx.world);
 
-    for (let i = entities.length - 1; i >= 0; i--) {
-      const eid = entities[i];
+  for (let i = entities.length - 1; i >= 0; i--) {
+    const eid = entities[i];
 
-      // skip if the entity does not belong to this peer
-      if (Networked.authorId[eid] !== Number(peerId)) {
-        continue;
-      }
-
-      const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
-
-      const hosting = isHost(network);
-      const destroyOnLeave = Networked.destroyOnLeave[eid];
-
-      if (hosting && destroyOnLeave) {
-        const replicator = tryGetNetworkReplicator(network, Networked.replicatorId[eid]);
-
-        replicator.despawn(node);
-      }
+    // skip if the entity does not belong to this peer
+    if (Networked.authorId[eid] !== Number(peerId)) {
+      continue;
     }
 
-    removePeerInfo(network, peerKey);
+    const node = tryGetRemoteResource<RemoteNode>(ctx, eid);
 
-    ctx.sendMessage<PeerExitedMessage>(Thread.Game, { type: NetworkMessageType.PeerExited, peerIndex: peerId });
-  } else {
-    console.warn(`cannot remove peerId ${peerKey}, does not exist in peer list`);
+    const hosting = isHost(network);
+    const destroyOnLeave = Networked.destroyOnLeave[eid];
+
+    if (hosting && destroyOnLeave) {
+      const replicator = tryGetNetworkReplicator(network, Networked.replicatorId[eid]);
+
+      replicator.despawn(node);
+    }
   }
+
+  removePeerInfo(network, peerKey);
+  enqueueReliableBroadcast(network, serializePeerExited(ctx, network, peerId));
+
+  ctx.sendMessage<PeerExitedMessage>(Thread.Game, { type: NetworkMessageType.PeerExited, peerIndex: peerId });
 };
 
 const onRemovePeerId = (ctx: GameContext, message: RemovePeerIdMessage) => removePeerId(ctx, message.peerId);
@@ -285,7 +293,7 @@ const onExitWorld = (ctx: GameContext) => {
     dequeueNetworkRingBuffer(network.incomingReliableRingBuffer, ringOut);
 
   while (threadMessageQueue.length) threadMessageQueue.dequeue();
-  while (newPeersQueue.length) newPeersQueue.dequeue();
+  while (peerEnteredQueue.length) peerEnteredQueue.dequeue();
 };
 
 const onSetHost = async (ctx: GameContext, message: SetHostMessage) => {
@@ -375,11 +383,13 @@ export const createNetworkId = (network: GameNetworkState) => {
 export const networkedQuery = defineQuery([Networked]);
 export const exitedNetworkedQuery = exitQuery(networkedQuery);
 
-export const relayingNetworkedQuery = defineQuery([Networked, Relaying]);
-
 export const authoringNetworkedQuery = defineQuery([Networked, Authoring]);
-export const spawnedNetworkeQuery = enterQuery(authoringNetworkedQuery);
-export const despawnedNetworkQuery = exitQuery(authoringNetworkedQuery);
+export const spawnedAuthoringQuery = enterQuery(authoringNetworkedQuery);
+export const despawnedAuthoringQuery = exitQuery(authoringNetworkedQuery);
+
+export const relayingNetworkedQuery = defineQuery([Networked, Relaying]);
+export const spawnedRelayingQuery = enterQuery(relayingNetworkedQuery);
+export const despawnedRelayingQuery = exitQuery(relayingNetworkedQuery);
 
 export const remoteNetworkedQuery = defineQuery([Networked, Not(Authoring)]);
 
@@ -401,12 +411,14 @@ export function HostSpawnPeerAvatarSystem(ctx: GameContext) {
   }
 
   // don't drain the queue, it is later drained by the OutboundNetworkSystem
-  for (const peerInfo of newPeersQueue) {
+  for (const peerInfo of peerEnteredQueue) {
     const avatar = thirdroom.replicators!.avatar.spawn(ctx);
 
     addComponent(ctx.world, Relaying, avatar.eid);
     Relaying.for[avatar.eid] = Number(peerInfo.id);
     Networked.authorId[avatar.eid] = Number(peerInfo.id);
+
+    console.log("*** Spawning avatar for ", peerInfo.key, " with replicator ID", Networked.replicatorId[avatar.eid]);
   }
 }
 

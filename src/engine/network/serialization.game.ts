@@ -32,9 +32,9 @@ import { Prefab, createPrefabEntity } from "../prefab/prefab.game";
 import { checkBitflag } from "../utils/checkBitflag";
 import {
   authoringNetworkedQuery,
-  spawnedNetworkeQuery,
+  spawnedAuthoringQuery,
   GameNetworkState,
-  despawnedNetworkQuery,
+  despawnedAuthoringQuery,
   NetworkID,
   tryGetPeerId,
 } from "./network.game";
@@ -257,7 +257,7 @@ export function serializeCreatesSnapshot(ctx: GameContext, v: CursorView) {
 
 export function serializeCreates(ctx: GameContext, v: CursorView) {
   const network = getModule(ctx, NetworkModule);
-  const entities = spawnedNetworkeQuery(ctx.world);
+  const entities = spawnedAuthoringQuery(ctx.world);
 
   writeUint32(v, entities.length);
   for (let i = 0; i < entities.length; i++) {
@@ -367,7 +367,7 @@ export function deserializeUpdatesChanged(ctx: GameContext, v: CursorView) {
 /* Delete */
 
 export function serializeDeletes(ctx: GameContext, v: CursorView) {
-  const entities = despawnedNetworkQuery(ctx.world);
+  const entities = despawnedAuthoringQuery(ctx.world);
   writeUint32(v, entities.length);
   for (let i = 0; i < entities.length; i++) {
     const eid = entities[i];
